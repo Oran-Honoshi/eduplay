@@ -115,7 +115,12 @@ export default function LessonClient({ child, topic, questions, progress, allTop
         <div style={{ fontFamily:T.fontHead, fontSize:'13px', color:T.accent1 }}>Edu<span style={{ color:T.accent2 }}>Play</span></div>
         <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
           <div style={{ display:'flex', gap:'3px' }}>{[...Array(5)].map((_,i) => <span key={i} style={{ fontSize:'14px', opacity:i<3?1:0.3 }}>❤️</span>)}</div>
-          <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.xp }}>{xpBalance.toLocaleString()} XP</span>
+         <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.xp }}>{xpBalance.toLocaleString()} XP</span>
+<button
+  onClick={() => window.location.href=`/theme?childId=${child?.id}&name=${child?.display_name}&current=${theme}`}
+  style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'6px 10px', cursor:'pointer', color:T.text, boxShadow:T.btnShadow, fontFamily:T.fontHead, fontSize:'7px' }}>
+  🎨 THEME
+</button>
         </div>
       </header>
 
