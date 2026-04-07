@@ -688,10 +688,13 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
                 <div style={{ background:T.panel2, border:`${theme==='minecraft'?3:2}px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
                   <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent4, marginBottom:'10px' }}>⚔️ {UI.practice}</div>
                   <div style={{ marginBottom:'10px' }}>
-                    {langMode !== 'he_only' && <p style={{ fontSize:'14px', fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>}
-                    {langMode !== 'en_only' && currentQ.prompt_he && (
-                      <p style={{ fontSize:'13px', color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:0 }}>{currentQ.prompt_he}</p>
-                    )}
+                   {langMode !== 'he_only' && !isHE && subjSlug !== 'hebrew' && <p style={{ fontSize:'14px', fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>}
+{(langMode !== 'en_only' || subjSlug === 'hebrew') && currentQ.prompt_he && (
+  <p style={{ fontSize:'13px', color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 6px' }}>{currentQ.prompt_he}</p>
+)}
+{subjSlug !== 'hebrew' && langMode !== 'he_only' && !currentQ.prompt_he && (
+  <p style={{ fontSize:'14px', fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>
+)}
                   </div>
 
                   {currentQ.visual_data?.type === 'fraction' && (
@@ -704,15 +707,22 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
 
                   {currentQ.options && (
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'12px' }}>
-                      {currentQ.options.map((opt: any) => {
-                        const isCorrect = opt.isCorrect && answered
-                        const isWrong = selected===opt.label && !opt.isCorrect && answered
-                        return (
-                          <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
-                            style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'11px 12px', cursor:answered?'default':'pointer', fontFamily:'Georgia,serif', fontSize:'15px', fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text }}>
-                            <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'7px', flexShrink:0 }}>{opt.label}</span>
-                            {opt.value_en}
-                          </button>
+                     {currentQ.options.map((opt: any) => {
+  const isCorrect = opt.isCorrect && answered
+  const isWrong = selected===opt.label && !opt.isCorrect && answered
+  const isHebSubject = subjSlug === 'hebrew'
+  const displayVal = isHE
+    ? (opt.value_he || opt.value_en || '')
+    : isHebSubject && langMode === 'bilingual'
+      ? (opt.value_en || '')
+      : (opt.value_en || '')
+  const isRTLAnswer = isHE && isHebSubject
+  return (
+    <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
+      style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'11px 12px', cursor:answered?'default':'pointer', fontFamily:isRTLAnswer?'"Times New Roman",serif':'Georgia,serif', fontSize:'15px', fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>
+      <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'7px', flexShrink:0 }}>{opt.label}</span>
+      {displayVal}
+    </button>
                         )
                       })}
                     </div>
