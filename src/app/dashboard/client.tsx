@@ -133,7 +133,7 @@ export default function DashboardClient({ data }: { data: any }) {
                   <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'22px', color:'#1E2D4E', margin:0 }}>Good morning, {parentName.split(' ')[0]} 👋</h1>
                   <p style={{ color:'#5A6A7E', margin:'3px 0 0', fontSize:'13px' }}>Here's how your family is doing today</p>
                 </div>
-                <button onClick={() => setScreen('worksheets')} style={{ padding:'8px 16px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>🖨️ Print Worksheet</button>
+                <button onClick={() => window.location.href='/worksheets'} style={{ padding:'8px 16px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>🖨️ Worksheet Builder</button>
               </div>
 
               <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'12px' }}>
