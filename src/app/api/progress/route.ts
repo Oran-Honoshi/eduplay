@@ -83,3 +83,25 @@ await supabase.rpc('update_streak', { p_child_id: childId })
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
+export async function GET(req: NextRequest) {
+  const supabase = createServerClient()
+  const childId = new URL(req.url).searchParams.get('childId')
+  if (!childId) return NextResponse.json({ error: 'Missing childId' }, { status: 400 })
+
+  const { data: progress } = await supabase
+    .from('child_topic_progress')
+    .select('*')
+    .eq('child_id', childId)
+
+  const { data: child } = await supabase
+    .from('children')
+    .select('xp_balance, xp_total, streak_current')
+    .eq('id', childId)
+    .single()
+
+  return NextResponse.json({
+    progress: progress || [],
+    xp: child?.xp_balance || 0,
+    streak: child?.streak_current || 0,
+  })
+}
