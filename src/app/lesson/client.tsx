@@ -37,6 +37,49 @@ const SUBJECT_ICONS: any = {
 
 function getLearnContent(topic: any, T: any) {
   const slug = topic?.slug || ''
+  const subj = topic?.subject?.slug || ''
+
+  // Route by subject first if slug doesn't match
+  if (subj === 'hebrew' && !slug.includes('aleph') && !slug.includes('nikud') && 
+      !slug.includes('binyan') && !slug.includes('paal') && !slug.includes('dikduk')) {
+    // Generic Hebrew language content
+    return (
+      <>
+        <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:'rtl', textAlign:'right' }}>
+          <strong style={{ color:T.text }}>{topic?.title_he || topic?.title_en}</strong> — עבדו על השאלות כדי לשפר את העברית שלכם.
+        </p>
+        <div style={{ padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'13px', lineHeight:1.8, direction:'rtl', textAlign:'right' }}>
+          <div>📖 קראו כל שאלה בעיון</div>
+          <div>💡 השתמשו ברמז אם צריך</div>
+          <div>⭐ צברו XP על כל תשובה נכונה</div>
+        </div>
+        {topic?.description_he && (
+          <p style={{ fontSize:'13px', color:T.text2, margin:0, direction:'rtl', textAlign:'right', fontFamily:'serif' }}>
+            {topic.description_he}
+          </p>
+        )}
+      </>
+    )
+  }
+
+  if (subj === 'english' && !slug.includes('grammar') && !slug.includes('reading') && 
+      !slug.includes('writing') && !slug.includes('phonics') && !slug.includes('vocabulary')) {
+    return (
+      <>
+        <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>
+          <strong style={{ color:T.text }}>{topic?.title_en}</strong> — work through the questions to improve your English skills.
+        </p>
+        <div style={{ padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'13px', lineHeight:1.8 }}>
+          <div>📖 Read each question carefully</div>
+          <div>💡 Use the hint if you need help</div>
+          <div>⭐ Earn XP for every correct answer</div>
+        </div>
+        {topic?.description_en && (
+          <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>{topic.description_en}</p>
+        )}
+      </>
+    )
+  }
 
   if (slug.includes('fraction') || slug.includes('equivalent') || slug.includes('comparing_fraction') || slug.includes('fraction_addition')) {
     return (
@@ -725,10 +768,15 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
             <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent2, marginBottom:'8px' }}>📚 {UI.subjects}</div>
             <div style={{ display:'flex', gap:'6px' }}>
               {['math','english','hebrew'].map(s => (
-                <button key={s} onClick={() => {
-                  const first = allTopics.find((t: any) => t.subject?.slug === s)
-                  if (first) navigateToTopic(first.id)
-                }} style={{ flex:1, padding:'6px 4px', background:subjSlug===s?`${SUBJECT_COLORS[s]}20`:T.panel2, border:`2px solid ${subjSlug===s?SUBJECT_COLORS[s]:T.border}`, borderRadius:T.radius, cursor:'pointer', fontSize:'16px', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' }}>
+  <button key={s} onClick={() => {
+    const subjectTopics = allTopics
+      .filter((t: any) => t.subject?.slug === s)
+      .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+    const first = subjectTopics[0]
+    if (first) navigateToTopic(first.id)
+  }} 
+                  
+                  style={{ flex:1, padding:'6px 4px', background:subjSlug===s?`${SUBJECT_COLORS[s]}20`:T.panel2, border:`2px solid ${subjSlug===s?SUBJECT_COLORS[s]:T.border}`, borderRadius:T.radius, cursor:'pointer', fontSize:'16px', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' }}>
                   <span>{SUBJECT_ICONS[s]}</span>
                   <span style={{ fontFamily:T.fontHead, fontSize:'5px', color:subjSlug===s?SUBJECT_COLORS[s]:T.text2 }}>{s.toUpperCase().slice(0,4)}</span>
                 </button>
