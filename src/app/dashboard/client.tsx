@@ -172,8 +172,8 @@ export default function DashboardClient({ data }: { data: any }) {
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:'7px', marginBottom:'12px' }}>
                         {[
-                          { label:'Math', pct:Math.min(100,cp.filter((p: any)=>p.status==='completed').length*15), color:'#4A7FD4' },
-                          { label:'English', pct:Math.min(100,cp.filter((p: any)=>p.status==='completed').length*10), color:'#FF6B6B' },
+                          { label:'Math', pct:Math.min(100,Math.round((cp.filter((p: any)=>p.status==='completed'&&p.topic?.subject_slug==='math').length/7)*100)), color:'#4A7FD4' },
+{ label:'Hebrew', pct:Math.min(100,Math.round((cp.filter((p: any)=>p.status==='completed'&&p.topic?.subject_slug==='hebrew').length/4)*100)), color:'#FF6B6B' },
                         ].map(subj => (
                           <div key={subj.label} style={{ display:'flex', alignItems:'center', gap:'7px' }}>
                             <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:subj.color, flexShrink:0 }}/>
