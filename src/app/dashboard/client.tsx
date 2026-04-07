@@ -35,11 +35,12 @@ export default function DashboardClient({ data }: { data: any }) {
   )
 
   const TABS = [
-    { key: 'overview',   label: '🏠 Overview' },
-    { key: 'progress',   label: '📊 Progress' },
-    { key: 'worksheets', label: '🖨️ Worksheets' },
-    { key: 'account',    label: '⚙️ Account' },
-  ]
+  { key: 'overview',   label: '🏠 Overview' },
+  { key: 'progress',   label: '📊 Progress' },
+  { key: 'worksheets', label: '🖨️ Worksheets' },
+  { key: 'curriculum', label: '📚 Curriculum' },
+  { key: 'account',    label: '⚙️ Account' },
+]
 
   return (
     <div style={{ minHeight:'100vh', background:'#F8F9FB', fontFamily:'"Nunito Sans",sans-serif' }}>
@@ -300,6 +301,28 @@ export default function DashboardClient({ data }: { data: any }) {
             </div>
           )}
 
+          {screen === 'curriculum' && (
+  <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>📚 Curriculum</h1>
+      <button onClick={() => window.location.href='/curriculum'} style={{ padding:'9px 18px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+        Open Full Curriculum Browser →
+      </button>
+    </div>
+    <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'24px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', textAlign:'center' }}>
+      <div style={{ fontSize:'48px', marginBottom:'12px' }}>🗺️</div>
+      <div style={{ fontFamily:'"Nunito",sans-serif', fontWeight:800, fontSize:'16px', color:'#1E2D4E', marginBottom:'8px' }}>Browse the Full Curriculum</div>
+      <div style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'20px', maxWidth:'400px', margin:'0 auto 20px' }}>
+        See all topics per grade and subject — Math, English and Hebrew from Kindergarten to Grade 6.
+      </div>
+      <button onClick={() => window.location.href='/curriculum'} style={{ padding:'12px 28px', borderRadius:'50px', border:'none', background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer', boxShadow:'0 4px 16px rgba(74,127,212,0.3)' }}>
+        📚 Open Curriculum Browser
+      </button>
+    </div>
+  </div>
+)}
+
+          
           {screen === 'account' && (
             <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
               <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>⚙️ Account</h1>
