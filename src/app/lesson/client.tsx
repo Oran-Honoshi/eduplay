@@ -281,10 +281,11 @@ export default function LessonClient({ child, topic, questions, allTopics, subje
 
   function navigateToTopic(topicId: string) {
     const base = `/lesson?topicId=${topicId}&childId=${child?.id}`
-    const themeParam = theme !== child?.theme ? `&theme=${theme}` : ''
+    const themeParam = `&theme=${theme}`
     const tokenParam = token ? `&token=${token}` : ''
-    window.location.href = `${base}${themeParam}${tokenParam}`
-  }
+    const langParam  = `&lang=${langMode}`
+    window.location.href = `${base}${themeParam}${tokenParam}${langParam}`
+}
 
   function goBack() {
     if (token) {
@@ -367,10 +368,19 @@ export default function LessonClient({ child, topic, questions, allTopics, subje
         <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
           <div style={{ display:'flex', gap:'3px' }}>{[...Array(5)].map((_,i) => <span key={i} style={{ fontSize:'14px', opacity:i<3?1:0.3 }}>❤️</span>)}</div>
           <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.xp }}>{xpBalance.toLocaleString()} XP</span>
-          <button onClick={() => window.location.href=`/theme?childId=${child?.id}&name=${child?.display_name}&current=${theme}${token?`&returnTo=/play/${token}`:''}`}
-            style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 10px', cursor:'pointer', color:T.text, boxShadow:T.btnShadow, fontFamily:T.fontHead, fontSize:'7px' }}>
-            🎨
-          </button>
+          <div style={{ display:'flex', gap:'6px', alignItems:'center' }}>
+  {['en_only','bilingual','he_only'].map(l => (
+    <button key={l}
+      onClick={() => window.location.href=`/lesson?topicId=${topic?.id}&childId=${child?.id}&theme=${theme}&lang=${l}${token?`&token=${token}`:''}`}
+      style={{ padding:'4px 8px', borderRadius:T.radius, border:`2px solid ${langMode===l?T.accent2:T.border}`, background:langMode===l?`${T.accent2}20`:T.panel, color:langMode===l?T.accent2:T.text2, fontFamily:T.fontHead, fontSize:'6px', cursor:'pointer' }}>
+      {l==='en_only'?'🇺🇸':l==='bilingual'?'🌐':'🇮🇱'}
+    </button>
+  ))}
+  <button onClick={() => window.location.href=`/theme?childId=${child?.id}&name=${child?.display_name}&current=${theme}${token?`&returnTo=/play/${token}`:''}`}
+    style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 10px', cursor:'pointer', color:T.text, boxShadow:T.btnShadow, fontFamily:T.fontHead, fontSize:'7px' }}>
+    🎨
+  </button>
+</div>
         </div>
       </header>
 
