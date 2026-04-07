@@ -49,9 +49,11 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
     return Math.round((p.steps_completed / (p.steps_total || 5)) * 100)
   }
 
-  function startLesson(topicId: string) {
-    window.location.href = `/lesson?topicId=${topicId}&childId=${child.id}&token=${token}`
-  }
+  const [langMode, setLangMode] = useState(child.lang_screen || 'bilingual')
+
+function startLesson(topicId: string) {
+  window.location.href = `/lesson?topicId=${topicId}&childId=${child.id}&token=${token}&theme=${child.theme || 'plain'}&lang=${langMode}`
+}
 
   return (
     <div style={{ minHeight:'100vh', background:T.bg, color:T.text, fontFamily:'"Nunito",sans-serif' }}>
@@ -194,12 +196,24 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
         )}
 
         {/* Theme changer */}
-        <div style={{ marginTop:'24px', textAlign:'center' }}>
-          <button onClick={() => window.location.href=`/theme?childId=${child.id}&name=${child.display_name}&current=${theme}&returnTo=/play/${token}`}
-            style={{ padding:'10px 20px', background:T.panel, border:`2px solid rgba(0,0,0,0.1)`, borderRadius:'50px', fontWeight:800, fontSize:'12px', cursor:'pointer', color:T.text }}>
-            🎨 Change Theme
-          </button>
-        </div>
+        <div style={{ marginTop:'24px', display:'flex', justifyContent:'center', gap:'10px', flexWrap:'wrap' }}>
+  <button onClick={() => window.location.href=`/theme?childId=${child.id}&name=${child.display_name}&current=${theme}&returnTo=/play/${token}`}
+    style={{ padding:'10px 20px', background:T.panel, border:`2px solid rgba(0,0,0,0.1)`, borderRadius:'50px', fontWeight:800, fontSize:'12px', cursor:'pointer', color:T.text }}>
+    🎨 Change Theme
+  </button>
+  <div style={{ display:'flex', background:T.panel, border:`2px solid rgba(0,0,0,0.1)`, borderRadius:'50px', overflow:'hidden' }}>
+    {[
+      { id:'en_only',   label:'🇺🇸 English' },
+      { id:'bilingual', label:'🌐 Both' },
+      { id:'he_only',   label:'🇮🇱 עברית' },
+    ].map(l => (
+      <button key={l.id} onClick={() => setLangMode(l.id)}
+        style={{ padding:'10px 14px', border:'none', background:langMode===l.id?T.accent:`transparent`, color:langMode===l.id?'white':T.text, fontWeight:800, fontSize:'11px', cursor:'pointer' }}>
+        {l.label}
+      </button>
+    ))}
+  </div>
+</div>
       </div>
     </div>
   )
