@@ -1,3 +1,4 @@
+export const revalidate = 0
 import { createServerClient } from '@/lib/supabase'
 import DashboardClient from './client'
 
@@ -22,10 +23,10 @@ export default async function DashboardPage() {
     { data: allRecommendations },
   ] = await Promise.all([
     childIds.length
-      ? supabase.from('child_topic_progress')
-          .select('*, topic:topics(title_en, title_he, slug)')
-          .in('child_id', childIds)
-      : { data: [] },
+  ? supabase.from('child_topic_progress')
+      .select('*, topic:topics(title_en, title_he, slug, subject:subjects(slug, label_en))')
+      .in('child_id', childIds)
+  : { data: [] },
     childIds.length
       ? supabase.from('focus_recommendations')
           .select('*, topic:topics(title_en, description_en, slug)')
