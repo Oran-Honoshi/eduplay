@@ -358,7 +358,9 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
             {currentQ.options.map((opt: any) => {
               const isCorrect = opt.isCorrect && answered
               const isWrong = selected === opt.label && !opt.isCorrect && answered
-              const displayVal = opt.value_he || opt.value_en || ''
+              const displayVal = isHE 
+  ? (opt.value_he || opt.value_en || '')
+  : (opt.value_en || '')
               return (
                 <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
                   style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'10px 14px', cursor:answered?'default':'pointer', fontSize:'13px', fontWeight:700, display:'flex', alignItems:'center', gap:'10px', color:T.text, textAlign:isRTL?'right':'left', direction:isRTL?'rtl':'ltr', fontFamily:isRTL?'"Times New Roman",serif':'"Nunito",sans-serif' }}>
