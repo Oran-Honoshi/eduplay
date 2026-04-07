@@ -24,6 +24,8 @@ function WorksheetBuilder() {
   const [questionCount, setQuestionCount] = useState(20)
   const [langMode, setLangMode]           = useState('bilingual')
   const [answerKey, setAnswerKey]         = useState(false)
+const [includeHints, setIncludeHints]   = useState(false)
+const [solutionSteps, setSolutionSteps] = useState(false)
   const [wsType, setWsType]               = useState('practice')
   const [loading, setLoading]             = useState(false)
   const [loadingTopics, setLoadingTopics] = useState(false)
@@ -71,6 +73,8 @@ function WorksheetBuilder() {
       questionCount: questionCount.toString(),
       lang:          langMode,
       answerKey:     answerKey.toString(),
+      includeHints:  includeHints.toString(),
+      solutionSteps: solutionSteps.toString(),
       wsType,
     })
     window.open(`/api/worksheets/builder?${params}`, '_blank')
@@ -253,17 +257,41 @@ function WorksheetBuilder() {
                     </div>
                   </div>
 
-                  {/* Answer key */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#F8F9FB', borderRadius: '8px' }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '13px', color: '#1E2D4E' }}>Include Answer Key</div>
-                      <div style={{ fontSize: '11px', color: '#9AA5B8' }}>Added as a separate page</div>
-                    </div>
-                    <div onClick={() => setAnswerKey(v => !v)}
-                      style={{ width: '44px', height: '24px', borderRadius: '12px', background: answerKey ? '#4A7FD4' : '#DEE2E6', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
-                      <div style={{ position: 'absolute', top: '3px', left: answerKey ? '22px' : '3px', width: '18px', height: '18px', borderRadius: '50%', background: 'white', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}/>
-                    </div>
-                  </div>
+                 {/* Answer key */}
+<div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', background:'#F8F9FB', borderRadius:'8px' }}>
+  <div>
+    <div style={{ fontWeight:700, fontSize:'13px', color:'#1E2D4E' }}>Include Answer Key</div>
+    <div style={{ fontSize:'11px', color:'#9AA5B8' }}>Answers listed at end</div>
+  </div>
+  <div onClick={() => setAnswerKey(v => !v)}
+    style={{ width:'44px', height:'24px', borderRadius:'12px', background:answerKey?'#4A7FD4':'#DEE2E6', cursor:'pointer', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
+    <div style={{ position:'absolute', top:'3px', left:answerKey?'22px':'3px', width:'18px', height:'18px', borderRadius:'50%', background:'white', transition:'left 0.2s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+  </div>
+</div>
+
+{/* Hints */}
+<div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', background:'#F8F9FB', borderRadius:'8px' }}>
+  <div>
+    <div style={{ fontWeight:700, fontSize:'13px', color:'#1E2D4E' }}>Include Hints</div>
+    <div style={{ fontSize:'11px', color:'#9AA5B8' }}>Small hint below each question</div>
+  </div>
+  <div onClick={() => setIncludeHints(v => !v)}
+    style={{ width:'44px', height:'24px', borderRadius:'12px', background:includeHints?'#F5A623':'#DEE2E6', cursor:'pointer', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
+    <div style={{ position:'absolute', top:'3px', left:includeHints?'22px':'3px', width:'18px', height:'18px', borderRadius:'50%', background:'white', transition:'left 0.2s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+  </div>
+</div>
+
+{/* Solution steps */}
+<div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', background:'#F8F9FB', borderRadius:'8px' }}>
+  <div>
+    <div style={{ fontWeight:700, fontSize:'13px', color:'#1E2D4E' }}>Full Solution Steps</div>
+    <div style={{ fontSize:'11px', color:'#9AA5B8' }}>Step-by-step explanations at end</div>
+  </div>
+  <div onClick={() => setSolutionSteps(v => !v)}
+    style={{ width:'44px', height:'24px', borderRadius:'12px', background:solutionSteps?'#27AE60':'#DEE2E6', cursor:'pointer', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
+    <div style={{ position:'absolute', top:'3px', left:solutionSteps?'22px':'3px', width:'18px', height:'18px', borderRadius:'50%', background:'white', transition:'left 0.2s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+  </div>
+</div>
                 </div>
               </div>
             </div>
@@ -282,7 +310,9 @@ function WorksheetBuilder() {
                 { label: 'Difficulty', value: difficulty.charAt(0).toUpperCase() + difficulty.slice(1) },
                 { label: 'Questions',  value: `${questionCount} questions` },
                 { label: 'Language',   value: langMode === 'bilingual' ? '🌐 Bilingual' : langMode === 'he_only' ? '🇮🇱 Hebrew' : '🇺🇸 English' },
-                { label: 'Answer Key', value: answerKey ? '✅ Included' : '❌ Not included' },
+                { label: 'Answer Key',     value: answerKey     ? '✅ Included' : '❌ Not included' },
+                { label: 'Hints',          value: includeHints  ? '✅ Included' : '❌ Not included' },
+                { label: 'Solution Steps', value: solutionSteps ? '✅ Included' : '❌ Not included' },
               ].map(item => (
                 <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid #EEF1F6', fontSize: '13px' }}>
                   <span style={{ color: '#9AA5B8', fontWeight: 700 }}>{item.label}</span>
