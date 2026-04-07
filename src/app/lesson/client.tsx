@@ -358,11 +358,11 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
             {currentQ.options.map((opt: any) => {
               const isCorrect = opt.isCorrect && answered
               const isWrong = selected === opt.label && !opt.isCorrect && answered
-              const displayVal = isHE && opt.value_he ? opt.value_he : opt.value_en
+              const displayVal = (isHE && opt.value_he) ? opt.value_he : (opt.value_en || opt.value_he || '')
               return (
                 <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
                   style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'10px 14px', cursor:answered?'default':'pointer', fontSize:'13px', fontWeight:700, display:'flex', alignItems:'center', gap:'10px', color:T.text, textAlign:isRTL?'right':'left', direction:isRTL?'rtl':'ltr', fontFamily:isRTL?'"Times New Roman",serif':'"Nunito",sans-serif' }}>
-                  <span style={{ width:'22px', height:'22px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'7px', flexShrink:0 }}>{opt.label}</span>
+                  <span style={{ width:'22px', height:'22px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'"Noto Serif Hebrew","Times New Roman",serif', fontSize:'11px', flexShrink:0 }}>{opt.label}</span>
                   {displayVal}
                 </button>
               )
@@ -409,9 +409,9 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
 
 export default function LessonClient({ child, topic, questions, passage, passageQuestions, isReadingTopic, allTopics, subjects, progress, difficulty }: any) {
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
-  const theme = (urlParams?.get('theme') || child?.theme || 'plain') as string
-  const token = urlParams?.get('token') || ''
-  const langMode = (urlParams?.get('lang') || child?.lang_screen || 'bilingual') as string
+const theme = (urlParams?.get('theme') || child?.theme || 'plain') as string
+const token = urlParams?.get('token') || ''
+const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') as string
   const T = THEMES[theme] || THEMES.plain
   const TD = MASCOTS[theme] || MASCOTS.plain
   const subjSlug = topic?.subject?.slug || 'math'
