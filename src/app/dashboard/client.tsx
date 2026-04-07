@@ -355,6 +355,7 @@ export default function DashboardClient({ data }: { data: any }) {
     {/* Grade Management */}
     <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
       <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', color:'#1E2D4E', marginBottom:'4px' }}>🎓 Manage Children</h3>
+<p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Update grade and PIN for each child.</p>
       <p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Update each child's grade level.</p>
       <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
         {(children || []).map((child: any, i: number) => {
@@ -364,7 +365,7 @@ export default function DashboardClient({ data }: { data: any }) {
               <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0 }}>{col.emoji}</div>
               <div style={{ flex:1 }}>
                 <div style={{ fontWeight:800, fontSize:'14px', color:'#1E2D4E' }}>{child.display_name}</div>
-                <div style={{ fontSize:'12px', color:'#9AA5B8' }}>Current: Grade {child.grade === 0 ? 'K' : child.grade}</div>
+<div style={{ fontSize:'12px', color:'#9AA5B8' }}>Grade {child.grade === 0 ? 'K' : child.grade} · PIN: {child.pin_code || '----'}</div>
               </div>
               <select
                 defaultValue={child.grade}
@@ -387,6 +388,24 @@ export default function DashboardClient({ data }: { data: any }) {
                 <option value={5}>Grade 5</option>
                 <option value={6}>Grade 6</option>
               </select>
+<input
+  type="text"
+  maxLength={4}
+  defaultValue={child.pin_code || ''}
+  placeholder="PIN"
+  onBlur={async (e) => {
+    const newPin = e.target.value.trim()
+    if (newPin.length === 4 && /^\d{4}$/.test(newPin)) {
+      await fetch('/api/children', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child.id, pin_code: newPin }),
+      })
+      showToast('🔢', `${child.display_name}'s PIN updated!`)
+    }
+  }}
+  style={{ width:'64px', padding:'6px 10px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'14px', color:'#1E2D4E', textAlign:'center', letterSpacing:'4px' }}
+/>
             </div>
           )
         })}
