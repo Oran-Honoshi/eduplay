@@ -24,9 +24,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Award XP if correct
-    if (correct) {
-      await supabase.rpc('award_xp', { p_child_id: childId, p_amount: 25 })
-    }
+if (correct) {
+  await supabase.rpc('award_xp', { p_child_id: childId, p_amount: 25 })
+}
+
+// Always update streak on activity
+await supabase.rpc('update_streak', { p_child_id: childId })
+    
 
     // Upsert topic progress — saves mid-lesson position
     const { data: existing } = await supabase
