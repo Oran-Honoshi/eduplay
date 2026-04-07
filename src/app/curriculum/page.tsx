@@ -124,7 +124,13 @@ export default function CurriculumPage() {
                   : `${topics.length} נושאים זמינים ל${GRADE_LABELS_HE[selectedGrade]}`}
               </div>
             </div>
-            <button onClick={() => window.location.href=`/lesson?childId=${childForGrade.id}`}
+            <button onClick={() => {
+  const firstTopic = topics[0]
+  const url = firstTopic 
+    ? `/lesson?childId=${childForGrade.id}&topicId=${firstTopic.id}`
+    : `/lesson?childId=${childForGrade.id}`
+  window.location.href = url
+}}
               style={{ marginLeft:'auto', padding:'8px 18px', borderRadius:'50px', border:'none', background:selectedSubject.color, color:'white', fontWeight:800, fontSize:'12px', cursor:'pointer' }}>
               ▶ {langMode==='en'?'Start Lesson':'התחל שיעור'}
             </button>
