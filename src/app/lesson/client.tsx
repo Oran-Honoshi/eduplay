@@ -188,11 +188,12 @@ export default function LessonClient({ child, topic, questions, progress, allTop
               {currentQ.options && (
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'12px' }}>
                   {currentQ.options.map((opt: any) => {
-                    const isCorrect = opt.isCorrect && answered
-                    const isWrong = selected===opt.label && !opt.isCorrect && answered
+                    const isCorrect = opt.isCorrect && answered && selected !== null
+const isWrong = selected===opt.label && !opt.isCorrect && answered
+const showGreen = isCorrect && selected !== null
                     return (
                       <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
-                        style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'12px 14px', cursor:answered?'default':'pointer', fontFamily:'Georgia,serif', fontSize:'16px', fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'10px', color:T.text }}>
+                        style={{ background:showGreen?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${showGreen?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'12px 14px', cursor:answered?'default':'pointer', fontFamily:'Georgia,serif', fontSize:'16px', fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'10px', color:T.text }}>
                         <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'7px', flexShrink:0 }}>{opt.label}</span>
                         {opt.value_en.includes('/')?<Fraction n={opt.value_en.split('/')[0]} d={opt.value_en.split('/')[1]} size={18}/>:opt.value_en}
                       </button>
