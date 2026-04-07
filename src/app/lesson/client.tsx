@@ -469,9 +469,16 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
   }
 
   function goBack() {
-    if (token) window.location.href = `/play/${token}`
-    else window.location.href = '/dashboard'
+  if (currentStep > 0) {
+    fetch('/api/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: currentStep, totalSteps }),
+    }).catch(() => {})
   }
+  if (token) window.location.href = `/play/${token}`
+  else window.location.href = '/dashboard'
+}
 
   function showXP(text: string) {
     setXpNotif(text)
@@ -501,16 +508,25 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
         await fetch('/api/progress', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ childId: child?.id, questionId: currentQ.id, topicId: topic?.id, answerGiven: opt.label, correct, hintUsed: hintVisible }),
+          body: JSON.stringify({ childId: child?.id, questionId: currentQ.id, topicId: topic?.id, answerGiven: opt.label, correct, hintUsed: hintVisible, stepNumber: currentStep, totalSteps }),
         })
       } catch {}
     }
   }
 
   function nextStep() {
-    if (!answered) { setPip('⚠️ Answer the question first!'); return }
-    const next = currentStep + 1
-    if (next >= totalSteps) { setCompleted(true); return }
+  if (!answered) { setPip('⚠️ Answer the question first!'); return }
+  const next = currentStep + 1
+  if (next >= totalSteps) {
+    // Mark as completed
+    fetch('/api/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: totalSteps, totalSteps }),
+    }).catch(() => {})
+    setCompleted(true)
+    return
+  }
     setCurrentStep(next)
     setQIndex(i => Math.min(i + 1, questions.length - 1))
     setAnswered(false); setSelected(null); setFeedback(null); setHint(false)
