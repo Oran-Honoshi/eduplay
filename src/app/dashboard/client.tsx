@@ -323,9 +323,40 @@ export default function DashboardClient({ data }: { data: any }) {
 )}
 
           
-          {screen === 'account' && (
-            <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
-              <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>⚙️ Account</h1>
+         {screen === 'account' && (
+  <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+    <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>⚙️ Account</h1>
+
+    {/* Shareable child links */}
+    <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
+      <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', color:'#1E2D4E', marginBottom:'4px' }}>🔗 Child Links</h3>
+      <p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Share these links with your children — each link opens their personal learning portal.</p>
+      <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+        {(children || []).map((child: any, i: number) => {
+          const col = CHILD_COLORS[i % CHILD_COLORS.length]
+          const link = `${typeof window !== 'undefined' ? window.location.origin : 'https://eduplay-tau.vercel.app'}/play/${child.access_token}`
+          return (
+            <div key={child.id} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 14px', background:'#F8F9FB', borderRadius:'10px', border:'1px solid #EEF1F6' }}>
+              <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', flexShrink:0 }}>{col.emoji}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontWeight:800, fontSize:'13px', color:'#1E2D4E', marginBottom:'2px' }}>{child.display_name} — Grade {child.grade}</div>
+                <div style={{ fontSize:'11px', color:'#9AA5B8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{link}</div>
+              </div>
+              <div style={{ display:'flex', gap:'6px', flexShrink:0 }}>
+                <button onClick={() => { navigator.clipboard.writeText(link); showToast('🔗', `${child.display_name}'s link copied!`) }}
+                  style={{ padding:'6px 12px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'11px', cursor:'pointer' }}>
+                  📋 Copy
+                </button>
+                <button onClick={() => window.open(link, '_blank')}
+                  style={{ padding:'6px 12px', borderRadius:'50px', border:'1px solid #EEF1F6', background:'white', color:'#4B5563', fontWeight:800, fontSize:'11px', cursor:'pointer' }}>
+                  👁️ Open
+                </button>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
               <div style={{ background:'linear-gradient(135deg,#1E2D4E,#2C3E6B)', borderRadius:'20px', padding:'24px', color:'white', maxWidth:'400px' }}>
                 <div style={{ fontSize:'11px', fontWeight:700, opacity:.6, letterSpacing:'1px', textTransform:'uppercase' }}>Current Plan</div>
                 <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'18px', margin:'4px 0' }}>Family Plan</h3>
