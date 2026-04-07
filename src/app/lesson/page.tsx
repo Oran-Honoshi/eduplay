@@ -3,7 +3,7 @@ import LessonClient from './client'
 import { redirect } from 'next/navigation'
 
 interface Props {
-  searchParams: { topicId?: string; childId?: string; difficulty?: string; theme?: string }
+  searchParams: { topicId?: string; childId?: string; difficulty?: string; theme?: string; lang?: string }
 }
 
 export default async function LessonPage({ searchParams }: Props) {
@@ -11,18 +11,15 @@ export default async function LessonPage({ searchParams }: Props) {
   const childId    = searchParams.childId || '22222222-2222-2222-2222-222222222002'
   const difficulty = searchParams.difficulty || 'easy'
 
-  // Fetch child
   const { data: child } = await supabase
     .from('children').select('*').eq('id', childId).single()
 
   if (!child) redirect('/dashboard')
 
-  // Override theme from URL if provided
-  if (searchParams.theme) {
-    child.theme = searchParams.theme
-  }
+  if (searchParams.theme) child.theme = searchParams.theme
+  if (searchParams.lang)  child.lang_screen = searchParams.lang
 
-  // Fetch topic
+  // Fetch requested topic
   let topic: any = null
   if (searchParams.topicId) {
     const { data: t } = await supabase
@@ -33,7 +30,7 @@ export default async function LessonPage({ searchParams }: Props) {
     topic = t
   }
 
-  // If no topic specified, get first topic for child's grade
+  // Default to first topic for child's grade
   if (!topic) {
     const { data: t } = await supabase
       .from('topics')
@@ -54,21 +51,20 @@ export default async function LessonPage({ searchParams }: Props) {
     .eq('approved', true)
     .limit(10) : { data: [] }
 
-  // Fetch ALL topics for this child's grade AND same subject — for sidebar
-  const { data: subjectTopics } = topic ? await supabase
+  // Fetch ALL topics for this child's grade (all subjects) for sidebar
+  const { data: allTopics } = await supabase
     .from('topics')
-    .select('*')
-    .eq('subject_id', topic.subject_id)
+    .select('*, subject:subjects(*)')
     .eq('grade', child.grade)
-    .order('sort_order') : { data: [] }
+    .order('sort_order')
 
-  // Fetch all subjects for subject switcher
+  // Fetch all subjects
   const { data: subjects } = await supabase
     .from('subjects')
     .select('*')
     .order('sort_order')
 
-  // Fetch progress for this child
+  // Fetch progress
   const { data: progress } = await supabase
     .from('child_topic_progress')
     .select('*')
@@ -79,7 +75,7 @@ export default async function LessonPage({ searchParams }: Props) {
       child={child}
       topic={topic}
       questions={questions || []}
-      allTopics={subjectTopics || []}
+      allTopics={allTopics || []}
       subjects={subjects || []}
       progress={progress || []}
       difficulty={difficulty as 'easy' | 'medium' | 'hard'}
