@@ -155,7 +155,9 @@ export default function CurriculumPage() {
         ) : (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:'14px' }}>
             {topics.map((topic, i) => (
-              <div key={topic.id} style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'14px', padding:'16px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', position:'relative', overflow:'hidden' }}>
+              <div key={topic.id} 
+  onClick={() => childForGrade && (window.location.href = `/lesson?childId=${childForGrade.id}&topicId=${topic.id}`)}
+  style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'14px', padding:'16px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', position:'relative', overflow:'hidden', cursor:childForGrade?'pointer':'default' }}>
                 <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', background:selectedSubject.color }}/>
                 <div style={{ display:'flex', alignItems:'flex-start', gap:'10px' }}>
                   <div style={{ width:'32px', height:'32px', background:`${selectedSubject.color}20`, borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'13px', color:selectedSubject.color, flexShrink:0 }}>
