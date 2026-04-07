@@ -129,7 +129,7 @@ function generateBuilderHTML({ child, topics, questions, difficulty, langMode, i
       const boxes = Array.from({ length: d }, (_: any, idx: number) =>
         `<div class="vis-box ${idx < n ? 'filled' : ''}"></div>`
       ).join('')
-      visualHTML = `<div class="visual-row">${boxes}<span class="visual-eql">= ${renderFraction(`${n}/${d}`)}</span></div>`
+      visualHTML = `<div class="visual-row">${boxes}</div>`
     }
 
     // Options or answer line
