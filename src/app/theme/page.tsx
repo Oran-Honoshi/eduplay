@@ -77,6 +77,7 @@ function ThemeSelector() {
   const childId   = searchParams.get('childId') || ''
   const childName = searchParams.get('name') || 'there'
   const current   = searchParams.get('current') || 'plain'
+  const returnTo  = searchParams.get('returnTo') || `/lesson?childId=${childId}`
 
   const [selected, setSelected]   = useState(current)
   const [saving, setSaving]       = useState(false)
@@ -84,7 +85,7 @@ function ThemeSelector() {
 
   async function saveTheme() {
     if (selected === current) {
-      window.location.href = `/lesson?childId=${childId}`
+      window.location.href = returnTo
       return
     }
     setSaving(true)
@@ -185,7 +186,7 @@ function ThemeSelector() {
         </button>
 
         <button
-          onClick={() => window.location.href = `/lesson?childId=${childId}`}
+          onClick={() => window.location.href = returnTo}
           style={{ display: 'block', margin: '12px auto 0', background: 'transparent', border: 'none', color: selectedTheme.text, opacity: .7, fontSize: '13px', cursor: 'pointer', fontFamily: '"Nunito", sans-serif' }}>
           ← Back without changing
         </button>
