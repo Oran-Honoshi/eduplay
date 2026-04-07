@@ -39,6 +39,15 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Update last topic on child record
+    await supabase
+      .from('children')
+      .update({
+        last_topic_id: topicId,
+        last_active_at: new Date().toISOString(),
+      })
+      .eq('id', childId)
+
     return NextResponse.json({ success: true, xpAwarded: correct ? 25 : 0 })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
