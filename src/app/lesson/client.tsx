@@ -37,7 +37,6 @@ const SUBJECT_ICONS: any = {
 
 function getLearnContent(topic: any, T: any) {
   const slug = topic?.slug || ''
-  const title = topic?.title_en || ''
 
   if (slug.includes('fraction') || slug.includes('equivalent') || slug.includes('comparing_fraction') || slug.includes('fraction_addition')) {
     return (
@@ -67,7 +66,7 @@ function getLearnContent(topic: any, T: any) {
     )
   }
 
-  if (slug.includes('decimal') || slug.includes('decimal_fraction')) {
+  if (slug.includes('decimal')) {
     return (
       <>
         <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}><strong style={{ color:T.text }}>Decimals</strong> represent parts of a whole using a point.</p>
@@ -84,19 +83,19 @@ function getLearnContent(topic: any, T: any) {
       <>
         <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>In <strong style={{ color:T.text }}>algebra</strong>, letters stand for unknown numbers.</p>
         <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'18px' }}>
-          x + 5 = 12 &nbsp;→&nbsp; x = 7
+          x + 5 = 12 → x = 7
         </div>
         <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>Do the <strong style={{ color:T.accent3 }}>opposite operation</strong> on both sides to solve.</p>
       </>
     )
   }
 
-  if (slug.includes('geometry') || slug.includes('shape') || slug.includes('area') || slug.includes('perimeter') || slug.includes('volume') || slug.includes('surface')) {
+  if (slug.includes('geometry') || slug.includes('shape') || slug.includes('area') || slug.includes('perimeter') || slug.includes('volume') || slug.includes('surface') || slug.includes('triangle')) {
     return (
       <>
         <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}><strong style={{ color:T.text }}>Area</strong> = length × width. <strong style={{ color:T.text }}>Perimeter</strong> = sum of all sides.</p>
         <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'13px' }}>
-          📐 Rectangle: A = l × w &nbsp;|&nbsp; 📐 Triangle: A = ½ × b × h
+          📐 Rectangle: A = l × w | Triangle: A = ½ × b × h
         </div>
         <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>Volume of a box = <strong style={{ color:T.accent3 }}>l × w × h</strong></p>
       </>
@@ -115,14 +114,14 @@ function getLearnContent(topic: any, T: any) {
     )
   }
 
-  if (slug.includes('multiplication') || slug.includes('times_table') || slug.includes('division')) {
+  if (slug.includes('multiplication') || slug.includes('times_table') || slug.includes('division') || slug.includes('averages')) {
     return (
       <>
         <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}><strong style={{ color:T.text }}>Multiplication</strong> is repeated addition. <strong style={{ color:T.text }}>Division</strong> is equal sharing.</p>
         <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'18px' }}>
-          4 × 3 = 12 &nbsp;|&nbsp; 12 ÷ 3 = 4
+          4 × 3 = 12 | 12 ÷ 3 = 4
         </div>
-        <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>Multiplication and division are <strong style={{ color:T.accent3 }}>opposite operations</strong>.</p>
+        <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>Average = <strong style={{ color:T.accent3 }}>sum of all numbers ÷ count</strong></p>
       </>
     )
   }
@@ -132,21 +131,9 @@ function getLearnContent(topic: any, T: any) {
       <>
         <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}><strong style={{ color:T.text }}>Addition</strong> puts numbers together. <strong style={{ color:T.text }}>Subtraction</strong> takes away.</p>
         <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'18px' }}>
-          7 + 5 = 12 &nbsp;|&nbsp; 12 − 5 = 7
+          7 + 5 = 12 | 12 − 5 = 7
         </div>
-        <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>They are <strong style={{ color:T.accent3 }}>opposite operations</strong> — they undo each other.</p>
-      </>
-    )
-  }
-
-  if (slug.includes('prime') || slug.includes('factor')) {
-    return (
-      <>
-        <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>A <strong style={{ color:T.text }}>prime number</strong> has exactly 2 factors: 1 and itself.</p>
-        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'15px' }}>
-          Prime: 2, 3, 5, 7, 11, 13, 17, 19...
-        </div>
-        <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>1 is NOT prime. 2 is the only <strong style={{ color:T.accent3 }}>even prime</strong>.</p>
+        <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>They are <strong style={{ color:T.accent3 }}>opposite operations</strong>.</p>
       </>
     )
   }
@@ -163,7 +150,7 @@ function getLearnContent(topic: any, T: any) {
     )
   }
 
-  if (slug.includes('grammar') || slug.includes('noun') || slug.includes('verb') || slug.includes('sentence') || slug.includes('clause')) {
+  if (slug.includes('grammar') || slug.includes('noun') || slug.includes('verb') || slug.includes('sentence') || slug.includes('clause') || slug.includes('dikduk') || slug.includes('binyan') || slug.includes('paal')) {
     return (
       <>
         <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>Every sentence needs a <strong style={{ color:T.text }}>subject</strong> (who) and a <strong style={{ color:T.text }}>verb</strong> (action).</p>
@@ -176,22 +163,19 @@ function getLearnContent(topic: any, T: any) {
     )
   }
 
-  if (slug.includes('reading') || slug.includes('comprehension') || slug.includes('story') || slug.includes('text') || slug.includes('literature')) {
+  if (slug.includes('aleph') || slug.includes('nikud') || slug.includes('kriya') || slug.includes('ktiva')) {
     return (
       <>
-        <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>Good readers ask themselves questions as they read.</p>
-        <div style={{ padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'13px', lineHeight:1.8 }}>
-          <div>📖 <strong>Who</strong> is in the story?</div>
-          <div>📍 <strong>Where</strong> does it happen?</div>
-          <div>❓ <strong>What</strong> is the problem?</div>
-          <div>💡 <strong>Why</strong> do characters act this way?</div>
+        <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>עברית כתובה מ<strong style={{ color:T.text }}>ימין לשמאל</strong> ויש בה 22 אותיות.</p>
+        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'22px', fontFamily:'serif', direction:'rtl', letterSpacing:'6px' }}>
+          א ב ג ד ה ו ז ח ט י
         </div>
-        <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>Find <strong style={{ color:T.accent3 }}>clues in the text</strong> to support your answers.</p>
+        <p style={{ fontSize:'13px', color:T.text2, margin:0, direction:'rtl', textAlign:'right' }}>הניקוד עוזר לנו לדעת איך לבטא את המילים.</p>
       </>
     )
   }
 
-  if (slug.includes('writing') || slug.includes('essay') || slug.includes('composition') || slug.includes('paragraph')) {
+  if (slug.includes('writing') || slug.includes('essay') || slug.includes('composition') || slug.includes('paragraph') || slug.includes('ktiva')) {
     return (
       <>
         <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>Good writing has a clear <strong style={{ color:T.text }}>beginning, middle and end</strong>.</p>
@@ -200,21 +184,6 @@ function getLearnContent(topic: any, T: any) {
           <div>📝 <strong>Body</strong> — develop your ideas</div>
           <div>🏁 <strong>Conclusion</strong> — summarise and close</div>
         </div>
-        <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>Start each paragraph with a <strong style={{ color:T.accent3 }}>topic sentence</strong>.</p>
-      </>
-    )
-  }
-
-  if (slug.includes('aleph') || slug.includes('nikud') || slug.includes('hebrew') || slug.includes('kriya') || slug.includes('ktiva') || slug.includes('binyan') || slug.includes('paal') || slug.includes('dikduk')) {
-    return (
-      <>
-        <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>עברית כתובה מ<strong style={{ color:T.text }}>ימין לשמאל</strong> ויש בה 22 אותיות.</p>
-        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'22px', fontFamily:'serif', direction:'rtl', letterSpacing:'6px' }}>
-          א ב ג ד ה ו ז ח ט י
-        </div>
-        <p style={{ fontSize:'13px', color:T.text2, margin:0, direction:'rtl', textAlign:'right' }}>
-          הניקוד עוזר לנו לדעת איך לבטא את המילים.
-        </p>
       </>
     )
   }
@@ -228,61 +197,226 @@ function getLearnContent(topic: any, T: any) {
           <div>🔤 Break words into <strong>prefix + root + suffix</strong></div>
           <div>📚 Use a dictionary when unsure</div>
         </div>
-        <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>The more you read, the more words you learn!</p>
       </>
     )
   }
 
-  // Default — generic for any topic
+  // Default
   return (
     <>
       <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>
-        <strong style={{ color:T.text }}>{title}</strong> — work through the practice questions to master this topic.
+        <strong style={{ color:T.text }}>{topic?.title_en}</strong> — work through the practice questions to master this topic.
       </p>
       <div style={{ padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text2, fontSize:'13px', lineHeight:1.8 }}>
         <div>📖 Read each question carefully</div>
         <div>💡 Use the hint if you need help</div>
         <div>⭐ Earn XP for every correct answer</div>
       </div>
-      <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>
-        {topic?.description_en || 'Practice makes perfect!'}
-      </p>
+      <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>{topic?.description_en || 'Practice makes perfect!'}</p>
     </>
   )
 }
 
-export default function LessonClient({ child, topic, questions, allTopics, subjects, progress, difficulty }: any) {
+// ── PASSAGE READER COMPONENT ─────────────────────────────────
+function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic, subjColor, token, theme }: any) {
+  const [phase, setPhase] = useState<'reading'|'questions'>('reading')
+  const [qIndex, setQIndex] = useState(0)
+  const [answered, setAnswered] = useState(false)
+  const [selected, setSelected] = useState<string|null>(null)
+  const [feedback, setFeedback] = useState<any>(null)
+  const [score, setScore] = useState(0)
+  const [done, setDone] = useState(false)
+
+  const currentQ = questions[qIndex]
+  const isRTL = passage?.is_rtl && isHE
+
+  function checkAnswer(opt: any) {
+    if (answered) return
+    setAnswered(true)
+    setSelected(opt.label)
+    const correct = opt.isCorrect
+    if (correct) setScore(s => s + 1)
+    setFeedback({ correct, explanation: correct ? '✅ ' + (UI.correct) : '❌ ' + (UI.notQuite) })
+  }
+
+  function next() {
+    if (qIndex + 1 >= questions.length) {
+      setDone(true)
+    } else {
+      setQIndex(i => i + 1)
+      setAnswered(false)
+      setSelected(null)
+      setFeedback(null)
+    }
+  }
+
+  function goBack() {
+    if (token) window.location.href = `/play/${token}`
+    else window.location.href = '/dashboard'
+  }
+
+  if (done) {
+    return (
+      <div style={{ textAlign:'center', padding:'40px', background:T.panel, border:`2px solid ${T.accent2}`, borderRadius:T.radius, boxShadow:T.shadow }}>
+        <div style={{ fontSize:'48px', marginBottom:'12px' }}>🎉</div>
+        <h2 style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2, marginBottom:'8px' }}>{UI.complete}</h2>
+        <p style={{ fontSize:'14px', color:T.text2, marginBottom:'8px' }}>
+          {isHE ? `ענית נכון על ${score} מתוך ${questions.length} שאלות` : `You got ${score} out of ${questions.length} correct!`}
+        </p>
+        <div style={{ fontSize:'36px', margin:'12px 0' }}>
+          {score === questions.length ? '⭐⭐⭐' : score >= questions.length / 2 ? '⭐⭐' : '⭐'}
+        </div>
+        <div style={{ display:'flex', gap:'10px', justifyContent:'center', marginTop:'16px' }}>
+          <button onClick={goBack} style={{ padding:'10px 20px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.home}</button>
+          <button onClick={() => { setPhase('reading'); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null); setScore(0); setDone(false) }}
+            style={{ padding:'10px 20px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.again}</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'reading') {
+    return (
+      <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+        {/* Passage display */}
+        <div style={{ background:T.panel, border:`2px solid ${subjColor}`, borderRadius:T.radius, overflow:'hidden', boxShadow:T.shadow }}>
+          <div style={{ background:subjColor, padding:'12px 16px', display:'flex', alignItems:'center', gap:'10px' }}>
+            <span style={{ fontSize:'20px' }}>📖</span>
+            <div>
+              <div style={{ fontFamily:T.fontHead, fontSize:'8px', color:'white', opacity:.8 }}>{isHE ? 'קטע לקריאה' : 'READING PASSAGE'}</div>
+              <div style={{ fontWeight:800, fontSize:'14px', color:'white' }}>
+                {isHE && passage.title_he ? passage.title_he : passage.title_en}
+              </div>
+            </div>
+            <span style={{ marginLeft:'auto', fontSize:'10px', fontWeight:800, background:'rgba(255,255,255,0.2)', color:'white', padding:'3px 10px', borderRadius:'50px' }}>
+              {passage.passage_type}
+            </span>
+          </div>
+          <div style={{ padding:'20px', maxHeight:'420px', overflowY:'auto' }}>
+            {/* English content */}
+            {!isHE && passage.content_en && (
+              <p style={{ fontSize:'14px', lineHeight:1.9, color:T.text, margin:0, fontFamily:'"Georgia",serif' }}>
+                {passage.content_en}
+              </p>
+            )}
+            {/* Hebrew content */}
+            {isHE && passage.content_he && (
+              <p style={{ fontSize:'14px', lineHeight:1.9, color:T.text, margin:0, fontFamily:'"Times New Roman",serif', direction:'rtl', textAlign:'right' }}>
+                {passage.content_he}
+              </p>
+            )}
+            {/* Bilingual */}
+            {!isHE && langMode === 'bilingual' && passage.content_he && (
+              <div style={{ marginTop:'16px', padding:'14px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius }}>
+                <div style={{ fontSize:'10px', fontWeight:800, color:T.text2, marginBottom:'8px' }}>🇮🇱 {isHE ? '' : 'Hebrew'}</div>
+                <p style={{ fontSize:'13px', lineHeight:1.9, color:T.text2, margin:0, fontFamily:'"Times New Roman",serif', direction:'rtl', textAlign:'right' }}>
+                  {passage.content_he}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {questions.length > 0 && (
+          <button onClick={() => setPhase('questions')}
+            style={{ padding:'14px', background:`linear-gradient(135deg,${subjColor},${T.xp})`, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'9px', cursor:'pointer', boxShadow:T.btnShadow }}>
+            {isHE ? '← עבור לשאלות הבנה' : 'ANSWER COMPREHENSION QUESTIONS →'}
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  // Questions phase
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+      {/* Progress */}
+      <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+        <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.text2 }}>
+          {isHE ? `שאלה ${qIndex+1} מתוך ${questions.length}` : `Question ${qIndex+1} of ${questions.length}`}
+        </span>
+        <div style={{ flex:1, height:'8px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:`${((qIndex+1)/questions.length)*100}%`, background:subjColor, transition:'width 0.3s' }}/>
+        </div>
+        <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.accent2 }}>{score}/{questions.length}</span>
+      </div>
+
+      {/* Question */}
+      <div style={{ background:T.panel2, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
+        <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent4, marginBottom:'10px' }}>❓ {UI.practice}</div>
+
+        {currentQ?.prompt_en && !isHE && (
+          <p style={{ fontSize:'14px', fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5 }}>{currentQ.prompt_en}</p>
+        )}
+        {currentQ?.prompt_he && (isHE || langMode === 'bilingual') && (
+          <p style={{ fontSize:'13px', color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 10px', lineHeight:1.6 }}>{currentQ.prompt_he}</p>
+        )}
+
+        {/* Options */}
+        {currentQ?.options && (
+          <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'12px' }}>
+            {currentQ.options.map((opt: any) => {
+              const isCorrect = opt.isCorrect && answered
+              const isWrong = selected === opt.label && !opt.isCorrect && answered
+              const displayVal = isHE && opt.value_he ? opt.value_he : opt.value_en
+              return (
+                <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
+                  style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'10px 14px', cursor:answered?'default':'pointer', fontSize:'13px', fontWeight:700, display:'flex', alignItems:'center', gap:'10px', color:T.text, textAlign:isRTL?'right':'left', direction:isRTL?'rtl':'ltr', fontFamily:isRTL?'"Times New Roman",serif':'"Nunito",sans-serif' }}>
+                  <span style={{ width:'22px', height:'22px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'7px', flexShrink:0 }}>{opt.label}</span>
+                  {displayVal}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Hint */}
+        {currentQ?.hint_he && isHE && !answered && (
+          <div style={{ fontSize:'12px', color:T.accent2, padding:'6px 10px', background:`${T.accent2}15`, borderRadius:T.radius, marginBottom:'8px', direction:'rtl', textAlign:'right' }}>
+            💡 {currentQ.hint_he}
+          </div>
+        )}
+        {currentQ?.hint_en && !isHE && !answered && (
+          <div style={{ fontSize:'12px', color:T.accent2, padding:'6px 10px', background:`${T.accent2}15`, borderRadius:T.radius, marginBottom:'8px' }}>
+            💡 {currentQ.hint_en}
+          </div>
+        )}
+
+        {/* Feedback */}
+        {feedback && (
+          <div style={{ border:`2px solid ${feedback.correct?T.accent3:'#E03030'}`, background:feedback.correct?'rgba(0,200,83,0.1)':'rgba(224,48,48,0.1)', borderRadius:T.radius, padding:'10px 14px', marginBottom:'10px', fontSize:'13px', color:T.text2 }}>
+            {feedback.explanation}
+            {currentQ?.explanation_en && !isHE && (
+              <div style={{ marginTop:'6px', fontSize:'12px' }}>{currentQ.explanation_en}</div>
+            )}
+          </div>
+        )}
+
+        <div style={{ display:'flex', gap:'8px' }}>
+          <button onClick={() => setPhase('reading')} style={{ padding:'8px 12px', fontFamily:T.fontHead, fontSize:'6px', background:T.panel, border:`2px solid ${T.border}`, color:T.text2, borderRadius:T.radius, cursor:'pointer' }}>
+            📖 {isHE ? 'חזור לקטע' : 'RE-READ'}
+          </button>
+          {answered && (
+            <button onClick={next} style={{ flex:1, padding:'9px 16px', fontFamily:T.fontHead, fontSize:'7px', background:subjColor, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>
+              {qIndex + 1 >= questions.length ? (isHE ? 'סיים ✓' : 'FINISH ✓') : (isHE ? 'הבא ▶' : 'NEXT ▶')}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function LessonClient({ child, topic, questions, passage, passageQuestions, isReadingTopic, allTopics, subjects, progress, difficulty }: any) {
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
   const theme = (urlParams?.get('theme') || child?.theme || 'plain') as string
   const token = urlParams?.get('token') || ''
+  const langMode = (urlParams?.get('lang') || child?.lang_screen || 'bilingual') as string
   const T = THEMES[theme] || THEMES.plain
   const TD = MASCOTS[theme] || MASCOTS.plain
-  const langMode = (urlParams?.get('lang') || child?.lang_screen || 'bilingual') as string
-const isHE = langMode === 'he_only'
-const UI = {
-  learnThis:    isHE ? 'למד זאת' : 'LEARN THIS',
-  practice:     isHE ? 'שאלת תרגול' : 'PRACTICE QUESTION',
-  hint:         isHE ? 'רמז' : 'HINT',
-  correct:      isHE ? '!כל הכבוד' : 'CORRECT!',
-  notQuite:     isHE ? 'לא בדיוק!' : 'NOT QUITE!',
-  next:         isHE ? 'הבא ▶' : 'NEXT ▶',
-  back:         isHE ? '◀ חזור' : '◀ BACK',
-  noQuestions:  isHE ? 'אין שאלות עדיין' : 'NO QUESTIONS YET',
-  comingSoon:   isHE ? 'שאלות לנושא זה יתווספו בקרוב!' : 'Questions for this topic are coming soon!',
-  pipSays:      isHE ? 'פיפ אומר:' : 'PIP SAYS:',
-  topics:       isHE ? 'נושאים' : 'TOPICS',
-  subjects:     isHE ? 'מקצועות' : 'SUBJECTS',
-  step:         isHE ? 'שלב' : 'STEP',
-  home:         isHE ? 'בית' : 'HOME',
-  again:        isHE ? 'שוב' : 'AGAIN',
-  complete:     isHE ? '!השיעור הושלם' : 'LESSON COMPLETE! 🎉',
-  stars:        isHE ? 'כוכבים' : 'stars',
-  mastered:     isHE ? 'שלטת ב' : 'You mastered',
-  xpEarned:     isHE ? '!צברת 100 XP' : '+100 XP earned!',
-  inProgress:   isHE ? 'בתהליך' : 'In progress',
-}
   const subjSlug = topic?.subject?.slug || 'math'
   const subjColor = SUBJECT_COLORS[subjSlug] || T.accent1
+  const isHE = langMode === 'he_only'
 
   const progressMap: any = {}
   progress.forEach((p: any) => { progressMap[p.topic_id] = p })
@@ -302,20 +436,39 @@ const UI = {
   const currentQ = questions[qIndex]
   const progressPct = Math.round((currentStep / totalSteps) * 100)
 
+  const UI = {
+    learnThis:   isHE ? 'למד זאת' : 'LEARN THIS',
+    practice:    isHE ? 'שאלת תרגול' : 'PRACTICE QUESTION',
+    hint:        isHE ? 'רמז' : 'HINT',
+    correct:     isHE ? '!כל הכבוד' : 'CORRECT!',
+    notQuite:    isHE ? 'לא בדיוק!' : 'NOT QUITE!',
+    next:        isHE ? 'הבא ▶' : 'NEXT ▶',
+    back:        isHE ? '◀ חזור' : '◀ BACK',
+    noQuestions: isHE ? 'אין שאלות עדיין' : 'NO QUESTIONS YET',
+    comingSoon:  isHE ? 'שאלות לנושא זה יתווספו בקרוב!' : 'Questions coming soon!',
+    pipSays:     isHE ? 'פיפ אומר:' : 'PIP SAYS:',
+    topics:      isHE ? 'נושאים' : 'TOPICS',
+    subjects:    isHE ? 'מקצועות' : 'SUBJECTS',
+    step:        isHE ? 'שלב' : 'STEP',
+    home:        isHE ? 'בית' : 'HOME',
+    again:       isHE ? 'שוב' : 'AGAIN',
+    complete:    isHE ? '!השיעור הושלם' : 'LESSON COMPLETE! 🎉',
+    mastered:    isHE ? 'שלטת ב' : 'You mastered',
+    xpEarned:   isHE ? '!צברת 100 XP' : '+100 XP earned!',
+    inProgress:  isHE ? 'בתהליך' : 'In progress',
+  }
+
   function navigateToTopic(topicId: string) {
     const base = `/lesson?topicId=${topicId}&childId=${child?.id}`
     const themeParam = `&theme=${theme}`
     const tokenParam = token ? `&token=${token}` : ''
     const langParam  = `&lang=${langMode}`
     window.location.href = `${base}${themeParam}${tokenParam}${langParam}`
-}
+  }
 
   function goBack() {
-    if (token) {
-      window.location.href = `/play/${token}`
-    } else {
-      window.location.href = '/dashboard'
-    }
+    if (token) window.location.href = `/play/${token}`
+    else window.location.href = '/dashboard'
   }
 
   function showXP(text: string) {
@@ -338,7 +491,7 @@ const UI = {
     setSelected(opt.label)
     const correct = opt.isCorrect
     setFeedback({ correct, explanation: correct ? (currentQ.explanation_en || 'Correct! Well done!') : (currentQ.hint_en || 'Not quite — try the hint!') })
-    setPip(correct ? '🎉 Excellent! You nailed it!' : '💡 Don\'t give up — try again!')
+    setPip(correct ? '🎉 Excellent! You nailed it!' : '💡 Don\'t give up!')
     if (correct) {
       setXp((b: number) => b + 25)
       showXP('+25 XP ⬆')
@@ -379,7 +532,7 @@ const UI = {
             <p style={{ fontSize:'13px', color:T.text2, marginBottom:'20px' }}>{UI.mastered} <strong style={{ color:T.accent2 }}>{isHE ? topic?.title_he || topic?.title_en : topic?.title_en}</strong>!<br/>{UI.xpEarned}</p>
             <div style={{ display:'flex', gap:'10px' }}>
               <button onClick={goBack} style={{ flex:1, padding:'12px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.home}</button>
-<button onClick={() => { setCompleted(false); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.again}</button>
+              <button onClick={() => { setCompleted(false); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.again}</button>
             </div>
           </div>
         </div>
@@ -388,29 +541,29 @@ const UI = {
       {/* Header */}
       <header style={{ background:theme==='minecraft'?'rgba(0,0,0,0.75)':T.panel, borderBottom:`${theme==='minecraft'?4:1}px solid ${T.border}`, padding:'0 20px', height:'58px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100 }}>
         <div style={{ fontFamily:T.fontHead, fontSize:'13px', color:T.accent1 }}>Edu<span style={{ color:T.accent2 }}>Play</span></div>
-        <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
           <div style={{ display:'flex', gap:'3px' }}>{[...Array(5)].map((_,i) => <span key={i} style={{ fontSize:'14px', opacity:i<3?1:0.3 }}>❤️</span>)}</div>
           <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.xp }}>{xpBalance.toLocaleString()} XP</span>
-          <div style={{ display:'flex', gap:'6px', alignItems:'center' }}>
-  {['en_only','bilingual','he_only'].map(l => (
-    <button key={l}
-      onClick={() => window.location.href=`/lesson?topicId=${topic?.id}&childId=${child?.id}&theme=${theme}&lang=${l}${token?`&token=${token}`:''}`}
-      style={{ padding:'4px 8px', borderRadius:T.radius, border:`2px solid ${langMode===l?T.accent2:T.border}`, background:langMode===l?`${T.accent2}20`:T.panel, color:langMode===l?T.accent2:T.text2, fontFamily:T.fontHead, fontSize:'6px', cursor:'pointer' }}>
-      {l==='en_only'?'🇺🇸':l==='bilingual'?'🌐':'🇮🇱'}
-    </button>
-  ))}
-  <button onClick={() => window.location.href=`/theme?childId=${child?.id}&name=${child?.display_name}&current=${theme}${token?`&returnTo=/play/${token}`:''}`}
-    style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 10px', cursor:'pointer', color:T.text, boxShadow:T.btnShadow, fontFamily:T.fontHead, fontSize:'7px' }}>
-    🎨
-  </button>
-</div>
+          <div style={{ display:'flex', gap:'4px' }}>
+            {['en_only','bilingual','he_only'].map(l => (
+              <button key={l}
+                onClick={() => window.location.href=`/lesson?topicId=${topic?.id}&childId=${child?.id}&theme=${theme}&lang=${l}${token?`&token=${token}`:''}`}
+                style={{ padding:'3px 7px', borderRadius:T.radius, border:`2px solid ${langMode===l?T.accent2:T.border}`, background:langMode===l?`${T.accent2}20`:T.panel, color:langMode===l?T.accent2:T.text2, fontFamily:T.fontHead, fontSize:'6px', cursor:'pointer' }}>
+                {l==='en_only'?'🇺🇸':l==='bilingual'?'🌐':'🇮🇱'}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => window.location.href=`/theme?childId=${child?.id}&name=${child?.display_name}&current=${theme}${token?`&returnTo=/play/${token}`:''}`}
+            style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 9px', cursor:'pointer', color:T.text, boxShadow:T.btnShadow, fontFamily:T.fontHead, fontSize:'7px' }}>
+            🎨
+          </button>
         </div>
       </header>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 260px', gap:'14px', padding:'16px', maxWidth:'1200px', margin:'0 auto' }}>
         <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
 
-          {/* Progress bar */}
+          {/* Progress + back */}
           <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
             <button onClick={goBack} style={{ fontFamily:T.fontHead, fontSize:'7px', background:T.panel, border:`2px solid ${T.border}`, color:T.text, padding:'7px 10px', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, whiteSpace:'nowrap' }}>{UI.back}</button>
             <div style={{ flex:1, height:'10px', background:T.panel2, border:`2px solid ${T.border}`, borderRadius:T.radius, overflow:'hidden' }}>
@@ -419,103 +572,123 @@ const UI = {
             <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.accent2, whiteSpace:'nowrap' }}>{UI.step} {currentStep+1}/{totalSteps}</span>
           </div>
 
-          {/* Subject + topic header */}
-          <div style={{ display:'flex', alignItems:'center', gap:'10px', flexWrap:'wrap' }}>
+          {/* Subject + topic label */}
+          <div style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap' }}>
             <span style={{ fontSize:'11px', fontWeight:800, background:`${subjColor}20`, color:subjColor, padding:'3px 10px', borderRadius:'50px' }}>
-              {SUBJECT_ICONS[subjSlug]} {topic?.subject?.label_en}
+              {SUBJECT_ICONS[subjSlug]} {isHE ? topic?.subject?.label_he || topic?.subject?.label_en : topic?.subject?.label_en}
             </span>
-            <span style={{ fontFamily:T.fontHead, fontSize:'8px', color:T.accent2 }}>{topic?.title_en}</span>
-            {topic?.title_he && <span style={{ fontSize:'11px', color:T.text2, fontFamily:'serif', direction:'rtl' }}>{topic.title_he}</span>}
+            <span style={{ fontFamily:T.fontHead, fontSize:'8px', color:T.accent2 }}>
+              {isHE ? topic?.title_he || topic?.title_en : topic?.title_en}
+            </span>
           </div>
 
-          {/* Learn panel */}
-          <div style={{ background:T.panel, border:`${theme==='minecraft'?3:1}px solid ${T.border}`, borderRadius:T.radius, padding:'18px', boxShadow:T.shadow }}>
-            <div style={{ background:T.panel2, border:`2px solid ${T.border}`, borderLeft:`5px solid ${subjColor}`, padding:'14px', marginBottom:'12px' }}>
-              <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:subjColor, marginBottom:'8px' }}>📘 {UI.learnThis}</div>
-              {getLearnContent(topic, T)}
-            </div>
-            {langMode !== 'en_only' && topic?.description_he && (
-              <div style={{ padding:'8px 12px', fontSize:'13px', lineHeight:1.7, direction:'rtl', textAlign:'right', border:`1px solid ${T.border}`, borderRadius:T.radius, background:'rgba(0,0,0,0.03)', fontFamily:'"Times New Roman",serif', color:subjColor, marginBottom:'10px' }}>
-                🇮🇱 {topic.description_he}
-              </div>
-            )}
-            <div style={{ display:'flex', gap:'8px' }}>
-              <button onClick={() => speak(topic?.description_en || topic?.title_en || '', 'en')} style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 10px', cursor:'pointer', fontSize:'12px', color:T.text, boxShadow:T.btnShadow }}>
-                🔊 <span style={{ background:T.accent3, color:'#000', borderRadius:'4px', padding:'1px 7px', fontSize:'10px', fontWeight:800 }}>EN</span>
-              </button>
-              {langMode !== 'en_only' && (
-                <button onClick={() => speak(topic?.description_he || topic?.title_he || '', 'he')} style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 10px', cursor:'pointer', fontSize:'12px', color:T.text, boxShadow:T.btnShadow }}>
-                  🔊 <span style={{ background:T.accent2, color:'#000', borderRadius:'4px', padding:'1px 7px', fontSize:'10px', fontWeight:800 }}>עב</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Question panel */}
-          {currentQ ? (
-            <div style={{ background:T.panel2, border:`${theme==='minecraft'?3:2}px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
-              <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent4, marginBottom:'10px' }}>⚔️ {UI.practice}</div>
-              <div style={{ marginBottom:'10px' }}>
-                {langMode !== 'he_only' && <p style={{ fontSize:'14px', fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>}
-                {langMode !== 'en_only' && currentQ.prompt_he && (
-                  <p style={{ fontSize:'13px', color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:0 }}>{currentQ.prompt_he}</p>
-                )}
-              </div>
-
-              {currentQ.visual_data?.type === 'fraction' && (
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'5px', padding:'12px', background:T.panel, border:`2px dashed ${T.border}`, borderRadius:T.radius, marginBottom:'12px', flexWrap:'wrap' }}>
-                  {[...Array(currentQ.visual_data.d||8)].map((_,i) => (
-                    <div key={i} style={{ width:'26px', height:'26px', background:i<(currentQ.visual_data.n||3)?subjColor:'transparent', border:`2px solid ${T.border}`, borderRadius:'4px' }}/>
-                  ))}
-                </div>
-              )}
-
-              {currentQ.options && (
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'12px' }}>
-                  {currentQ.options.map((opt: any) => {
-                    const isCorrect = opt.isCorrect && answered
-                    const isWrong = selected===opt.label && !opt.isCorrect && answered
-                    return (
-                      <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
-                        style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'11px 12px', cursor:answered?'default':'pointer', fontFamily:'Georgia,serif', fontSize:'15px', fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text }}>
-                        <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'7px', flexShrink:0 }}>{opt.label}</span>
-                        {opt.value_en}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-
-              {hintVisible && currentQ.hint_en && (
-                <div style={{ background:'rgba(255,215,0,0.07)', border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'10px 12px', marginBottom:'10px' }}>
-                  <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent2, marginBottom:'4px' }}>💡 {UI.hint}</div>
-                  <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>{currentQ.hint_en}</p>
-                </div>
-              )}
-
-              {feedback && (
-                <div style={{ border:`2px solid ${feedback.correct?T.accent3:'#E03030'}`, background:feedback.correct?'rgba(0,200,83,0.1)':'rgba(224,48,48,0.1)', borderRadius:T.radius, padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:'10px', marginBottom:'10px' }}>
-                  <span style={{ fontSize:'24px' }}>{feedback.correct?'🎉':'💔'}</span>
-                  <div>
-                    <div style={{ fontFamily:T.fontHead, fontSize:'8px', color:feedback.correct?T.accent3:'#E03030', marginBottom:'3px' }}>{feedback.correct?UI.correct:UI.notQuite}</div>
-                    <div style={{ fontSize:'12px', color:T.text2, lineHeight:1.6 }}>{feedback.explanation}</div>
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display:'flex', gap:'8px' }}>
-                <button onClick={() => setHint(v=>!v)} style={{ padding:'9px 14px', fontFamily:T.fontHead, fontSize:'7px', background:T.panel, border:`2px solid ${T.accent2}`, color:T.accent2, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>💡</button>
-                <button onClick={() => { setQIndex(i=>(i+1)%Math.max(questions.length,1)); setAnswered(false); setSelected(null); setFeedback(null); setHint(false) }} style={{ padding:'9px 14px', fontFamily:T.fontHead, fontSize:'7px', background:T.panel, border:`2px solid ${T.accent3}`, color:T.accent3, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>🔄</button>
-                <button onClick={nextStep} style={{ padding:'9px 16px', fontFamily:T.fontHead, fontSize:'7px', background:T.accent1, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, flex:1 }}>{UI.next}</button>
-              </div>
+          {/* READING TOPIC — show passage reader */}
+          {isReadingTopic && passage ? (
+            <PassageReader
+              passage={passage}
+              questions={passageQuestions}
+              T={T} langMode={langMode} isHE={isHE} UI={UI}
+              child={child} topic={topic} subjColor={subjColor}
+              token={token} theme={theme}
+            />
+          ) : isReadingTopic && !passage ? (
+            <div style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'32px', textAlign:'center', color:T.text2 }}>
+              <div style={{ fontSize:'40px', marginBottom:'12px' }}>📖</div>
+              <div style={{ fontFamily:T.fontHead, fontSize:'9px', color:T.accent2, marginBottom:'8px' }}>READING PASSAGES COMING SOON</div>
+              <p style={{ fontSize:'13px' }}>Reading passages for this topic are being prepared. Check back soon!</p>
             </div>
           ) : (
-            <div style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'24px', textAlign:'center', color:T.text2 }}>
-              <div style={{ fontSize:'32px', marginBottom:'12px' }}>📚</div>
-              <div style={{ fontFamily:T.fontHead, fontSize:'9px', color:T.accent2, marginBottom:'8px' }}>NO QUESTIONS YET</div>
-              <p style={{ fontSize:'13px' }}>Questions for this topic are coming soon!</p>
-              <button onClick={goBack} style={{ marginTop:'12px', padding:'8px 20px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'7px', cursor:'pointer' }}>BACK</button>
-            </div>
+            <>
+              {/* Regular topic — learn panel */}
+              <div style={{ background:T.panel, border:`${theme==='minecraft'?3:1}px solid ${T.border}`, borderRadius:T.radius, padding:'18px', boxShadow:T.shadow }}>
+                <div style={{ background:T.panel2, border:`2px solid ${T.border}`, borderLeft:`5px solid ${subjColor}`, padding:'14px', marginBottom:'12px' }}>
+                  <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:subjColor, marginBottom:'8px' }}>📘 {UI.learnThis}</div>
+                  {getLearnContent(topic, T)}
+                </div>
+                {langMode !== 'en_only' && topic?.description_he && (
+                  <div style={{ padding:'8px 12px', fontSize:'13px', lineHeight:1.7, direction:'rtl', textAlign:'right', border:`1px solid ${T.border}`, borderRadius:T.radius, background:'rgba(0,0,0,0.03)', fontFamily:'"Times New Roman",serif', color:subjColor, marginBottom:'10px' }}>
+                    🇮🇱 {topic.description_he}
+                  </div>
+                )}
+                <div style={{ display:'flex', gap:'8px' }}>
+                  <button onClick={() => speak(topic?.description_en || topic?.title_en || '', 'en')} style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 10px', cursor:'pointer', fontSize:'12px', color:T.text, boxShadow:T.btnShadow }}>
+                    🔊 <span style={{ background:T.accent3, color:'#000', borderRadius:'4px', padding:'1px 7px', fontSize:'10px', fontWeight:800 }}>EN</span>
+                  </button>
+                  {langMode !== 'en_only' && (
+                    <button onClick={() => speak(topic?.description_he || topic?.title_he || '', 'he')} style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 10px', cursor:'pointer', fontSize:'12px', color:T.text, boxShadow:T.btnShadow }}>
+                      🔊 <span style={{ background:T.accent2, color:'#000', borderRadius:'4px', padding:'1px 7px', fontSize:'10px', fontWeight:800 }}>עב</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Question panel */}
+              {currentQ ? (
+                <div style={{ background:T.panel2, border:`${theme==='minecraft'?3:2}px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
+                  <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent4, marginBottom:'10px' }}>⚔️ {UI.practice}</div>
+                  <div style={{ marginBottom:'10px' }}>
+                    {langMode !== 'he_only' && <p style={{ fontSize:'14px', fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>}
+                    {langMode !== 'en_only' && currentQ.prompt_he && (
+                      <p style={{ fontSize:'13px', color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:0 }}>{currentQ.prompt_he}</p>
+                    )}
+                  </div>
+
+                  {currentQ.visual_data?.type === 'fraction' && (
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'5px', padding:'12px', background:T.panel, border:`2px dashed ${T.border}`, borderRadius:T.radius, marginBottom:'12px', flexWrap:'wrap' }}>
+                      {[...Array(currentQ.visual_data.d||8)].map((_,i) => (
+                        <div key={i} style={{ width:'26px', height:'26px', background:i<(currentQ.visual_data.n||3)?subjColor:'transparent', border:`2px solid ${T.border}`, borderRadius:'4px' }}/>
+                      ))}
+                    </div>
+                  )}
+
+                  {currentQ.options && (
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'12px' }}>
+                      {currentQ.options.map((opt: any) => {
+                        const isCorrect = opt.isCorrect && answered
+                        const isWrong = selected===opt.label && !opt.isCorrect && answered
+                        return (
+                          <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
+                            style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'11px 12px', cursor:answered?'default':'pointer', fontFamily:'Georgia,serif', fontSize:'15px', fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text }}>
+                            <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'7px', flexShrink:0 }}>{opt.label}</span>
+                            {opt.value_en}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {hintVisible && currentQ.hint_en && (
+                    <div style={{ background:'rgba(255,215,0,0.07)', border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'10px 12px', marginBottom:'10px' }}>
+                      <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent2, marginBottom:'4px' }}>💡 {UI.hint}</div>
+                      <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>{currentQ.hint_en}</p>
+                    </div>
+                  )}
+
+                  {feedback && (
+                    <div style={{ border:`2px solid ${feedback.correct?T.accent3:'#E03030'}`, background:feedback.correct?'rgba(0,200,83,0.1)':'rgba(224,48,48,0.1)', borderRadius:T.radius, padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:'10px', marginBottom:'10px' }}>
+                      <span style={{ fontSize:'24px' }}>{feedback.correct?'🎉':'💔'}</span>
+                      <div>
+                        <div style={{ fontFamily:T.fontHead, fontSize:'8px', color:feedback.correct?T.accent3:'#E03030', marginBottom:'3px' }}>{feedback.correct?UI.correct:UI.notQuite}</div>
+                        <div style={{ fontSize:'12px', color:T.text2, lineHeight:1.6 }}>{feedback.explanation}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display:'flex', gap:'8px' }}>
+                    <button onClick={() => setHint(v=>!v)} style={{ padding:'9px 14px', fontFamily:T.fontHead, fontSize:'7px', background:T.panel, border:`2px solid ${T.accent2}`, color:T.accent2, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>💡</button>
+                    <button onClick={() => { setQIndex(i=>(i+1)%Math.max(questions.length,1)); setAnswered(false); setSelected(null); setFeedback(null); setHint(false) }} style={{ padding:'9px 14px', fontFamily:T.fontHead, fontSize:'7px', background:T.panel, border:`2px solid ${T.accent3}`, color:T.accent3, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>🔄</button>
+                    <button onClick={nextStep} style={{ padding:'9px 16px', fontFamily:T.fontHead, fontSize:'7px', background:T.accent1, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, flex:1 }}>{UI.next}</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'24px', textAlign:'center', color:T.text2 }}>
+                  <div style={{ fontSize:'32px', marginBottom:'12px' }}>📚</div>
+                  <div style={{ fontFamily:T.fontHead, fontSize:'9px', color:T.accent2, marginBottom:'8px' }}>{UI.noQuestions}</div>
+                  <p style={{ fontSize:'13px' }}>{UI.comingSoon}</p>
+                  <button onClick={goBack} style={{ marginTop:'12px', padding:'8px 20px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'7px', cursor:'pointer' }}>{UI.back}</button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -551,7 +724,7 @@ const UI = {
               📋 {isHE ? topic?.subject?.label_he || UI.topics : topic?.subject?.label_en?.toUpperCase() || UI.topics}
             </div>
             <div style={{ maxHeight:'320px', overflowY:'auto' }}>
-              {allTopics.slice(0,15).map((t: any, i: number) => {
+              {allTopics.filter((t: any) => t.subject?.slug === subjSlug).slice(0,15).map((t: any, i: number) => {
                 const isActive = t.id === topic?.id
                 const tp = progressMap[t.id]
                 const isDone = tp?.status === 'completed'
@@ -563,8 +736,8 @@ const UI = {
                       {isDone?'✓':i+1}
                     </div>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:'11px', fontWeight:700, color:T.text, lineHeight:1.3 }}>{t.title_en}</div>
-                      {isInProg && <div style={{ fontSize:'9px', color:subjColor, marginTop:'1px' }}>In progress</div>}
+                      <div style={{ fontSize:'11px', fontWeight:700, color:T.text, lineHeight:1.3 }}>{isHE ? t.title_he || t.title_en : t.title_en}</div>
+                      {isInProg && <div style={{ fontSize:'9px', color:subjColor, marginTop:'1px' }}>{UI.inProgress}</div>}
                     </div>
                     <div style={{ fontFamily:T.fontHead, fontSize:'5px', color:T.xp, flexShrink:0 }}>+{t.xp_reward}</div>
                   </div>
