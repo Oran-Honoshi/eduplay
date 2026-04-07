@@ -271,35 +271,54 @@ export default function DashboardClient({ data }: { data: any }) {
             </div>
           )}
 
-          {screen === 'worksheets' && (
-            <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
-              <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>🖨️ Worksheets & Exams</h1>
-              <div style={{ background:'#F3F4F6', border:'1px solid #D1D5DB', borderRadius:'12px', padding:'12px 16px', display:'flex', gap:'12px', fontSize:'12px', color:'#4B5563', lineHeight:1.6 }}>
-                <span style={{ fontSize:'20px' }}>📋</span>
-                <div><strong>Content notice:</strong> EduPlay worksheets are curriculum-aligned. Parents are encouraged to review all materials. EduPlay does not replace professional educational assessment.</div>
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'12px' }}>
-                {[
-                 { icon:'📐', title:'Fractions — Equal Parts',  meta:'Math · Grade 4 · Easy',   color:'#4A7FD4', diff:'Easy',   dc:'#27AE60', topicId:'7a65d577-d004-44ab-885d-69b9a5ecd404', childId:'22222222-2222-2222-2222-222222222002', difficulty:'easy' },
-{ icon:'📐', title:'Comparing Fractions',       meta:'Math · Grade 4 · Medium', color:'#F5A623', diff:'Medium', dc:'#F5A623', topicId:'11fef6b1-79ba-48de-9353-9893239a5bd3', childId:'22222222-2222-2222-2222-222222222002', difficulty:'medium' },
-{ icon:'📝', title:'Whole Numbers & Place Value',meta:'Math · Grade 4 · Hard',  color:'#8B5CF6', diff:'Hard',   dc:'#8B5CF6', topicId:'83113de0-0b32-4ecb-877e-efdab69545be', childId:'22222222-2222-2222-2222-222222222002', difficulty:'hard' },
-{ icon:'🔢', title:'Counting to 20',            meta:'Math · Grade 1 · Easy',   color:'#2EC4B6', diff:'Easy',   dc:'#27AE60', topicId:'df705e76-5824-40bf-882a-02c6cb3b2af3', childId:'22222222-2222-2222-2222-222222222003', difficulty:'easy' },
-{ icon:'🇮🇱', title:'Nikud — Vowel Points',    meta:'Hebrew · Grade 4',         color:'#FF6B6B', diff:'Hebrew', dc:'#FF6B6B', topicId:'242d7f08-c282-49fa-8ec1-e73d53aa48cd', childId:'22222222-2222-2222-2222-222222222002', difficulty:'easy' },
-{ icon:'📐', title:'Fractions — Hard',          meta:'Math · Grade 4 · Hard',   color:'#9B59B6', diff:'Hard',   dc:'#9B59B6', topicId:'7a65d577-d004-44ab-885d-69b9a5ecd404', childId:'22222222-2222-2222-2222-222222222002', difficulty:'hard' },
-                ].map((ws,i) => (
-                  <div key={i} style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'16px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', position:'relative', overflow:'hidden' }}>
-                    <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', background:ws.color }}/>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
-                      <span style={{ fontSize:'28px' }}>{ws.icon}</span>
-                      <span style={{ background:`${ws.dc}22`, color:ws.dc, fontSize:'10px', fontWeight:800, padding:'2px 9px', borderRadius:'50px' }}>{ws.diff}</span>
-                    </div>
-                    <div style={{ fontWeight:800, fontSize:'13px', color:'#1E2D4E', marginBottom:'4px' }}>{ws.title}</div>
-                    <div style={{ fontSize:'11px', color:'#9AA5B8', marginBottom:'12px' }}>{ws.meta}</div>
-<button onClick={() => window.open(`/api/worksheets?topicId=${ws.topicId}&childId=${ws.childId}&difficulty=${ws.difficulty}&lang=bilingual&answerKey=false`,'_blank')} style={{ width:'100%', padding:'8px', borderRadius:'50px', border:'none', background:ws.color, color:'white', fontWeight:800, fontSize:'12px', cursor:'pointer' }}>⬇ Download</button>                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+         {screen === 'worksheets' && (
+  <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+    <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>🖨️ Worksheets & Exams</h1>
+
+    <div style={{ background:'#F3F4F6', border:'1px solid #D1D5DB', borderRadius:'12px', padding:'12px 16px', display:'flex', gap:'12px', fontSize:'12px', color:'#4B5563', lineHeight:1.6 }}>
+      <span style={{ fontSize:'20px' }}>📋</span>
+      <div><strong>Content notice:</strong> EduPlay worksheets are curriculum-aligned. Parents are encouraged to review all materials. EduPlay does not replace professional educational assessment.</div>
+    </div>
+
+    {/* Child selector cards */}
+    <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'12px' }}>
+      {(children || []).map((child: any, i: number) => {
+        const col = CHILD_COLORS[i % CHILD_COLORS.length]
+        return (
+          <div key={child.id} style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', textAlign:'center', cursor:'pointer' }}
+            onClick={() => window.location.href=`/worksheets?childId=${child.id}`}>
+            <div style={{ width:'52px', height:'52px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'26px', margin:'0 auto 10px' }}>{col.emoji}</div>
+            <div style={{ fontWeight:800, fontSize:'15px', color:'#1E2D4E', marginBottom:'3px' }}>{child.display_name}</div>
+            <div style={{ fontSize:'12px', color:'#9AA5B8', marginBottom:'14px' }}>Grade {child.grade === 0 ? 'K' : child.grade}</div>
+            <button style={{ width:'100%', padding:'9px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'12px', cursor:'pointer' }}>
+              🖨️ Build Worksheet
+            </button>
+          </div>
+        )
+      })}
+    </div>
+
+    {/* Quick access — open builder directly */}
+    <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
+      <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', color:'#1E2D4E', marginBottom:'8px' }}>📐 Worksheet Builder</h3>
+      <p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Choose subject, topics, difficulty, number of questions and download a ready-to-print PDF with answer key.</p>
+      <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
+        <button onClick={() => window.location.href='/worksheets'}
+          style={{ padding:'10px 24px', borderRadius:'50px', border:'none', background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer', boxShadow:'0 4px 16px rgba(74,127,212,0.3)' }}>
+          🚀 Open Full Builder
+        </button>
+        <button onClick={() => window.location.href='/worksheets?childId=22222222-2222-2222-2222-222222222002'}
+          style={{ padding:'10px 24px', borderRadius:'50px', border:'1px solid #EEF1F6', background:'white', color:'#4B5563', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+          🐻 Tamar's Worksheet
+        </button>
+        <button onClick={() => window.location.href='/worksheets?childId=22222222-2222-2222-2222-222222222001'}
+          style={{ padding:'10px 24px', borderRadius:'50px', border:'1px solid #EEF1F6', background:'white', color:'#4B5563', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+          🐱 Lia's Worksheet
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
           {screen === 'curriculum' && (
   <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
