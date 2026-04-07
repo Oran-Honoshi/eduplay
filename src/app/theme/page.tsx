@@ -96,8 +96,8 @@ function ThemeSelector() {
       })
       setSaved(true)
       setTimeout(() => {
-        window.location.href = `/lesson?childId=${childId}`
-      }, 1200)
+  window.location.href = `/lesson?childId=${childId}&theme=${selected}`
+}, 1200)
     } catch {
       setSaving(false)
     }
