@@ -327,6 +327,49 @@ export default function DashboardClient({ data }: { data: any }) {
   <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
     <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>⚙️ Account</h1>
 
+{/* Grade Management */}
+    <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
+      <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', color:'#1E2D4E', marginBottom:'4px' }}>🎓 Manage Children</h3>
+      <p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Update each child's grade level.</p>
+      <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+        {(children || []).map((child: any, i: number) => {
+          const col = CHILD_COLORS[i % CHILD_COLORS.length]
+          return (
+            <div key={child.id} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 14px', background:'#F8F9FB', borderRadius:'10px', border:'1px solid #EEF1F6' }}>
+              <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0 }}>{col.emoji}</div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:800, fontSize:'14px', color:'#1E2D4E' }}>{child.display_name}</div>
+                <div style={{ fontSize:'12px', color:'#9AA5B8' }}>Current: Grade {child.grade === 0 ? 'K' : child.grade}</div>
+              </div>
+              <select
+                defaultValue={child.grade}
+                onChange={async (e) => {
+                  const newGrade = parseInt(e.target.value)
+                  await fetch('/api/children', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ childId: child.id, grade: newGrade }),
+                  })
+                  showToast('🎓', `${child.display_name} moved to Grade ${newGrade === 0 ? 'K' : newGrade}!`)
+                  setTimeout(() => window.location.reload(), 1000)
+                }}
+                style={{ padding:'6px 12px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'13px', color:'#1E2D4E', cursor:'pointer' }}>
+                <option value={0}>Kindergarten</option>
+                <option value={1}>Grade 1</option>
+                <option value={2}>Grade 2</option>
+                <option value={3}>Grade 3</option>
+                <option value={4}>Grade 4</option>
+                <option value={5}>Grade 5</option>
+                <option value={6}>Grade 6</option>
+              </select>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+
+    {/* Shareable child links */}
+    
     {/* Shareable child links */}
     <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
       <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', color:'#1E2D4E', marginBottom:'4px' }}>🔗 Child Links</h3>
