@@ -19,7 +19,7 @@ export default async function LessonPage({ searchParams }: Props) {
   if (searchParams.theme) child.theme = searchParams.theme
   if (searchParams.lang)  child.lang_screen = searchParams.lang
 
-  // Fetch requested topic
+  // Fetch topic
   let topic: any = null
   if (searchParams.topicId) {
     const { data: t } = await supabase
@@ -30,7 +30,6 @@ export default async function LessonPage({ searchParams }: Props) {
     topic = t
   }
 
-  // Default to first topic for child's grade
   if (!topic) {
     const { data: t } = await supabase
       .from('topics')
@@ -42,14 +41,50 @@ export default async function LessonPage({ searchParams }: Props) {
     topic = t
   }
 
-  // Fetch questions for this topic
-  const { data: questions } = topic ? await supabase
-    .from('questions')
-    .select('*')
-    .eq('topic_id', topic.id)
-    .eq('difficulty', difficulty)
-    .eq('approved', true)
-    .limit(10) : { data: [] }
+  // Check if this is a reading topic — fetch passage instead of questions
+  const isReadingTopic = topic?.slug?.includes('reading') ||
+    topic?.slug?.includes('comprehension') ||
+    topic?.slug?.includes('kriya') ||
+    topic?.slug?.includes('advanced_reading') ||
+    topic?.slug?.includes('literature') ||
+    topic?.slug?.includes('sfrut') ||
+    topic?.slug?.includes('poetry')
+
+  let questions: any[] = []
+  let passage: any = null
+  let passageQuestions: any[] = []
+
+  if (isReadingTopic && topic?.subject_id) {
+    // Fetch a reading passage for this topic's subject + grade
+    const { data: passages } = await supabase
+      .from('reading_passages')
+      .select('*')
+      .eq('grade', child.grade)
+      .eq('subject_id', topic.subject_id)
+      .eq('approved', true)
+      .limit(1)
+
+    if (passages && passages.length > 0) {
+      passage = passages[0]
+      const { data: pqs } = await supabase
+        .from('passage_questions')
+        .select('*')
+        .eq('passage_id', passage.id)
+        .eq('approved', true)
+        .order('sort_order')
+      passageQuestions = pqs || []
+    }
+  } else {
+    // Regular topic — fetch questions
+    const { data: qs } = topic ? await supabase
+      .from('questions')
+      .select('*')
+      .eq('topic_id', topic.id)
+      .eq('difficulty', difficulty)
+      .eq('approved', true)
+      .limit(10) : { data: [] }
+    questions = qs || []
+  }
 
   // Fetch ALL topics for this child's grade (all subjects) for sidebar
   const { data: allTopics } = await supabase
@@ -58,13 +93,11 @@ export default async function LessonPage({ searchParams }: Props) {
     .eq('grade', child.grade)
     .order('sort_order')
 
-  // Fetch all subjects
   const { data: subjects } = await supabase
     .from('subjects')
     .select('*')
     .order('sort_order')
 
-  // Fetch progress
   const { data: progress } = await supabase
     .from('child_topic_progress')
     .select('*')
@@ -74,7 +107,10 @@ export default async function LessonPage({ searchParams }: Props) {
     <LessonClient
       child={child}
       topic={topic}
-      questions={questions || []}
+      questions={questions}
+      passage={passage}
+      passageQuestions={passageQuestions}
+      isReadingTopic={isReadingTopic}
       allTopics={allTopics || []}
       subjects={subjects || []}
       progress={progress || []}
