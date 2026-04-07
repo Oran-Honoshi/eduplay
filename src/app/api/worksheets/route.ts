@@ -88,7 +88,7 @@ function generateWorksheetHTML({ topic, child, questions, difficulty, langMode, 
       const boxes = Array.from({ length: d }, (_: any, idx: number) =>
         `<div class="vis-box ${idx < n ? 'filled' : ''}"></div>`
       ).join('')
-      visualHTML = `<div class="visual-row">${boxes}<span class="visual-label">= ${renderFraction(`${n}/${d}`)}</span></div>`
+      visualHTML = `<div class="visual-row">${boxes}</div>`
     }
 
     let optionsHTML = ''
