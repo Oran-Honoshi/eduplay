@@ -257,7 +257,30 @@ export default function LessonClient({ child, topic, questions, allTopics, subje
   const token = urlParams?.get('token') || ''
   const T = THEMES[theme] || THEMES.plain
   const TD = MASCOTS[theme] || MASCOTS.plain
-  const langMode = child?.lang_screen || 'bilingual'
+  const langMode = (urlParams?.get('lang') || child?.lang_screen || 'bilingual') as string
+const isHE = langMode === 'he_only'
+const UI = {
+  learnThis:    isHE ? 'למד זאת' : 'LEARN THIS',
+  practice:     isHE ? 'שאלת תרגול' : 'PRACTICE QUESTION',
+  hint:         isHE ? 'רמז' : 'HINT',
+  correct:      isHE ? '!כל הכבוד' : 'CORRECT!',
+  notQuite:     isHE ? 'לא בדיוק!' : 'NOT QUITE!',
+  next:         isHE ? 'הבא ▶' : 'NEXT ▶',
+  back:         isHE ? '◀ חזור' : '◀ BACK',
+  noQuestions:  isHE ? 'אין שאלות עדיין' : 'NO QUESTIONS YET',
+  comingSoon:   isHE ? 'שאלות לנושא זה יתווספו בקרוב!' : 'Questions for this topic are coming soon!',
+  pipSays:      isHE ? 'פיפ אומר:' : 'PIP SAYS:',
+  topics:       isHE ? 'נושאים' : 'TOPICS',
+  subjects:     isHE ? 'מקצועות' : 'SUBJECTS',
+  step:         isHE ? 'שלב' : 'STEP',
+  home:         isHE ? 'בית' : 'HOME',
+  again:        isHE ? 'שוב' : 'AGAIN',
+  complete:     isHE ? '!השיעור הושלם' : 'LESSON COMPLETE! 🎉',
+  stars:        isHE ? 'כוכבים' : 'stars',
+  mastered:     isHE ? 'שלטת ב' : 'You mastered',
+  xpEarned:     isHE ? '!צברת 100 XP' : '+100 XP earned!',
+  inProgress:   isHE ? 'בתהליך' : 'In progress',
+}
   const subjSlug = topic?.subject?.slug || 'math'
   const subjColor = SUBJECT_COLORS[subjSlug] || T.accent1
 
@@ -340,7 +363,7 @@ export default function LessonClient({ child, topic, questions, allTopics, subje
   }
 
   return (
-    <div style={{ minHeight:'100vh', background:T.bg, color:T.text, fontFamily:'"Nunito",sans-serif' }}>
+    <div style={{ minHeight:'100vh', background:T.bg, color:T.text, fontFamily:'"Nunito",sans-serif' }} dir={isHE ? 'rtl' : 'ltr'}>
 
       {xpNotif && (
         <div style={{ position:'fixed', top:'70px', right:'20px', zIndex:9999, background:T.panel, border:`3px solid ${T.xp}`, borderRadius:T.radius, padding:'10px 18px', fontFamily:T.fontHead, fontSize:'11px', color:T.xp, boxShadow:T.shadow, pointerEvents:'none' }}>
@@ -351,12 +374,12 @@ export default function LessonClient({ child, topic, questions, allTopics, subje
       {completed && (
         <div style={{ position:'fixed', inset:0, zIndex:9998, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
           <div style={{ background:T.panel, border:`4px solid ${T.accent2}`, borderRadius:T.radius, padding:'36px', textAlign:'center', maxWidth:'380px', width:'100%', boxShadow:T.shadow }}>
-            <h2 style={{ fontFamily:T.fontHead, fontSize:'13px', color:T.accent2, marginBottom:'10px' }}>LESSON COMPLETE! 🎉</h2>
+            <h2 style={{ fontFamily:T.fontHead, fontSize:'13px', color:T.accent2, marginBottom:'10px' }}>{UI.complete}</h2>
             <div style={{ fontSize:'44px', letterSpacing:'6px', margin:'12px 0' }}>⭐⭐⭐</div>
-            <p style={{ fontSize:'13px', color:T.text2, marginBottom:'20px' }}>You mastered <strong style={{ color:T.accent2 }}>{topic?.title_en}</strong>!<br/>+100 XP earned!</p>
+            <p style={{ fontSize:'13px', color:T.text2, marginBottom:'20px' }}>{UI.mastered} <strong style={{ color:T.accent2 }}>{isHE ? topic?.title_he || topic?.title_en : topic?.title_en}</strong>!<br/>{UI.xpEarned}</p>
             <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={goBack} style={{ flex:1, padding:'12px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>HOME</button>
-              <button onClick={() => { setCompleted(false); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>AGAIN</button>
+              <button onClick={goBack} style={{ flex:1, padding:'12px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.home}</button>
+<button onClick={() => { setCompleted(false); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.again}</button>
             </div>
           </div>
         </div>
@@ -389,11 +412,11 @@ export default function LessonClient({ child, topic, questions, allTopics, subje
 
           {/* Progress bar */}
           <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-            <button onClick={goBack} style={{ fontFamily:T.fontHead, fontSize:'7px', background:T.panel, border:`2px solid ${T.border}`, color:T.text, padding:'7px 10px', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, whiteSpace:'nowrap' }}>◀ BACK</button>
+            <button onClick={goBack} style={{ fontFamily:T.fontHead, fontSize:'7px', background:T.panel, border:`2px solid ${T.border}`, color:T.text, padding:'7px 10px', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, whiteSpace:'nowrap' }}>{UI.back}</button>
             <div style={{ flex:1, height:'10px', background:T.panel2, border:`2px solid ${T.border}`, borderRadius:T.radius, overflow:'hidden' }}>
               <div style={{ height:'100%', width:`${progressPct}%`, background:`linear-gradient(90deg,${subjColor},${T.xp})`, transition:'width 0.5s ease' }}/>
             </div>
-            <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.accent2, whiteSpace:'nowrap' }}>STEP {currentStep+1}/{totalSteps}</span>
+            <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.accent2, whiteSpace:'nowrap' }}>{UI.step} {currentStep+1}/{totalSteps}</span>
           </div>
 
           {/* Subject + topic header */}
@@ -408,7 +431,7 @@ export default function LessonClient({ child, topic, questions, allTopics, subje
           {/* Learn panel */}
           <div style={{ background:T.panel, border:`${theme==='minecraft'?3:1}px solid ${T.border}`, borderRadius:T.radius, padding:'18px', boxShadow:T.shadow }}>
             <div style={{ background:T.panel2, border:`2px solid ${T.border}`, borderLeft:`5px solid ${subjColor}`, padding:'14px', marginBottom:'12px' }}>
-              <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:subjColor, marginBottom:'8px' }}>📘 LEARN THIS</div>
+              <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:subjColor, marginBottom:'8px' }}>📘 {UI.learnThis}</div>
               {getLearnContent(topic, T)}
             </div>
             {langMode !== 'en_only' && topic?.description_he && (
@@ -431,7 +454,7 @@ export default function LessonClient({ child, topic, questions, allTopics, subje
           {/* Question panel */}
           {currentQ ? (
             <div style={{ background:T.panel2, border:`${theme==='minecraft'?3:2}px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
-              <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent4, marginBottom:'10px' }}>⚔️ PRACTICE QUESTION</div>
+              <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent4, marginBottom:'10px' }}>⚔️ {UI.practice}</div>
               <div style={{ marginBottom:'10px' }}>
                 {langMode !== 'he_only' && <p style={{ fontSize:'14px', fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>}
                 {langMode !== 'en_only' && currentQ.prompt_he && (
@@ -465,7 +488,7 @@ export default function LessonClient({ child, topic, questions, allTopics, subje
 
               {hintVisible && currentQ.hint_en && (
                 <div style={{ background:'rgba(255,215,0,0.07)', border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'10px 12px', marginBottom:'10px' }}>
-                  <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent2, marginBottom:'4px' }}>💡 HINT</div>
+                  <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent2, marginBottom:'4px' }}>💡 {UI.hint}</div>
                   <p style={{ fontSize:'13px', color:T.text2, margin:0 }}>{currentQ.hint_en}</p>
                 </div>
               )}
@@ -474,7 +497,7 @@ export default function LessonClient({ child, topic, questions, allTopics, subje
                 <div style={{ border:`2px solid ${feedback.correct?T.accent3:'#E03030'}`, background:feedback.correct?'rgba(0,200,83,0.1)':'rgba(224,48,48,0.1)', borderRadius:T.radius, padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:'10px', marginBottom:'10px' }}>
                   <span style={{ fontSize:'24px' }}>{feedback.correct?'🎉':'💔'}</span>
                   <div>
-                    <div style={{ fontFamily:T.fontHead, fontSize:'8px', color:feedback.correct?T.accent3:'#E03030', marginBottom:'3px' }}>{feedback.correct?'CORRECT!':'NOT QUITE!'}</div>
+                    <div style={{ fontFamily:T.fontHead, fontSize:'8px', color:feedback.correct?T.accent3:'#E03030', marginBottom:'3px' }}>{feedback.correct?UI.correct:UI.notQuite}</div>
                     <div style={{ fontSize:'12px', color:T.text2, lineHeight:1.6 }}>{feedback.explanation}</div>
                   </div>
                 </div>
@@ -483,7 +506,7 @@ export default function LessonClient({ child, topic, questions, allTopics, subje
               <div style={{ display:'flex', gap:'8px' }}>
                 <button onClick={() => setHint(v=>!v)} style={{ padding:'9px 14px', fontFamily:T.fontHead, fontSize:'7px', background:T.panel, border:`2px solid ${T.accent2}`, color:T.accent2, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>💡</button>
                 <button onClick={() => { setQIndex(i=>(i+1)%Math.max(questions.length,1)); setAnswered(false); setSelected(null); setFeedback(null); setHint(false) }} style={{ padding:'9px 14px', fontFamily:T.fontHead, fontSize:'7px', background:T.panel, border:`2px solid ${T.accent3}`, color:T.accent3, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>🔄</button>
-                <button onClick={nextStep} style={{ padding:'9px 16px', fontFamily:T.fontHead, fontSize:'7px', background:T.accent1, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, flex:1 }}>NEXT ▶</button>
+                <button onClick={nextStep} style={{ padding:'9px 16px', fontFamily:T.fontHead, fontSize:'7px', background:T.accent1, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, flex:1 }}>{UI.next}</button>
               </div>
             </div>
           ) : (
@@ -502,13 +525,13 @@ export default function LessonClient({ child, topic, questions, allTopics, subje
           {/* Mascot */}
           <div style={{ background:T.panel, border:`${theme==='minecraft'?3:2}px solid ${T.accent2}`, borderRadius:T.radius, padding:'14px', textAlign:'center', boxShadow:T.shadow }}>
             <span style={{ fontSize:'56px', display:'block' }}>{TD.mascot}</span>
-            <div style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.accent2, margin:'6px 0 3px' }}>PIP SAYS:</div>
+            <div style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.accent2, margin:'6px 0 3px' }}>{UI.pipSays}</div>
             <div style={{ background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, padding:'8px', fontSize:'11px', color:T.text2, lineHeight:1.5, textAlign:'left' }}>{pipText}</div>
           </div>
 
           {/* Subject switcher */}
           <div style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'10px', boxShadow:T.shadow }}>
-            <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent2, marginBottom:'8px' }}>📚 SUBJECTS</div>
+            <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent2, marginBottom:'8px' }}>📚 {UI.subjects}</div>
             <div style={{ display:'flex', gap:'6px' }}>
               {['math','english','hebrew'].map(s => (
                 <button key={s} onClick={() => {
@@ -525,7 +548,7 @@ export default function LessonClient({ child, topic, questions, allTopics, subje
           {/* Topics list */}
           <div style={{ background:T.panel, border:`${theme==='minecraft'?3:2}px solid ${T.border}`, borderRadius:T.radius, overflow:'hidden', boxShadow:T.shadow }}>
             <div style={{ background:T.panel2, borderBottom:`2px solid ${T.border}`, padding:'8px 12px', fontFamily:T.fontHead, fontSize:'6px', color:subjColor }}>
-              📋 {topic?.subject?.label_en?.toUpperCase() || 'TOPICS'}
+              📋 {isHE ? topic?.subject?.label_he || UI.topics : topic?.subject?.label_en?.toUpperCase() || UI.topics}
             </div>
             <div style={{ maxHeight:'320px', overflowY:'auto' }}>
               {allTopics.slice(0,15).map((t: any, i: number) => {
