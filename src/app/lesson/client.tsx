@@ -24,7 +24,8 @@ const MASCOTS: any = {
 }
 
 export default function LessonClient({ child, topic, questions, progress, allTopics, difficulty }: any) {
-  const theme = (child?.theme || 'plain') as string
+  const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+const theme = (params?.get('theme') || child?.theme || 'plain') as string
   const T = THEMES[theme] || THEMES.plain
   const TD = MASCOTS[theme] || MASCOTS.plain
   const langMode = child?.lang_screen || 'bilingual'
