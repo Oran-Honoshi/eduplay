@@ -111,14 +111,14 @@ function noQuestionsHTML(child: any, wsType: string) {
   </body></html>`
 }
 
-function generateBuilderHTML({ child, topics, questions, difficulty, langMode, includeKey, wsType, questionCount, date, subject }: any) {
+function generateBuilderHTML({ child, topics, questions, difficulty, langMode, includeKey, wsType, questionCount, includeHints, solutionSteps, date, subject }: any) {
   const isHebrew   = langMode === 'he_only'
   const isBilingual = langMode === 'bilingual'
   const subjectLabel = subject?.label_en || 'Worksheet'
   const topicLabels  = topics.map((t: any) => t.title_en).join(' · ')
   const diffLabel    = difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
   const typeLabel    = wsType === 'practice' ? '📝 Practice' : wsType === 'quiz' ? '✅ Quiz' : '🎓 Exam'
-  const showHints    = wsType === 'practice'
+  const showHints = includeHints
 
   const questionsHTML = questions.map((q: any, i: number) => {
     const promptEn = q.prompt_en
@@ -314,6 +314,23 @@ function generateBuilderHTML({ child, topics, questions, difficulty, langMode, i
   </div>
 
   ${answerKeyHTML}
+${solutionSteps ? `
+<div class="answer-key-section">
+  <div class="answer-key-title">📖 Full Solution Steps</div>
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    ${questions.map((q: any, i: number) => `
+      <div style="padding:14px 16px;border:1px solid #EEF1F6;border-radius:10px;page-break-inside:avoid;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:900;color:white;background:#27AE60;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">Q${i+1}</div>
+          <div style="font-size:13px;font-weight:700;color:#1A2E4A;">${q.prompt_en}</div>
+        </div>
+        ${q.hint_en ? `<div style="font-size:12px;color:#F5A623;margin-bottom:6px;padding:6px 10px;background:#FFFBF0;border-left:3px solid #F5A623;border-radius:0 6px 6px 0;">💡 Hint: ${q.hint_en}</div>` : ''}
+        <div style="font-size:13px;color:#27AE60;font-weight:800;">✅ Answer: ${renderFraction(q.correct_answer)}</div>
+        ${q.explanation_en ? `<div style="font-size:12px;color:#5A6A7E;margin-top:6px;line-height:1.6;">📝 ${q.explanation_en}</div>` : ''}
+      </div>
+    `).join('')}
+  </div>
+</div>` : ''}
 
   <script>setTimeout(() => window.print(), 800)</script>
 </body>
