@@ -327,7 +327,7 @@ export default function DashboardClient({ data }: { data: any }) {
   <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
     <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>⚙️ Account</h1>
 
-{/* Grade Management */}
+    {/* Grade Management */}
     <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
       <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', color:'#1E2D4E', marginBottom:'4px' }}>🎓 Manage Children</h3>
       <p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Update each child's grade level.</p>
@@ -351,7 +351,7 @@ export default function DashboardClient({ data }: { data: any }) {
                     body: JSON.stringify({ childId: child.id, grade: newGrade }),
                   })
                   showToast('🎓', `${child.display_name} moved to Grade ${newGrade === 0 ? 'K' : newGrade}!`)
-                  setTimeout(() => window.location.reload(), 1000)
+                  setTimeout(() => window.location.reload(), 1500)
                 }}
                 style={{ padding:'6px 12px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'13px', color:'#1E2D4E', cursor:'pointer' }}>
                 <option value={0}>Kindergarten</option>
@@ -369,8 +369,6 @@ export default function DashboardClient({ data }: { data: any }) {
     </div>
 
     {/* Shareable child links */}
-    
-    {/* Shareable child links */}
     <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
       <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', color:'#1E2D4E', marginBottom:'4px' }}>🔗 Child Links</h3>
       <p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Share these links with your children — each link opens their personal learning portal.</p>
@@ -382,7 +380,7 @@ export default function DashboardClient({ data }: { data: any }) {
             <div key={child.id} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 14px', background:'#F8F9FB', borderRadius:'10px', border:'1px solid #EEF1F6' }}>
               <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', flexShrink:0 }}>{col.emoji}</div>
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontWeight:800, fontSize:'13px', color:'#1E2D4E', marginBottom:'2px' }}>{child.display_name} — Grade {child.grade}</div>
+                <div style={{ fontWeight:800, fontSize:'13px', color:'#1E2D4E', marginBottom:'2px' }}>{child.display_name} — Grade {child.grade === 0 ? 'K' : child.grade}</div>
                 <div style={{ fontSize:'11px', color:'#9AA5B8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{link}</div>
               </div>
               <div style={{ display:'flex', gap:'6px', flexShrink:0 }}>
@@ -400,20 +398,22 @@ export default function DashboardClient({ data }: { data: any }) {
         })}
       </div>
     </div>
-              <div style={{ background:'linear-gradient(135deg,#1E2D4E,#2C3E6B)', borderRadius:'20px', padding:'24px', color:'white', maxWidth:'400px' }}>
-                <div style={{ fontSize:'11px', fontWeight:700, opacity:.6, letterSpacing:'1px', textTransform:'uppercase' }}>Current Plan</div>
-                <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'18px', margin:'4px 0' }}>Family Plan</h3>
-                <div style={{ fontFamily:'"Nunito",sans-serif', fontSize:'36px', fontWeight:900, color:'#F5A623', margin:'10px 0' }}>Active <span style={{ fontSize:'14px', opacity:.7 }}>· {daysLeft} days left</span></div>
-                <ul style={{ listStyle:'none', padding:0, display:'flex', flexDirection:'column', gap:'5px', margin:'0 0 16px' }}>
-                  {['3 children (Lia, Tamar, Tom)','Math, English & Hebrew','Unlimited worksheets','Bilingual EN + HE'].map(f => (
-                    <li key={f} style={{ fontSize:'12px', opacity:.85, display:'flex', alignItems:'center', gap:'7px' }}>
-                      <span style={{ color:'#2EC4B6', fontWeight:900 }}>✓</span> {f}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
+
+    {/* Plan card */}
+    <div style={{ background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', borderRadius:'12px', padding:'20px', color:'white' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'12px' }}>
+        <div>
+          <div style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', marginBottom:'4px' }}>🚀 EduPlay Family Plan</div>
+          <div style={{ fontSize:'13px', opacity:.85 }}>Trial — {family?.trial_days_left ?? 365} days remaining</div>
+        </div>
+        <div style={{ background:'rgba(255,255,255,0.2)', borderRadius:'8px', padding:'6px 12px', fontSize:'12px', fontWeight:800 }}>TRIAL</div>
+      </div>
+      <div style={{ fontSize:'12px', opacity:.8, lineHeight:1.6 }}>
+        ✅ Unlimited lessons · ✅ All subjects · ✅ 3 children · ✅ Worksheets
+      </div>
+    </div>
+  </div>
+)}
 
         </main>
       </div>
