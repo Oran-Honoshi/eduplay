@@ -12,6 +12,8 @@ export async function GET(req: NextRequest) {
   const langMode      = searchParams.get('lang') || 'bilingual'
   const includeKey    = searchParams.get('answerKey') === 'true'
   const wsType        = searchParams.get('wsType') || 'practice'
+  const includeHints  = searchParams.get('includeHints') === 'true'
+  const solutionSteps = searchParams.get('solutionSteps') === 'true'
 
   if (!childId || topicIds.length === 0) {
     return NextResponse.json({ error: 'childId and topicIds required' }, { status: 400 })
@@ -78,7 +80,7 @@ export async function GET(req: NextRequest) {
     const html = generateBuilderHTML({
       child, topics, questions: shuffled,
       difficulty, langMode, includeKey,
-      wsType, questionCount,
+      wsType, questionCount, includeHints, solutionSteps,
       date: new Date().toLocaleDateString('en-GB'),
       subject,
     })
