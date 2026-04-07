@@ -24,8 +24,6 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
   const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
   const [selectedSubject, setSelectedSubject] = useState<string|null>(null)
 
-  const progressMap: any = {}
-  progress.forEach((p: any) => { progressMap[p.topic_id] = p })
 
   const filteredTopics = selectedSubject
     ? allTopics.filter((t: any) => t.subject?.slug === selectedSubject)
@@ -51,10 +49,37 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
 
   const [langMode, setLangMode] = useState(child.lang_screen || 'bilingual')
 
-function startLesson(topicId: string) {
+  const [progressMap, setProgressMap] = useState<any>(() => {
+  const map: any = {}
+  progress.forEach((p: any) => { map[p.topic_id] = p })
+  return map
+})
+const [xpDisplay, setXpDisplay] = useState(child.xp_balance || 0)
+const [completedDisplay, setCompletedDisplay] = useState(
+  progress.filter((p: any) => p.status === 'completed').length
+)
+const [inProgressDisplay, setInProgressDisplay] = useState(
+  progress.filter((p: any) => p.status === 'in_progress').length
+)
+  
+async function startLesson(topicId: string) {
+  // Refresh progress before navigating
+  try {
+    const res = await fetch(`/api/progress?childId=${child.id}`)
+    if (res.ok) {
+      const data = await res.json()
+      if (data.progress) {
+        const map: any = {}
+        data.progress.forEach((p: any) => { map[p.topic_id] = p })
+        setProgressMap(map)
+        setCompletedDisplay(data.progress.filter((p: any) => p.status === 'completed').length)
+        setInProgressDisplay(data.progress.filter((p: any) => p.status === 'in_progress').length)
+      }
+      if (data.xp) setXpDisplay(data.xp)
+    }
+  } catch {}
   window.location.href = `/lesson?topicId=${topicId}&childId=${child.id}&token=${token}&theme=${child.theme || 'plain'}&lang=${langMode}`
 }
-
   return (
     <div style={{ minHeight:'100vh', background:T.bg, color:T.text, fontFamily:'"Nunito",sans-serif' }}>
 
@@ -105,10 +130,9 @@ function startLesson(topicId: string) {
         {/* Stats row */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px', marginBottom:'20px' }}>
           {[
-            { label:'Completed', value:completedCount, icon:'✅', color:'#27AE60' },
-            { label:'In Progress', value:inProgressCount, icon:'▶️', color:T.accent },
-            { label:'Total XP', value:totalXP.toLocaleString(), icon:'⭐', color:T.accent2 },
-          ].map(stat => (
+            { label:'Completed', value:completedDisplay, icon:'✅', color:'#27AE60' },
+            { label:'In Progress', value:inProgressDisplay, icon:'▶️', color:T.accent },
+            { label:'Total XP', value:xpDisplay.toLocaleString(), icon:'⭐', color:T.accent2 },          ].map(stat => (
             <div key={stat.label} style={{ background:T.panel, border:`1px solid rgba(0,0,0,0.08)`, borderRadius:T.radius, padding:'14px', textAlign:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
               <div style={{ fontSize:'22px', marginBottom:'4px' }}>{stat.icon}</div>
               <div style={{ fontFamily:T.font, fontSize:'14px', fontWeight:900, color:stat.color }}>{stat.value}</div>
