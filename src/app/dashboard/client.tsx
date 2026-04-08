@@ -576,6 +576,22 @@ export default function DashboardClient({ data }: { data: any }) {
   <option value="large">A+ Large</option>
   <option value="xl">A++ XL</option>
 </select>
+<select
+  defaultValue={child.relief_trigger || 'topic'}
+  onChange={async (e) => {
+    await fetch('/api/children', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ childId: child.id, relief_trigger: e.target.value }),
+    })
+    showToast('🎉', `${child.display_name}'s break settings updated!`)
+  }}
+  style={{ padding:'6px 10px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'12px', color:'#1E2D4E', cursor:'pointer' }}>
+  <option value="off">🚫 No breaks</option>
+  <option value="lesson">After each lesson</option>
+  <option value="topic">After each topic</option>
+  <option value="both">After lesson + topic</option>
+</select>
 <input
   type="text"
   maxLength={4}
