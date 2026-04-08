@@ -615,9 +615,17 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
             <div style={{ fontSize:'44px', letterSpacing:'6px', margin:'12px 0' }}>⭐⭐⭐</div>
             <p style={{ fontSize:'13px', color:T.text2, marginBottom:'20px' }}>{UI.mastered} <strong style={{ color:T.accent2 }}>{isHE ? topic?.title_he || topic?.title_en : topic?.title_en}</strong>!<br/>{UI.xpEarned}</p>
             <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={goBack} style={{ flex:1, padding:'12px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.home}</button>
-              <button onClick={() => { setCompleted(false); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.again}</button>
-            </div>
+  <button onClick={() => {
+    const reliefUrl = `/relief?childId=${child?.id}&grade=${child?.grade || 0}&token=${token}&returnTo=${token ? `/play/${token}` : '/dashboard'}`
+    const trigger = child?.relief_trigger || 'topic'
+    if (trigger === 'lesson' || trigger === 'both') {
+      window.location.href = reliefUrl
+    } else {
+      goBack()
+    }
+  }} style={{ flex:1, padding:'12px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.home}</button>
+  <button onClick={() => { setCompleted(false); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.again}</button>
+</div>
           </div>
         </div>
       )}
