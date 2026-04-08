@@ -387,7 +387,23 @@ export default function DashboardClient({ data }: { data: any }) {
                 <option value={4}>Grade 4</option>
                 <option value={5}>Grade 5</option>
                 <option value={6}>Grade 6</option>
-              </select>
+             </select>
+<select
+  defaultValue={child.font_size || 'medium'}
+  onChange={async (e) => {
+    await fetch('/api/children', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ childId: child.id, font_size: e.target.value }),
+    })
+    showToast('🔤', `${child.display_name}'s font size updated!`)
+  }}
+  style={{ padding:'6px 10px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'12px', color:'#1E2D4E', cursor:'pointer' }}>
+  <option value="small">A- Small</option>
+  <option value="medium">A Medium</option>
+  <option value="large">A+ Large</option>
+  <option value="xl">A++ XL</option>
+</select>
 <input
   type="text"
   maxLength={4}
