@@ -1,5 +1,172 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+function ParentsScreen({ familyId, showToast }: any) {
+  const [parents, setParents]     = useState<any[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [showAdd, setShowAdd]     = useState(false)
+  const [newName, setNewName]     = useState('')
+  const [newEmail, setNewEmail]   = useState('')
+  const [newPass, setNewPass]     = useState('')
+  const [newEmoji, setNewEmoji]   = useState('👤')
+  const [saving, setSaving]       = useState(false)
+
+  const PARENT_EMOJIS = ['👤','👨','👩','👴','👵','🧑','👨‍💼','👩‍💼','🧔','👱']
+
+  useEffect(() => { loadParents() }, [])
+
+  async function loadParents() {
+    try {
+      const res = await fetch(`/api/parents?familyId=${familyId}`)
+      const data = await res.json()
+      setParents(data.parents || [])
+    } catch {}
+    setLoading(false)
+  }
+
+  async function addParent() {
+    if (!newName || !newPass) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/parents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          familyId,
+          name: newName,
+          email: newEmail,
+          password: newPass,
+          avatar_emoji: newEmoji,
+          role: 'parent',
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        showToast('👨‍👩‍👧', `${newName} added as parent!`)
+        setNewName(''); setNewEmail(''); setNewPass(''); setNewEmoji('👤')
+        setShowAdd(false)
+        loadParents()
+      } else {
+        showToast('❌', data.error || 'Error adding parent')
+      }
+    } catch {}
+    setSaving(false)
+  }
+
+  async function removeParent(parentId: string, name: string) {
+    if (!confirm(`Remove ${name} as a parent?`)) return
+    await fetch(`/api/parents?parentId=${parentId}`, { method: 'DELETE' })
+    showToast('🗑️', `${name} removed`)
+    loadParents()
+  }
+
+  async function updatePassword(parentId: string, newPassword: string, name: string) {
+    if (!newPassword || newPassword.length < 4) return
+    await fetch('/api/parents', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ parentId, password: newPassword }),
+    })
+    showToast('🔑', `${name}'s password updated!`)
+  }
+
+  if (loading) return <div style={{ padding:'40px', textAlign:'center', color:'#9AA5B8' }}>Loading...</div>
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>👨‍👩‍👧 Parent Profiles</h1>
+        {parents.length < 3 && (
+          <button onClick={() => setShowAdd(!showAdd)}
+            style={{ padding:'8px 18px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+            + Add Parent
+          </button>
+        )}
+      </div>
+
+      <p style={{ fontSize:'13px', color:'#5A6A7E', margin:0 }}>
+        Up to 3 parents or guardians can share oversight of this family account. Each has their own password to access the dashboard.
+      </p>
+
+      {/* Existing parents */}
+      <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+        {parents.map((parent, i) => (
+          <div key={parent.id} style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'14px', padding:'18px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'14px' }}>
+              <div style={{ width:'48px', height:'48px', borderRadius:'50%', background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px' }}>
+                {parent.avatar_emoji || '👤'}
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:800, fontSize:'16px', color:'#1E2D4E' }}>{parent.name}</div>
+                <div style={{ fontSize:'12px', color:'#9AA5B8' }}>
+                  {parent.email || 'No email set'} · {parent.role === 'admin' ? '⚙️ Admin' : '👤 Parent'}
+                </div>
+              </div>
+              {i > 0 && (
+                <button onClick={() => removeParent(parent.id, parent.name)}
+                  style={{ padding:'6px 12px', borderRadius:'50px', border:'1px solid #FEE2E2', background:'#FFF5F5', color:'#DC2626', fontWeight:700, fontSize:'12px', cursor:'pointer' }}>
+                  Remove
+                </button>
+              )}
+            </div>
+            {/* Password change */}
+            <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+              <input type="password" placeholder="New password" id={`pwd-${parent.id}`}
+                style={{ flex:1, padding:'8px 12px', borderRadius:'8px', border:'1px solid #EEF1F6', fontSize:'13px', outline:'none' }}/>
+              <button onClick={() => {
+                const input = document.getElementById(`pwd-${parent.id}`) as HTMLInputElement
+                updatePassword(parent.id, input.value, parent.name)
+                input.value = ''
+              }}
+                style={{ padding:'8px 14px', borderRadius:'8px', border:'none', background:'#4A7FD4', color:'white', fontWeight:700, fontSize:'12px', cursor:'pointer' }}>
+                Update Password
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add parent form */}
+      {showAdd && (
+        <div style={{ background:'white', border:'2px solid #4A7FD4', borderRadius:'14px', padding:'20px', boxShadow:'0 4px 16px rgba(74,127,212,0.15)' }}>
+          <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', color:'#1E2D4E', margin:'0 0 16px' }}>
+            Add New Parent / Guardian
+          </h3>
+          {/* Emoji picker */}
+          <div style={{ marginBottom:'14px' }}>
+            <div style={{ fontSize:'12px', fontWeight:700, color:'#5A6A7E', marginBottom:'8px' }}>Avatar</div>
+            <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
+              {PARENT_EMOJIS.map(e => (
+                <button key={e} onClick={() => setNewEmoji(e)}
+                  style={{ width:'36px', height:'36px', borderRadius:'8px', border:`2px solid ${newEmoji===e?'#4A7FD4':'#EEF1F6'}`, background:newEmoji===e?'#4A7FD420':'white', fontSize:'18px', cursor:'pointer' }}>
+                  {e}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'16px' }}>
+            <input placeholder="Full name *" value={newName} onChange={e => setNewName(e.target.value)}
+              style={{ padding:'10px 14px', borderRadius:'10px', border:'1px solid #EEF1F6', fontSize:'14px', outline:'none' }}/>
+            <input placeholder="Email (optional)" value={newEmail} onChange={e => setNewEmail(e.target.value)}
+              style={{ padding:'10px 14px', borderRadius:'10px', border:'1px solid #EEF1F6', fontSize:'14px', outline:'none' }}/>
+            <input type="password" placeholder="Password *" value={newPass} onChange={e => setNewPass(e.target.value)}
+              style={{ padding:'10px 14px', borderRadius:'10px', border:'1px solid #EEF1F6', fontSize:'14px', outline:'none' }}/>
+          </div>
+          <div style={{ display:'flex', gap:'10px' }}>
+            <button onClick={() => setShowAdd(false)}
+              style={{ flex:1, padding:'10px', borderRadius:'10px', border:'1px solid #EEF1F6', background:'white', color:'#5A6A7E', fontWeight:700, fontSize:'13px', cursor:'pointer' }}>
+              Cancel
+            </button>
+            <button onClick={addParent} disabled={saving || !newName || !newPass}
+              style={{ flex:2, padding:'10px', borderRadius:'10px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer', opacity:saving||!newName||!newPass?0.6:1 }}>
+              {saving ? 'Adding...' : '+ Add Parent'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const CHILD_COLORS = [
   { bg: 'linear-gradient(135deg,#FF9F43,#FF6B6B)', emoji: '🐱' },
@@ -39,6 +206,7 @@ export default function DashboardClient({ data }: { data: any }) {
   { key: 'progress',   label: '📊 Progress' },
   { key: 'worksheets', label: '🖨️ Worksheets' },
   { key: 'curriculum', label: '📚 Curriculum' },
+  { key: 'parents',    label: '👨‍👩‍👧 Parents' },
   { key: 'account',    label: '⚙️ Account' },
 ]
 
@@ -326,6 +494,10 @@ export default function DashboardClient({ data }: { data: any }) {
   </div>
 )}
 
+{screen === 'parents' && (
+  <ParentsScreen familyId="11111111-1111-1111-1111-111111111111" showToast={showToast} />
+)}
+          
           {screen === 'curriculum' && (
   <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
