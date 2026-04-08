@@ -183,7 +183,7 @@ export default function StorePage() {
 
       {/* Toast */}
       {toast && (
-        <div style={{ position:'fixed', top:'80px', right:'20px', zIndex:9999, background:'white', color:'#1E2D4E', borderRadius:'12px', padding:'12px 20px', fontWeight:800, fontSize:'14px', boxShadow:'0 8px 32px rgba(0,0,0,0.3)', zIndex:9999 }}>
+        <div style={{ position:'fixed', top:'80px', right:'20px', zIndex:9999, background:'white', color:'#1E2D4E', borderRadius:'12px', padding:'12px 20px', fontWeight:800, fontSize:'14px', boxShadow:'0 8px 32px rgba(0,0,0,0.3)' }}>
           {toast}
         </div>
       )}
