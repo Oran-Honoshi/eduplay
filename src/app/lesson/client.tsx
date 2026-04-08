@@ -261,7 +261,7 @@ function getLearnContent(topic: any, T: any) {
 }
 
 // ── PASSAGE READER COMPONENT ─────────────────────────────────
-function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic, subjColor, token, theme }: any) {
+function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic, subjColor, token, theme, FS }: any) {
   const [phase, setPhase] = useState<'reading'|'questions'>('reading')
   const [qIndex, setQIndex] = useState(0)
   const [answered, setAnswered] = useState(false)
@@ -338,15 +338,15 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
           <div style={{ padding:'20px', maxHeight:'420px', overflowY:'auto' }}>
             {/* English content */}
             {!isHE && passage.content_en && (
-              <p style={{ fontSize:'14px', lineHeight:1.9, color:T.text, margin:0, fontFamily:'"Georgia",serif' }}>
-                {passage.content_en}
-              </p>
+             <p style={{ fontSize:`${FS?.passage || 14}px`, lineHeight:1.9, color:T.text, margin:0, fontFamily:'"Georgia",serif' }}>
+  {passage.content_en}
+</p>
             )}
             {/* Hebrew content */}
             {isHE && passage.content_he && (
-              <p style={{ fontSize:'14px', lineHeight:1.9, color:T.text, margin:0, fontFamily:'"Times New Roman",serif', direction:'rtl', textAlign:'right' }}>
-                {passage.content_he}
-              </p>
+              <p style={{ fontSize:`${FS?.passage || 14}px`, lineHeight:1.9, color:T.text, margin:0, fontFamily:'"Times New Roman",serif', direction:'rtl', textAlign:'right' }}>
+  {passage.content_he}
+</p>
             )}
             {/* Bilingual */}
             {!isHE && langMode === 'bilingual' && passage.content_he && (
@@ -388,12 +388,12 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
       <div style={{ background:T.panel2, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
         <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent4, marginBottom:'10px' }}>❓ {UI.practice}</div>
 
-        {currentQ?.prompt_en && !isHE && (
-          <p style={{ fontSize:'14px', fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5 }}>{currentQ.prompt_en}</p>
-        )}
-        {currentQ?.prompt_he && (isHE || langMode === 'bilingual') && (
-          <p style={{ fontSize:'13px', color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 10px', lineHeight:1.6 }}>{currentQ.prompt_he}</p>
-        )}
+       {currentQ?.prompt_en && !isHE && (
+  <p style={{ fontSize:`${FS?.question || 14}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5 }}>{currentQ.prompt_en}</p>
+)}
+{currentQ?.prompt_he && (isHE || langMode === 'bilingual') && (
+  <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 10px', lineHeight:1.6 }}>{currentQ.prompt_he}</p>
+)}
 
         {/* Options */}
         {currentQ?.options && (
@@ -457,6 +457,29 @@ export default function LessonClient({ child, topic, questions, passage, passage
 const theme = (urlParams?.get('theme') || child?.theme || 'plain') as string
 const token = urlParams?.get('token') || ''
 const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') as string
+
+const [fontSize, setFontSize] = useState<'small'|'medium'|'large'|'xl'>(
+  (urlParams?.get('fs') || child?.font_size || 'medium') as 'small'|'medium'|'large'|'xl'
+)
+
+const FS = {
+  small:  { base: 11, question: 12, passage: 12 },
+  medium: { base: 13, question: 14, passage: 14 },
+  large:  { base: 15, question: 17, passage: 16 },
+  xl:     { base: 18, question: 20, passage: 19 },
+}[fontSize]
+
+async function changeFontSize(newSize: 'small'|'medium'|'large'|'xl') {
+  setFontSize(newSize)
+  try {
+    await fetch('/api/children', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ childId: child?.id, font_size: newSize }),
+    })
+  } catch {}
+}
+  
   const T = THEMES[theme] || THEMES.plain
   const TD = MASCOTS[theme] || MASCOTS.plain
   const subjSlug = topic?.subject?.slug || 'math'
@@ -605,6 +628,28 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
           <div style={{ display:'flex', gap:'3px' }}>{[...Array(5)].map((_,i) => <span key={i} style={{ fontSize:'14px', opacity:i<3?1:0.3 }}>❤️</span>)}</div>
           <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.xp }}>{xpBalance.toLocaleString()} XP</span>
+          
+          {/* Font size controls */}
+<div style={{ display:'flex', gap:'2px', alignItems:'center' }}>
+  {(['small','medium','large','xl'] as const).map(size => (
+    <button key={size}
+      onClick={() => changeFontSize(size)}
+      style={{
+        padding:'3px 6px',
+        borderRadius:T.radius,
+        border:`2px solid ${fontSize===size?T.accent2:T.border}`,
+        background:fontSize===size?`${T.accent2}20`:T.panel,
+        color:fontSize===size?T.accent2:T.text2,
+        fontFamily:'sans-serif',
+        fontSize: size==='small'?'9px':size==='medium'?'11px':size==='large'?'13px':'15px',
+        fontWeight:800,
+        cursor:'pointer',
+        lineHeight:1,
+      }}>
+      {size==='small'?'A-':size==='medium'?'A':size==='large'?'A+':'A++'}
+    </button>
+  ))}
+</div>
           <div style={{ display:'flex', gap:'4px' }}>
             {['en_only','bilingual','he_only'].map(l => (
               <button key={l}
@@ -646,12 +691,12 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
           {/* READING TOPIC — show passage reader */}
           {isReadingTopic && passage ? (
             <PassageReader
-              passage={passage}
-              questions={passageQuestions}
-              T={T} langMode={langMode} isHE={isHE} UI={UI}
-              child={child} topic={topic} subjColor={subjColor}
-              token={token} theme={theme}
-            />
+  passage={passage}
+  questions={passageQuestions}
+  T={T} langMode={langMode} isHE={isHE} UI={UI}
+  child={child} topic={topic} subjColor={subjColor}
+  token={token} theme={theme} FS={FS}
+/>
           ) : isReadingTopic && !passage ? (
             <div style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'32px', textAlign:'center', color:T.text2 }}>
               <div style={{ fontSize:'40px', marginBottom:'12px' }}>📖</div>
@@ -688,7 +733,7 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
                 <div style={{ background:T.panel2, border:`${theme==='minecraft'?3:2}px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
                   <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent4, marginBottom:'10px' }}>⚔️ {UI.practice}</div>
                   <div style={{ marginBottom:'10px' }}>
-                   {langMode !== 'he_only' && !isHE && subjSlug !== 'hebrew' && <p style={{ fontSize:'14px', fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>}
+                   {langMode !== 'he_only' && !isHE && subjSlug !== 'hebrew' && <p style={{ fontSize:`${FS.question}px`, fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>}
 {(langMode !== 'en_only' || subjSlug === 'hebrew') && currentQ.prompt_he && (
   <p style={{ fontSize:'13px', color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 6px' }}>{currentQ.prompt_he}</p>
 )}
@@ -719,7 +764,8 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
   const isRTLAnswer = isHE && isHebSubject
   return (
     <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
-      style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'11px 12px', cursor:answered?'default':'pointer', fontFamily:isRTLAnswer?'"Times New Roman",serif':'Georgia,serif', fontSize:'15px', fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>
+      style={{ background:isCorrect?..., fontFamily:isRTLAnswer?'"Times New Roman",serif':'Georgia,serif', fontSize:`${FS.question}px`,
+ fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>
       <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'7px', flexShrink:0 }}>{opt.label}</span>
       {displayVal}
     </button>
