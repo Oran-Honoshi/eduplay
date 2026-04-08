@@ -34,27 +34,50 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // Parent password login — fetch all columns explicitly
-  if (password) {
-    const { data: family, error } = await supabase
-      .from('families')
-      .select('id, parent_password')
-      .eq('id', FAMILY_ID)
-      .maybeSingle()
+  // Parent password login
+if (password) {
+  const { data: parentProfile } = await supabase
+    .from('family_parents')
+    .select('id, name, password, role, avatar_emoji')
+    .eq('family_id', FAMILY_ID)
+    .maybeSingle()
 
-    // Also accept the hardcoded fallback password in case of column read issues
-    const correctPassword = family?.parent_password || 'eduplay2024'
+  // Check individual parent password first
+  const { data: allParents } = await supabase
+    .from('family_parents')
+    .select('id, name, password, role, avatar_emoji')
+    .eq('family_id', FAMILY_ID)
 
-    if (!family || password !== correctPassword) {
-      return NextResponse.json({ error: 'Wrong password — try again! 🔑' }, { status: 401 })
-    }
+  const matchingParent = (allParents || []).find((p: any) => p.password === password)
 
+  if (matchingParent) {
     return NextResponse.json({
       success: true,
       type: 'parent',
       familyId: FAMILY_ID,
+      parentId: matchingParent.id,
+      parentName: matchingParent.name,
     })
   }
+
+  // Fallback to family password
+  const { data: family } = await supabase
+    .from('families')
+    .select('id, parent_password')
+    .eq('id', FAMILY_ID)
+    .maybeSingle()
+
+  const correctPassword = family?.parent_password || 'eduplay2024'
+  if (password !== correctPassword) {
+    return NextResponse.json({ error: 'Wrong password — try again! 🔑' }, { status: 401 })
+  }
+
+  return NextResponse.json({
+    success: true,
+    type: 'parent',
+    familyId: FAMILY_ID,
+  })
+}
 
   return NextResponse.json({ error: 'PIN or password required' }, { status: 400 })
 }
