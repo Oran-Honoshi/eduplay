@@ -627,10 +627,10 @@ async function changeFontSize(newSize: 'small'|'medium'|'large'|'xl') {
         <div style={{ fontFamily:T.fontHead, fontSize:'13px', color:T.accent1 }}>Edu<span style={{ color:T.accent2 }}>Play</span></div>
         <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
           <div style={{ display:'flex', gap:'3px' }}>{[...Array(5)].map((_,i) => <span key={i} style={{ fontSize:'14px', opacity:i<3?1:0.3 }}>❤️</span>)}</div>
-          <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.xp }}>{xpBalance.toLocaleString()} XP</span>
-          
+         <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.xp }}>{xpBalance.toLocaleString()} XP</span>
+
           {/* Font size controls */}
-<div style={{ display:'flex', gap:'2px', alignItems:'center' }}>
+          <div style={{ display:'flex', gap:'2px', alignItems:'center' }}>
   {(['small','medium','large','xl'] as const).map(size => (
     <button key={size}
       onClick={() => changeFontSize(size)}
