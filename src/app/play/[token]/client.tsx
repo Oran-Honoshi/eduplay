@@ -221,6 +221,10 @@ async function startLesson(topicId: string) {
 
         {/* Theme changer */}
         <div style={{ marginTop:'24px', display:'flex', justifyContent:'center', gap:'10px', flexWrap:'wrap' }}>
+  <button onClick={() => window.location.href=`/store?childId=${child.id}&token=${token}`}
+    style={{ padding:'10px 20px', background:T.accent, border:'none', borderRadius:'50px', fontWeight:800, fontSize:'12px', cursor:'pointer', color:'white' }}>
+    ⭐ XP Store
+  </button>
   <button onClick={() => window.location.href=`/theme?childId=${child.id}&name=${child.display_name}&current=${theme}&returnTo=/play/${token}`}
     style={{ padding:'10px 20px', background:T.panel, border:`2px solid rgba(0,0,0,0.1)`, borderRadius:'50px', fontWeight:800, fontSize:'12px', cursor:'pointer', color:T.text }}>
     🎨 Change Theme
