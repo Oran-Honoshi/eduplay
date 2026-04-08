@@ -458,27 +458,7 @@ const theme = (urlParams?.get('theme') || child?.theme || 'plain') as string
 const token = urlParams?.get('token') || ''
 const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') as string
 
-const [fontSize, setFontSize] = useState<'small'|'medium'|'large'|'xl'>(
-  (urlParams?.get('fs') || child?.font_size || 'medium') as 'small'|'medium'|'large'|'xl'
-)
 
-const FS = {
-  small:  { base: 11, question: 12, passage: 12 },
-  medium: { base: 13, question: 14, passage: 14 },
-  large:  { base: 15, question: 17, passage: 16 },
-  xl:     { base: 18, question: 20, passage: 19 },
-}[fontSize]
-
-async function changeFontSize(newSize: 'small'|'medium'|'large'|'xl') {
-  setFontSize(newSize)
-  try {
-    await fetch('/api/children', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ childId: child?.id, font_size: newSize }),
-    })
-  } catch {}
-}
   
   const T = THEMES[theme] || THEMES.plain
   const TD = MASCOTS[theme] || MASCOTS.plain
@@ -500,6 +480,16 @@ async function changeFontSize(newSize: 'small'|'medium'|'large'|'xl') {
   const [xpNotif, setXpNotif]     = useState<string|null>(null)
   const [completed, setCompleted] = useState(false)
   const [pipText, setPip]         = useState(TD.pip)
+  const [fontSize, setFontSize]   = useState<'small'|'medium'|'large'|'xl'>(
+    (urlParams?.get('fs') || child?.font_size || 'medium') as 'small'|'medium'|'large'|'xl'
+  )
+
+  const FS = {
+    small:  { base: 11, question: 12, passage: 12 },
+    medium: { base: 13, question: 14, passage: 14 },
+    large:  { base: 15, question: 17, passage: 16 },
+    xl:     { base: 18, question: 20, passage: 19 },
+  }[fontSize]
 
   const currentQ = questions[qIndex]
   const progressPct = Math.round((currentStep / totalSteps) * 100)
@@ -545,6 +535,16 @@ async function changeFontSize(newSize: 'small'|'medium'|'large'|'xl') {
   if (token) window.location.href = `/play/${token}`
   else window.location.href = '/dashboard'
 }
+ async function changeFontSize(newSize: 'small'|'medium'|'large'|'xl') {
+    setFontSize(newSize)
+    try {
+      await fetch('/api/children', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child?.id, font_size: newSize }),
+      })
+    } catch {}
+  }
 
   function showXP(text: string) {
     setXpNotif(text)
