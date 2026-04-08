@@ -762,14 +762,13 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
       ? (opt.value_en || '')
       : (opt.value_en || '')
   const isRTLAnswer = isHE && isHebSubject
-  return (
-    <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
-      style={{ background:isCorrect?..., fontFamily:isRTLAnswer?'"Times New Roman",serif':'Georgia,serif', fontSize:`${FS.question}px`,
- fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>
-      <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'7px', flexShrink:0 }}>{opt.label}</span>
-      {displayVal}
-    </button>
-                        )
+ return (
+                        <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
+                          style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'11px 12px', cursor:answered?'default':'pointer', fontFamily:isRTLAnswer?'"Times New Roman",serif':'Georgia,serif', fontSize:`${FS?.question || 14}px`, fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>
+                          <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'7px', flexShrink:0 }}>{opt.label}</span>
+                          {displayVal}
+                        </button>
+                      )
                       })}
                     </div>
                   )}
