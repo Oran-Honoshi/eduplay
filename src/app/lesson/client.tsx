@@ -1,5 +1,7 @@
 'use client'
 import { useState } from 'react'
+import MathVisual from '@/components/MathVisual'
+
 
 function Fraction({ n, d, size = 20 }: { n: any; d: any; size?: number }) {
   return (
@@ -741,13 +743,16 @@ export default function LessonClient({ child, topic, questions, passage, passage
                     )}
                   </div>
 
-                  {currentQ.visual_data?.type === 'fraction' && (
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'5px', padding:'12px', background:T.panel, border:`2px dashed ${T.border}`, borderRadius:T.radius, marginBottom:'12px', flexWrap:'wrap' }}>
-                      {[...Array(currentQ.visual_data.d||8)].map((_,i) => (
-                        <div key={i} style={{ width:'26px', height:'26px', background:i<(currentQ.visual_data.n||3)?subjColor:'transparent', border:`2px solid ${T.border}`, borderRadius:'4px' }}/>
-                      ))}
-                    </div>
-                  )}
+                  {currentQ.visual_data && (
+  <div style={{ display:'flex', justifyContent:'center', padding:'12px', background:T.panel, border:`2px dashed ${T.border}`, borderRadius:T.radius, marginBottom:'12px' }}>
+    <MathVisual
+      data={currentQ.visual_data}
+      size={200}
+      color={subjColor}
+      dark={theme === 'minecraft'}
+    />
+  </div>
+)}
 
                   {currentQ.options && (
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'12px' }}>
