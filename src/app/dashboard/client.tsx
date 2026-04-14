@@ -520,38 +520,54 @@ export default function DashboardClient({ data }: { data: any }) {
 )}
 
           
-         {screen === 'account' && (
+        {screen === 'account' && (
   <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
     <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>⚙️ Account</h1>
 
     {/* Grade Management */}
     <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
       <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', color:'#1E2D4E', marginBottom:'4px' }}>🎓 Manage Children</h3>
-<p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Update grade and PIN for each child.</p>
-      <p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Update each child's grade level.</p>
-      <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+      <p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Manage grade, font size, break settings and PIN for each child.</p>
+
+      {/* Column headers */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 120px 110px 130px 80px', gap:'8px', padding:'0 14px', marginBottom:'6px' }}>
+        {[
+          { label:'Child',     tip:'' },
+          { label:'Grade',     tip:'School year' },
+          { label:'Font Size', tip:'Text display size' },
+          { label:'Break',     tip:'When to show activity breaks' },
+          { label:'PIN',       tip:'4-digit login code' },
+        ].map(h => (
+          <div key={h.label} style={{ fontSize:'10px', fontWeight:800, color:'#9AA5B8', letterSpacing:'0.06em', textTransform:'uppercase' }} title={h.tip}>
+            {h.label}
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
         {(children || []).map((child: any, i: number) => {
           const col = CHILD_COLORS[i % CHILD_COLORS.length]
           return (
-            <div key={child.id} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 14px', background:'#F8F9FB', borderRadius:'10px', border:'1px solid #EEF1F6' }}>
-              <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0 }}>{col.emoji}</div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontWeight:800, fontSize:'14px', color:'#1E2D4E' }}>{child.display_name}</div>
-<div style={{ fontSize:'12px', color:'#9AA5B8' }}>Grade {child.grade === 0 ? 'K' : child.grade} · PIN: {child.pin_code || '----'}</div>
+            <div key={child.id} style={{ display:'grid', gridTemplateColumns:'1fr 120px 110px 130px 80px', gap:'8px', alignItems:'center', padding:'12px 14px', background:'#F8F9FB', borderRadius:'10px', border:'1px solid #EEF1F6' }}>
+
+              {/* Child */}
+              <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', flexShrink:0 }}>{col.emoji}</div>
+                <div>
+                  <div style={{ fontWeight:800, fontSize:'14px', color:'#1E2D4E' }}>{child.display_name}</div>
+                  <div style={{ fontSize:'11px', color:'#9AA5B8' }}>Grade {child.grade === 0 ? 'K' : child.grade}</div>
+                </div>
               </div>
-              <select
-                defaultValue={child.grade}
+
+              {/* Grade */}
+              <select defaultValue={child.grade}
                 onChange={async (e) => {
                   const newGrade = parseInt(e.target.value)
-                  await fetch('/api/children', {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ childId: child.id, grade: newGrade }),
-                  })
+                  await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, grade:newGrade }) })
                   showToast('🎓', `${child.display_name} moved to Grade ${newGrade === 0 ? 'K' : newGrade}!`)
-                  setTimeout(() => window.location.reload(), 1500)
+                  setTimeout(() => window.location.reload(), 1000)
                 }}
-                style={{ padding:'6px 12px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'13px', color:'#1E2D4E', cursor:'pointer' }}>
+                style={{ padding:'6px 8px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'12px', color:'#1E2D4E', cursor:'pointer', width:'100%' }}>
                 <option value={0}>Kindergarten</option>
                 <option value={1}>Grade 1</option>
                 <option value={2}>Grade 2</option>
@@ -559,57 +575,45 @@ export default function DashboardClient({ data }: { data: any }) {
                 <option value={4}>Grade 4</option>
                 <option value={5}>Grade 5</option>
                 <option value={6}>Grade 6</option>
-             </select>
-<select
-  defaultValue={child.font_size || 'medium'}
-  onChange={async (e) => {
-    await fetch('/api/children', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ childId: child.id, font_size: e.target.value }),
-    })
-    showToast('🔤', `${child.display_name}'s font size updated!`)
-  }}
-  style={{ padding:'6px 10px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'12px', color:'#1E2D4E', cursor:'pointer' }}>
-  <option value="small">A- Small</option>
-  <option value="medium">A Medium</option>
-  <option value="large">A+ Large</option>
-  <option value="xl">A++ XL</option>
-</select>
-<select
-  defaultValue={child.relief_trigger || 'topic'}
-  onChange={async (e) => {
-    await fetch('/api/children', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ childId: child.id, relief_trigger: e.target.value }),
-    })
-    showToast('🎉', `${child.display_name}'s break settings updated!`)
-  }}
-  style={{ padding:'6px 10px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'12px', color:'#1E2D4E', cursor:'pointer' }}>
-  <option value="off">🚫 No breaks</option>
-  <option value="lesson">After each lesson</option>
-  <option value="topic">After each topic</option>
-  <option value="both">After lesson + topic</option>
-</select>
-<input
-  type="text"
-  maxLength={4}
-  defaultValue={child.pin_code || ''}
-  placeholder="PIN"
-  onBlur={async (e) => {
-    const newPin = e.target.value.trim()
-    if (newPin.length === 4 && /^\d{4}$/.test(newPin)) {
-      await fetch('/api/children', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ childId: child.id, pin_code: newPin }),
-      })
-      showToast('🔢', `${child.display_name}'s PIN updated!`)
-    }
-  }}
-  style={{ width:'64px', padding:'6px 10px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'14px', color:'#1E2D4E', textAlign:'center', letterSpacing:'4px' }}
-/>
+              </select>
+
+              {/* Font size */}
+              <select defaultValue={child.font_size || 'medium'}
+                onChange={async (e) => {
+                  await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, font_size:e.target.value }) })
+                  showToast('🔤', `${child.display_name}'s font size updated!`)
+                }}
+                style={{ padding:'6px 8px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'12px', color:'#1E2D4E', cursor:'pointer', width:'100%' }}>
+                <option value="small">A− Small</option>
+                <option value="medium">A Medium</option>
+                <option value="large">A+ Large</option>
+                <option value="xl">A++ XL</option>
+              </select>
+
+              {/* Break */}
+              <select defaultValue={child.relief_trigger || 'topic'}
+                onChange={async (e) => {
+                  await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, relief_trigger:e.target.value }) })
+                  showToast('🎉', `${child.display_name}'s break updated!`)
+                }}
+                style={{ padding:'6px 8px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'12px', color:'#1E2D4E', cursor:'pointer', width:'100%' }}>
+                <option value="off">Off</option>
+                <option value="lesson">Per Lesson</option>
+                <option value="topic">Per Topic</option>
+                <option value="both">Both</option>
+              </select>
+
+              {/* PIN */}
+              <input type="text" maxLength={4} defaultValue={child.pin_code || ''} placeholder="PIN"
+                onBlur={async (e) => {
+                  const newPin = e.target.value.trim()
+                  if (newPin.length === 4 && /^\d{4}$/.test(newPin)) {
+                    await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, pin_code:newPin }) })
+                    showToast('🔢', `${child.display_name}'s PIN updated!`)
+                  }
+                }}
+                style={{ padding:'6px 8px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:800, fontSize:'14px', color:'#1E2D4E', textAlign:'center', letterSpacing:'4px', width:'100%', boxSizing:'border-box' as any }}
+              />
             </div>
           )
         })}
