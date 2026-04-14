@@ -12,9 +12,9 @@ function Fraction({ n, d, size = 20 }: { n: any; d: any; size?: number }) {
 }
 
 const THEMES: any = {
-  minecraft: { bg:'#1A1A2E', panel:'#2D2D2D', panel2:'#1a1a1a', border:'#555', accent1:'#5D9E2F', accent2:'#FFD700', accent3:'#39D9D9', accent4:'#FF6B00', xp:'#82FF00', text:'#F5F5DC', text2:'rgba(245,245,220,0.6)', radius:'0px', fontHead:'"Press Start 2P",monospace', shadow:'4px 4px 0 rgba(0,0,0,0.7)', btnShadow:'4px 4px 0 #000' },
+  minecraft:  { bg:'#1A1A2E', panel:'#2D2D2D', panel2:'#1a1a1a', border:'#555', accent1:'#5D9E2F', accent2:'#FFD700', accent3:'#39D9D9', accent4:'#FF6B00', xp:'#82FF00', text:'#F5F5DC', text2:'rgba(245,245,220,0.6)', radius:'0px', fontHead:'"Press Start 2P",monospace', shadow:'4px 4px 0 rgba(0,0,0,0.7)', btnShadow:'4px 4px 0 #000' },
   princesses: { bg:'#FFF0F8', panel:'#FFFFFF', panel2:'#FFF0F8', border:'#F4AFCF', accent1:'#E05BA0', accent2:'#FFD700', accent3:'#9B59B6', accent4:'#FF8C69', xp:'#E05BA0', text:'#3D1A2E', text2:'rgba(61,26,46,0.6)', radius:'20px', fontHead:'"Cinzel Decorative",serif', shadow:'0 8px 24px rgba(224,91,160,0.18)', btnShadow:'0 4px 16px rgba(224,91,160,0.35)' },
-  plain: { bg:'#F8F9FA', panel:'#FFFFFF', panel2:'#F8F9FA', border:'#DEE2E6', accent1:'#4A90D9', accent2:'#F0A500', accent3:'#27AE60', accent4:'#E67E22', xp:'#27AE60', text:'#212529', text2:'#6C757D', radius:'12px', fontHead:'"Nunito",sans-serif', shadow:'0 2px 12px rgba(0,0,0,0.08)', btnShadow:'0 2px 8px rgba(0,0,0,0.12)' },
+  plain:      { bg:'#F8F9FA', panel:'#FFFFFF', panel2:'#F8F9FA', border:'#DEE2E6', accent1:'#4A90D9', accent2:'#F0A500', accent3:'#27AE60', accent4:'#E67E22', xp:'#27AE60', text:'#212529', text2:'#6C757D', radius:'12px', fontHead:'"Nunito",sans-serif', shadow:'0 2px 12px rgba(0,0,0,0.08)', btnShadow:'0 2px 8px rgba(0,0,0,0.12)' },
 }
 
 const MASCOTS: any = {
@@ -35,14 +35,22 @@ const SUBJECT_ICONS: any = {
   hebrew:  '🇮🇱',
 }
 
+const lessonStyles = `
+  @media (max-width: 767px) {
+    .lesson-grid { grid-template-columns: 1fr !important; }
+    .lesson-sidebar { display: none !important; }
+    .lesson-header { padding: 0 10px !important; height: 48px !important; }
+    .lesson-header-controls { gap: 6px !important; }
+    .font-size-controls { display: none !important; }
+  }
+`
+
 function getLearnContent(topic: any, T: any) {
   const slug = topic?.slug || ''
   const subj = topic?.subject?.slug || ''
 
-  // Route by subject first if slug doesn't match
-  if (subj === 'hebrew' && !slug.includes('aleph') && !slug.includes('nikud') && 
+  if (subj === 'hebrew' && !slug.includes('aleph') && !slug.includes('nikud') &&
       !slug.includes('binyan') && !slug.includes('paal') && !slug.includes('dikduk')) {
-    // Generic Hebrew language content
     return (
       <>
         <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:'rtl', textAlign:'right' }}>
@@ -62,7 +70,7 @@ function getLearnContent(topic: any, T: any) {
     )
   }
 
-  if (subj === 'english' && !slug.includes('grammar') && !slug.includes('reading') && 
+  if (subj === 'english' && !slug.includes('grammar') && !slug.includes('reading') &&
       !slug.includes('writing') && !slug.includes('phonics') && !slug.includes('vocabulary')) {
     return (
       <>
@@ -218,7 +226,7 @@ function getLearnContent(topic: any, T: any) {
     )
   }
 
-  if (slug.includes('writing') || slug.includes('essay') || slug.includes('composition') || slug.includes('paragraph') || slug.includes('ktiva')) {
+  if (slug.includes('writing') || slug.includes('essay') || slug.includes('composition') || slug.includes('paragraph')) {
     return (
       <>
         <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>Good writing has a clear <strong style={{ color:T.text }}>beginning, middle and end</strong>.</p>
@@ -244,7 +252,6 @@ function getLearnContent(topic: any, T: any) {
     )
   }
 
-  // Default
   return (
     <>
       <p style={{ fontSize:'13px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>
@@ -260,18 +267,18 @@ function getLearnContent(topic: any, T: any) {
   )
 }
 
-// ── PASSAGE READER COMPONENT ─────────────────────────────────
+// ── PASSAGE READER ────────────────────────────────────────────
 function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic, subjColor, token, theme, FS }: any) {
-  const [phase, setPhase] = useState<'reading'|'questions'>('reading')
-  const [qIndex, setQIndex] = useState(0)
+  const [phase, setPhase]       = useState<'reading'|'questions'>('reading')
+  const [qIndex, setQIndex]     = useState(0)
   const [answered, setAnswered] = useState(false)
   const [selected, setSelected] = useState<string|null>(null)
   const [feedback, setFeedback] = useState<any>(null)
-  const [score, setScore] = useState(0)
-  const [done, setDone] = useState(false)
+  const [score, setScore]       = useState(0)
+  const [done, setDone]         = useState(false)
 
   const currentQ = questions[qIndex]
-  const isRTL = passage?.is_rtl && isHE
+  const isRTL    = passage?.is_rtl && isHE
 
   function checkAnswer(opt: any) {
     if (answered) return
@@ -279,7 +286,7 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
     setSelected(opt.label)
     const correct = opt.isCorrect
     if (correct) setScore(s => s + 1)
-    setFeedback({ correct, explanation: correct ? '✅ ' + (UI.correct) : '❌ ' + (UI.notQuite) })
+    setFeedback({ correct, explanation: correct ? '✅ ' + UI.correct : '❌ ' + UI.notQuite })
   }
 
   function next() {
@@ -321,37 +328,31 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
   if (phase === 'reading') {
     return (
       <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
-        {/* Passage display */}
         <div style={{ background:T.panel, border:`2px solid ${subjColor}`, borderRadius:T.radius, overflow:'hidden', boxShadow:T.shadow }}>
           <div style={{ background:subjColor, padding:'12px 16px', display:'flex', alignItems:'center', gap:'10px' }}>
             <span style={{ fontSize:'20px' }}>📖</span>
             <div>
               <div style={{ fontFamily:T.fontHead, fontSize:'8px', color:'white', opacity:.8 }}>{isHE ? 'קטע לקריאה' : 'READING PASSAGE'}</div>
-              <div style={{ fontWeight:800, fontSize:'14px', color:'white' }}>
-                {isHE && passage.title_he ? passage.title_he : passage.title_en}
-              </div>
+              <div style={{ fontWeight:800, fontSize:'14px', color:'white' }}>{isHE && passage.title_he ? passage.title_he : passage.title_en}</div>
             </div>
             <span style={{ marginLeft:'auto', fontSize:'10px', fontWeight:800, background:'rgba(255,255,255,0.2)', color:'white', padding:'3px 10px', borderRadius:'50px' }}>
               {passage.passage_type}
             </span>
           </div>
           <div style={{ padding:'20px', maxHeight:'420px', overflowY:'auto' }}>
-            {/* English content */}
             {!isHE && passage.content_en && (
-             <p style={{ fontSize:`${FS?.passage || 14}px`, lineHeight:1.9, color:T.text, margin:0, fontFamily:'"Georgia",serif' }}>
-  {passage.content_en}
-</p>
+              <p style={{ fontSize:`${FS?.passage || 14}px`, lineHeight:1.9, color:T.text, margin:0, fontFamily:'"Georgia",serif' }}>
+                {passage.content_en}
+              </p>
             )}
-            {/* Hebrew content */}
             {isHE && passage.content_he && (
               <p style={{ fontSize:`${FS?.passage || 14}px`, lineHeight:1.9, color:T.text, margin:0, fontFamily:'"Times New Roman",serif', direction:'rtl', textAlign:'right' }}>
-  {passage.content_he}
-</p>
+                {passage.content_he}
+              </p>
             )}
-            {/* Bilingual */}
             {!isHE && langMode === 'bilingual' && passage.content_he && (
               <div style={{ marginTop:'16px', padding:'14px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius }}>
-                <div style={{ fontSize:'10px', fontWeight:800, color:T.text2, marginBottom:'8px' }}>🇮🇱 {isHE ? '' : 'Hebrew'}</div>
+                <div style={{ fontSize:'10px', fontWeight:800, color:T.text2, marginBottom:'8px' }}>🇮🇱 Hebrew</div>
                 <p style={{ fontSize:'13px', lineHeight:1.9, color:T.text2, margin:0, fontFamily:'"Times New Roman",serif', direction:'rtl', textAlign:'right' }}>
                   {passage.content_he}
                 </p>
@@ -359,7 +360,6 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
             )}
           </div>
         </div>
-
         {questions.length > 0 && (
           <button onClick={() => setPhase('questions')}
             style={{ padding:'14px', background:`linear-gradient(135deg,${subjColor},${T.xp})`, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'9px', cursor:'pointer', boxShadow:T.btnShadow }}>
@@ -373,7 +373,6 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
   // Questions phase
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
-      {/* Progress */}
       <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
         <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.text2 }}>
           {isHE ? `שאלה ${qIndex+1} מתוך ${questions.length}` : `Question ${qIndex+1} of ${questions.length}`}
@@ -384,26 +383,22 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
         <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.accent2 }}>{score}/{questions.length}</span>
       </div>
 
-      {/* Question */}
       <div style={{ background:T.panel2, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
         <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent4, marginBottom:'10px' }}>❓ {UI.practice}</div>
 
-       {currentQ?.prompt_en && !isHE && (
-  <p style={{ fontSize:`${FS?.question || 14}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5 }}>{currentQ.prompt_en}</p>
-)}
-{currentQ?.prompt_he && (isHE || langMode === 'bilingual') && (
-  <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 10px', lineHeight:1.6 }}>{currentQ.prompt_he}</p>
-)}
+        {currentQ?.prompt_en && !isHE && (
+          <p style={{ fontSize:`${FS?.question || 14}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5 }}>{currentQ.prompt_en}</p>
+        )}
+        {currentQ?.prompt_he && (isHE || langMode === 'bilingual') && (
+          <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 10px', lineHeight:1.6 }}>{currentQ.prompt_he}</p>
+        )}
 
-        {/* Options */}
         {currentQ?.options && (
           <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'12px' }}>
             {currentQ.options.map((opt: any) => {
-              const isCorrect = opt.isCorrect && answered
-              const isWrong = selected === opt.label && !opt.isCorrect && answered
-              const displayVal = isHE 
-  ? (opt.value_he || opt.value_en || '')
-  : (opt.value_en || '')
+              const isCorrect  = opt.isCorrect && answered
+              const isWrong    = selected === opt.label && !opt.isCorrect && answered
+              const displayVal = isHE ? (opt.value_he || opt.value_en || '') : (opt.value_en || '')
               return (
                 <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
                   style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'10px 14px', cursor:answered?'default':'pointer', fontSize:'13px', fontWeight:700, display:'flex', alignItems:'center', gap:'10px', color:T.text, textAlign:isRTL?'right':'left', direction:isRTL?'rtl':'ltr', fontFamily:isRTL?'"Times New Roman",serif':'"Nunito",sans-serif' }}>
@@ -415,7 +410,6 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
           </div>
         )}
 
-        {/* Hint */}
         {currentQ?.hint_he && isHE && !answered && (
           <div style={{ fontSize:'12px', color:T.accent2, padding:'6px 10px', background:`${T.accent2}15`, borderRadius:T.radius, marginBottom:'8px', direction:'rtl', textAlign:'right' }}>
             💡 {currentQ.hint_he}
@@ -427,13 +421,12 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
           </div>
         )}
 
-        {/* Feedback */}
         {feedback && (
           <div style={{ border:`2px solid ${feedback.correct?T.accent3:'#E03030'}`, background:feedback.correct?'rgba(0,200,83,0.1)':'rgba(224,48,48,0.1)', borderRadius:T.radius, padding:'10px 14px', marginBottom:'10px', fontSize:'13px', color:T.text2 }}>
             {feedback.explanation}
             {currentQ?.explanation_en && (
-  <div style={{ marginTop:'6px', fontSize:'12px' }}>{currentQ.explanation_en}</div>
-)}
+              <div style={{ marginTop:'6px', fontSize:'12px' }}>{currentQ.explanation_en}</div>
+            )}
           </div>
         )}
 
@@ -452,19 +445,18 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
   )
 }
 
+// ── MAIN LESSON CLIENT ────────────────────────────────────────
 export default function LessonClient({ child, topic, questions, passage, passageQuestions, isReadingTopic, allTopics, subjects, progress, difficulty }: any) {
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
-const theme = (urlParams?.get('theme') || child?.theme || 'plain') as string
-const token = urlParams?.get('token') || ''
-const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') as string
+  const theme     = (urlParams?.get('theme') || child?.theme || 'plain') as string
+  const token     = urlParams?.get('token') || ''
+  const langMode  = (urlParams?.get('lang') || child?.lang_screen || 'bilingual') as string
 
-
-  
-  const T = THEMES[theme] || THEMES.plain
-  const TD = MASCOTS[theme] || MASCOTS.plain
-  const subjSlug = topic?.subject?.slug || 'math'
+  const T   = THEMES[theme] || THEMES.plain
+  const TD  = MASCOTS[theme] || MASCOTS.plain
+  const subjSlug  = topic?.subject?.slug || 'math'
   const subjColor = SUBJECT_COLORS[subjSlug] || T.accent1
-  const isHE = langMode === 'he_only'
+  const isHE      = langMode === 'he_only'
 
   const progressMap: any = {}
   progress.forEach((p: any) => { progressMap[p.topic_id] = p })
@@ -491,59 +483,45 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
     xl:     { base: 18, question: 20, passage: 19 },
   }[fontSize]
 
-  const currentQ = questions[qIndex]
+  const currentQ   = questions[qIndex]
   const progressPct = Math.round((currentStep / totalSteps) * 100)
 
   const UI = {
-    learnThis:   isHE ? 'למד זאת' : 'LEARN THIS',
-    practice:    isHE ? 'שאלת תרגול' : 'PRACTICE QUESTION',
-    hint:        isHE ? 'רמז' : 'HINT',
-    correct:     isHE ? '!כל הכבוד' : 'CORRECT!',
-    notQuite:    isHE ? 'לא בדיוק!' : 'NOT QUITE!',
-    next:        isHE ? 'הבא ▶' : 'NEXT ▶',
-    back:        isHE ? '◀ חזור' : '◀ BACK',
-    noQuestions: isHE ? 'אין שאלות עדיין' : 'NO QUESTIONS YET',
+    learnThis:   isHE ? 'למד זאת'                     : 'LEARN THIS',
+    practice:    isHE ? 'שאלת תרגול'                   : 'PRACTICE QUESTION',
+    hint:        isHE ? 'רמז'                          : 'HINT',
+    correct:     isHE ? '!כל הכבוד'                   : 'CORRECT!',
+    notQuite:    isHE ? 'לא בדיוק!'                    : 'NOT QUITE!',
+    next:        isHE ? 'הבא ▶'                        : 'NEXT ▶',
+    back:        isHE ? '◀ חזור'                       : '◀ BACK',
+    noQuestions: isHE ? 'אין שאלות עדיין'              : 'NO QUESTIONS YET',
     comingSoon:  isHE ? 'שאלות לנושא זה יתווספו בקרוב!' : 'Questions coming soon!',
-    pipSays:     isHE ? 'פיפ אומר:' : 'PIP SAYS:',
-    topics:      isHE ? 'נושאים' : 'TOPICS',
-    subjects:    isHE ? 'מקצועות' : 'SUBJECTS',
-    step:        isHE ? 'שלב' : 'STEP',
-    home:        isHE ? 'בית' : 'HOME',
-    again:       isHE ? 'שוב' : 'AGAIN',
-    complete:    isHE ? '!השיעור הושלם' : 'LESSON COMPLETE! 🎉',
-    mastered:    isHE ? 'שלטת ב' : 'You mastered',
-    xpEarned:   isHE ? '!צברת 100 XP' : '+100 XP earned!',
-    inProgress:  isHE ? 'בתהליך' : 'In progress',
+    pipSays:     isHE ? 'פיפ אומר:'                   : 'PIP SAYS:',
+    topics:      isHE ? 'נושאים'                       : 'TOPICS',
+    subjects:    isHE ? 'מקצועות'                      : 'SUBJECTS',
+    step:        isHE ? 'שלב'                          : 'STEP',
+    home:        isHE ? 'בית'                          : 'HOME',
+    again:       isHE ? 'שוב'                          : 'AGAIN',
+    complete:    isHE ? '!השיעור הושלם'                : 'LESSON COMPLETE! 🎉',
+    mastered:    isHE ? 'שלטת ב'                       : 'You mastered',
+    xpEarned:   isHE ? '!צברת 100 XP'                 : '+100 XP earned!',
+    inProgress:  isHE ? 'בתהליך'                       : 'In progress',
   }
 
   function navigateToTopic(topicId: string) {
-    const base = `/lesson?topicId=${topicId}&childId=${child?.id}`
-    const themeParam = `&theme=${theme}`
-    const tokenParam = token ? `&token=${token}` : ''
-    const langParam  = `&lang=${langMode}`
-    window.location.href = `${base}${themeParam}${tokenParam}${langParam}`
+    window.location.href = `/lesson?topicId=${topicId}&childId=${child?.id}&theme=${theme}${token?`&token=${token}`:''}&lang=${langMode}`
   }
 
   function goBack() {
-  if (currentStep > 0) {
-    fetch('/api/progress', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: currentStep, totalSteps }),
-    }).catch(() => {})
-  }
-  if (token) window.location.href = `/play/${token}`
-  else window.location.href = '/dashboard'
-}
- async function changeFontSize(newSize: 'small'|'medium'|'large'|'xl') {
-    setFontSize(newSize)
-    try {
-      await fetch('/api/children', {
-        method: 'PATCH',
+    if (currentStep > 0) {
+      fetch('/api/progress', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ childId: child?.id, font_size: newSize }),
-      })
-    } catch {}
+        body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: currentStep, totalSteps }),
+      }).catch(() => {})
+    }
+    if (token) window.location.href = `/play/${token}`
+    else window.location.href = '/dashboard'
   }
 
   function showXP(text: string) {
@@ -560,13 +538,24 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
     window.speechSynthesis.speak(u)
   }
 
+  async function changeFontSize(newSize: 'small'|'medium'|'large'|'xl') {
+    setFontSize(newSize)
+    try {
+      await fetch('/api/children', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child?.id, font_size: newSize }),
+      })
+    } catch {}
+  }
+
   async function checkAnswer(opt: any) {
     if (answered) return
     setAnswered(true)
     setSelected(opt.label)
     const correct = opt.isCorrect
     setFeedback({ correct, explanation: correct ? (currentQ.explanation_en || 'Correct! Well done!') : (currentQ.hint_en || 'Not quite — try the hint!') })
-    setPip(correct ? '🎉 Excellent! You nailed it!' : '💡 Don\'t give up!')
+    setPip(correct ? '🎉 Excellent! You nailed it!' : "💡 Don't give up!")
     if (correct) {
       setXp((b: number) => b + 25)
       showXP('+25 XP ⬆')
@@ -581,18 +570,24 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
   }
 
   function nextStep() {
-  if (!answered) { setPip('⚠️ Answer the question first!'); return }
-  const next = currentStep + 1
-  if (next >= totalSteps) {
-    // Mark as completed
-    fetch('/api/progress', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: totalSteps, totalSteps }),
-    }).catch(() => {})
-    setCompleted(true)
-    return
-  }
+    if (!answered) { setPip('⚠️ Answer the question first!'); return }
+    const next = currentStep + 1
+    if (next >= totalSteps) {
+      fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: totalSteps, totalSteps }),
+      }).catch(() => {})
+      // Trigger relief if configured
+      const reliefTrigger = child?.relief_trigger || 'topic'
+      if (reliefTrigger === 'lesson' || reliefTrigger === 'both') {
+        setTimeout(() => {
+          window.location.href = `/relief?childId=${child?.id}&grade=${child?.grade||0}&token=${token}&returnTo=${token?`/play/${token}`:'/dashboard'}`
+        }, 1500)
+      }
+      setCompleted(true)
+      return
+    }
     setCurrentStep(next)
     setQIndex(i => Math.min(i + 1, questions.length - 1))
     setAnswered(false); setSelected(null); setFeedback(null); setHint(false)
@@ -600,7 +595,8 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
   }
 
   return (
-    <div style={{ minHeight:'100vh', background:T.bg, color:T.text, fontFamily:'"Nunito",sans-serif' }} dir={isHE ? 'rtl' : 'ltr'}>
+    <div style={{ minHeight:'100vh', background:T.bg, color:T.text, fontFamily:'"Nunito",sans-serif', overflowX:'hidden' }} dir={isHE ? 'rtl' : 'ltr'}>
+      <style>{lessonStyles}</style>
 
       {xpNotif && (
         <div style={{ position:'fixed', top:'70px', right:'20px', zIndex:9999, background:T.panel, border:`3px solid ${T.xp}`, borderRadius:T.radius, padding:'10px 18px', fontFamily:T.fontHead, fontSize:'11px', color:T.xp, boxShadow:T.shadow, pointerEvents:'none' }}>
@@ -615,50 +611,39 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
             <div style={{ fontSize:'44px', letterSpacing:'6px', margin:'12px 0' }}>⭐⭐⭐</div>
             <p style={{ fontSize:'13px', color:T.text2, marginBottom:'20px' }}>{UI.mastered} <strong style={{ color:T.accent2 }}>{isHE ? topic?.title_he || topic?.title_en : topic?.title_en}</strong>!<br/>{UI.xpEarned}</p>
             <div style={{ display:'flex', gap:'10px' }}>
-  <button onClick={() => {
-    const reliefUrl = `/relief?childId=${child?.id}&grade=${child?.grade || 0}&token=${token}&returnTo=${token ? `/play/${token}` : '/dashboard'}`
-    const trigger = child?.relief_trigger || 'topic'
-    if (trigger === 'lesson' || trigger === 'both') {
-      window.location.href = reliefUrl
-    } else {
-      goBack()
-    }
-  }} style={{ flex:1, padding:'12px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.home}</button>
-  <button onClick={() => { setCompleted(false); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.again}</button>
-</div>
+              <button onClick={() => {
+                const reliefTrigger = child?.relief_trigger || 'topic'
+                if (reliefTrigger === 'lesson' || reliefTrigger === 'both') {
+                  window.location.href = `/relief?childId=${child?.id}&grade=${child?.grade||0}&token=${token}&returnTo=${token?`/play/${token}`:'/dashboard'}`
+                } else {
+                  goBack()
+                }
+              }} style={{ flex:1, padding:'12px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.home}</button>
+              <button onClick={() => { setCompleted(false); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.again}</button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <header style={{ background:theme==='minecraft'?'rgba(0,0,0,0.75)':T.panel, borderBottom:`${theme==='minecraft'?4:1}px solid ${T.border}`, padding:'0 20px', height:'58px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100 }}>
-        <div style={{ fontFamily:T.fontHead, fontSize:'13px', color:T.accent1 }}>Edu<span style={{ color:T.accent2 }}>Play</span></div>
-        <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-          <div style={{ display:'flex', gap:'3px' }}>{[...Array(5)].map((_,i) => <span key={i} style={{ fontSize:'14px', opacity:i<3?1:0.3 }}>❤️</span>)}</div>
-         <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.xp }}>{xpBalance.toLocaleString()} XP</span>
+      <header className="lesson-header" style={{ background:theme==='minecraft'?'rgba(0,0,0,0.75)':T.panel, borderBottom:`${theme==='minecraft'?4:1}px solid ${T.border}`, padding:'0 16px', height:'52px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, gap:'8px' }}>
+        <div style={{ fontFamily:T.fontHead, fontSize:'11px', color:T.accent1, flexShrink:0 }}>Edu<span style={{ color:T.accent2 }}>Play</span></div>
+        <div className="lesson-header-controls" style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'nowrap', overflowX:'auto' }}>
+          <div style={{ display:'flex', gap:'2px' }}>{[...Array(5)].map((_,i) => <span key={i} style={{ fontSize:'12px', opacity:i<3?1:0.3 }}>❤️</span>)}</div>
+          <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.xp, flexShrink:0 }}>{xpBalance.toLocaleString()} XP</span>
 
           {/* Font size controls */}
-          <div style={{ display:'flex', gap:'2px', alignItems:'center' }}>
-  {(['small','medium','large','xl'] as const).map(size => (
-    <button key={size}
-      onClick={() => changeFontSize(size)}
-      style={{
-        padding:'3px 6px',
-        borderRadius:T.radius,
-        border:`2px solid ${fontSize===size?T.accent2:T.border}`,
-        background:fontSize===size?`${T.accent2}20`:T.panel,
-        color:fontSize===size?T.accent2:T.text2,
-        fontFamily:'sans-serif',
-        fontSize: size==='small'?'9px':size==='medium'?'11px':size==='large'?'13px':'15px',
-        fontWeight:800,
-        cursor:'pointer',
-        lineHeight:1,
-      }}>
-      {size==='small'?'A-':size==='medium'?'A':size==='large'?'A+':'A++'}
-    </button>
-  ))}
-</div>
-          <div style={{ display:'flex', gap:'4px' }}>
+          <div className="font-size-controls" style={{ display:'flex', gap:'2px', alignItems:'center' }}>
+            {(['small','medium','large','xl'] as const).map(size => (
+              <button key={size} onClick={() => changeFontSize(size)}
+                style={{ padding:'3px 6px', borderRadius:T.radius, border:`2px solid ${fontSize===size?T.accent2:T.border}`, background:fontSize===size?`${T.accent2}20`:T.panel, color:fontSize===size?T.accent2:T.text2, fontFamily:'sans-serif', fontSize:size==='small'?'9px':size==='medium'?'11px':size==='large'?'13px':'15px', fontWeight:800, cursor:'pointer', lineHeight:1 }}>
+                {size==='small'?'A-':size==='medium'?'A':size==='large'?'A+':'A++'}
+              </button>
+            ))}
+          </div>
+
+          {/* Language switcher */}
+          <div style={{ display:'flex', gap:'3px' }}>
             {['en_only','bilingual','he_only'].map(l => (
               <button key={l}
                 onClick={() => window.location.href=`/lesson?topicId=${topic?.id}&childId=${child?.id}&theme=${theme}&lang=${l}${token?`&token=${token}`:''}`}
@@ -667,14 +652,18 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
               </button>
             ))}
           </div>
+
           <button onClick={() => window.location.href=`/theme?childId=${child?.id}&name=${child?.display_name}&current=${theme}${token?`&returnTo=/play/${token}`:''}`}
-            style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 9px', cursor:'pointer', color:T.text, boxShadow:T.btnShadow, fontFamily:T.fontHead, fontSize:'7px' }}>
+            style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 9px', cursor:'pointer', color:T.text, boxShadow:T.btnShadow, fontFamily:T.fontHead, fontSize:'7px', flexShrink:0 }}>
             🎨
           </button>
         </div>
       </header>
 
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 260px', gap:'14px', padding:'16px', maxWidth:'1200px', margin:'0 auto' }}>
+      {/* Main grid — sidebar hidden on mobile */}
+      <div className="lesson-grid" style={{ display:'grid', gridTemplateColumns:'1fr 260px', gap:'14px', padding:'16px', maxWidth:'1200px', margin:'0 auto' }}>
+
+        {/* Left — main content */}
         <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
 
           {/* Progress + back */}
@@ -696,15 +685,15 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
             </span>
           </div>
 
-          {/* READING TOPIC — show passage reader */}
+          {/* Content area */}
           {isReadingTopic && passage ? (
             <PassageReader
-  passage={passage}
-  questions={passageQuestions}
-  T={T} langMode={langMode} isHE={isHE} UI={UI}
-  child={child} topic={topic} subjColor={subjColor}
-  token={token} theme={theme} FS={FS}
-/>
+              passage={passage}
+              questions={passageQuestions}
+              T={T} langMode={langMode} isHE={isHE} UI={UI}
+              child={child} topic={topic} subjColor={subjColor}
+              token={token} theme={theme} FS={FS}
+            />
           ) : isReadingTopic && !passage ? (
             <div style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'32px', textAlign:'center', color:T.text2 }}>
               <div style={{ fontSize:'40px', marginBottom:'12px' }}>📖</div>
@@ -713,7 +702,7 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
             </div>
           ) : (
             <>
-              {/* Regular topic — learn panel */}
+              {/* Learn panel */}
               <div style={{ background:T.panel, border:`${theme==='minecraft'?3:1}px solid ${T.border}`, borderRadius:T.radius, padding:'18px', boxShadow:T.shadow }}>
                 <div style={{ background:T.panel2, border:`2px solid ${T.border}`, borderLeft:`5px solid ${subjColor}`, padding:'14px', marginBottom:'12px' }}>
                   <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:subjColor, marginBottom:'8px' }}>📘 {UI.learnThis}</div>
@@ -741,13 +730,15 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
                 <div style={{ background:T.panel2, border:`${theme==='minecraft'?3:2}px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
                   <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent4, marginBottom:'10px' }}>⚔️ {UI.practice}</div>
                   <div style={{ marginBottom:'10px' }}>
-                   {langMode !== 'he_only' && !isHE && subjSlug !== 'hebrew' && <p style={{ fontSize:`${FS.question}px`, fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>}
-{(langMode !== 'en_only' || subjSlug === 'hebrew') && currentQ.prompt_he && (
-  <p style={{ fontSize:'13px', color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 6px' }}>{currentQ.prompt_he}</p>
-)}
-{subjSlug !== 'hebrew' && langMode !== 'he_only' && !currentQ.prompt_he && (
-  <p style={{ fontSize:'14px', fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>
-)}
+                    {langMode !== 'he_only' && !isHE && subjSlug !== 'hebrew' && (
+                      <p style={{ fontSize:`${FS?.question || 14}px`, fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>
+                    )}
+                    {(langMode !== 'en_only' || subjSlug === 'hebrew') && currentQ.prompt_he && (
+                      <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 6px' }}>{currentQ.prompt_he}</p>
+                    )}
+                    {subjSlug !== 'hebrew' && langMode !== 'he_only' && !currentQ.prompt_he && (
+                      <p style={{ fontSize:`${FS?.question || 14}px`, fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>
+                    )}
                   </div>
 
                   {currentQ.visual_data?.type === 'fraction' && (
@@ -760,23 +751,21 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
 
                   {currentQ.options && (
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'12px' }}>
-                     {currentQ.options.map((opt: any) => {
-  const isCorrect = opt.isCorrect && answered
-  const isWrong = selected===opt.label && !opt.isCorrect && answered
-  const isHebSubject = subjSlug === 'hebrew'
-  const displayVal = isHE
-    ? (opt.value_he || opt.value_en || '')
-    : isHebSubject && langMode === 'bilingual'
-      ? (opt.value_en || '')
-      : (opt.value_en || '')
-  const isRTLAnswer = isHE && isHebSubject
- return (
-                        <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
-                          style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'11px 12px', cursor:answered?'default':'pointer', fontFamily:isRTLAnswer?'"Times New Roman",serif':'Georgia,serif', fontSize:`${FS?.question || 14}px`, fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>
-                          <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'7px', flexShrink:0 }}>{opt.label}</span>
-                          {displayVal}
-                        </button>
-                      )
+                      {currentQ.options.map((opt: any) => {
+                        const isCorrect    = opt.isCorrect && answered
+                        const isWrong      = selected === opt.label && !opt.isCorrect && answered
+                        const isHebSubject = subjSlug === 'hebrew'
+                        const displayVal   = isHE
+                          ? (opt.value_he || opt.value_en || '')
+                          : (opt.value_en || '')
+                        const isRTLAnswer  = isHE && isHebSubject
+                        return (
+                          <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
+                            style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'11px 12px', cursor:answered?'default':'pointer', fontFamily:isRTLAnswer?'"Times New Roman",serif':'Georgia,serif', fontSize:`${FS?.question || 14}px`, fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>
+                            <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'7px', flexShrink:0 }}>{opt.label}</span>
+                            {displayVal}
+                          </button>
+                        )
                       })}
                     </div>
                   )}
@@ -816,8 +805,8 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
           )}
         </div>
 
-        {/* Right sidebar */}
-        <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+        {/* Right sidebar — hidden on mobile */}
+        <div className="lesson-sidebar" style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
 
           {/* Mascot */}
           <div style={{ background:T.panel, border:`${theme==='minecraft'?3:2}px solid ${T.accent2}`, borderRadius:T.radius, padding:'14px', textAlign:'center', boxShadow:T.shadow }}>
@@ -831,14 +820,13 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
             <div style={{ fontFamily:T.fontHead, fontSize:'6px', color:T.accent2, marginBottom:'8px' }}>📚 {UI.subjects}</div>
             <div style={{ display:'flex', gap:'6px' }}>
               {['math','english','hebrew'].map(s => (
-  <button key={s} onClick={() => {
-    const subjectTopics = allTopics
-      .filter((t: any) => t.subject?.slug === s)
-      .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
-    const first = subjectTopics[0]
-    if (first) navigateToTopic(first.id)
-  }} 
-                  
+                <button key={s} onClick={() => {
+                  const subjectTopics = allTopics
+                    .filter((t: any) => t.subject?.slug === s)
+                    .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+                  const first = subjectTopics[0]
+                  if (first) navigateToTopic(first.id)
+                }}
                   style={{ flex:1, padding:'6px 4px', background:subjSlug===s?`${SUBJECT_COLORS[s]}20`:T.panel2, border:`2px solid ${subjSlug===s?SUBJECT_COLORS[s]:T.border}`, borderRadius:T.radius, cursor:'pointer', fontSize:'16px', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' }}>
                   <span>{SUBJECT_ICONS[s]}</span>
                   <span style={{ fontFamily:T.fontHead, fontSize:'5px', color:subjSlug===s?SUBJECT_COLORS[s]:T.text2 }}>{s.toUpperCase().slice(0,4)}</span>
@@ -854,10 +842,10 @@ const langMode = (child?.lang_screen || urlParams?.get('lang') || 'bilingual') a
             </div>
             <div style={{ maxHeight:'320px', overflowY:'auto' }}>
               {allTopics.filter((t: any) => t.subject?.slug === subjSlug).slice(0,15).map((t: any, i: number) => {
-                const isActive = t.id === topic?.id
-                const tp = progressMap[t.id]
-                const isDone = tp?.status === 'completed'
-                const isInProg = tp?.status === 'in_progress'
+                const isActive  = t.id === topic?.id
+                const tp        = progressMap[t.id]
+                const isDone    = tp?.status === 'completed'
+                const isInProg  = tp?.status === 'in_progress'
                 return (
                   <div key={t.id} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px 10px', borderBottom:`1px solid rgba(128,128,128,0.1)`, background:isActive?`${subjColor}22`:'transparent', cursor:'pointer' }}
                     onClick={() => navigateToTopic(t.id)}>
