@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { ShoppingCart, Star, Check, Package, Sparkles, Trees, ArrowLeft, Users, Zap } from 'lucide-react'
+import { ShoppingCart, Star, Check, Package, Sparkles, Trees, ArrowLeft, Users, Zap, X } from 'lucide-react'
 
 // ── ANIMAL FIGURES (full body SVG style using emoji layers) ──
 const ANIMALS: any = {
