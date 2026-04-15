@@ -1,70 +1,80 @@
 'use client'
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useState } from 'react'
+
+// @ts-ignore
+import { ComposableMap, Geographies, Geography, Sphere, Graticule } from 'react-simple-maps'
 
 export const CONTINENT_CONFIG: Record<string, {
   color: string; activeColor: string; label: string; emoji: string
 }> = {
-  africa:        { color:'#A04010', activeColor:'#E67E22', label:'Africa',        emoji:'🌍' },
-  asia:          { color:'#922B21', activeColor:'#E74C3C', label:'Asia',          emoji:'🌏' },
-  north_america: { color:'#1560A8', activeColor:'#2E86C1', label:'N. America',    emoji:'🌎' },
-  south_america: { color:'#1A6E37', activeColor:'#27AE60', label:'S. America',    emoji:'🌎' },
-  europe:        { color:'#5B2C6F', activeColor:'#8E44AD', label:'Europe',        emoji:'🌍' },
-  oceania:       { color:'#0B5345', activeColor:'#16A085', label:'Oceania',       emoji:'🌏' },
-  antarctica:    { color:'#1A5276', activeColor:'#2980B9', label:'Antarctica',    emoji:'🧊' },
+  africa:        { color:'#B45309', activeColor:'#F59E0B', label:'Africa',        emoji:'🌍' },
+  asia:          { color:'#B91C1C', activeColor:'#EF4444', label:'Asia',          emoji:'🌏' },
+  north_america: { color:'#1D4ED8', activeColor:'#3B82F6', label:'N. America',    emoji:'🌎' },
+  south_america: { color:'#15803D', activeColor:'#22C55E', label:'S. America',    emoji:'🌎' },
+  europe:        { color:'#6D28D9', activeColor:'#8B5CF6', label:'Europe',        emoji:'🌍' },
+  oceania:       { color:'#0E7490', activeColor:'#06B6D4', label:'Oceania',       emoji:'🌏' },
+  antarctica:    { color:'#1E40AF', activeColor:'#60A5FA', label:'Antarctica',    emoji:'🧊' },
 }
 
-const NUM_TO_CONTINENT: Record<number, string> = {
-  // Africa
-  12:'africa', 24:'africa', 204:'africa', 72:'africa', 854:'africa',
-  108:'africa', 120:'africa', 132:'africa', 140:'africa', 148:'africa',
-  174:'africa', 180:'africa', 178:'africa', 384:'africa', 262:'africa',
-  818:'africa', 226:'africa', 232:'africa', 231:'africa', 266:'africa',
-  270:'africa', 288:'africa', 324:'africa', 624:'africa', 404:'africa',
-  426:'africa', 430:'africa', 434:'africa', 450:'africa', 454:'africa',
-  466:'africa', 478:'africa', 480:'africa', 504:'africa', 508:'africa',
-  516:'africa', 562:'africa', 566:'africa', 646:'africa', 678:'africa',
-  686:'africa', 690:'africa', 694:'africa', 706:'africa', 710:'africa',
-  728:'africa', 729:'africa', 748:'africa', 834:'africa', 768:'africa',
-  788:'africa', 800:'africa', 894:'africa', 716:'africa',
-  // Asia
-  4:'asia', 51:'asia', 31:'asia', 48:'asia', 50:'asia', 64:'asia',
-  96:'asia', 116:'asia', 156:'asia', 196:'asia', 268:'asia', 356:'asia',
-  360:'asia', 364:'asia', 368:'asia', 376:'asia', 392:'asia', 400:'asia',
-  398:'asia', 414:'asia', 417:'asia', 418:'asia', 422:'asia', 458:'asia',
-  462:'asia', 496:'asia', 104:'asia', 524:'asia', 408:'asia', 512:'asia',
-  586:'asia', 608:'asia', 634:'asia', 682:'asia', 702:'asia', 410:'asia',
-  144:'asia', 760:'asia', 158:'asia', 762:'asia', 764:'asia', 626:'asia',
-  792:'asia', 795:'asia', 784:'asia', 860:'asia', 704:'asia', 887:'asia',
-  275:'asia',
-  // Europe
-  8:'europe', 20:'europe', 40:'europe', 112:'europe', 56:'europe',
-  70:'europe', 100:'europe', 191:'europe', 203:'europe', 208:'europe',
-  233:'europe', 246:'europe', 250:'europe', 276:'europe', 300:'europe',
-  348:'europe', 352:'europe', 372:'europe', 380:'europe', 428:'europe',
-  438:'europe', 440:'europe', 442:'europe', 470:'europe', 498:'europe',
-  492:'europe', 499:'europe', 528:'europe', 807:'europe', 578:'europe',
-  616:'europe', 620:'europe', 642:'europe', 643:'europe', 674:'europe',
-  688:'europe', 703:'europe', 705:'europe', 724:'europe', 752:'europe',
-  756:'europe', 804:'europe', 826:'europe', 336:'europe',
-  // North America
-  28:'north_america', 44:'north_america', 52:'north_america', 84:'north_america',
-  124:'north_america', 188:'north_america', 192:'north_america', 212:'north_america',
-  214:'north_america', 222:'north_america', 308:'north_america', 320:'north_america',
-  332:'north_america', 340:'north_america', 484:'north_america', 558:'north_america',
-  591:'north_america', 659:'north_america', 662:'north_america', 670:'north_america',
-  780:'north_america', 840:'north_america', 304:'north_america',
-  // South America
-  32:'south_america', 68:'south_america', 76:'south_america', 152:'south_america',
-  170:'south_america', 218:'south_america', 328:'south_america', 600:'south_america',
-  604:'south_america', 740:'south_america', 858:'south_america', 862:'south_america',
-  // Oceania
-  36:'oceania', 242:'oceania', 296:'oceania', 584:'oceania', 583:'oceania',
-  520:'oceania', 554:'oceania', 585:'oceania', 598:'oceania', 882:'oceania',
-  90:'oceania', 776:'oceania', 798:'oceania', 548:'oceania', 540:'oceania',
-  258:'oceania',
-  // Antarctica
-  10:'antarctica',
+const ISO_TO_CONTINENT: Record<string, string> = {
+  DZA:'africa',AGO:'africa',BEN:'africa',BWA:'africa',BFA:'africa',BDI:'africa',CMR:'africa',
+  CPV:'africa',CAF:'africa',TCD:'africa',COM:'africa',COD:'africa',COG:'africa',CIV:'africa',
+  DJI:'africa',EGY:'africa',GNQ:'africa',ERI:'africa',ETH:'africa',GAB:'africa',GMB:'africa',
+  GHA:'africa',GIN:'africa',GNB:'africa',KEN:'africa',LSO:'africa',LBR:'africa',LBY:'africa',
+  MDG:'africa',MWI:'africa',MLI:'africa',MRT:'africa',MUS:'africa',MAR:'africa',MOZ:'africa',
+  NAM:'africa',NER:'africa',NGA:'africa',RWA:'africa',STP:'africa',SEN:'africa',SLE:'africa',
+  SOM:'africa',ZAF:'africa',SSD:'africa',SDN:'africa',SWZ:'africa',TZA:'africa',TGO:'africa',
+  TUN:'africa',UGA:'africa',ZMB:'africa',ZWE:'africa',ESH:'africa',
+  AFG:'asia',ARM:'asia',AZE:'asia',BHR:'asia',BGD:'asia',BTN:'asia',BRN:'asia',KHM:'asia',
+  CHN:'asia',CYP:'asia',GEO:'asia',IND:'asia',IDN:'asia',IRN:'asia',IRQ:'asia',ISR:'asia',
+  JPN:'asia',JOR:'asia',KAZ:'asia',KWT:'asia',KGZ:'asia',LAO:'asia',LBN:'asia',MYS:'asia',
+  MDV:'asia',MNG:'asia',MMR:'asia',NPL:'asia',PRK:'asia',OMN:'asia',PAK:'asia',PHL:'asia',
+  QAT:'asia',SAU:'asia',SGP:'asia',KOR:'asia',LKA:'asia',SYR:'asia',TWN:'asia',TJK:'asia',
+  THA:'asia',TLS:'asia',TUR:'asia',TKM:'asia',ARE:'asia',UZB:'asia',VNM:'asia',YEM:'asia',PSE:'asia',
+  ALB:'europe',AND:'europe',AUT:'europe',BLR:'europe',BEL:'europe',BIH:'europe',BGR:'europe',
+  HRV:'europe',CZE:'europe',DNK:'europe',EST:'europe',FIN:'europe',FRA:'europe',DEU:'europe',
+  GRC:'europe',HUN:'europe',ISL:'europe',IRL:'europe',ITA:'europe',LVA:'europe',LIE:'europe',
+  LTU:'europe',LUX:'europe',MLT:'europe',MDA:'europe',MCO:'europe',MNE:'europe',NLD:'europe',
+  MKD:'europe',NOR:'europe',POL:'europe',PRT:'europe',ROU:'europe',RUS:'europe',SMR:'europe',
+  SRB:'europe',SVK:'europe',SVN:'europe',ESP:'europe',SWE:'europe',CHE:'europe',UKR:'europe',
+  GBR:'europe',VAT:'europe',
+  ATG:'north_america',BHS:'north_america',BRB:'north_america',BLZ:'north_america',CAN:'north_america',
+  CRI:'north_america',CUB:'north_america',DMA:'north_america',DOM:'north_america',SLV:'north_america',
+  GRD:'north_america',GTM:'north_america',HTI:'north_america',HND:'north_america',JAM:'north_america',
+  MEX:'north_america',NIC:'north_america',PAN:'north_america',KNA:'north_america',LCA:'north_america',
+  VCT:'north_america',TTO:'north_america',USA:'north_america',GRL:'north_america',
+  ARG:'south_america',BOL:'south_america',BRA:'south_america',CHL:'south_america',COL:'south_america',
+  ECU:'south_america',GUY:'south_america',PRY:'south_america',PER:'south_america',SUR:'south_america',
+  URY:'south_america',VEN:'south_america',
+  AUS:'oceania',FJI:'oceania',KIR:'oceania',MHL:'oceania',FSM:'oceania',NRU:'oceania',NZL:'oceania',
+  PLW:'oceania',PNG:'oceania',WSM:'oceania',SLB:'oceania',TON:'oceania',TUV:'oceania',VUT:'oceania',
+  NCL:'oceania',PYF:'oceania',
+  ATA:'antarctica',
 }
+
+const NUM_TO_ALPHA3: Record<string, string> = {
+  '004':'AFG','008':'ALB','012':'DZA','024':'AGO','032':'ARG','036':'AUS','040':'AUT',
+  '050':'BGD','056':'BEL','064':'BTN','068':'BOL','070':'BIH','072':'BWA','076':'BRA',
+  '100':'BGR','116':'KHM','120':'CMR','124':'CAN','140':'CAF','144':'LKA','152':'CHL',
+  '156':'CHN','170':'COL','178':'COG','180':'COD','188':'CRI','191':'HRV','192':'CUB',
+  '196':'CYP','203':'CZE','208':'DNK','214':'DOM','218':'ECU','818':'EGY','222':'SLV',
+  '231':'ETH','232':'ERI','246':'FIN','250':'FRA','266':'GAB','276':'DEU','288':'GHA',
+  '300':'GRC','304':'GRL','320':'GTM','324':'GIN','332':'HTI','340':'HND','348':'HUN',
+  '352':'ISL','356':'IND','360':'IDN','364':'IRN','368':'IRQ','372':'IRL','376':'ISR',
+  '380':'ITA','392':'JPN','400':'JOR','398':'KAZ','404':'KEN','408':'PRK','410':'KOR',
+  '414':'KWT','418':'LAO','422':'LBN','430':'LBR','434':'LBY','426':'LSO','440':'LTU',
+  '442':'LUX','450':'MDG','458':'MYS','484':'MEX','496':'MNG','504':'MAR','508':'MOZ',
+  '516':'NAM','524':'NPL','528':'NLD','540':'NCL','554':'NZL','558':'NIC','566':'NGA',
+  '578':'NOR','586':'PAK','591':'PAN','598':'PNG','604':'PER','608':'PHL','616':'POL',
+  '620':'PRT','634':'QAT','642':'ROU','643':'RUS','646':'RWA','682':'SAU','686':'SEN',
+  '694':'SLE','706':'SOM','710':'ZAF','724':'ESP','729':'SDN','752':'SWE','756':'CHE',
+  '760':'SYR','764':'THA','768':'TGO','780':'TTO','788':'TUN','800':'UGA','804':'UKR',
+  '784':'ARE','826':'GBR','840':'USA','858':'URY','860':'UZB','862':'VEN','704':'VNM',
+  '887':'YEM','894':'ZMB','716':'ZWE','010':'ATA','242':'FJI','104':'MMR','792':'TUR',
+  '051':'ARM','031':'AZE','268':'GEO',
+}
+
+const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
 interface WorldMapProps {
   activePhase: string | null
@@ -73,174 +83,102 @@ interface WorldMapProps {
 }
 
 export default function WorldMap({ activePhase, completedPhases, onSelect }: WorldMapProps) {
-  const svgRef              = useRef<SVGSVGElement>(null)
-  const [ready, setReady]   = useState(false)
-  const [hovered, setHov]   = useState<string | null>(null)
-  const [error, setError]   = useState(false)
+  const [hovered, setHovered] = useState<string | null>(null)
 
-  const getFill = useCallback((continent: string | null): string => {
-    if (!continent || !CONTINENT_CONFIG[continent]) return '#1C3650'
-    const c = CONTINENT_CONFIG[continent]
-    if (continent === activePhase) return c.activeColor
-    if (completedPhases.includes(continent)) return c.color
-    return '#1C3650'
-  }, [activePhase, completedPhases])
-
-  useEffect(() => {
-    let dead = false
-
-    async function render() {
-      try {
-        const d3    = await import('d3')
-        const world = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r => r.json())
-        const topo  = await import('topojson-client')
-
-        if (dead || !svgRef.current) return
-
-        const W = 680, H = 380
-        const svg  = d3.select(svgRef.current)
-        svg.selectAll('*').remove()
-
-        const proj = d3.geoNaturalEarth1().scale(107).translate([W / 2, H / 2 + 12])
-        const path = d3.geoPath().projection(proj)
-
-        // Ocean background
-        svg.append('path')
-          .datum({ type: 'Sphere' } as any)
-          .attr('d', path as any)
-          .attr('fill', '#071829')
-
-        // Graticule grid lines
-        svg.append('path')
-          .datum(d3.geoGraticule()())
-          .attr('d', path as any)
-          .attr('fill', 'none')
-          .attr('stroke', '#0D2540')
-          .attr('stroke-width', 0.4)
-
-        // Countries
-        const countries = (topo as any).feature(world, world.objects.countries)
-
-        svg.selectAll<SVGPathElement, any>('.c')
-          .data((countries as any).features)
-          .join('path')
-          .attr('class', 'c')
-          .attr('d', path as any)
-          .attr('fill', (d: any) => getFill(NUM_TO_CONTINENT[d.id as number] ?? null))
-          .attr('stroke', '#071829')
-          .attr('stroke-width', 0.4)
-          .style('cursor', (d: any) => {
-            const cont = NUM_TO_CONTINENT[d.id as number]
-            return cont && CONTINENT_CONFIG[cont] ? 'pointer' : 'default'
-          })
-          .on('mouseenter', function (this: SVGPathElement, _: any, d: any) {
-            if (dead) return
-            const cont = NUM_TO_CONTINENT[(d as any).id as number]
-            if (!cont || !CONTINENT_CONFIG[cont]) return
-            d3.select(this).attr('fill', CONTINENT_CONFIG[cont].activeColor)
-            setHov(cont)
-          })
-          .on('mouseleave', function (this: SVGPathElement, _: any, d: any) {
-            if (dead) return
-            const cont = NUM_TO_CONTINENT[(d as any).id as number]
-            d3.select(this).attr('fill', getFill(cont ?? null))
-            setHov(null)
-          })
-          .on('click', function (this: SVGPathElement, _: any, d: any) {
-            const cont = NUM_TO_CONTINENT[(d as any).id as number]
-            if (cont && CONTINENT_CONFIG[cont]) onSelect(cont)
-          })
-
-        // Continent labels
-        const LABELS: [string, number, number][] = [
-          ['africa',        20,   0 ],
-          ['asia',          95,  38 ],
-          ['north_america',-97,  52 ],
-          ['south_america', -58,-14 ],
-          ['europe',        15,  53 ],
-          ['oceania',      134, -25 ],
-          ['antarctica',     0, -80 ],
-        ]
-
-        LABELS.forEach(([slug, lon, lat]) => {
-          const cfg = CONTINENT_CONFIG[slug]
-          const pt  = proj([lon, lat])
-          if (!pt || !cfg) return
-          const active = slug === activePhase
-          svg.append('text')
-            .attr('x', pt[0]).attr('y', pt[1])
-            .attr('text-anchor', 'middle')
-            .attr('font-family', '"Nunito", sans-serif')
-            .attr('font-size', active ? 11 : 9)
-            .attr('font-weight', active ? '700' : '500')
-            .attr('fill', active ? '#FFFFFF' : 'rgba(255,255,255,0.5)')
-            .attr('pointer-events', 'none')
-            .attr('style', 'user-select:none')
-            .text(`${cfg.emoji} ${cfg.label}`)
-        })
-
-        if (!dead) setReady(true)
-      } catch (e) {
-        console.error('WorldMap error:', e)
-        if (!dead) { setReady(true); setError(true) }
-      }
-    }
-
-    render()
-    return () => { dead = true }
-  }, [activePhase, completedPhases, getFill, onSelect])
-
-  if (error) {
-    return (
-      <div style={{ background:'#0D2137', borderRadius:'16px', padding:'20px',
-        display:'flex', flexWrap:'wrap', gap:'8px', justifyContent:'center' }}>
-        {Object.entries(CONTINENT_CONFIG).map(([slug, cfg]) => (
-          <button key={slug} onClick={() => onSelect(slug)}
-            style={{ padding:'9px 16px', borderRadius:'50px', border:'2px solid',
-              borderColor: slug === activePhase ? cfg.activeColor : cfg.color,
-              background: slug === activePhase ? cfg.activeColor : `${cfg.color}30`,
-              color:'white', fontWeight:700, fontSize:'13px', cursor:'pointer' }}>
-            {cfg.emoji} {cfg.label}
-          </button>
-        ))}
-      </div>
-    )
+  function getContinent(geo: { id: number | string }): string | null {
+    const id     = String(geo.id).padStart(3, '0')
+    const alpha3 = NUM_TO_ALPHA3[id]
+    return alpha3 ? (ISO_TO_CONTINENT[alpha3] || null) : null
   }
 
-  return (
-    <div style={{ position:'relative', background:'#071829', borderRadius:'16px',
-      overflow:'hidden', border:'1px solid #1A3A5C' }}>
+  function getFill(continent: string | null, isHov: boolean): string {
+    if (!continent || !CONTINENT_CONFIG[continent]) return '#1C3A54'
+    const cfg = CONTINENT_CONFIG[continent]
+    if (isHov || continent === activePhase) return cfg.activeColor
+    if (completedPhases.includes(continent)) return cfg.color
+    return '#1C3A54'
+  }
 
-      {!ready && (
-        <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center',
-          justifyContent:'center', background:'#071829', zIndex:2,
-          flexDirection:'column', gap:'12px' }}>
-          <div style={{ fontSize:'36px' }}>🌍</div>
-          <div style={{ fontSize:'13px', color:'rgba(255,255,255,0.4)', fontWeight:600 }}>
-            Loading world map…
+  const display = hovered || activePhase
+
+  return (
+    <div style={{
+      background: '#061624', borderRadius: '18px', overflow: 'hidden',
+      border: '1px solid #1A3A5C', position: 'relative',
+    }}>
+      {display && CONTINENT_CONFIG[display] && (
+        <div style={{
+          position: 'absolute', top: '12px', left: '50%',
+          transform: 'translateX(-50%)', zIndex: 10, pointerEvents: 'none',
+        }}>
+          <div style={{
+            background: `${CONTINENT_CONFIG[display].activeColor}DD`,
+            borderRadius: '20px', padding: '5px 18px',
+            fontSize: '13px', fontWeight: 700, color: 'white',
+            whiteSpace: 'nowrap', fontFamily: '"Nunito", sans-serif',
+          }}>
+            {CONTINENT_CONFIG[display].emoji} {CONTINENT_CONFIG[display].label}
           </div>
         </div>
       )}
 
-      {hovered && CONTINENT_CONFIG[hovered] && (
-        <div style={{ position:'absolute', top:'12px', left:'50%', transform:'translateX(-50%)',
-          background:'rgba(0,0,0,0.8)', borderRadius:'20px', padding:'4px 14px', zIndex:3,
-          fontSize:'12px', fontWeight:700, color:'white', pointerEvents:'none', whiteSpace:'nowrap',
-          border:`1px solid ${CONTINENT_CONFIG[hovered].activeColor}60` }}>
-          {CONTINENT_CONFIG[hovered].emoji} {CONTINENT_CONFIG[hovered].label}
-        </div>
-      )}
+      <ComposableMap
+        projectionConfig={{ scale: 147, center: [0, 10] }}
+        style={{ width: '100%', height: 'auto' }}
+      >
+        <Sphere id="ocean-sphere" fill="#061624" stroke="#1A3A5C" strokeWidth={0.5} />
+        <Graticule stroke="#0D2540" strokeWidth={0.4} />
+        <Geographies geography={GEO_URL}>
+          {({ geographies }: { geographies: Array<{ id: number; rsmKey: string }> }) =>
+            geographies.map((geo: { id: number; rsmKey: string }) => {
+              const continent   = getContinent(geo)
+              const isHov       = hovered === continent && continent !== null
+              const isClickable = continent && CONTINENT_CONFIG[continent]
+              return (
+                <Geography
+                  key={geo.rsmKey}
+                  geography={geo}
+                  fill={getFill(continent, isHov)}
+                  stroke="#061624"
+                  strokeWidth={0.4}
+                  style={{
+                    default: { outline: 'none' },
+                    hover:   { outline: 'none', cursor: isClickable ? 'pointer' : 'default' },
+                    pressed: { outline: 'none' },
+                  }}
+                  onMouseEnter={() => {
+                    if (continent && CONTINENT_CONFIG[continent]) setHovered(continent)
+                  }}
+                  onMouseLeave={() => setHovered(null)}
+                  onClick={() => {
+                    if (continent && CONTINENT_CONFIG[continent]) onSelect(continent)
+                  }}
+                />
+              )
+            })
+          }
+        </Geographies>
+      </ComposableMap>
 
-      {activePhase && CONTINENT_CONFIG[activePhase] && (
-        <div style={{ position:'absolute', bottom:'10px', left:'50%', transform:'translateX(-50%)',
-          background:`${CONTINENT_CONFIG[activePhase].activeColor}E0`,
-          borderRadius:'20px', padding:'4px 16px', zIndex:3,
-          fontSize:'12px', fontWeight:700, color:'white', pointerEvents:'none', whiteSpace:'nowrap' }}>
-          {CONTINENT_CONFIG[activePhase].emoji} {CONTINENT_CONFIG[activePhase].label}
-        </div>
-      )}
-
-      <svg ref={svgRef} viewBox="0 0 680 380" width="100%" style={{ display:'block' }}/>
+      <div style={{
+        position: 'absolute', bottom: '10px', left: '50%',
+        transform: 'translateX(-50%)', display: 'flex', gap: '6px', zIndex: 10,
+      }}>
+        {[
+          { slug:'birds',     emoji:'🦅', label:'Birds',     color:'#B45309', active:'#F59E0B' },
+          { slug:'dinosaurs', emoji:'🦕', label:'Dinosaurs', color:'#374151', active:'#9CA3AF' },
+        ].map(({ slug, emoji, label, color, active }) => (
+          <button key={slug} onClick={() => onSelect(slug)}
+            style={{
+              padding: '4px 14px', borderRadius: '20px', border: 'none', cursor: 'pointer',
+              background: activePhase === slug ? active : `${color}90`,
+              color: 'white', fontSize: '12px', fontWeight: 700,
+              fontFamily: '"Nunito", sans-serif',
+            }}>
+            {emoji} {label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
