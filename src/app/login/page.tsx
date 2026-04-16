@@ -1,32 +1,31 @@
 'use client'
 import { useState } from 'react'
-import { Lock, Eye, EyeOff, ChevronRight, ArrowLeft, Users, Shield } from 'lucide-react'
+import { Lock, Eye, EyeOff, ChevronRight, ArrowLeft, Users, Loader2 } from 'lucide-react'
 
 const FAMILY_ID = '11111111-1111-1111-1111-111111111111'
 
-// Child avatar definitions — kept as emoji content (not UI icons)
 const CHILD_AVATARS = [
-  { emoji: '🐱', name: 'Lia',   color: '#EF4444', bg: '#FEF2F2', light: '#FEE2E2' },
-  { emoji: '🐻', name: 'Tamar', color: '#4A7FD4', bg: '#EFF6FF', light: '#DBEAFE' },
-  { emoji: '🦊', name: 'Tom',   color: '#2EC4B6', bg: '#F0FDFB', light: '#CCFBF1' },
+  { emoji: '🐱', name: 'Lia',   color: '#EF4444', bg: 'linear-gradient(135deg,#FF9F43,#FF6B6B)' },
+  { emoji: '🐻', name: 'Tamar', color: '#4A7FD4', bg: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)' },
+  { emoji: '🦊', name: 'Tom',   color: '#8B5CF6', bg: 'linear-gradient(135deg,#8B5CF6,#C084FC)' },
 ]
 
 export default function LoginPage() {
-  const [mode, setMode]           = useState<'choose' | 'pin' | 'parent'>('choose')
-  const [parents, setParents]     = useState<any[]>([])
-  const [selectedChild, setChild] = useState<any>(null)
-  const [selectedParent, setParent] = useState<any>(null)
-  const [pin, setPin]             = useState('')
-  const [password, setPassword]   = useState('')
-  const [showPass, setShowPass]   = useState(false)
-  const [error, setError]         = useState('')
-  const [loading, setLoading]     = useState(false)
-  const [shake, setShake]         = useState(false)
-  const [parentsLoaded, setPL]    = useState(false)
+  const [mode, setMode]                     = useState<'choose' | 'pin' | 'parent'>('choose')
+  const [parents, setParents]               = useState<any[]>([])
+  const [selectedChild, setChild]           = useState<any>(null)
+  const [selectedParent, setParent]         = useState<any>(null)
+  const [pin, setPin]                       = useState('')
+  const [password, setPassword]             = useState('')
+  const [showPass, setShowPass]             = useState(false)
+  const [error, setError]                   = useState('')
+  const [loading, setLoading]               = useState(false)
+  const [shake, setShake]                   = useState(false)
+  const [parentsLoaded, setParentsLoaded]   = useState(false)
 
   function triggerShake() {
     setShake(true)
-    setTimeout(() => setShake(false), 480)
+    setTimeout(() => setShake(false), 500)
   }
 
   async function loadParents() {
@@ -38,7 +37,7 @@ export default function LoginPage() {
     } catch {
       setParents([{ id: 'default', name: 'Parent', avatar_emoji: '👤' }])
     }
-    setPL(true)
+    setParentsLoaded(true)
   }
 
   function handleChildClick(avatar: any) {
@@ -50,18 +49,21 @@ export default function LoginPage() {
   }
 
   function handlePinDigit(digit: string) {
-    if (pin.length >= 4) return
+    if (pin.length >= 4 || loading) return
     const next = pin + digit
     setPin(next)
     if (next.length === 4) submitPin(next)
+  }
+
+  function handlePinDelete() {
+    setPin(p => p.slice(0, -1)); setError('')
   }
 
   async function submitPin(pinValue: string) {
     setLoading(true); setError('')
     try {
       const res  = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pin: pinValue, familyId: FAMILY_ID }),
       })
       const data = await res.json()
@@ -77,12 +79,11 @@ export default function LoginPage() {
   }
 
   async function submitPassword() {
-    if (!password) return
+    if (!password || loading) return
     setLoading(true); setError('')
     try {
       const res  = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password, familyId: FAMILY_ID, parentId: selectedParent?.id }),
       })
       const data = await res.json()
@@ -96,390 +97,296 @@ export default function LoginPage() {
     } finally { setLoading(false) }
   }
 
-  const numpadKeys = ['1','2','3','4','5','6','7','8','9','','0','⌫']
-
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#F9FAFB',
+      background: 'linear-gradient(135deg, #1E3A5F 0%, #2A5298 50%, #1A7A5E 100%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 16, fontFamily: '"Nunito", sans-serif',
+      padding: 20, fontFamily: '"Nunito", system-ui, sans-serif',
       position: 'relative', overflow: 'hidden',
     }}>
       <style>{`
-        @keyframes fadeIn { from{opacity:0;transform:scale(0.97)} to{opacity:1;transform:scale(1)} }
-        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
-        @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-        .login-card { animation: fadeIn 0.2s ease; }
-        .shake { animation: shake 0.45s ease; }
-        .numpad-btn { transition: all 0.12s ease !important; }
-        .numpad-btn:hover { transform: translateY(-1px); }
-        .numpad-btn:active { transform: scale(0.95); }
-        .child-btn:hover { transform: translateY(-3px) !important; }
-        .child-btn:active { transform: scale(0.97) !important; }
-        @media (max-width:480px) {
-          .login-inner { padding: 24px 18px !important; }
-          .child-grid { grid-template-columns: repeat(3,1fr) !important; gap: 8px !important; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+        @keyframes pop { 0%{transform:scale(0.8);opacity:0} 100%{transform:scale(1);opacity:1} }
+        @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        .pin-dots { animation: ${shake ? 'shake 0.4s ease' : 'none'}; }
+        .login-card { animation: pop 0.25s ease; }
+        .child-btn { transition: all 0.18s ease !important; }
+        .child-btn:hover { transform: translateY(-4px) !important; box-shadow: 0 12px 32px rgba(0,0,0,0.2) !important; }
+        .numpad-btn { transition: all 0.1s ease !important; }
+        .numpad-btn:active { transform: scale(0.94) !important; }
+        input:focus { outline: none; border-color: #4A7FD4 !important; box-shadow: 0 0 0 3px rgba(74,127,212,0.15) !important; }
+        @media(max-width:480px) {
+          .login-card { padding: 28px 20px !important; }
+          .numpad-btn { padding: 14px 8px !important; }
         }
       `}</style>
 
-      {/* Soft background blobs */}
-      <div style={{ position: 'absolute', top: -120, left: -120, width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(74,127,212,0.1), transparent 70%)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: -100, right: -100, width: 350, height: 350, borderRadius: '50%', background: 'radial-gradient(circle, rgba(46,196,182,0.08), transparent 70%)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', top: '30%', right: '10%', width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.06), transparent 70%)', pointerEvents: 'none' }} />
+      {/* Background blobs */}
+      <div style={{ position: 'absolute', top: -100, left: -100, width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle,rgba(74,127,212,0.2),transparent)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: -80, right: -80, width: 340, height: 340, borderRadius: '50%', background: 'radial-gradient(circle,rgba(46,196,182,0.15),transparent)', pointerEvents: 'none' }} />
 
       {/* Card */}
-      <div
-        className={`login-card ${shake ? 'shake' : ''}`}
-        style={{
-          background: 'rgba(255,255,255,0.96)',
-          backdropFilter: 'blur(20px)',
-          borderRadius: 24, padding: '36px 32px',
-          maxWidth: 420, width: '100%',
-          boxShadow: '0 20px 60px rgba(74,127,212,0.12), 0 4px 20px rgba(0,0,0,0.06)',
-          border: '1px solid rgba(255,255,255,0.9)',
-          textAlign: 'center', position: 'relative',
-        }}
-      >
-        <div className="login-inner" style={{ padding: 0 }}>
-          {/* Logo */}
-          <div style={{ marginBottom: 28 }}>
-            <div style={{ margin: '0 auto 12px', width: 'fit-content' }}>
-              <img
-                src="/icons/icon-512.png"
-                alt="EduPlay"
-                style={{ width: 72, height: 72, borderRadius: 20, display: 'block', boxShadow: '0 8px 24px rgba(74,127,212,0.3)' }}
-              />
-            </div>
-            <div style={{ fontWeight: 900, fontSize: 27, color: '#111827', letterSpacing: '-0.02em' }}>
-              Edu
-              <span style={{
-                background: 'linear-gradient(135deg, #4A7FD4, #2EC4B6)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-              }}>
-                Play
-              </span>
-            </div>
-            <div style={{ fontSize: 13, color: '#9CA3AF', marginTop: 4, fontWeight: 600 }}>
-              {mode === 'choose' ? 'Who is learning today?' :
-               mode === 'pin'    ? `Hi ${selectedChild?.name}! 👋` :
-               'Parent Dashboard'}
-            </div>
+      <div className="login-card" style={{
+        background: 'rgba(255,255,255,0.98)',
+        borderRadius: 24, padding: '36px 32px',
+        maxWidth: 420, width: '100%',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.28)',
+        border: '1px solid rgba(255,255,255,0.9)',
+        textAlign: 'center', position: 'relative',
+      }}>
+
+        {/* Logo */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ width: 62, height: 62, margin: '0 auto 12px', borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 24px rgba(74,127,212,0.3)' }}>
+            <img src="/icons/icon-512.png" alt="EduPlay" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
+          <div style={{ fontWeight: 900, fontSize: 26, color: '#111827', letterSpacing: '-0.02em' }}>
+            Edu<span style={{ background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Play</span>
+          </div>
+          <div style={{ fontSize: 13, color: '#9CA3AF', marginTop: 4, fontWeight: 600 }}>
+            {mode === 'choose' ? 'Who is learning today?' :
+             mode === 'pin'    ? `Hi ${selectedChild?.name}! Enter your PIN 👋` :
+             'Parent Dashboard'}
+          </div>
+        </div>
 
-          {/* ── CHOOSE ── */}
-          {mode === 'choose' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, animation: 'slideUp 0.2s ease' }}>
-
-              {/* Children grid */}
-              <div className="child-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
-                {CHILD_AVATARS.map(avatar => (
-                  <button
-                    key={avatar.name}
-                    className="child-btn"
-                    onClick={() => handleChildClick(avatar)}
-                    style={{
-                      padding: '18px 8px', borderRadius: 16,
-                      border: `1.5px solid ${avatar.color}30`,
-                      background: avatar.bg, cursor: 'pointer',
-                      transition: 'all 0.18s ease', fontFamily: 'inherit',
-                    }}
-                  >
-                    <div style={{ fontSize: 34, marginBottom: 6, lineHeight: 1 }}>{avatar.emoji}</div>
-                    <div style={{ fontWeight: 800, fontSize: 13, color: '#111827' }}>{avatar.name}</div>
-                  </button>
-                ))}
-              </div>
-
-              {/* Divider */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ flex: 1, height: 1, background: '#F3F4F6' }} />
-                <span style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 700 }}>OR</span>
-                <div style={{ flex: 1, height: 1, background: '#F3F4F6' }} />
-              </div>
-
-              {/* Parent button */}
-              <button
-                onClick={handleParentClick}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '14px 16px', borderRadius: 14,
-                  border: '1.5px solid #E5E7EB', background: '#F9FAFB',
-                  cursor: 'pointer', textAlign: 'left',
-                  transition: 'all 0.18s ease', fontFamily: 'inherit',
-                  width: '100%',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget.style.borderColor = '#4A7FD4')
-                  ;(e.currentTarget.style.background = '#EFF6FF')
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget.style.borderColor = '#E5E7EB')
-                  ;(e.currentTarget.style.background = '#F9FAFB')
-                }}
-              >
-                <div style={{
-                  width: 42, height: 42, borderRadius: 12, flexShrink: 0,
-                  background: 'linear-gradient(135deg, #4A7FD4, #2EC4B6)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Users size={20} color="white" />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 800, fontSize: 14, color: '#111827' }}>Parent / Guardian</div>
-                  <div style={{ fontSize: 12, color: '#6B7280', marginTop: 1 }}>Access the family dashboard</div>
-                </div>
-                <ChevronRight size={16} color="#9CA3AF" />
-              </button>
-
-              <button
-                onClick={() => window.location.href = '/dashboard'}
-                style={{
-                  background: 'none', border: 'none',
-                  fontSize: 12, color: '#9CA3AF', cursor: 'pointer',
-                  fontWeight: 600, padding: 4, fontFamily: 'inherit',
-                  transition: 'color 0.15s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#6B7280')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#9CA3AF')}
-              >
-                Skip to dashboard
-              </button>
-            </div>
-          )}
-
-          {/* ── PIN ── */}
-          {mode === 'pin' && selectedChild && (
-            <div style={{ animation: 'slideUp 0.2s ease' }}>
-              {/* Avatar */}
-              <div style={{
-                width: 72, height: 72, borderRadius: '50%',
-                background: selectedChild.light, border: `3px solid ${selectedChild.color}40`,
-                margin: '0 auto 16px', display: 'flex',
-                alignItems: 'center', justifyContent: 'center', fontSize: 40,
-              }}>
-                {selectedChild.emoji}
-              </div>
-
-              {/* PIN dots */}
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 6 }}>
-                {[0, 1, 2, 3].map(i => (
-                  <div key={i} style={{
-                    width: 14, height: 14, borderRadius: '50%',
-                    background: i < pin.length ? selectedChild.color : '#E5E7EB',
-                    transition: 'background 0.15s, transform 0.1s',
-                    transform: i < pin.length ? 'scale(1.2)' : 'scale(1)',
-                    boxShadow: i < pin.length ? `0 2px 8px ${selectedChild.color}40` : 'none',
-                  }} />
-                ))}
-              </div>
-
-              {/* Error */}
-              {error && (
-                <div style={{
-                  fontSize: 12, color: '#EF4444', fontWeight: 700,
-                  marginBottom: 12, minHeight: 18,
-                }}>
-                  {error}
-                </div>
-              )}
-              {!error && <div style={{ minHeight: 30 }} />}
-
-              {/* Numpad */}
-              <div style={{
-                display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: 8, maxWidth: 260, margin: '0 auto',
-              }}>
-                {numpadKeys.map((key, i) => {
-                  if (key === '') return <div key={i} />
-                  const isDelete = key === '⌫'
-                  return (
-                    <button
-                      key={i}
-                      className="numpad-btn"
-                      onClick={() => isDelete ? (setPin(p => p.slice(0, -1)), setError('')) : handlePinDigit(key)}
-                      disabled={loading}
-                      style={{
-                        padding: '14px 8px', borderRadius: 12,
-                        border: `1.5px solid ${isDelete ? '#FEE2E2' : '#E5E7EB'}`,
-                        background: isDelete ? '#FEF2F2' : 'white',
-                        color: isDelete ? '#EF4444' : '#111827',
-                        fontSize: isDelete ? 16 : 20,
-                        fontWeight: 800, cursor: 'pointer',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-                        fontFamily: 'inherit',
-                        opacity: loading ? 0.6 : 1,
-                      }}
-                    >
-                      {loading && key !== '⌫' && pin.length === 4 ? '…' : key}
-                    </button>
-                  )
-                })}
-              </div>
-
-              <button
-                onClick={() => { setMode('choose'); setPin(''); setError('') }}
-                style={{
-                  marginTop: 20, display: 'flex', alignItems: 'center', gap: 5,
-                  background: 'none', border: 'none', color: '#9CA3AF',
-                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  margin: '20px auto 0', fontFamily: 'inherit',
-                  transition: 'color 0.15s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#6B7280')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#9CA3AF')}
-              >
-                <ArrowLeft size={12} /> Back
-              </button>
-            </div>
-          )}
-
-          {/* ── PARENT LOGIN ── */}
-          {mode === 'parent' && (
-            <div style={{ animation: 'slideUp 0.2s ease', textAlign: 'left' }}>
-              {/* Parent selector */}
-              {parents.length > 1 && (
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
-                    Select account
-                  </label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {parents.map(p => (
-                      <button
-                        key={p.id}
-                        onClick={() => setParent(p)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          padding: '10px 14px', borderRadius: 12,
-                          border: `1.5px solid ${selectedParent?.id === p.id ? '#4A7FD4' : '#E5E7EB'}`,
-                          background: selectedParent?.id === p.id ? '#EFF6FF' : '#F9FAFB',
-                          cursor: 'pointer', transition: 'all 0.15s',
-                          fontFamily: 'inherit', width: '100%', textAlign: 'left',
-                        }}
-                      >
-                        <div style={{
-                          width: 36, height: 36, borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #4A7FD4, #2EC4B6)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 18, flexShrink: 0,
-                        }}>
-                          {p.avatar_emoji || '👤'}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 800, fontSize: 13, color: '#111827' }}>{p.name}</div>
-                          <div style={{ fontSize: 11, color: '#9CA3AF' }}>{p.role === 'admin' ? 'Admin' : 'Parent'}</div>
-                        </div>
-                        {selectedParent?.id === p.id && (
-                          <div style={{ marginLeft: 'auto', width: 20, height: 20, borderRadius: '50%', background: '#4A7FD4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <svg width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          </div>
-                        )}
-                      </button>
-                    ))}
+        {/* ── CHOOSE ── */}
+        {mode === 'choose' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, animation: 'slideUp 0.2s ease' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+              {CHILD_AVATARS.map(avatar => (
+                <button key={avatar.name}
+                  className="child-btn"
+                  onClick={() => handleChildClick(avatar)}
+                  style={{
+                    padding: '20px 10px', borderRadius: 18,
+                    border: 'none', background: 'white',
+                    cursor: 'pointer', boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+                    outline: `2px solid ${avatar.color}20`,
+                  }}
+                >
+                  <div style={{
+                    width: 52, height: 52, borderRadius: '50%',
+                    background: avatar.bg, margin: '0 auto 10px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 26, boxShadow: `0 4px 14px ${avatar.color}30`,
+                  }}>
+                    {avatar.emoji}
                   </div>
-                </div>
-              )}
+                  <div style={{ fontWeight: 800, fontSize: 14, color: '#111827' }}>{avatar.name}</div>
+                </button>
+              ))}
+            </div>
 
-              {/* Password input */}
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
-                  Password
-                </label>
-                <div style={{ position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ flex: 1, height: 1, background: '#F3F4F6' }} />
+              <span style={{ fontSize: 12, color: '#9CA3AF', fontWeight: 600 }}>or</span>
+              <div style={{ flex: 1, height: 1, background: '#F3F4F6' }} />
+            </div>
+
+            <button onClick={handleParentClick} style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '15px 16px', borderRadius: 14,
+              border: '1.5px solid #E5E7EB', background: '#F9FAFB',
+              cursor: 'pointer', textAlign: 'left', width: '100%',
+              transition: 'all 0.15s', fontFamily: 'inherit',
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#4A7FD4'; (e.currentTarget as HTMLElement).style.background = '#EFF6FF' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E5E7EB'; (e.currentTarget as HTMLElement).style.background = '#F9FAFB' }}
+            >
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Users size={20} color="white" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: 15, color: '#111827' }}>Parent / Guardian</div>
+                <div style={{ fontSize: 12, color: '#6B7280', marginTop: 1 }}>Access the family dashboard</div>
+              </div>
+              <ChevronRight size={17} color="#9CA3AF" />
+            </button>
+          </div>
+        )}
+
+        {/* ── PIN ── */}
+        {mode === 'pin' && selectedChild && (
+          <div style={{ animation: 'slideUp 0.2s ease' }}>
+            <button onClick={() => { setMode('choose'); setPin(''); setError('') }} style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: 'none', border: 'none', fontSize: 13,
+              cursor: 'pointer', color: '#6B7280', fontWeight: 700,
+              marginBottom: 20, fontFamily: 'inherit',
+            }}>
+              <ArrowLeft size={14} /> Back
+            </button>
+
+            {/* Avatar */}
+            <div style={{
+              width: 72, height: 72, borderRadius: '50%',
+              background: selectedChild.bg, margin: '0 auto 16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 36, boxShadow: `0 8px 24px ${selectedChild.color}35`,
+            }}>
+              {selectedChild.emoji}
+            </div>
+
+            {/* PIN dots */}
+            <div className="pin-dots" style={{ display: 'flex', justifyContent: 'center', gap: 14, marginBottom: 24 }}>
+              {[0, 1, 2, 3].map(i => (
+                <div key={i} style={{
+                  width: 18, height: 18, borderRadius: '50%',
+                  background: pin.length > i ? selectedChild.color : '#F3F4F6',
+                  border: `2px solid ${pin.length > i ? selectedChild.color : '#E5E7EB'}`,
+                  boxShadow: pin.length > i ? `0 2px 8px ${selectedChild.color}40` : 'none',
+                  transition: 'all 0.15s',
+                }} />
+              ))}
+            </div>
+
+            {error && (
+              <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', borderRadius: 10, padding: '10px 14px', fontSize: 13, fontWeight: 700, marginBottom: 16 }}>
+                {error}
+              </div>
+            )}
+
+            {/* Numpad */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, maxWidth: 260, margin: '0 auto' }}>
+              {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((digit, i) => (
+                <button key={i}
+                  className="numpad-btn"
+                  onClick={() => digit === '⌫' ? handlePinDelete() : digit ? handlePinDigit(digit) : undefined}
+                  disabled={loading || !digit}
+                  style={{
+                    padding: '16px', borderRadius: 14,
+                    border: `1.5px solid ${digit === '⌫' ? '#FECACA' : digit ? '#E5E7EB' : 'transparent'}`,
+                    background: digit === '⌫' ? '#FEF2F2' : digit ? 'white' : 'transparent',
+                    fontWeight: 900, fontSize: 22,
+                    color: digit === '⌫' ? '#DC2626' : '#111827',
+                    cursor: digit ? 'pointer' : 'default',
+                    boxShadow: digit ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
+                    opacity: loading ? 0.6 : 1,
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  {loading && digit === '0' ? <Loader2 size={18} style={{ animation: 'spin 0.7s linear infinite', margin: '0 auto' }} /> : digit}
+                </button>
+              ))}
+            </div>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          </div>
+        )}
+
+        {/* ── PARENT ── */}
+        {mode === 'parent' && (
+          <div style={{ animation: 'slideUp 0.2s ease' }}>
+            <button onClick={() => { setMode('choose'); setPassword(''); setError(''); setParent(null) }} style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: 'none', border: 'none', fontSize: 13,
+              cursor: 'pointer', color: '#6B7280', fontWeight: 700,
+              marginBottom: 20, fontFamily: 'inherit',
+            }}>
+              <ArrowLeft size={14} /> Back
+            </button>
+
+            {/* Profile picker */}
+            {parents.length > 1 && !selectedParent && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 14, color: '#6B7280', marginBottom: 12, fontWeight: 600 }}>Select your profile:</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {parents.map(parent => (
+                    <button key={parent.id} onClick={() => setParent(parent)} style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '13px 16px', borderRadius: 14,
+                      border: '1.5px solid #E5E7EB', background: '#F9FAFB',
+                      cursor: 'pointer', textAlign: 'left', width: '100%',
+                      transition: 'all 0.15s', fontFamily: 'inherit',
+                    }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#4A7FD4'; (e.currentTarget as HTMLElement).style.background = '#EFF6FF' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#E5E7EB'; (e.currentTarget as HTMLElement).style.background = '#F9FAFB' }}
+                    >
+                      <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                        {parent.avatar_emoji || '👤'}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 800, fontSize: 14, color: '#111827' }}>{parent.name}</div>
+                        <div style={{ fontSize: 12, color: '#6B7280' }}>{parent.role === 'admin' ? 'Admin' : 'Parent'}</div>
+                      </div>
+                      <ChevronRight size={15} color="#9CA3AF" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Password form */}
+            {(parents.length <= 1 || selectedParent) && (
+              <>
+                {selectedParent && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, padding: '10px 14px', background: '#F9FAFB', borderRadius: 12, border: '1px solid #E5E7EB' }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+                      {selectedParent.avatar_emoji || '👤'}
+                    </div>
+                    <span style={{ fontWeight: 800, fontSize: 14, color: '#111827', flex: 1 }}>{selectedParent.name}</span>
+                    <button onClick={() => setParent(null)} style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}>
+                      Change
+                    </button>
+                  </div>
+                )}
+
+                <div style={{ fontSize: 46, marginBottom: 8 }}>{selectedParent?.avatar_emoji || '👨‍👩‍👧'}</div>
+                <div style={{ fontWeight: 900, fontSize: 18, color: '#111827', marginBottom: 3 }}>
+                  {selectedParent ? `Hi ${selectedParent.name}!` : 'Welcome back!'}
+                </div>
+                <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 20, fontWeight: 600 }}>Enter your password</div>
+
+                {error && (
+                  <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', borderRadius: 10, padding: '10px 14px', fontSize: 13, fontWeight: 700, marginBottom: 14 }}>
+                    {error}
+                  </div>
+                )}
+
+                <div style={{ position: 'relative', marginBottom: 12 }}>
                   <Lock size={15} color="#9CA3AF" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                   <input
                     type={showPass ? 'text' : 'password'}
+                    placeholder="Your password"
                     value={password}
                     onChange={e => { setPassword(e.target.value); setError('') }}
                     onKeyDown={e => e.key === 'Enter' && submitPassword()}
-                    placeholder="Enter password"
+                    autoFocus
                     style={{
-                      width: '100%', padding: '11px 44px 11px 42px',
-                      background: '#FAFAFA', border: '1.5px solid #E5E7EB',
-                      borderRadius: 12, fontSize: 14, fontWeight: 600,
-                      color: '#111827', outline: 'none', fontFamily: 'inherit',
-                      transition: 'all 0.2s',
-                    }}
-                    onFocus={e => {
-                      e.currentTarget.style.borderColor = '#4A7FD4'
-                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(74,127,212,0.15)'
-                      e.currentTarget.style.background = 'white'
-                    }}
-                    onBlur={e => {
-                      e.currentTarget.style.borderColor = '#E5E7EB'
-                      e.currentTarget.style.boxShadow = 'none'
-                      e.currentTarget.style.background = '#FAFAFA'
+                      width: '100%', padding: '14px 44px 14px 42px',
+                      borderRadius: 12, border: `1.5px solid ${error ? '#EF4444' : '#E5E7EB'}`,
+                      fontSize: 15, color: '#111827', background: '#FAFAFA',
+                      transition: 'all 0.15s', boxSizing: 'border-box' as any,
+                      fontFamily: 'inherit',
                     }}
                   />
-                  <button
-                    onClick={() => setShowPass(v => !v)}
-                    style={{
-                      position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
-                      background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#9CA3AF',
-                    }}
-                  >
+                  <button onClick={() => setShowPass(v => !v)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 2 }}>
                     {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
-              </div>
 
-              {/* Error */}
-              {error && (
-                <div style={{
-                  fontSize: 12, color: '#EF4444', fontWeight: 700,
-                  marginBottom: 12, display: 'flex', alignItems: 'center', gap: 5,
-                }}>
-                  <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>!</div>
-                  {error}
-                </div>
-              )}
-
-              {/* Submit */}
-              <button
-                onClick={submitPassword}
-                disabled={!password || loading}
-                style={{
-                  width: '100%', padding: '13px',
-                  background: 'linear-gradient(135deg, #4A7FD4, #2EC4B6)',
-                  color: 'white', border: 'none', borderRadius: 50,
-                  fontWeight: 800, fontSize: 14, cursor: !password || loading ? 'not-allowed' : 'pointer',
-                  opacity: !password || loading ? 0.65 : 1,
+                <button onClick={submitPassword} disabled={loading || !password} style={{
+                  width: '100%', padding: 15, borderRadius: 50, border: 'none',
+                  background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)',
+                  color: 'white', fontWeight: 800, fontSize: 15,
+                  cursor: loading || !password ? 'not-allowed' : 'pointer',
+                  opacity: loading || !password ? 0.6 : 1,
                   boxShadow: '0 4px 14px rgba(74,127,212,0.35)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  transition: 'all 0.18s', fontFamily: 'inherit',
-                }}
-                onMouseEnter={e => { if (password && !loading) (e.currentTarget.style.transform = 'translateY(-1px)') }}
-                onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
-              >
-                {loading
-                  ? <><div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Signing in...</>
-                  : <><Shield size={14} /> Sign In</>
-                }
-              </button>
+                  fontFamily: 'inherit', transition: 'all 0.15s',
+                }}>
+                  {loading ? <><Loader2 size={16} style={{ animation: 'spin 0.7s linear infinite' }} /> Logging in…</> : 'Enter Dashboard →'}
+                </button>
 
-              <button
-                onClick={() => { setMode('choose'); setError(''); setPassword('') }}
-                style={{
-                  marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-                  background: 'none', border: 'none', color: '#9CA3AF',
-                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                  width: '100%', fontFamily: 'inherit', transition: 'color 0.15s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#6B7280')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#9CA3AF')}
-              >
-                <ArrowLeft size={12} /> Back to login
-              </button>
-            </div>
-          )}
-        </div>
+                <div style={{ marginTop: 12, fontSize: 12, color: '#9CA3AF', fontWeight: 600 }}>
+                  Default password: <strong style={{ color: '#6B7280' }}>eduplay2024</strong>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   )
 }
