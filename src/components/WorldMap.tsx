@@ -15,7 +15,7 @@ const ID_TO_CONTINENT: Record<string, string> = {
   '324':'africa', '384':'africa', '404':'africa', '426':'africa', '430':'africa',
   '434':'africa', '450':'africa', '454':'africa', '466':'africa', '478':'africa',
   '480':'africa', '504':'africa', '508':'africa', '516':'africa', '562':'africa',
-  '566':'africa', '624':'africa', '638':'africa', '646':'africa', '678':'africa',
+  '566':'africa', '854':'africa', '624':'africa', '638':'africa', '646':'africa', '678':'africa',
   '686':'africa', '694':'africa', '706':'africa', '710':'africa', '716':'africa',
   '728':'africa', '729':'africa', '732':'africa', '768':'africa', '788':'africa',
   '800':'africa', '818':'africa', '834':'africa', '894':'africa',
@@ -37,7 +37,7 @@ const ID_TO_CONTINENT: Record<string, string> = {
   '300':'europe', '336':'europe', '348':'europe', '352':'europe', '372':'europe',
   '380':'europe', '428':'europe', '438':'europe', '440':'europe', '442':'europe',
   '470':'europe', '492':'europe', '498':'europe', '499':'europe', '528':'europe',
-  '578':'europe', '616':'europe', '620':'europe', '642':'europe', '643':'asia',
+  '578':'europe', '616':'europe', '620':'europe', '642':'europe', '643':'europe',
   '674':'europe', '688':'europe', '703':'europe', '705':'europe', '724':'europe',
   '752':'europe', '756':'europe', '804':'europe', '807':'europe', '826':'europe',
   '831':'europe', '832':'europe', '833':'europe',
@@ -66,7 +66,7 @@ const ID_TO_CONTINENT: Record<string, string> = {
   '548':'oceania', '554':'oceania', '570':'oceania', '574':'oceania',
   '580':'oceania', '581':'oceania', '583':'oceania', '584':'oceania',
   '585':'oceania', '612':'oceania', '772':'oceania', '776':'oceania',
-  '780':'oceania', '798':'oceania', '876':'oceania',
+  '780':'south_america', '798':'oceania', '876':'oceania',
   // ── Antarctica ────────────────────────────────────────────────
   '010':'antarctica',
 }
@@ -108,7 +108,18 @@ export default function WorldMap({ activePhase, completedPhases, onSelect }: Wor
 
   function getSlug(geo: any): string | null {
     const id = String(geo.id ?? '').padStart(3, '0')
-    return ID_TO_CONTINENT[id] ?? null
+    const mapped = ID_TO_CONTINENT[id]
+    if (mapped) return mapped
+    // Fallback: African numeric IDs are generally in ranges not covered by other continents.
+    // Any unknown country with an ID in typical African ranges → show as Africa
+    // rather than leaving an ugly hole. Better a small visual inaccuracy than a gap.
+    const num = parseInt(id, 10)
+    if (
+      (num >= 100 && num <= 140) ||   // central Africa range
+      (num >= 200 && num <= 270) ||   // west/central Africa
+      (num >= 620 && num <= 730)      // east/south Africa
+    ) return 'africa'
+    return null
   }
 
   // Completed continents use their activeColor at full brightness (same as hover)
