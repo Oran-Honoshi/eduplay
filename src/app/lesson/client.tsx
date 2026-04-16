@@ -16,7 +16,7 @@ function Fraction({ n, d, size = 20 }: { n: any; d: any; size?: number }) {
 const THEMES: any = {
   minecraft:  { bg:'#1A1A2E', panel:'#2D2D2D', panel2:'#1a1a1a', border:'#555', accent1:'#5D9E2F', accent2:'#FFD700', accent3:'#39D9D9', accent4:'#FF6B00', xp:'#82FF00', text:'#F5F5DC', text2:'rgba(245,245,220,0.6)', radius:'0px', fontHead:'"Press Start 2P",monospace', shadow:'4px 4px 0 rgba(0,0,0,0.7)', btnShadow:'4px 4px 0 #000' },
   princesses: { bg:'#FFF0F8', panel:'#FFFFFF', panel2:'#FFF0F8', border:'#F4AFCF', accent1:'#E05BA0', accent2:'#FFD700', accent3:'#9B59B6', accent4:'#FF8C69', xp:'#E05BA0', text:'#3D1A2E', text2:'rgba(61,26,46,0.6)', radius:'20px', fontHead:'"Cinzel Decorative",serif', shadow:'0 8px 24px rgba(224,91,160,0.18)', btnShadow:'0 4px 16px rgba(224,91,160,0.35)' },
-  plain:      { bg:'#F8F9FA', panel:'#FFFFFF', panel2:'#F8F9FA', border:'#DEE2E6', accent1:'#4A90D9', accent2:'#F0A500', accent3:'#27AE60', accent4:'#E67E22', xp:'#27AE60', text:'#212529', text2:'#6C757D', radius:'12px', fontHead:'"Nunito",sans-serif', shadow:'0 2px 12px rgba(0,0,0,0.08)', btnShadow:'0 2px 8px rgba(0,0,0,0.12)' },
+  plain:      { bg:'#F9FAFB', panel:'#FFFFFF', panel2:'#F3F4F6', border:'#E5E7EB', accent1:'#4A7FD4', accent2:'#F59E0B', accent3:'#10B981', accent4:'#8B5CF6', xp:'#10B981', text:'#111827', text2:'#6B7280', radius:'14px', fontHead:'"Nunito",sans-serif', shadow:'0 2px 12px rgba(0,0,0,0.05)', btnShadow:'0 2px 8px rgba(0,0,0,0.07)' },
 }
 
 const MASCOTS: any = {
@@ -629,10 +629,28 @@ export default function LessonClient({ child, topic, questions, passage, passage
 
       {/* Header */}
       <header className="lesson-header" style={{ background:theme==='minecraft'?'rgba(0,0,0,0.75)':T.panel, borderBottom:`${theme==='minecraft'?4:1}px solid ${T.border}`, padding:'0 16px', height:'52px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, gap:'8px' }}>
-        <div style={{ fontFamily:T.fontHead, fontSize:'11px', color:T.accent1, flexShrink:0 }}>Edu<span style={{ color:T.accent2 }}>Play</span></div>
+        <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+          {theme === 'plain' ? (
+            <>
+              <img src="/icons/icon-512.png" alt="EduPlay" style={{ width:30, height:30, borderRadius:9, boxShadow:'0 2px 6px rgba(74,127,212,0.2)' }}/>
+              <div style={{ fontWeight:900, fontSize:14, color:T.text, letterSpacing:'-0.01em' }}>
+                Edu<span style={{ background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Play</span>
+              </div>
+            </>
+          ) : (
+            <span style={{ fontFamily:T.fontHead, fontSize:'11px', color:T.accent1 }}>Edu<span style={{ color:T.accent2 }}>Play</span></span>
+          )}
+        </div>
         <div className="lesson-header-controls" style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'nowrap', overflowX:'auto' }}>
           <div style={{ display:'flex', gap:'2px' }}>{[...Array(5)].map((_,i) => <span key={i} style={{ fontSize:'12px', opacity:i<3?1:0.3 }}>❤️</span>)}</div>
-          <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.xp, flexShrink:0 }}>{xpBalance.toLocaleString()} XP</span>
+          {theme === 'plain' ? (
+            <div style={{ display:'flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:50, background:'#FFFBEB', border:'1.5px solid #F59E0B40' }}>
+              <span style={{ fontSize:12 }}>⭐</span>
+              <span style={{ fontWeight:900, fontSize:13, color:'#B45309' }}>{xpBalance.toLocaleString()}</span>
+            </div>
+          ) : (
+            <span style={{ fontFamily:T.fontHead, fontSize:'7px', color:T.xp, flexShrink:0 }}>{xpBalance.toLocaleString()} XP</span>
+          )}
 
           {/* Font size controls */}
           <div className="font-size-controls" style={{ display:'flex', gap:'2px', alignItems:'center' }}>
