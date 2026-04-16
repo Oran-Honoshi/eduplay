@@ -91,6 +91,38 @@ export async function GET(req: NextRequest) {
       subject,
     })
 
+    // ── Auto-save questions back to DB (fire-and-forget) ─────────
+    try {
+      const toSave = finalQuestions
+        .filter((q: any) => q.prompt_en && q.topic_id)
+        .map((q: any) => {
+          const topic = topics.find((t: any) => t.id === q.topic_id)
+          return {
+            topic_slug: topic?.slug, difficulty: q.difficulty || difficulty,
+            q_type: q.q_type || 'multiple_choice', prompt_en: q.prompt_en,
+            prompt_he: q.prompt_he || null, options: q.options || null,
+            correct_answer: q.correct_answer, hint_en: q.hint_en || null,
+            hint_he: q.hint_he || null, explanation_en: q.explanation_en || null,
+            visual_data: q.visual_data || null, approved: true,
+          }
+        })
+        .filter((q: any) => q.topic_slug)
+
+      if (toSave.length > 0) {
+        void (async () => {
+          try {
+            await supabase.from('questions').upsert(
+              toSave.map((q: any) => {
+                const topic = topics.find((t: any) => t.slug === q.topic_slug)
+                return { ...q, topic_id: topic?.id, source: 'worksheet_builder' }
+              }).filter((q: any) => q.topic_id),
+              { onConflict: 'topic_id,prompt_en', ignoreDuplicates: true }
+            )
+          } catch {}
+        })()
+      }
+    } catch {}
+
     return new NextResponse(html, {
       headers: { 'Content-Type': 'text/html; charset=utf-8' }
     })
