@@ -473,6 +473,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
   const [xpBalance, setXp]        = useState(child?.xp_balance || 0)
   const [xpNotif, setXpNotif]     = useState<string|null>(null)
   const [completed, setCompleted] = useState(false)
+  const [awardedCard, setAwardedCard] = useState<{id:string;name_en:string}|null>(null)
   const [pipText, setPip]         = useState(TD.pip)
   const [fontSize, setFontSize]   = useState<'small'|'medium'|'large'|'xl'>(
     (urlParams?.get('fs') || child?.font_size || 'medium') as 'small'|'medium'|'large'|'xl'
@@ -562,11 +563,13 @@ export default function LessonClient({ child, topic, questions, passage, passage
       setXp((b: number) => b + 25)
       showXP('+25 XP ⬆')
       try {
-        await fetch('/api/progress', {
+        const res = await fetch('/api/progress', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ childId: child?.id, questionId: currentQ.id, topicId: topic?.id, answerGiven: opt.label, correct, hintUsed: hintVisible, stepNumber: currentStep, totalSteps }),
         })
+        const data = await res.json()
+        if (data.awardedCard) setAwardedCard(data.awardedCard)
       } catch {}
     }
   }
@@ -579,8 +582,10 @@ export default function LessonClient({ child, topic, questions, passage, passage
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: totalSteps, totalSteps }),
-      }).catch(() => {})
-      // Trigger relief if configured
+      })
+        .then(r => r.json())
+        .then(data => { if (data.awardedCard) setAwardedCard(data.awardedCard) })
+        .catch(() => {})
       const reliefTrigger = child?.relief_trigger || 'topic'
       if (reliefTrigger === 'lesson' || reliefTrigger === 'both') {
         setTimeout(() => {
@@ -594,6 +599,14 @@ export default function LessonClient({ child, topic, questions, passage, passage
     setQIndex(i => Math.min(i + 1, questions.length - 1))
     setAnswered(false); setSelected(null); setFeedback(null); setHint(false)
     setPip(TD.pip)
+  }
+
+  function goBackWithCard() {
+    const base = token ? `/play/${token}` : '/dashboard'
+    const cardParams = awardedCard
+      ? `?newCard=${encodeURIComponent(awardedCard.name_en)}&cardId=${awardedCard.id}`
+      : ''
+    window.location.href = base + cardParams
   }
 
   return (
@@ -618,7 +631,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                 if (reliefTrigger === 'lesson' || reliefTrigger === 'both') {
                   window.location.href = `/relief?childId=${child?.id}&grade=${child?.grade||0}&token=${token}&returnTo=${token?`/play/${token}`:'/dashboard'}`
                 } else {
-                  goBack()
+                  goBackWithCard()
                 }
               }} style={{ flex:1, padding:'12px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.home}</button>
               <button onClick={() => { setCompleted(false); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'8px', cursor:'pointer' }}>{UI.again}</button>
