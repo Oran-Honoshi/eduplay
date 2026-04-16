@@ -247,8 +247,8 @@ export default function DashboardClient({ data }: { data: any }) {
       {/* Header */}
       <header style={{ background:'white', borderBottom:'1px solid #EEF1F6', padding:'0 16px', height:'58px', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', position:'sticky', top:0, zIndex:100, gap:'8px' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'18px', color:'#1E2D4E', flexShrink:0 }}>
-          <div style={{ width:'30px', height:'30px', background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'15px' }}>🦔</div>
-          Edu<span style={{ color:'#4A7FD4' }}>Play</span>
+          <img src="/icons/icon-512.png" alt="EduPlay" style={{ width:32, height:32, borderRadius:9, objectFit:'contain', display:'block', flexShrink:0, boxShadow:'0 2px 8px rgba(74,127,212,0.25)' }}/>
+          <span>Edu<span style={{ background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>Play</span></span>
         </div>
 
         {/* Tabs */}

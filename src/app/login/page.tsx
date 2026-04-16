@@ -144,15 +144,12 @@ export default function LoginPage() {
         <div className="login-inner" style={{ padding: 0 }}>
           {/* Logo */}
           <div style={{ marginBottom: 28 }}>
-            <div style={{
-              width: 68, height: 68,
-              background: 'linear-gradient(135deg, #4A7FD4, #2EC4B6)',
-              borderRadius: 20, display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: 34,
-              margin: '0 auto 12px',
-              boxShadow: '0 8px 24px rgba(74,127,212,0.3)',
-            }}>
-              🦔
+            <div style={{ margin: '0 auto 12px', width: 'fit-content' }}>
+              <img
+                src="/icons/icon-512.png"
+                alt="EduPlay"
+                style={{ width: 72, height: 72, borderRadius: 20, display: 'block', boxShadow: '0 8px 24px rgba(74,127,212,0.3)' }}
+              />
             </div>
             <div style={{ fontWeight: 900, fontSize: 27, color: '#111827', letterSpacing: '-0.02em' }}>
               Edu
