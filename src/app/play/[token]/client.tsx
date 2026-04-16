@@ -107,8 +107,9 @@ export default function ChildPortalClient({
 
         <header style={{ background: T.panel, borderBottom: `2px solid ${T.border}`, padding: '0 16px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 34, height: 34, background: `linear-gradient(135deg,${T.accent},${T.accent2})`, borderRadius: T.radius, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow:'hidden' }}>
+            <div style={{ width: 34, height: 34, background: `linear-gradient(135deg,${T.accent},${T.accent2})`, borderRadius: T.radius, overflow:'hidden', flexShrink: 0 }}>
               <img src="/icons/icon-512.png" alt="EduPlay" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>
+            </div>
             <div style={{ fontWeight: 900, fontSize: 13, color: T.accent }}>{child.display_name}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
