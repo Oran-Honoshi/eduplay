@@ -37,7 +37,7 @@ const ID_TO_CONTINENT: Record<string, string> = {
   '300':'europe', '336':'europe', '348':'europe', '352':'europe', '372':'europe',
   '380':'europe', '428':'europe', '438':'europe', '440':'europe', '442':'europe',
   '470':'europe', '492':'europe', '498':'europe', '499':'europe', '528':'europe',
-  '578':'europe', '616':'europe', '620':'europe', '642':'europe', '643':'europe',
+  '578':'europe', '616':'europe', '620':'europe', '642':'europe', '643':'asia',
   '674':'europe', '688':'europe', '703':'europe', '705':'europe', '724':'europe',
   '752':'europe', '756':'europe', '804':'europe', '807':'europe', '826':'europe',
   '831':'europe', '832':'europe', '833':'europe',
