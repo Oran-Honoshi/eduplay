@@ -37,8 +37,8 @@ const REGION_COLORS: Record<string, string> = {
 }
 
 function getCardImg(card: Card, w=400) {
-  if (card.image_url) return card.image_url
-  return `https://images.unsplash.com/photo-${card.unsplash_id}?w=${w}&fit=crop&auto=format&q=80`
+  const src = card.image_url || `https://images.unsplash.com/photo-${card.unsplash_id}?w=${w}&fit=crop&auto=format&q=80`
+  return `/api/imgproxy?url=${encodeURIComponent(src)}`
 }
 
 
