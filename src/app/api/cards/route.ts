@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
   const [{ data: phases }, { data: cards }, { data: owned }] = await Promise.all([
     supabase.from('card_phases').select('*').eq('is_active', true).order('sort_order'),
-    supabase.from('animal_cards').select('*').eq('is_active', true).order('sort_order'),
+    supabase.from('animal_cards').select('*,image_url').eq('is_active', true).order('sort_order'),
     supabase.from('child_animal_cards').select('card_id').eq('child_id', childId),
   ])
 
