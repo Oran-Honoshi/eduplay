@@ -1,66 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@/lib/supabase'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-// GET /api/cards?childId=xxx  — phases + cards + ownership
 export async function GET(req: NextRequest) {
+  const supabase = createServerClient()
   const childId = req.nextUrl.searchParams.get('childId')
   if (!childId) return NextResponse.json({ error: 'childId required' }, { status: 400 })
 
   const [{ data: phases }, { data: cards }, { data: owned }] = await Promise.all([
     supabase.from('card_phases').select('*').eq('is_active', true).order('sort_order'),
     supabase.from('animal_cards').select('*').eq('is_active', true).order('sort_order'),
-    supabase.from('child_animal_cards').select('card_id, obtained_at').eq('child_id', childId),
+    supabase.from('child_animal_cards').select('card_id').eq('child_id', childId),
   ])
 
-  const ownedIds = new Set((owned || []).map((r: any) => r.card_id))
-
-  return NextResponse.json({ phases: phases || [], cards: cards || [], ownedIds: [...ownedIds] })
+  return NextResponse.json({
+    phases: phases || [],
+    cards: cards || [],
+    ownedIds: (owned || []).map((r: any) => r.card_id),
+  })
 }
 
-// POST /api/cards  — purchase a card with XP
 export async function POST(req: NextRequest) {
-  const { childId, cardId } = await req.json()
+  const supabase = createServerClient()
+  const { childId, cardId, useToken } = await req.json()
   if (!childId || !cardId) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
-  // Get card cost + child XP balance
-  const [{ data: card }, { data: child }] = await Promise.all([
-    supabase.from('animal_cards').select('xp_cost, name_en').eq('id', cardId).single(),
-    supabase.from('children').select('xp_balance').eq('id', childId).single(),
-  ])
-
-  if (!card || !child) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-
-  const balance = child.xp_balance ?? 0
-  if (balance < card.xp_cost) {
-    return NextResponse.json({ error: 'Not enough XP', needed: card.xp_cost, have: balance }, { status: 400 })
-  }
+  // Get child token balance
+  const { data: child } = await supabase
+    .from('children').select('card_tokens, display_name').eq('id', childId).single()
+  if (!child) return NextResponse.json({ error: 'Child not found' }, { status: 404 })
+  if ((child.card_tokens ?? 0) < 1) return NextResponse.json({ error: 'No card tokens available' }, { status: 400 })
 
   // Check not already owned
   const { data: existing } = await supabase
-    .from('child_animal_cards')
-    .select('id')
-    .eq('child_id', childId)
-    .eq('card_id', cardId)
-    .maybeSingle()
-
+    .from('child_animal_cards').select('id').eq('child_id', childId).eq('card_id', cardId).maybeSingle()
   if (existing) return NextResponse.json({ error: 'Already owned' }, { status: 400 })
 
-  // Deduct XP and grant card in one transaction-like sequence
-  const newBalance = balance - card.xp_cost
-
-  const [xpResult, cardResult] = await Promise.all([
-    supabase.from('children').update({ xp_balance: newBalance }).eq('id', childId),
-    supabase.from('child_animal_cards').insert({ child_id: childId, card_id: cardId, xp_spent: card.xp_cost }),
+  // Deduct 1 token and grant card
+  const newTokens = (child.card_tokens ?? 1) - 1
+  const [tokenResult, cardResult] = await Promise.all([
+    supabase.from('children').update({ card_tokens: newTokens }).eq('id', childId),
+    supabase.from('child_animal_cards').insert({ child_id: childId, card_id: cardId }),
   ])
 
-  if (xpResult.error || cardResult.error) {
-    return NextResponse.json({ error: 'Purchase failed' }, { status: 500 })
+  if (tokenResult.error || cardResult.error) {
+    return NextResponse.json({ error: 'Collection failed' }, { status: 500 })
   }
 
-  return NextResponse.json({ success: true, newXP: newBalance, cardName: card.name_en })
+  return NextResponse.json({ success: true, newTokens })
 }
