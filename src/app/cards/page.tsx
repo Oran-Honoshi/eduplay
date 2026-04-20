@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { ArrowLeft, Check, X, ChevronRight, Gift } from 'lucide-react'
+import WorldMapComponent from '@/components/WorldMap'
 
 interface Phase {
   id: string; slug: string; name_en: string; name_he: string
@@ -34,78 +35,10 @@ const REGION_COLORS: Record<string, string> = {
   south_america:'#27AE60', europe:'#8E44AD', oceania:'#16A085',
   antarctica:'#2980B9', ocean:'#1ABC9C', birds:'#F39C12', dinosaurs:'#7F8C8D',
 }
-
 function imgUrl(id: string, w=400, h=280) {
   return `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&auto=format&q=80`
 }
 
-// ── World Map ─────────────────────────────────────────────────
-function WorldMap({ phases, ownedIds, cards, onSelect, activePhase }: {
-  phases: Phase[]; ownedIds: Set<string>; cards: Card[]
-  onSelect: (s: string) => void; activePhase: string|null
-}) {
-  const regions = [
-    { slug:'africa',        label:'Africa',      d:'M 290 220 L 310 210 L 340 215 L 350 240 L 345 270 L 330 300 L 310 310 L 290 300 L 280 270 L 275 245 Z' },
-    { slug:'europe',        label:'Europe',      d:'M 265 155 L 290 148 L 310 155 L 308 175 L 290 185 L 268 178 Z' },
-    { slug:'asia',          label:'Asia',        d:'M 315 140 L 420 135 L 450 155 L 445 185 L 420 200 L 390 205 L 360 200 L 330 195 L 315 175 Z' },
-    { slug:'north_america', label:'N.America',   d:'M 100 140 L 170 130 L 200 155 L 195 195 L 175 215 L 145 220 L 115 200 L 95 175 Z' },
-    { slug:'south_america', label:'S.America',   d:'M 145 235 L 185 225 L 200 250 L 195 300 L 175 325 L 150 320 L 135 295 L 130 265 Z' },
-    { slug:'oceania',       label:'Oceania',     d:'M 400 265 L 450 258 L 465 275 L 460 300 L 435 308 L 405 300 L 395 280 Z' },
-    { slug:'antarctica',    label:'Antarctica',  d:'M 150 355 L 250 348 L 350 350 L 400 358 L 390 375 L 300 382 L 200 380 L 140 372 Z' },
-    { slug:'ocean',         label:'Ocean',       d:'M 470 180 L 500 175 L 510 195 L 500 215 L 470 210 Z' },
-    { slug:'birds',         label:'Birds',       d:'M 50 200 L 75 195 L 82 210 L 75 225 L 50 220 Z' },
-    { slug:'dinosaurs',     label:'Dinos',       d:'M 500 240 L 535 235 L 545 255 L 535 275 L 500 270 Z' },
-  ]
-
-  const getProgress = (slug: string) => {
-    const phase = phases.find(p => p.slug === slug)
-    if (!phase) return { owned: 0, total: 0, complete: false }
-    const pc = cards.filter(c => c.phase_id === phase.id)
-    const owned = pc.filter(c => ownedIds.has(c.id)).length
-    return { owned, total: pc.length, complete: pc.length > 0 && owned === pc.length }
-  }
-
-  return (
-    <div style={{ position:'relative', background:'#0A1628', borderRadius:16, overflow:'hidden' }}>
-      <svg viewBox="0 0 580 400" width="100%" style={{ display:'block' }}>
-        <rect x="0" y="0" width="580" height="400" fill="#0D2137"/>
-        {[1,2,3,4,5].map(i=><line key={`h${i}`} x1="0" y1={i*66} x2="580" y2={i*66} stroke="#142A45" strokeWidth="1"/>)}
-        {[1,2,3,4,5,6,7,8].map(i=><line key={`v${i}`} x1={i*72} y1="0" x2={i*72} y2="400" stroke="#142A45" strokeWidth="1"/>)}
-        {regions.map(r => {
-          const { owned, total, complete } = getProgress(r.slug)
-          const active = activePhase === r.slug
-          const color = REGION_COLORS[r.slug] || '#666'
-          const fillOpacity = complete ? 1 : total > 0 ? 0.3 + (owned/total)*0.55 : 0.3
-          const pts = r.d.match(/[\d.]+/g)?.map(Number)||[]
-          const xs = pts.filter((_,i)=>i%2===0), ys = pts.filter((_,i)=>i%2===1)
-          const cx = xs.reduce((a,b)=>a+b,0)/xs.length, cy = ys.reduce((a,b)=>a+b,0)/ys.length
-          return (
-            <g key={r.slug} onClick={()=>onSelect(r.slug)} style={{cursor:'pointer'}}>
-              {active && <path d={r.d} fill={color} opacity={0.25} transform="scale(1.08) translate(-23,-17)" style={{filter:'blur(8px)'}}/>}
-              <path d={r.d} fill={color} opacity={fillOpacity}
-                stroke={complete ? '#FFD700' : active ? 'white' : '#1D3A5C'}
-                strokeWidth={complete ? 2.5 : active ? 2 : 1}/>
-              {complete
-                ? <text x={cx} y={cy+4} textAnchor="middle" fontSize="11" fill="#FFD700">✓</text>
-                : total>0 && <text x={cx} y={cy+4} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,0.8)" style={{pointerEvents:'none'}}>{owned}/{total}</text>
-              }
-            </g>
-          )
-        })}
-      </svg>
-      <div style={{position:'absolute',bottom:8,right:10,display:'flex',gap:10,alignItems:'center'}}>
-        <div style={{display:'flex',alignItems:'center',gap:4}}>
-          <div style={{width:10,height:10,background:'#555',border:'1px solid #888',borderRadius:2}}/>
-          <span style={{fontSize:9,color:'#9CA3AF'}}>In progress</span>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:4}}>
-          <div style={{width:10,height:10,background:'#E67E22',border:'2px solid #FFD700',borderRadius:2}}/>
-          <span style={{fontSize:9,color:'#FFD700'}}>Complete!</span>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 // ── XP Progress Bar toward next token ────────────────────────
 function TokenProgressBar({ child }: { child: Child }) {
@@ -317,8 +250,15 @@ export default function CardsPage() {
         {/* XP progress toward next token */}
         {child&&<TokenProgressBar child={child}/>}
 
-        {/* World map */}
-        <WorldMap phases={phases} ownedIds={ownedIds} cards={cards} onSelect={setActive} activePhase={activePhase}/>
+        {/* World map — real geographic map */}
+        <WorldMapComponent
+          activePhase={activePhase}
+          completedPhases={phases.filter(p => {
+            const pc = cards.filter(c => c.phase_id === p.id)
+            return pc.length > 0 && pc.every(c => ownedIds.has(c.id))
+          }).map(p => p.slug)}
+          onSelect={setActive}
+        />
 
         {/* Region tabs */}
         <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:4}}>
