@@ -37,8 +37,8 @@ const REGION_COLORS: Record<string, string> = {
 }
 
 function getCardImg(card: Card, w=400) {
-  const src = card.image_url || `https://images.unsplash.com/photo-${card.unsplash_id}?w=${w}&fit=crop&auto=format&q=80`
-  return `/api/imgproxy?url=${encodeURIComponent(src)}`
+  if (card.image_url) return card.image_url
+  return `https://images.unsplash.com/photo-${card.unsplash_id}?w=${w}&fit=crop&auto=format&q=80`
 }
 
 
@@ -86,7 +86,7 @@ function AnimalCard({ card, owned, canCollect, onCollect, onOpen }: {
       onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.transform='translateY(0)'}}>
       <div style={{position:'relative',width:'100%',aspectRatio:'4/3',overflow:'hidden',background:`${r.color}18`}}>
         {!imgErr
-          ?<img src={getCardImg(card)} alt={card.name_en}
+          ?<img src={getCardImg(card)} alt={card.name_en} crossOrigin="anonymous"
             style={{width:'100%',height:'100%',objectFit:'cover',display:'block',filter:owned?'none':'grayscale(100%) brightness(0.5)'}}
             onError={()=>setImgErr(true)}/>
           :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:36,color:r.color,opacity:0.5}}>🐾</div>
@@ -135,7 +135,7 @@ function CardModal({ card, onClose }: { card: Card; onClose: ()=>void }) {
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.65)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={onClose}>
       <div style={{background:'white',borderRadius:18,maxWidth:380,width:'100%',overflow:'hidden',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
         <div style={{position:'relative',aspectRatio:'16/9',background:'#f0f4f8',overflow:'hidden'}}>
-          {!imgErr?<img src={getCardImg(card, 760)} alt={card.name_en} style={{width:'100%',height:'100%',objectFit:'cover'}} onError={()=>setImgErr(true)}/>
+          {!imgErr?<img src={getCardImg(card, 760)} alt={card.name_en} crossOrigin="anonymous" style={{width:'100%',height:'100%',objectFit:'cover'}} onError={()=>setImgErr(true)}/>
             :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:64,background:`${r.color}18`}}>🐾</div>}
           <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 50%)'}}/>
           <div style={{position:'absolute',bottom:14,left:16}}>
