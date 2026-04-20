@@ -40,6 +40,21 @@ function imgUrl(id: string, w=400, h=280) {
   return `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&auto=format&q=80`
 }
 
+const ANIMAL_FALLBACKS: Record<string, string> = {
+  'African Elephant': '1557424484-9dfd4893ef56',
+  'Cheetah': '1557050543-9daf9f46f4b0',
+  'Mountain Gorilla': '1564349213-e58b3440fde8',
+  'Flamingo': '1558618665-fb93fc4aa22d',
+  'Nile Crocodile': '1516934493-54c1bae33fc0',
+  'Lion': '1546182990-dffeafbe841d',
+  'Bengal Tiger': '1589820791-UpgplbGfuGM',
+  'Giant Panda': '1531245827-pTnNqFKylaA',
+  'Humpback Whale': '1559590660-c9OCWLka764',
+  'Emperor Penguin': '1546122610-nCbMEpEcLDE',
+  'Grizzly Bear': '1555082795-kpbSEJg6rUg',
+  'Jaguar': '1551316679-9c6ae9dab70e',
+}
+
 
 // ── XP Progress Bar toward next token ────────────────────────
 function TokenProgressBar({ child }: { child: Child }) {
@@ -82,10 +97,18 @@ function AnimalCard({ card, owned, canCollect, onCollect, onOpen }: {
         boxShadow:owned?`0 4px 16px ${r.color}20`:'0 1px 6px rgba(0,0,0,0.06)'}}
       onMouseEnter={e=>{if(owned)(e.currentTarget as HTMLElement).style.transform='translateY(-3px)'}}
       onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.transform='translateY(0)'}}>
-      <div style={{position:'relative',width:'100%',aspectRatio:'4/3',overflow:'hidden',background:imgErr?`${r.color}18`:'#f0f4f8'}}>
+      <div style={{position:'relative',width:'100%',aspectRatio:'4/3',overflow:'hidden',background:`${r.color}18`}}>
         {!imgErr
-          ?<img src={imgUrl(card.unsplash_id)} alt={card.name_en} style={{width:'100%',height:'100%',objectFit:'cover',display:'block',filter:owned?'none':'grayscale(100%) brightness(0.55)'}} onError={()=>setImgErr(true)}/>
-          :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:40,opacity:0.4}}>🌍</div>
+          ?<img src={imgUrl(card.unsplash_id)} alt={card.name_en}
+            style={{width:'100%',height:'100%',objectFit:'cover',display:'block',filter:owned?'none':'grayscale(100%) brightness(0.5)'}}
+            onError={(e)=>{
+              const img = e.currentTarget
+              const fb = ANIMAL_FALLBACKS[card.name_en]
+              if(fb && img.src !== imgUrl(fb)){
+                img.src = imgUrl(fb)
+              } else { setImgErr(true) }
+            }}/>
+          :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:36,background:`${r.color}18`,color:r.color,opacity:0.6}}>🐾</div>
         }
         {/* Question mark overlay for uncollected cards */}
         {!owned&&(
@@ -131,8 +154,9 @@ function CardModal({ card, onClose }: { card: Card; onClose: ()=>void }) {
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.65)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={onClose}>
       <div style={{background:'white',borderRadius:18,maxWidth:380,width:'100%',overflow:'hidden',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
         <div style={{position:'relative',aspectRatio:'16/9',background:'#f0f4f8',overflow:'hidden'}}>
-          {!imgErr?<img src={imgUrl(card.unsplash_id,760,427)} alt={card.name_en} style={{width:'100%',height:'100%',objectFit:'cover'}} onError={()=>setImgErr(true)}/>
-            :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:64,background:`${r.color}18`}}>🌍</div>}
+          {!imgErr?<img src={imgUrl(card.unsplash_id,760,427)} alt={card.name_en} style={{width:'100%',height:'100%',objectFit:'cover'}}
+            onError={(e)=>{const img=e.currentTarget;const fb=ANIMAL_FALLBACKS[card.name_en];if(fb&&img.src!==imgUrl(fb,760,427)){img.src=imgUrl(fb,760,427)}else{setImgErr(true)}}}/>
+            :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:64,background:`${r.color}18`}}>🐾</div>}
           <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 50%)'}}/>
           <div style={{position:'absolute',bottom:14,left:16}}>
             <div style={{fontSize:22,fontWeight:700,color:'white',marginBottom:4}}>{card.name_en}</div>
