@@ -35,6 +35,7 @@ const REGION_COLORS: Record<string, string> = {
   south_america:'#27AE60', europe:'#8E44AD', oceania:'#16A085',
   antarctica:'#2980B9', ocean:'#1ABC9C', birds:'#F39C12', dinosaurs:'#7F8C8D',
 }
+
 function imgUrl(id: string, w=400, h=280) {
   return `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&auto=format&q=80`
 }
@@ -83,9 +84,15 @@ function AnimalCard({ card, owned, canCollect, onCollect, onOpen }: {
       onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.transform='translateY(0)'}}>
       <div style={{position:'relative',width:'100%',aspectRatio:'4/3',overflow:'hidden',background:imgErr?`${r.color}18`:'#f0f4f8'}}>
         {!imgErr
-          ?<img src={imgUrl(card.unsplash_id)} alt={card.name_en} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}} onError={()=>setImgErr(true)}/>
+          ?<img src={imgUrl(card.unsplash_id)} alt={card.name_en} style={{width:'100%',height:'100%',objectFit:'cover',display:'block',filter:owned?'none':'grayscale(100%) brightness(0.55)'}} onError={()=>setImgErr(true)}/>
           :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:40,opacity:0.4}}>🌍</div>
         }
+        {/* Question mark overlay for uncollected cards */}
+        {!owned&&(
+          <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <div style={{width:40,height:40,borderRadius:'50%',background:'rgba(0,0,0,0.45)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,color:'white',fontWeight:900}}>?</div>
+          </div>
+        )}
         {owned&&<div style={{position:'absolute',top:7,right:7,width:22,height:22,borderRadius:'50%',background:'#10B981',display:'flex',alignItems:'center',justifyContent:'center'}}><Check size={12} color="white" strokeWidth={3}/></div>}
         <div style={{position:'absolute',bottom:0,left:0,right:0,height:3,background:r.color}}/>
       </div>
