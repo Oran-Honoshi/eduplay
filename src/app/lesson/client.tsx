@@ -437,10 +437,11 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
       <div style={{ background:T.panel2, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
         <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent4, marginBottom:'10px' }}>❓ {UI.practice}</div>
 
-        {currentQ?.prompt_en && !isHE && (
-          <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>{isHE && currentQ.prompt_he ? currentQ.prompt_he : currentQ.prompt_en}</p>
-        )}
-        {currentQ?.prompt_he && (isHE || langMode === 'bilingual') && (
+        {/* Primary prompt — Hebrew when isHE */}
+        <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>
+          {isHE && currentQ.prompt_he ? currentQ.prompt_he : currentQ.prompt_en}
+        </p>
+        {langMode === 'bilingual' && currentQ?.prompt_he && !isHE && (
           <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 10px', lineHeight:1.6 }}>{currentQ.prompt_he}</p>
         )}
 
@@ -903,14 +904,13 @@ export default function LessonClient({ child, topic, questions, passage, passage
                 <div style={{ background:T.panel2, border:`${theme==='minecraft'?3:2}px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
                   <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent4, marginBottom:'10px' }}>⚔️ {UI.practice}</div>
                   <div style={{ marginBottom:'10px' }}>
-                    {langMode !== 'he_only' && !isHE && subjSlug !== 'hebrew' && (
-                      <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>
-                    )}
-                    {(langMode !== 'en_only' || subjSlug === 'hebrew') && currentQ.prompt_he && (
-                      <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 6px' }}>{currentQ.prompt_he}</p>
-                    )}
-                    {subjSlug !== 'hebrew' && langMode !== 'he_only' && !currentQ.prompt_he && (
-                      <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>
+                    {/* Primary prompt — Hebrew when isHE */}
+                    <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 6px', direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>
+                      {isHE && currentQ.prompt_he ? currentQ.prompt_he : currentQ.prompt_en}
+                    </p>
+                    {/* Secondary prompt in bilingual mode */}
+                    {langMode === 'bilingual' && currentQ.prompt_he && !isHE && (
+                      <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 6px', lineHeight:1.6 }}>{currentQ.prompt_he}</p>
                     )}
                   </div>
 
