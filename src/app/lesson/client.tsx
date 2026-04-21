@@ -69,12 +69,37 @@ const SUBJECT_ICONS: any = {
 }
 
 const lessonStyles = `
+  /* ── Mobile ─────────────────────────────── */
   @media (max-width: 767px) {
-    .lesson-grid { grid-template-columns: 1fr !important; }
+    .lesson-grid { grid-template-columns: 1fr !important; padding: 10px !important; }
     .lesson-sidebar { display: none !important; }
     .lesson-header { padding: 0 10px !important; height: 48px !important; }
-    .lesson-header-controls { gap: 6px !important; }
+    .lesson-header-controls { gap: 4px !important; overflow-x: auto; }
     .font-size-controls { display: none !important; }
+    .lesson-lang-toggle button { padding: 4px 8px !important; font-size: 11px !important; }
+    .learn-panel { padding: 12px !important; }
+    .question-panel { padding: 12px !important; }
+    .answer-grid { grid-template-columns: 1fr !important; }
+    .cta-row { flex-wrap: wrap !important; }
+    .cta-row button { flex: 1 !important; min-width: 80px !important; }
+    .lesson-progress-bar { height: 6px !important; }
+    .lesson-step-label { font-size: 10px !important; }
+    .completion-modal { padding: 24px 18px !important; max-width: 340px !important; }
+    .celebration-modal { padding: 24px 18px !important; max-width: 320px !important; }
+    .bonus-card { padding: 10px 12px !important; }
+  }
+
+  /* ── Tablet ──────────────────────────────── */
+  @media (max-width: 1024px) and (min-width: 768px) {
+    .lesson-grid { grid-template-columns: 1fr 200px !important; }
+    .lesson-sidebar .mascot-panel { display: none !important; }
+  }
+
+  /* ── Answer options full-width on small ─── */
+  @media (max-width: 480px) {
+    .answer-grid { grid-template-columns: 1fr !important; gap: 6px !important; }
+    .answer-btn { padding: 12px 10px !important; font-size: 14px !important; }
+    .lesson-header-controls .xp-display { display: none !important; }
   }
 `
 
@@ -82,223 +107,216 @@ function getLearnContent(topic: any, T: any, isHE: boolean = false) {
   const slug = topic?.slug || ''
   const subj = topic?.subject?.slug || ''
 
-  if (subj === 'hebrew' && !slug.includes('aleph') && !slug.includes('nikud') &&
-      !slug.includes('binyan') && !slug.includes('paal') && !slug.includes('dikduk')) {
+  // Helper to render description block
+  const DescBlock = ({ en, he }: { en?: string; he?: string }) => {
+    const text = isHE ? (he || en || '') : (en || '')
+    if (!text) return null
+    return (
+      <div style={{ padding:'12px 14px', background:`${T.accent1}10`, border:`1px solid ${T.accent1}30`, borderRadius:T.radius, margin:'10px 0', color:T.text, fontSize:'1em', lineHeight:1.7, direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>
+        {text}
+      </div>
+    )
+  }
+
+  // Hebrew subjects — always RTL
+  if (subj === 'hebrew') {
     return (
       <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:'rtl', textAlign:'right' }}>
-          <strong style={{ color:T.text }}>{topic?.title_he || topic?.title_en}</strong> — עבדו על השאלות כדי לשפר את העברית שלכם.
+        <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 8px', direction:'rtl', textAlign:'right' }}>
+          <strong style={{ color:T.text }}>{topic?.title_he || topic?.title_en}</strong>
         </p>
-        <div style={{ padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'16px', lineHeight:1.8, direction:'rtl', textAlign:'right' }}>
+        {topic?.description_he && (
+          <div style={{ padding:'12px 14px', background:`${T.accent1}10`, border:`1px solid ${T.accent1}30`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'1em', lineHeight:1.8, direction:'rtl', textAlign:'right' }}>
+            {topic.description_he}
+          </div>
+        )}
+        {slug.includes('aleph') || slug.includes('nikud') || slug.includes('ktiva') ? (
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'1.3em', fontFamily:'serif', direction:'rtl', letterSpacing:'6px' }}>
+            א ב ג ד ה ו ז ח ט י כ ל מ
+          </div>
+        ) : null}
+        <div style={{ padding:'10px 12px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, color:T.text2, fontSize:'0.9em', lineHeight:1.8, direction:'rtl', textAlign:'right' }}>
           <div>📖 קראו כל שאלה בעיון</div>
           <div>💡 השתמשו ברמז אם צריך</div>
           <div>⭐ צברו XP על כל תשובה נכונה</div>
         </div>
-        {topic?.description_he && (
-          <p style={{ fontSize:'16px', color:T.text2, margin:0, direction:'rtl', textAlign:'right', fontFamily:'serif' }}>
-            {topic.description_he}
+      </>
+    )
+  }
+
+  // Math topics — visual examples
+  if (subj === 'math') {
+    const mathHint = isHE ? (topic?.description_he || '') : (topic?.description_en || '')
+
+    if (slug.includes('fraction') || slug.includes('equivalent') || slug.includes('comparing_fraction') || slug.includes('fraction_addition')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}>{isHE ? 'שבר' : 'A'} <strong style={{ color:T.text }}>{isHE ? 'מתאר חלקים שווים של שלם' : 'fraction'}</strong>{isHE ? ':' : ' describes equal parts of a whole:'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text }}>
+            <Fraction n={3} d={8} size={22}/>
+            <span style={{ fontSize:'1em', color:T.text2, marginLeft:'12px' }}>{isHE ? '= 3 מתוך 8 חלקים' : '= 3 out of 8 equal parts'}</span>
+          </div>
+          <p style={{ fontSize:'1em', color:T.text2, margin:0, direction:isHE?'rtl':'ltr' }}>
+            <strong style={{ color:T.accent3 }}>{isHE ? 'מונה' : 'Numerator'}</strong> ({isHE ? 'למעלה' : 'top'}) = {isHE ? 'חלקים שיש לנו' : 'parts we have'}. <strong style={{ color:T.accent4 }}>{isHE ? 'מכנה' : 'Denominator'}</strong> ({isHE ? 'למטה' : 'bottom'}) = {isHE ? 'סה"כ חלקים' : 'total parts'}.
           </p>
-        )}
-      </>
-    )
-  }
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
 
-  if (subj === 'english' && !slug.includes('grammar') && !slug.includes('reading') &&
-      !slug.includes('writing') && !slug.includes('phonics') && !slug.includes('vocabulary')) {
+    if (slug.includes('whole') || slug.includes('place') || slug.includes('numbers_to') || slug.includes('million') || slug.includes('counting')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}>{isHE ? 'לכל ספרה יש' : 'Each digit has a'} <strong style={{ color:T.text }}>{isHE ? 'ערך מקומי' : 'place value'}</strong> {isHE ? 'לפי מיקומה.' : 'depending on its position.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'1.2em' }}>
+            <span style={{ color:T.accent1 }}>3</span>,<span style={{ color:T.accent2 }}>4</span><span style={{ color:T.accent3 }}>5</span><span style={{ color:T.accent4 }}>6</span>
+            <div style={{ fontSize:'0.75em', color:T.text2, marginTop:'8px', fontFamily:'sans-serif', direction:isHE?'rtl':'ltr' }}>{isHE ? 'אלפים · מאות · עשרות · יחידות' : 'Thousands · Hundreds · Tens · Ones'}</div>
+          </div>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    if (slug.includes('decimal')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}><strong style={{ color:T.text }}>{isHE ? 'עשרוניים' : 'Decimals'}</strong> {isHE ? 'מייצגים חלקים מהשלם באמצעות נקודה.' : 'represent parts of a whole using a point.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'1.2em' }}>
+            0.7 = <Fraction n={7} d={10} size={20}/>
+          </div>
+          <p style={{ fontSize:'1em', color:T.text2, margin:0, direction:isHE?'rtl':'ltr' }}>{isHE ? 'מקום ראשון אחרי הנקודה = עשיריות. שני = מאיות.' : 'First place after point = tenths. Second = hundredths.'}</p>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    if (slug.includes('algebra') || slug.includes('linear') || slug.includes('equation')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}>{isHE ? 'ב' : 'In'} <strong style={{ color:T.text }}>{isHE ? 'אלגברה' : 'algebra'}</strong>{isHE ? ', אותיות מייצגות מספרים לא ידועים.' : ', letters stand for unknown numbers.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'1.1em' }}>
+            x + 5 = 12 → x = 7
+          </div>
+          <p style={{ fontSize:'1em', color:T.text2, margin:0, direction:isHE?'rtl':'ltr' }}>{isHE ? 'בצע את הפעולה ההפוכה משני צידי המשוואה.' : 'Do the'} <strong style={{ color:T.accent3 }}>{isHE ? '' : 'opposite operation'}</strong>{isHE ? '' : ' on both sides to solve.'}</p>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    if (slug.includes('geometry') || slug.includes('shape') || slug.includes('area') || slug.includes('perimeter') || slug.includes('volume') || slug.includes('surface') || slug.includes('triangle')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}><strong style={{ color:T.text }}>{isHE ? 'שטח' : 'Area'}</strong> = {isHE ? 'אורך × רוחב. ' : 'length × width. '}<strong style={{ color:T.text }}>{isHE ? 'היקף' : 'Perimeter'}</strong> = {isHE ? 'סכום כל הצלעות.' : 'sum of all sides.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'1em' }}>
+            📐 {isHE ? 'מלבן: ש = א × ר | משולש: ש = ½ × ב × ג' : 'Rectangle: A = l × w | Triangle: A = ½ × b × h'}
+          </div>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    if (slug.includes('ratio') || slug.includes('percent') || slug.includes('proportion')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}>{isHE ? 'יחס' : 'A'} <strong style={{ color:T.text }}>{isHE ? '' : 'ratio'}</strong> {isHE ? 'משווה שתי כמויות. ' : 'compares two quantities. '}{isHE ? 'אחוז הוא מתוך 100.' : 'A percentage is out of 100.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'1.1em' }}>
+            50% = <Fraction n={50} d={100} size={18}/> = <Fraction n={1} d={2} size={18}/>
+          </div>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    if (slug.includes('multiplication') || slug.includes('times_table') || slug.includes('division') || slug.includes('averages')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}><strong style={{ color:T.text }}>{isHE ? 'כפל' : 'Multiplication'}</strong> {isHE ? 'הוא חיבור חוזר. ' : 'is repeated addition. '}<strong style={{ color:T.text }}>{isHE ? 'חילוק' : 'Division'}</strong> {isHE ? 'הוא חלוקה שווה.' : 'is equal sharing.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'1.1em' }}>
+            4 × 3 = 12 | 12 ÷ 3 = 4
+          </div>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    if (slug.includes('addition') || slug.includes('subtraction')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}><strong style={{ color:T.text }}>{isHE ? 'חיבור' : 'Addition'}</strong> {isHE ? 'מחבר מספרים. ' : 'puts numbers together. '}<strong style={{ color:T.text }}>{isHE ? 'חיסור' : 'Subtraction'}</strong> {isHE ? 'לוקח בחזרה.' : 'takes away.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'1.1em' }}>
+            7 + 5 = 12 | 12 − 5 = 7
+          </div>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    // Generic math fallback
     return (
       <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>
-          <strong style={{ color:T.text }}>{isHE ? (topic?.title_he || topic?.title_en) : topic?.title_en}</strong> — {isHE ? 'עבדו על השאלות כדי לשפר את הידע שלכם.' : 'work through the questions to improve your skills.'}
+        <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 8px', direction:isHE?'rtl':'ltr' }}>
+          <strong style={{ color:T.text }}>{isHE ? (topic?.title_he || topic?.title_en) : topic?.title_en}</strong>
         </p>
-        <div style={{ padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'16px', lineHeight:1.8, direction:isHE?'rtl':'ltr' }}>
-          <div>📖 Read each question carefully</div>
-          <div>💡 Use the hint if you need help</div>
-          <div>⭐ Earn XP for every correct answer</div>
+        <DescBlock en={topic?.description_en} he={topic?.description_he}/>
+        <div style={{ padding:'10px 12px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, color:T.text2, fontSize:'0.9em', lineHeight:1.8, direction:isHE?'rtl':'ltr' }}>
+          <div>📐 {isHE ? 'קרא את השאלה בעיון' : 'Read the question carefully'}</div>
+          <div>💡 {isHE ? 'השתמש ברמז אם צריך' : 'Use the hint if you need help'}</div>
+          <div>⭐ {isHE ? 'צבור XP על כל תשובה נכונה' : 'Earn XP for every correct answer'}</div>
         </div>
-        {topic?.description_en && (
-          <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>{topic.description_en}</p>
-        )}
       </>
     )
   }
 
-  if (slug.includes('fraction') || slug.includes('equivalent') || slug.includes('comparing_fraction') || slug.includes('fraction_addition')) {
+  // English topics
+  if (subj === 'english') {
+    const showGrammar = slug.includes('grammar') || slug.includes('noun') || slug.includes('verb') || slug.includes('sentence') || slug.includes('clause') || slug.includes('syntax')
+    const showPhonics = slug.includes('phonics') || slug.includes('letter') || slug.includes('sound') || slug.includes('blend') || slug.includes('sight')
+    const showWriting = slug.includes('writing') || slug.includes('essay') || slug.includes('composition') || slug.includes('paragraph')
+
     return (
       <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 12px' }}>A <strong style={{ color:T.text }}>fraction</strong> describes equal parts of a whole:</p>
-        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text }}>
-          <Fraction n={3} d={8} size={22}/>
-          <span style={{ fontSize:'16px', color:T.text2, marginLeft:'12px' }}>= 3 out of 8 equal parts</span>
-        </div>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:0 }}>
-          <strong style={{ color:T.accent3 }}>Numerator</strong> (top) = parts we have. <strong style={{ color:T.accent4 }}>Denominator</strong> (bottom) = total parts.
+        <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 8px', direction:isHE?'rtl':'ltr' }}>
+          <strong style={{ color:T.text }}>{isHE ? (topic?.title_he || topic?.title_en) : topic?.title_en}</strong>
         </p>
-      </>
-    )
-  }
-
-  if (slug.includes('whole') || slug.includes('place') || slug.includes('numbers_to') || slug.includes('million') || slug.includes('counting')) {
-    return (
-      <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>Each digit has a <strong style={{ color:T.text }}>place value</strong> depending on its position.</p>
-        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'20px' }}>
-          <span style={{ color:T.accent1 }}>3</span>,<span style={{ color:T.accent2 }}>4</span><span style={{ color:T.accent3 }}>5</span><span style={{ color:T.accent4 }}>6</span>
-          <div style={{ fontSize:'14px', color:T.text2, marginTop:'8px', fontFamily:'sans-serif' }}>Thousands · Hundreds · Tens · Ones</div>
-        </div>
-        <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>The <strong style={{ color:T.accent3 }}>position</strong> of a digit tells us its value.</p>
-      </>
-    )
-  }
-
-  if (slug.includes('decimal')) {
-    return (
-      <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}><strong style={{ color:T.text }}>Decimals</strong> represent parts of a whole using a point.</p>
-        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'20px' }}>
-          0.7 = <Fraction n={7} d={10} size={20}/>
-        </div>
-        <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>First place after point = <strong style={{ color:T.accent3 }}>tenths</strong>. Second = <strong style={{ color:T.accent4 }}>hundredths</strong>.</p>
-      </>
-    )
-  }
-
-  if (slug.includes('algebra') || slug.includes('linear') || slug.includes('equation')) {
-    return (
-      <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>In <strong style={{ color:T.text }}>algebra</strong>, letters stand for unknown numbers.</p>
-        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'18px' }}>
-          x + 5 = 12 → x = 7
-        </div>
-        <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>Do the <strong style={{ color:T.accent3 }}>opposite operation</strong> on both sides to solve.</p>
-      </>
-    )
-  }
-
-  if (slug.includes('geometry') || slug.includes('shape') || slug.includes('area') || slug.includes('perimeter') || slug.includes('volume') || slug.includes('surface') || slug.includes('triangle')) {
-    return (
-      <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}><strong style={{ color:T.text }}>Area</strong> = length × width. <strong style={{ color:T.text }}>Perimeter</strong> = sum of all sides.</p>
-        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'16px' }}>
-          📐 Rectangle: A = l × w | Triangle: A = ½ × b × h
-        </div>
-        <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>Volume of a box = <strong style={{ color:T.accent3 }}>l × w × h</strong></p>
-      </>
-    )
-  }
-
-  if (slug.includes('ratio') || slug.includes('percent') || slug.includes('proportion')) {
-    return (
-      <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>A <strong style={{ color:T.text }}>ratio</strong> compares two quantities. A <strong style={{ color:T.text }}>percentage</strong> is out of 100.</p>
-        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'18px' }}>
-          50% = <Fraction n={50} d={100} size={18}/> = <Fraction n={1} d={2} size={18}/>
-        </div>
-        <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>To find % of a number: divide by 100 then multiply.</p>
-      </>
-    )
-  }
-
-  if (slug.includes('multiplication') || slug.includes('times_table') || slug.includes('division') || slug.includes('averages')) {
-    return (
-      <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}><strong style={{ color:T.text }}>Multiplication</strong> is repeated addition. <strong style={{ color:T.text }}>Division</strong> is equal sharing.</p>
-        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'18px' }}>
-          4 × 3 = 12 | 12 ÷ 3 = 4
-        </div>
-        <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>Average = <strong style={{ color:T.accent3 }}>sum of all numbers ÷ count</strong></p>
-      </>
-    )
-  }
-
-  if (slug.includes('addition') || slug.includes('subtraction')) {
-    return (
-      <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}><strong style={{ color:T.text }}>Addition</strong> puts numbers together. <strong style={{ color:T.text }}>Subtraction</strong> takes away.</p>
-        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'18px' }}>
-          7 + 5 = 12 | 12 − 5 = 7
-        </div>
-        <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>They are <strong style={{ color:T.accent3 }}>opposite operations</strong>.</p>
-      </>
-    )
-  }
-
-  if (slug.includes('phonics') || slug.includes('letter') || slug.includes('sound') || slug.includes('blend')) {
-    return (
-      <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}><strong style={{ color:T.text }}>Phonics</strong> helps us read by matching letters to sounds.</p>
-        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'20px', letterSpacing:'4px' }}>
-          B · A · T = 🦇 bat
-        </div>
-        <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>Sound out each letter, then <strong style={{ color:T.accent3 }}>blend</strong> them together.</p>
-      </>
-    )
-  }
-
-  if (slug.includes('grammar') || slug.includes('noun') || slug.includes('verb') || slug.includes('sentence') || slug.includes('clause') || slug.includes('dikduk') || slug.includes('binyan') || slug.includes('paal')) {
-    return (
-      <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>Every sentence needs a <strong style={{ color:T.text }}>subject</strong> (who) and a <strong style={{ color:T.text }}>verb</strong> (action).</p>
-        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'15px' }}>
-          <span style={{ color:T.accent3 }}>Lia</span> <span style={{ color:T.accent4 }}>reads</span> a book.
-          <div style={{ fontSize:'14px', color:T.text2, marginTop:'6px' }}>Subject · Verb · Object</div>
-        </div>
-        <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>A <strong style={{ color:T.accent3 }}>noun</strong> names a person, place or thing. A <strong style={{ color:T.accent4 }}>verb</strong> shows action.</p>
-      </>
-    )
-  }
-
-  if (slug.includes('aleph') || slug.includes('nikud') || slug.includes('kriya') || slug.includes('ktiva')) {
-    return (
-      <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>עברית כתובה מ<strong style={{ color:T.text }}>ימין לשמאל</strong> ויש בה 22 אותיות.</p>
-        <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'22px', fontFamily:'serif', direction:'rtl', letterSpacing:'6px' }}>
-          א ב ג ד ה ו ז ח ט י
-        </div>
-        <p style={{ fontSize:'16px', color:T.text2, margin:0, direction:'rtl', textAlign:'right' }}>הניקוד עוזר לנו לדעת איך לבטא את המילים.</p>
-      </>
-    )
-  }
-
-  if (slug.includes('writing') || slug.includes('essay') || slug.includes('composition') || slug.includes('paragraph')) {
-    return (
-      <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>Good writing has a clear <strong style={{ color:T.text }}>beginning, middle and end</strong>.</p>
-        <div style={{ padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'16px', lineHeight:1.8 }}>
-          <div>✍️ <strong>Introduction</strong> — introduce the topic</div>
-          <div>📝 <strong>Body</strong> — develop your ideas</div>
-          <div>🏁 <strong>Conclusion</strong> — summarise and close</div>
+        {showPhonics && (
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'1.2em', letterSpacing:'4px' }}>
+            B · A · T = 🦇 bat
+          </div>
+        )}
+        {showGrammar && (
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'1em' }}>
+            <span style={{ color:T.accent3 }}>Lia</span> <span style={{ color:T.accent4 }}>reads</span> a book.
+            <div style={{ fontSize:'0.8em', color:T.text2, marginTop:'6px' }}>Subject · Verb · Object</div>
+          </div>
+        )}
+        {showWriting && (
+          <div style={{ padding:'10px 12px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'0.9em', lineHeight:1.8 }}>
+            <div>✍️ <strong>Introduction</strong> — introduce the topic</div>
+            <div>📝 <strong>Body</strong> — develop your ideas</div>
+            <div>🏁 <strong>Conclusion</strong> — summarise and close</div>
+          </div>
+        )}
+        <DescBlock en={topic?.description_en} he={topic?.description_he}/>
+        <div style={{ padding:'8px 12px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, color:T.text2, fontSize:'0.9em', lineHeight:1.8, marginTop:'8px' }}>
+          <div>📖 {isHE ? 'קרא כל שאלה בעיון' : 'Read each question carefully'}</div>
+          <div>💡 {isHE ? 'השתמש ברמז' : 'Use the hint if stuck'}</div>
+          <div>⭐ {isHE ? 'צבור XP' : 'Earn XP for correct answers'}</div>
         </div>
       </>
     )
   }
 
-  if (slug.includes('vocabulary') || slug.includes('sight_word') || slug.includes('word')) {
-    return (
-      <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>Building your <strong style={{ color:T.text }}>vocabulary</strong> helps you read and write better.</p>
-        <div style={{ padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'16px', lineHeight:1.8 }}>
-          <div>🔍 Look for <strong>context clues</strong> around unfamiliar words</div>
-          <div>🔤 Break words into <strong>prefix + root + suffix</strong></div>
-          <div>📚 Use a dictionary when unsure</div>
-        </div>
-      </>
-    )
-  }
-
+  // Ultimate fallback
   return (
     <>
-      <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>
-        <strong style={{ color:T.text }}>{topic?.title_en}</strong> — work through the practice questions to master this topic.
+      <p style={{ fontSize:'1em', color:T.text2, margin:'0 0 8px', direction:isHE?'rtl':'ltr' }}>
+        <strong style={{ color:T.text }}>{isHE ? (topic?.title_he || topic?.title_en) : topic?.title_en}</strong>
       </p>
-      <div style={{ padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text2, fontSize:'16px', lineHeight:1.8 }}>
-        <div>📖 Read each question carefully</div>
-        <div>💡 Use the hint if you need help</div>
-        <div>⭐ Earn XP for every correct answer</div>
-      </div>
-      <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>{topic?.description_en || 'Practice makes perfect!'}</p>
+      <DescBlock en={topic?.description_en} he={topic?.description_he}/>
     </>
   )
 }
+
 
 // ── PASSAGE READER ────────────────────────────────────────────
 function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic, subjColor, token, theme, FS }: any) {
@@ -433,7 +451,7 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
               const isWrong    = selected === opt.label && !opt.isCorrect && answered
               const displayVal = isHE ? (opt.value_he || opt.value_en || '') : (opt.value_en || '')
               return (
-                <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
+                <button className="answer-btn" key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
                   style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'10px 14px', cursor:answered?'default':'pointer', fontSize:'16px', fontWeight:700, display:'flex', alignItems:'center', gap:'10px', color:T.text, textAlign:isRTL?'right':'left', direction:isRTL?'rtl':'ltr', fontFamily:isRTL?'"Times New Roman",serif':'"Nunito",sans-serif' }}>
                   <span style={{ width:'22px', height:'22px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'"Noto Serif Hebrew","Times New Roman",serif', fontSize:'14px', flexShrink:0 }}>{opt.label}</span>
                   {displayVal}
@@ -725,7 +743,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
         <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent1, flexShrink:0 }}>Edu<span style={{ color:T.accent2 }}>Play</span></div>
         {isBonus && <div style={{ background:T.accent2, color:'#000', borderRadius:T.radius, padding:'2px 10px', fontFamily:T.fontHead, fontSize:'10px', fontWeight:800 }}>⚡ BONUS</div>}
         <div className="lesson-header-controls" style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'nowrap', overflowX:'auto' }}>
-          <span style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.xp, flexShrink:0 }}>{xpBalance.toLocaleString()} XP</span>
+          <span className="xp-display" style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.xp, flexShrink:0 }}>{xpBalance.toLocaleString()} XP</span>
 
           {/* Font size controls */}
           <div className="font-size-controls" style={{ display:'flex', gap:'2px', alignItems:'center' }}>
@@ -848,7 +866,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
 )}
 
                   {currentQ.options && (
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'12px' }}>
+                    <div className="answer-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'12px' }}>
                       {currentQ.options.map((opt: any) => {
                         const isCorrect    = opt.isCorrect && answered
                         const isWrong      = selected === opt.label && !opt.isCorrect && answered
@@ -858,7 +876,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                           : (opt.value_en || '')
                         const isRTLAnswer  = isHE && isHebSubject
                         return (
-                          <button key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
+                          <button className="answer-btn" key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
                             style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'11px 12px', cursor:answered?'default':'pointer', fontFamily:isRTLAnswer?'"Times New Roman",serif':'Georgia,serif', fontSize:`${FS?.question || 14}px`, fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>
                             <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'12px', flexShrink:0 }}>{opt.label}</span>
                             {displayVal}
@@ -885,7 +903,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                     </div>
                   )}
 
-                  <div style={{ display:'flex', gap:'8px' }}>
+                  <div className="cta-row" style={{ display:'flex', gap:'8px' }}>
                     <button onClick={() => setHint(v=>!v)} style={{ padding:'12px 18px', fontFamily:T.fontHead, fontSize:'15px', background:T.panel, border:`2px solid ${T.accent2}`, color:T.accent2, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>💡 {UI.hint}</button>
                     <button onClick={() => { setQIndex(i=>(i+1)%Math.max(questions.length,1)); setAnswered(false); setSelected(null); setFeedback(null); setHint(false) }} style={{ padding:'12px 18px', fontFamily:T.fontHead, fontSize:'15px', background:T.panel, border:`2px solid ${T.accent3}`, color:T.accent3, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>🔄</button>
                     <button onClick={nextStep} style={{ padding:'12px 20px', fontFamily:T.fontHead, fontSize:'16px', background:T.accent1, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, flex:1, fontWeight:800 }}>{UI.next}</button>
