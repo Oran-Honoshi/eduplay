@@ -96,21 +96,27 @@ export default async function LessonPage({ searchParams }: Props) {
 
       const seenIds = new Set((recentAnswers || []).map((r: any) => r.question_id).filter(Boolean))
 
-      // Split into unseen and seen
       const unseen = pool.filter((q: any) => !seenIds.has(q.id))
       const seen   = pool.filter((q: any) =>  seenIds.has(q.id))
-
-      // Shuffle both arrays
       const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5)
-      const shuffledUnseen = shuffle([...unseen])
-      const shuffledSeen   = shuffle([...seen])
 
-      // Pick up to 10: prefer unseen, fill with seen if needed
-      const needed = 10
-      const picked = [...shuffledUnseen, ...shuffledSeen].slice(0, needed)
+      questions = shuffle([...shuffle(unseen), ...shuffle(seen)]).slice(0, 10)
+    }
 
-      // Final shuffle so order is unpredictable
-      questions = shuffle(picked)
+    // Also fetch a supplementary passage for this grade+subject (for the slide-in panel)
+    if (topic?.subject_id) {
+      const { data: suppPassages } = await supabase
+        .from('reading_passages')
+        .select('id, title_en, title_he, content_en, content_he, difficulty, passage_type')
+        .eq('grade', child.grade)
+        .eq('subject_id', topic.subject_id)
+        .eq('approved', true)
+        .limit(5)
+
+      if (suppPassages && suppPassages.length > 0) {
+        // Pick a random one
+        passage = suppPassages[Math.floor(Math.random() * suppPassages.length)]
+      }
     }
   }
 

@@ -527,6 +527,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
   const [celebration, setCelebration] = useState<{type: string; message: string; emoji: string} | null>(null)
   const [sparkleActive, setSparkleActive] = useState(false)
   const [xpMilestone, setXpMilestone] = useState(Math.floor((child?.xp_total || 0) / 1000))
+  const [passageOpen, setPassageOpen] = useState(false)
 
   function triggerCelebration(type: string, message: string, emoji: string) {
     setCelebration({ type, message, emoji })
@@ -766,12 +767,71 @@ export default function LessonClient({ child, topic, questions, passage, passage
             ))}
           </div>
 
+          {/* Passage slide-in button — only show when passage available and not a reading topic */}
+          {passage && !isReadingTopic && (
+            <button onClick={() => setPassageOpen(v => !v)}
+              style={{ background:passageOpen?T.accent3:T.panel, border:`2px solid ${passageOpen?T.accent3:T.border}`, borderRadius:T.radius, padding:'5px 9px', cursor:'pointer', color:passageOpen?'white':T.text, boxShadow:T.btnShadow, fontFamily:T.fontHead, fontSize:'12px', flexShrink:0 }}>
+              📖
+            </button>
+          )}
+
           <button onClick={() => window.location.href=`/theme?childId=${child?.id}&name=${child?.display_name}&current=${theme}${token?`&returnTo=/play/${token}`:''}`}
             style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 9px', cursor:'pointer', color:T.text, boxShadow:T.btnShadow, fontFamily:T.fontHead, fontSize:'12px', flexShrink:0 }}>
             🎨
           </button>
         </div>
       </header>
+
+      {/* ── Passage slide-in panel ─────────────────────────────── */}
+      {passage && !isReadingTopic && passageOpen && (
+        <div style={{
+          position:'fixed', top:'60px', right:0, bottom:0, width:'min(420px, 90vw)',
+          background:T.panel, borderLeft:`3px solid ${T.accent3}`,
+          zIndex:150, overflowY:'auto', padding:'20px',
+          boxShadow:'-4px 0 20px rgba(0,0,0,0.15)',
+          animation:'slideInRight 0.25s ease',
+        }}>
+          <style>{`@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
+
+          {/* Header */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+            <div>
+              <div style={{ fontFamily:T.fontHead, fontSize:'11px', color:T.accent3, marginBottom:3 }}>📖 {isHE ? 'קטע לקריאה' : 'READING PASSAGE'}</div>
+              <div style={{ fontWeight:800, fontSize:'15px', color:T.text }}>
+                {isHE && passage.title_he ? passage.title_he : passage.title_en}
+              </div>
+            </div>
+            <button onClick={() => setPassageOpen(false)}
+              style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:'20px', color:T.text2, padding:'4px' }}>✕</button>
+          </div>
+
+          {/* Passage content */}
+          <div style={{ background:T.panel2, borderRadius:T.radius, padding:'16px', border:`1px solid ${T.border}` }}>
+            {!isHE && passage.content_en && (
+              <p style={{ fontSize:`${FS?.passage || 15}px`, lineHeight:2, color:T.text, margin:0, fontFamily:'"Georgia",serif' }}>
+                {passage.content_en}
+              </p>
+            )}
+            {isHE && passage.content_he && (
+              <p style={{ fontSize:`${FS?.passage || 15}px`, lineHeight:2, color:T.text, margin:0, fontFamily:'"Times New Roman",serif', direction:'rtl', textAlign:'right' }}>
+                {passage.content_he}
+              </p>
+            )}
+            {langMode === 'bilingual' && passage.content_he && !isHE && (
+              <div style={{ marginTop:16, paddingTop:16, borderTop:`1px solid ${T.border}`, direction:'rtl', textAlign:'right' }}>
+                <div style={{ fontSize:'11px', fontWeight:800, color:T.text2, marginBottom:8 }}>🇮🇱 עברית</div>
+                <p style={{ fontSize:`${FS?.passage || 14}px`, lineHeight:1.9, color:T.text2, margin:0, fontFamily:'"Times New Roman",serif' }}>
+                  {passage.content_he}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginTop:12, fontSize:'12px', color:T.text2, textAlign:'center' }}>
+            {isHE ? 'השתמש בקטע זה כעזר לשאלות' : 'Use this passage to help answer questions'}
+          </div>
+        </div>
+      )}
 
       {/* Main grid — sidebar hidden on mobile */}
       <div className="lesson-grid" style={{ display:'grid', gridTemplateColumns:'1fr 260px', gap:'14px', padding:'16px', maxWidth:'1200px', margin:'0 auto' }}>
