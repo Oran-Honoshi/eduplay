@@ -484,6 +484,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
   const theme     = (urlParams?.get('theme') || child?.theme || 'plain') as string
   const token     = urlParams?.get('token') || ''
   const langMode  = (urlParams?.get('lang') || child?.lang_screen || 'bilingual') as string
+  const isBonus   = urlParams?.get('bonus') === 'true'
 
   const T   = THEMES[theme] || THEMES.plain
   const TD  = MASCOTS[theme] || MASCOTS.plain
@@ -495,7 +496,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
   progress.forEach((p: any) => { progressMap[p.topic_id] = p })
 
   const [currentStep, setCurrentStep] = useState(0)
-  const totalSteps = topic?.lesson_count || 5
+  const totalSteps = isBonus ? 20 : (topic?.lesson_count || 5)
   const [qIndex, setQIndex]       = useState(0)
   const [answered, setAnswered]   = useState(false)
   const [selected, setSelected]   = useState<string|null>(null)
@@ -637,8 +638,10 @@ export default function LessonClient({ child, topic, questions, passage, passage
         }, 1500)
       }
       setCompleted(true)
-      triggerCelebration('lesson', isHE ? 'כל הכבוד! סיימת את השיעור! 🎓' : 'Lesson complete! Amazing work! 🎓', '🎉')
-      // Award card token
+      triggerCelebration('lesson', isHE
+        ? (isBonus ? '!תרגיל בונוס הושלם! קרטיס נוסף שלך 🎴' : 'כל הכבוד! סיימת את השיעור! 🎓')
+        : (isBonus ? 'Bonus complete! Extra card earned! 🎴' : 'Lesson complete! Amazing work! 🎓'), isBonus ? '🎴' : '🎉')
+      // Award card token (always on lesson complete, extra on bonus)
       fetch('/api/cards/token', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ childId: child?.id }) }).catch(()=>{})
       return
     }
@@ -672,10 +675,28 @@ export default function LessonClient({ child, topic, questions, passage, passage
 
       {completed && (
         <div style={{ position:'fixed', inset:0, zIndex:9998, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
-          <div style={{ background:T.panel, border:`4px solid ${T.accent2}`, borderRadius:T.radius, padding:'36px', textAlign:'center', maxWidth:'380px', width:'100%', boxShadow:T.shadow }}>
+          <div style={{ background:T.panel, border:`4px solid ${T.accent2}`, borderRadius:T.radius, padding:'36px', textAlign:'center', maxWidth:'420px', width:'100%', boxShadow:T.shadow }}>
             <h2 style={{ fontFamily:T.fontHead, fontSize:'16px', color:T.accent2, marginBottom:'10px' }}>{UI.complete}</h2>
             <div style={{ fontSize:'44px', letterSpacing:'6px', margin:'12px 0' }}>⭐⭐⭐</div>
-            <p style={{ fontSize:'16px', color:T.text2, marginBottom:'20px' }}>{UI.mastered} <strong style={{ color:T.accent2 }}>{isHE ? topic?.title_he || topic?.title_en : topic?.title_en}</strong>!<br/>{UI.xpEarned}</p>
+            <p style={{ fontSize:'16px', color:T.text2, marginBottom:'8px' }}>{UI.mastered} <strong style={{ color:T.accent2 }}>{isHE ? topic?.title_he || topic?.title_en : topic?.title_en}</strong>!</p>
+            <p style={{ fontSize:'14px', color:T.text2, marginBottom:'20px' }}>{UI.xpEarned}</p>
+
+            {/* Bonus exercise option */}
+            <div style={{ background:`${T.accent2}15`, border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'14px 16px', marginBottom:'16px' }}>
+              <div style={{ fontSize:'20px', marginBottom:6 }}>🎴 +1</div>
+              <div style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2, marginBottom:4 }}>
+                {isHE ? 'תרגיל בונוס!' : 'BONUS ROUND!'}
+              </div>
+              <div style={{ fontSize:'13px', color:T.text2, marginBottom:10 }}>
+                {isHE ? 'ענה על 20 שאלות נוספות וקבל עוד כרטיס!' : 'Answer 20 more questions and earn an extra card!'}
+              </div>
+              <button onClick={() => {
+                window.location.href = `/lesson?childId=${child?.id}&topicId=${topic?.id}&theme=${theme}&lang=${langMode}&bonus=true&token=${token}`
+              }} style={{ width:'100%', padding:'10px', background:T.accent2, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'13px', cursor:'pointer', fontWeight:800 }}>
+                ⚡ {isHE ? 'שחק בונוס!' : 'PLAY BONUS!'}
+              </button>
+            </div>
+
             <div style={{ display:'flex', gap:'10px' }}>
               <button onClick={() => {
                 const reliefTrigger = child?.relief_trigger || 'topic'
@@ -684,8 +705,8 @@ export default function LessonClient({ child, topic, questions, passage, passage
                 } else {
                   goBack()
                 }
-              }} style={{ flex:1, padding:'12px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'16px', cursor:'pointer' }}>{UI.home}</button>
-              <button onClick={() => { setCompleted(false); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'16px', cursor:'pointer' }}>{UI.again}</button>
+              }} style={{ flex:1, padding:'12px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'14px', cursor:'pointer' }}>{UI.home}</button>
+              <button onClick={() => { setCompleted(false); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'14px', cursor:'pointer' }}>{UI.again}</button>
             </div>
           </div>
         </div>
@@ -698,6 +719,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
       {/* Header */}
       <header className="lesson-header" style={{ background:theme==='minecraft'?'rgba(0,0,0,0.75)':T.panel, borderBottom:`${theme==='minecraft'?4:1}px solid ${T.border}`, padding:'0 16px', height:'52px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, gap:'8px' }}>
         <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent1, flexShrink:0 }}>Edu<span style={{ color:T.accent2 }}>Play</span></div>
+        {isBonus && <div style={{ background:T.accent2, color:'#000', borderRadius:T.radius, padding:'2px 10px', fontFamily:T.fontHead, fontSize:'10px', fontWeight:800 }}>⚡ BONUS</div>}
         <div className="lesson-header-controls" style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'nowrap', overflowX:'auto' }}>
           <span style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.xp, flexShrink:0 }}>{xpBalance.toLocaleString()} XP</span>
 
