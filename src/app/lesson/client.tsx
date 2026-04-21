@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import MathVisual from '@/components/MathVisual'
+import { ThemeDecorations, CelebrationModal, AnimatedBtn, Sparkles, THEME_CONFIG as SHARED_THEMES } from '@/components/theme'
 
 
 function Fraction({ n, d, size = 20 }: { n: any; d: any; size?: number }) {
@@ -77,7 +78,7 @@ const lessonStyles = `
   }
 `
 
-function getLearnContent(topic: any, T: any) {
+function getLearnContent(topic: any, T: any, isHE: boolean = false) {
   const slug = topic?.slug || ''
   const subj = topic?.subject?.slug || ''
 
@@ -106,10 +107,10 @@ function getLearnContent(topic: any, T: any) {
       !slug.includes('writing') && !slug.includes('phonics') && !slug.includes('vocabulary')) {
     return (
       <>
-        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px' }}>
-          <strong style={{ color:T.text }}>{topic?.title_en}</strong> — work through the questions to improve your English skills.
+        <p style={{ fontSize:'16px', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>
+          <strong style={{ color:T.text }}>{isHE ? (topic?.title_he || topic?.title_en) : topic?.title_en}</strong> — {isHE ? 'עבדו על השאלות כדי לשפר את הידע שלכם.' : 'work through the questions to improve your skills.'}
         </p>
-        <div style={{ padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'16px', lineHeight:1.8 }}>
+        <div style={{ padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'16px', lineHeight:1.8, direction:isHE?'rtl':'ltr' }}>
           <div>📖 Read each question carefully</div>
           <div>💡 Use the hint if you need help</div>
           <div>⭐ Earn XP for every correct answer</div>
@@ -505,6 +506,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
   const [completed, setCompleted] = useState(false)
 
   const [celebration, setCelebration] = useState<{type: string; message: string; emoji: string} | null>(null)
+  const [sparkleActive, setSparkleActive] = useState(false)
   const [xpMilestone, setXpMilestone] = useState(Math.floor((child?.xp_total || 0) / 1000))
 
   function triggerCelebration(type: string, message: string, emoji: string) {
@@ -602,6 +604,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
       const newXp = xpBalance + 25
       setXp(newXp)
       showXP('+25 XP ⬆')
+      setSparkleActive(true); setTimeout(() => setSparkleActive(false), 1300)
       const newMilestone = Math.floor(newXp / 1000)
       if (newMilestone > xpMilestone) {
         setXpMilestone(newMilestone)
@@ -657,27 +660,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Cinzel+Decorative:wght@400;700&family=Nunito:wght@400;700;800;900&display=swap');
       `}</style>
 
-      {/* Theme background decoration */}
-      <div style={{
-        position:'fixed', inset:0, pointerEvents:'none', zIndex:0,
-        backgroundImage: (THEME_DECORATIONS[theme] || THEME_DECORATIONS.plain).bgPattern,
-        opacity: 0.6,
-      }}/>
-      {/* Theme corner decorations */}
-      {(THEME_DECORATIONS[theme] || THEME_DECORATIONS.plain).cornerDeco.map((emoji: string, i: number) => (
-        <div key={i} style={{
-          position:'fixed',
-          top: i < 2 ? '80px' : 'auto',
-          bottom: i >= 2 ? '20px' : 'auto',
-          left: i % 2 === 0 ? '12px' : 'auto',
-          right: i % 2 === 1 ? '12px' : 'auto',
-          fontSize: '24px',
-          opacity: 0.25,
-          pointerEvents: 'none',
-          zIndex: 0,
-          userSelect: 'none',
-        }}>{emoji}</div>
-      ))}
+      <ThemeDecorations theme={theme}/>
 
       <style>{lessonStyles}</style>
 
@@ -709,31 +692,8 @@ export default function LessonClient({ child, topic, questions, passage, passage
       )}
 
 
-      {/* ── Celebration Modal ───────────────────────────────── */}
-      {celebration && (
-        <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none' }}>
-          <div style={{
-            background: (THEME_DECORATIONS[theme] || THEME_DECORATIONS.plain).celebrationBg,
-            border: `3px solid ${(THEME_DECORATIONS[theme] || THEME_DECORATIONS.plain).celebrationBorder}`,
-            borderRadius: T.radius || '20px',
-            padding: '32px 40px',
-            textAlign: 'center',
-            maxWidth: '360px',
-            width: '90%',
-            boxShadow: T.shadow,
-            animation: 'celebPop 0.4s cubic-bezier(0.175,0.885,0.32,1.275)',
-            pointerEvents: 'none',
-          }}>
-            <div style={{ fontSize: 72, marginBottom: 16, animation: 'spin 0.6s ease' }}>{celebration.emoji}</div>
-            <div style={{ fontFamily: T.fontHead, fontSize: '18px', color: T.text, fontWeight: 800, lineHeight: 1.4 }}>{celebration.message}</div>
-            <div style={{ display:'flex', justifyContent:'center', gap:8, marginTop:16, fontSize:24 }}>
-              {(THEME_DECORATIONS[theme] || THEME_DECORATIONS.plain).floaters.slice(0,5).map((e: string, i: number) => (
-                <span key={i} style={{ animation: `float${i%3} 1s ease ${i*0.15}s both`, display:'inline-block' }}>{e}</span>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <CelebrationModal celebration={celebration} T={T} theme={theme}/>
+      <Sparkles active={sparkleActive} theme={theme}/>
 
       {/* Header */}
       <header className="lesson-header" style={{ background:theme==='minecraft'?'rgba(0,0,0,0.75)':T.panel, borderBottom:`${theme==='minecraft'?4:1}px solid ${T.border}`, padding:'0 16px', height:'52px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, gap:'8px' }}>
@@ -815,7 +775,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
               <div style={{ background:T.panel, border:`${theme==='minecraft'?3:1}px solid ${T.border}`, borderRadius:T.radius, padding:'18px', boxShadow:T.shadow }}>
                 <div style={{ background:T.panel2, border:`2px solid ${T.border}`, borderLeft:`5px solid ${subjColor}`, padding:'14px', marginBottom:'12px' }}>
                   <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:subjColor, marginBottom:'8px' }}>📘 {UI.learnThis}</div>
-                  {getLearnContent(topic, T)}
+                  {getLearnContent(topic, T, isHE)}
                 </div>
                 {langMode !== 'en_only' && topic?.description_he && (
                   <div style={{ padding:'8px 12px', fontSize:'16px', lineHeight:1.7, direction:'rtl', textAlign:'right', border:`1px solid ${T.border}`, borderRadius:T.radius, background:'rgba(0,0,0,0.03)', fontFamily:'"Times New Roman",serif', color:subjColor, marginBottom:'10px' }}>
@@ -882,10 +842,10 @@ export default function LessonClient({ child, topic, questions, passage, passage
                     </div>
                   )}
 
-                  {hintVisible && currentQ.hint_en && (
-                    <div style={{ background:'rgba(255,215,0,0.07)', border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'10px 12px', marginBottom:'10px' }}>
+                  {hintVisible && (currentQ.hint_en || currentQ.hint_he) && (
+                    <div style={{ background:'rgba(255,215,0,0.07)', border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'10px 12px', marginBottom:'10px', direction:isHE?'rtl':'ltr' }}>
                       <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent2, marginBottom:'4px' }}>💡 {UI.hint}</div>
-                      <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>{currentQ.hint_en}</p>
+                      <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>{isHE ? (currentQ.hint_he || currentQ.hint_en) : currentQ.hint_en}</p>
                     </div>
                   )}
 
@@ -894,15 +854,15 @@ export default function LessonClient({ child, topic, questions, passage, passage
                       <span style={{ fontSize:'24px' }}>{feedback.correct?'🎉':'💔'}</span>
                       <div>
                         <div style={{ fontFamily:T.fontHead, fontSize:'16px', color:feedback.correct?T.accent3:'#E03030', marginBottom:'3px' }}>{feedback.correct?UI.correct:UI.notQuite}</div>
-                        <div style={{ fontSize:'12px', color:T.text2, lineHeight:1.6 }}>{feedback.explanation}</div>
+                        <div style={{ fontSize:'14px', color:T.text2, lineHeight:1.6, direction:isHE?'rtl':'ltr' }}>{isHE ? (feedback.explanation_he || feedback.explanation) : feedback.explanation}</div>
                       </div>
                     </div>
                   )}
 
                   <div style={{ display:'flex', gap:'8px' }}>
-                    <button onClick={() => setHint(v=>!v)} style={{ padding:'9px 14px', fontFamily:T.fontHead, fontSize:'12px', background:T.panel, border:`2px solid ${T.accent2}`, color:T.accent2, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>💡</button>
-                    <button onClick={() => { setQIndex(i=>(i+1)%Math.max(questions.length,1)); setAnswered(false); setSelected(null); setFeedback(null); setHint(false) }} style={{ padding:'9px 14px', fontFamily:T.fontHead, fontSize:'12px', background:T.panel, border:`2px solid ${T.accent3}`, color:T.accent3, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>🔄</button>
-                    <button onClick={nextStep} style={{ padding:'9px 16px', fontFamily:T.fontHead, fontSize:'12px', background:T.accent1, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, flex:1 }}>{UI.next}</button>
+                    <button onClick={() => setHint(v=>!v)} style={{ padding:'12px 18px', fontFamily:T.fontHead, fontSize:'15px', background:T.panel, border:`2px solid ${T.accent2}`, color:T.accent2, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>💡 {UI.hint}</button>
+                    <button onClick={() => { setQIndex(i=>(i+1)%Math.max(questions.length,1)); setAnswered(false); setSelected(null); setFeedback(null); setHint(false) }} style={{ padding:'12px 18px', fontFamily:T.fontHead, fontSize:'15px', background:T.panel, border:`2px solid ${T.accent3}`, color:T.accent3, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>🔄</button>
+                    <button onClick={nextStep} style={{ padding:'12px 20px', fontFamily:T.fontHead, fontSize:'16px', background:T.accent1, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, flex:1, fontWeight:800 }}>{UI.next}</button>
                   </div>
                 </div>
               ) : (
@@ -968,7 +928,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                       <div style={{ fontSize:'14px', fontWeight:700, color:T.text, lineHeight:1.3 }}>{isHE ? t.title_he || t.title_en : t.title_en}</div>
                       {isInProg && <div style={{ fontSize:'14px', color:subjColor, marginTop:'1px' }}>{UI.inProgress}</div>}
                     </div>
-                    <div style={{ fontFamily:T.fontHead, fontSize:'5px', color:T.xp, flexShrink:0 }}>+{t.xp_reward}</div>
+                    <div style={{ fontFamily:T.fontHead, fontSize:'11px', color:T.xp, flexShrink:0 }}>+{t.xp_reward}</div>
                   </div>
                 )
               })}
