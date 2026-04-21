@@ -522,10 +522,10 @@ export default function LessonClient({ child, topic, questions, passage, passage
   )
 
   const FS = {
-    small:  { base: 11, question: 12, passage: 12 },
-    medium: { base: 13, question: 14, passage: 14 },
-    large:  { base: 15, question: 17, passage: 16 },
-    xl:     { base: 18, question: 20, passage: 19 },
+    small:  { base: 13, question: 14, passage: 13 },
+    medium: { base: 16, question: 16, passage: 15 },
+    large:  { base: 19, question: 19, passage: 18 },
+    xl:     { base: 22, question: 22, passage: 21 },
   }[fontSize]
 
   const currentQ   = questions[qIndex]
@@ -599,7 +599,11 @@ export default function LessonClient({ child, topic, questions, passage, passage
     setAnswered(true)
     setSelected(opt.label)
     const correct = opt.isCorrect
-    setFeedback({ correct, explanation: correct ? (currentQ.explanation_en || 'Correct! Well done!') : (currentQ.hint_en || 'Not quite — try the hint!') })
+    setFeedback({
+      correct,
+      explanation: correct ? (currentQ.explanation_en || 'Correct! Well done!') : (currentQ.hint_en || 'Not quite — try the hint!'),
+      explanation_he: correct ? (currentQ.explanation_he || currentQ.explanation_en || '') : (currentQ.hint_he || currentQ.hint_en || ''),
+    })
     setPip(correct ? '🎉 Excellent! You nailed it!' : "💡 Don't give up!")
     if (correct) {
       const newXp = xpBalance + 25
@@ -822,13 +826,13 @@ export default function LessonClient({ child, topic, questions, passage, passage
                   <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent4, marginBottom:'10px' }}>⚔️ {UI.practice}</div>
                   <div style={{ marginBottom:'10px' }}>
                     {langMode !== 'he_only' && !isHE && subjSlug !== 'hebrew' && (
-                      <p style={{ fontSize:`${FS?.question || 14}px`, fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>
+                      <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>
                     )}
                     {(langMode !== 'en_only' || subjSlug === 'hebrew') && currentQ.prompt_he && (
                       <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 6px' }}>{currentQ.prompt_he}</p>
                     )}
                     {subjSlug !== 'hebrew' && langMode !== 'he_only' && !currentQ.prompt_he && (
-                      <p style={{ fontSize:`${FS?.question || 14}px`, fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>
+                      <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 6px' }}>{currentQ.prompt_en}</p>
                     )}
                   </div>
 
