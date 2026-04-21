@@ -75,15 +75,43 @@ export default async function LessonPage({ searchParams }: Props) {
       passageQuestions = pqs || []
     }
   } else {
-    // Regular topic — fetch questions
-    const { data: qs } = topic ? await supabase
+    // Fetch ALL approved questions for this topic (ignore difficulty filter — mix them)
+    const { data: allQs } = topic ? await supabase
       .from('questions')
       .select('*')
       .eq('topic_id', topic.id)
-      .eq('difficulty', difficulty)
-      .eq('approved', true)
-      .limit(10) : { data: [] }
-    questions = qs || []
+      .eq('approved', true) : { data: [] }
+
+    const pool = allQs || []
+
+    if (pool.length > 0) {
+      // Get recently answered question IDs for this child + topic (last 50)
+      const { data: recentAnswers } = await supabase
+        .from('child_progress')
+        .select('question_id')
+        .eq('child_id', child.id)
+        .eq('topic_id', topic.id)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      const seenIds = new Set((recentAnswers || []).map((r: any) => r.question_id).filter(Boolean))
+
+      // Split into unseen and seen
+      const unseen = pool.filter((q: any) => !seenIds.has(q.id))
+      const seen   = pool.filter((q: any) =>  seenIds.has(q.id))
+
+      // Shuffle both arrays
+      const shuffle = (arr: any[]) => arr.sort(() => Math.random() - 0.5)
+      const shuffledUnseen = shuffle([...unseen])
+      const shuffledSeen   = shuffle([...seen])
+
+      // Pick up to 10: prefer unseen, fill with seen if needed
+      const needed = 10
+      const picked = [...shuffledUnseen, ...shuffledSeen].slice(0, needed)
+
+      // Final shuffle so order is unpredictable
+      questions = shuffle(picked)
+    }
   }
 
   // Fetch ALL topics for this child's grade (all subjects) for sidebar

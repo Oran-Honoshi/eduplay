@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
   const { data: child, error } = await supabase
     .from('children')
-    .select('id, display_name, xp_total, xp_balance, xp_toward_next_token, xp_per_token, card_tokens, card_collect_mode, grade, theme')
+    .select('id, display_name, xp_total, xp_balance, xp_toward_next_token, xp_per_token, card_tokens, card_collect_mode, grade, theme, font_size, lang_screen, pin_code, relief_trigger')
     .eq('id', childId)
     .single()
 
@@ -18,17 +18,28 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const supabase = createServerClient()
-  const { childId, card_collect_mode } = await req.json()
+  const body = await req.json()
+  const { childId } = body
   if (!childId) return NextResponse.json({ error: 'childId required' }, { status: 400 })
 
-  const validModes = ['choice', 'region_random', 'full_random']
-  if (card_collect_mode && !validModes.includes(card_collect_mode)) {
-    return NextResponse.json({ error: 'Invalid mode' }, { status: 400 })
+  const allowed = ['grade','theme','font_size','lang_screen','pin_code','relief_trigger','card_collect_mode','card_tokens','xp_toward_next_token']
+  const update: Record<string, any> = {}
+  for (const field of allowed) {
+    if (body[field] !== undefined) update[field] = body[field]
   }
 
-  const { error } = await supabase
-    .from('children').update({ card_collect_mode }).eq('id', childId)
+  if (update.card_collect_mode && !['choice','region_random','full_random'].includes(update.card_collect_mode))
+    return NextResponse.json({ error: 'Invalid card_collect_mode' }, { status: 400 })
+  if (update.theme && !['plain','minecraft','princesses','adventure','space','sports'].includes(update.theme))
+    return NextResponse.json({ error: 'Invalid theme' }, { status: 400 })
+  if (update.font_size && !['small','medium','large','xl'].includes(update.font_size))
+    return NextResponse.json({ error: 'Invalid font_size' }, { status: 400 })
+  if (update.grade !== undefined && (update.grade < 0 || update.grade > 6))
+    return NextResponse.json({ error: 'Invalid grade' }, { status: 400 })
+  if (Object.keys(update).length === 0)
+    return NextResponse.json({ error: 'No valid fields' }, { status: 400 })
 
+  const { error } = await supabase.from('children').update(update).eq('id', childId)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, updated: Object.keys(update) })
 }
