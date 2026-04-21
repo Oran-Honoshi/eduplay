@@ -10,12 +10,14 @@ interface Phase {
 }
 interface Card {
   id: string; phase_id: string; slug: string
-  name_en: string; name_he: string; location_en: string
+  name_en: string; name_he: string; location_en: string; location_he: string
   rarity: 'common'|'rare'|'epic'|'legendary'
-  xp_cost: number; unsplash_id: string; image_url: string
-  fact_en: string; facts_en: string[]; facts_he: string[]
-  habitat_en: string; speed: string; lifespan: string
-  diet_en: string; fun_fact_en: string; sort_order: number
+  xp_cost: number; unsplash_id: string; image_url: string; emoji: string
+  fact_en: string; fact_he: string
+  facts_en: string[]; facts_he: string[]
+  habitat_en: string; habitat_he: string; speed: string; lifespan: string
+  diet_en: string; diet_he: string; fun_fact_en: string; fun_fact_he: string
+  sort_order: number
 }
 interface Child {
   id: string; display_name: string
@@ -84,17 +86,28 @@ function AnimalCard({ card, owned, canCollect, onCollect, onOpen }: {
         boxShadow:owned?`0 4px 16px ${r.color}20`:'0 1px 6px rgba(0,0,0,0.06)'}}
       onMouseEnter={e=>{if(owned)(e.currentTarget as HTMLElement).style.transform='translateY(-3px)'}}
       onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.transform='translateY(0)'}}>
-      <div style={{position:'relative',width:'100%',aspectRatio:'4/3',overflow:'hidden',background:`${r.color}18`}}>
-        {!imgErr
-          ?<img src={getCardImg(card)} alt={card.name_en} crossOrigin="anonymous"
-            style={{width:'100%',height:'100%',objectFit:'cover',display:'block',filter:owned?'none':'grayscale(100%) brightness(0.5)'}}
+      <div style={{position:'relative',width:'100%',aspectRatio:'4/3',overflow:'hidden',
+        background:`linear-gradient(135deg, ${r.color}40, ${r.color}15)`}}>
+        {/* Always show emoji as base layer */}
+        <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',
+          justifyContent:'center',fontSize:64,
+          filter:owned?'none':'grayscale(100%) brightness(0.4)'}}>
+          {card.emoji||'🐾'}
+        </div>
+        {/* Try to load image on top */}
+        {card.image_url && !imgErr && (
+          <img src={card.image_url} alt={card.name_en} crossOrigin="anonymous"
+            style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',
+              filter:owned?'none':'grayscale(100%) brightness(0.5)'}}
             onError={()=>setImgErr(true)}/>
-          :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:36,color:r.color,opacity:0.5}}>🐾</div>
-        }
-        {/* Question mark overlay for uncollected cards */}
-        {!owned&&(
-          <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <div style={{width:40,height:40,borderRadius:'50%',background:'rgba(0,0,0,0.45)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,color:'white',fontWeight:900}}>?</div>
+        )}
+        {/* Dim overlay for uncollected */}
+        {!owned && (
+          <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.35)',
+            display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <div style={{width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,0.2)',
+              display:'flex',alignItems:'center',justifyContent:'center',
+              fontSize:18,color:'white',fontWeight:900}}>?</div>
           </div>
         )}
         {owned&&<div style={{position:'absolute',top:7,right:7,width:22,height:22,borderRadius:'50%',background:'#10B981',display:'flex',alignItems:'center',justifyContent:'center'}}><Check size={12} color="white" strokeWidth={3}/></div>}
@@ -131,24 +144,42 @@ function AnimalCard({ card, owned, canCollect, onCollect, onOpen }: {
 function CardModal({ card, onClose }: { card: Card; onClose: ()=>void }) {
   const r = RARITY[card.rarity]??RARITY.common
   const [imgErr,setImgErr] = useState(false)
+  const [lang,setLang] = useState<'en'|'he'>('en')
+  const he = lang === 'he'
+  const name     = he ? (card.name_he     || card.name_en)     : card.name_en
+  const location = he ? (card.location_he || card.location_en) : card.location_en
+  const habitat  = he ? (card.habitat_he  || card.habitat_en)  : card.habitat_en
+  const diet     = he ? (card.diet_he     || card.diet_en)     : card.diet_en
+  const funFact  = he ? (card.fun_fact_he || card.fun_fact_en) : card.fun_fact_en
+  const facts    = he ? (card.facts_he?.length ? card.facts_he : card.facts_en) : (card.facts_en?.length ? card.facts_en : [card.fact_en])
   return (
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.65)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={onClose}>
-      <div style={{background:'white',borderRadius:18,maxWidth:380,width:'100%',overflow:'hidden',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
-        <div style={{position:'relative',aspectRatio:'16/9',background:'#f0f4f8',overflow:'hidden'}}>
-          {!imgErr?<img src={getCardImg(card, 760)} alt={card.name_en} crossOrigin="anonymous" style={{width:'100%',height:'100%',objectFit:'cover'}} onError={()=>setImgErr(true)}/>
-            :<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:64,background:`${r.color}18`}}>🐾</div>}
-          <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 50%)'}}/>
-          <div style={{position:'absolute',bottom:14,left:16}}>
-            <div style={{fontSize:22,fontWeight:700,color:'white',marginBottom:4}}>{card.name_en}</div>
-            <div style={{fontSize:12,color:'rgba(255,255,255,0.8)'}}>📍 {card.location_en}</div>
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={onClose}>
+      <div style={{background:'white',borderRadius:20,maxWidth:520,width:'100%',overflow:'hidden',maxHeight:'92vh',overflowY:'auto',boxShadow:'0 24px 60px rgba(0,0,0,0.3)'}} onClick={e=>e.stopPropagation()}>
+        <div style={{position:'relative',width:'100%',height:300,background:`linear-gradient(135deg,${r.color}40,${r.color}15)`,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',fontSize:120}}>
+          {card.emoji||'🐾'}
+          {card.image_url&&!imgErr&&<img src={card.image_url} alt={card.name_en} crossOrigin="anonymous" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain'}} onError={()=>setImgErr(true)}/>}
+          <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(0,0,0,0.65) 0%,transparent 55%)'}}/>
+          <div style={{position:'absolute',bottom:14,left:16,right:60}} dir={he?'rtl':'ltr'}>
+            <div style={{fontSize:24,fontWeight:800,color:'white',marginBottom:3}}>{name}</div>
+            <div style={{fontSize:12,color:'rgba(255,255,255,0.85)'}}>📍 {location}</div>
           </div>
-          <button onClick={onClose} style={{position:'absolute',top:10,right:10,width:28,height:28,borderRadius:'50%',background:'rgba(0,0,0,0.45)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><X size={14} color="white"/></button>
+          <div style={{position:'absolute',top:10,left:10,display:'flex',borderRadius:8,overflow:'hidden',border:'1px solid rgba(255,255,255,0.3)'}}>
+            {(['en','he'] as const).map(l=>(
+              <button key={l} onClick={e=>{e.stopPropagation();setLang(l)}}
+                style={{padding:'4px 10px',fontSize:11,fontWeight:700,border:'none',cursor:'pointer',
+                  background:lang===l?'rgba(255,255,255,0.9)':'rgba(0,0,0,0.3)',
+                  color:lang===l?'#111':'white'}}>
+                {l==='en'?'EN':'עב'}
+              </button>
+            ))}
+          </div>
+          <button onClick={onClose} style={{position:'absolute',top:10,right:10,width:30,height:30,borderRadius:'50%',background:'rgba(0,0,0,0.45)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><X size={15} color="white"/></button>
           <div style={{position:'absolute',bottom:0,left:0,right:0,height:3,background:r.color}}/>
         </div>
-        <div style={{padding:'16px 18px 20px'}}>
+        <div style={{padding:'16px 20px 20px'}} dir={he?'rtl':'ltr'}>
           <span style={{fontSize:11,fontWeight:700,padding:'3px 9px',borderRadius:10,background:r.bg,color:r.text,border:`0.5px solid ${r.color}40`}}>{r.label}</span>
           <div style={{display:'flex',flexDirection:'column',gap:10,margin:'14px 0 16px'}}>
-            {(card.facts_en?.length?card.facts_en:[card.fact_en]).map((f,i)=>(
+            {facts.map((f: string,i: number)=>(
               <div key={i} style={{display:'flex',gap:10,alignItems:'flex-start'}}>
                 <div style={{width:20,height:20,borderRadius:'50%',background:r.bg,color:r.text,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,flexShrink:0,marginTop:1}}>{i+1}</div>
                 <div style={{fontSize:13,color:'#374151',lineHeight:1.6}}>{f}</div>
@@ -156,24 +187,23 @@ function CardModal({ card, onClose }: { card: Card; onClose: ()=>void }) {
             ))}
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:14}}>
-            {[['Habitat',card.habitat_en],['Top Speed',card.speed],['Lifespan',card.lifespan],['Diet',card.diet_en]].map(([l,v])=>(
+            {[[he?'בית גידול':'Habitat',habitat],[he?'מהירות':'Top Speed',card.speed],[he?'תוחלת חיים':'Lifespan',card.lifespan],[he?'תזונה':'Diet',diet]].map(([l,v])=>(
               <div key={l} style={{background:'#F9FAFB',borderRadius:10,padding:'9px 11px'}}>
                 <div style={{fontSize:11,color:'#9CA3AF',marginBottom:2}}>{l}</div>
                 <div style={{fontSize:13,fontWeight:600,color:'#111827'}}>{v}</div>
               </div>
             ))}
           </div>
-          {card.fun_fact_en&&<div style={{background:`${r.color}12`,border:`0.5px solid ${r.color}30`,borderRadius:10,padding:'11px 13px',marginBottom:16}}>
-            <div style={{fontSize:11,fontWeight:700,color:r.color,marginBottom:4}}>⚡ Did you know?</div>
-            <div style={{fontSize:12,color:'#374151',lineHeight:1.6}}>{card.fun_fact_en}</div>
+          {funFact&&<div style={{background:`${r.color}12`,border:`0.5px solid ${r.color}30`,borderRadius:10,padding:'11px 13px',marginBottom:16}}>
+            <div style={{fontSize:11,fontWeight:700,color:r.color,marginBottom:4}}>⚡ {he?'ידעת?':'Did you know?'}</div>
+            <div style={{fontSize:12,color:'#374151',lineHeight:1.6}}>{funFact}</div>
           </div>}
-          <button onClick={onClose} style={{width:'100%',padding:10,borderRadius:10,border:'0.5px solid #E5E7EB',background:'white',cursor:'pointer',fontSize:14,color:'#374151'}}>Close</button>
+          <button onClick={onClose} style={{width:'100%',padding:10,borderRadius:10,border:'0.5px solid #E5E7EB',background:'white',cursor:'pointer',fontSize:14,color:'#374151'}}>{he?'סגור':'Close'}</button>
         </div>
       </div>
     </div>
   )
 }
-
 // ── Main ──────────────────────────────────────────────────────
 export default function CardsPage() {
   const [phases,setPhases]     = useState<Phase[]>([])
