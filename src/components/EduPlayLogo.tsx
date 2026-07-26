@@ -9,6 +9,18 @@ interface EduPlayLogoProps {
   textSize?: number
   /** Light mode: name in dark. Dark mode: name in white */
   darkText?: boolean
+  /** Gap between icon and wordmark, in px. Default auto-calculated */
+  gap?: number
+  /** Icon corner radius, in px. Default auto-calculated */
+  iconRadius?: number
+  /** Icon box-shadow. Pass 'none' to remove. Default a soft blue shadow */
+  iconShadow?: string
+  /** Wordmark letter-spacing. Default '-0.02em' */
+  letterSpacing?: string
+  /** Exact wordmark color, overrides darkText's true/white default */
+  textColor?: string
+  /** Extra style merged onto the outer wrapper (e.g. centering margins) */
+  style?: React.CSSProperties
 }
 
 /**
@@ -26,15 +38,22 @@ export default function EduPlayLogo({
   showName = true,
   textSize,
   darkText = true,
+  gap,
+  iconRadius,
+  iconShadow,
+  letterSpacing,
+  textColor,
+  style,
 }: EduPlayLogoProps) {
   const fontSize = textSize ?? Math.round(size * 0.52)
-  const radius   = Math.round(size * 0.25)
+  const radius   = iconRadius ?? Math.round(size * 0.25)
 
   return (
     <div style={{
       display: 'flex', alignItems: 'center',
-      gap: Math.round(size * 0.28),
+      gap: gap ?? Math.round(size * 0.28),
       textDecoration: 'none',
+      ...style,
     }}>
       {/* Icon */}
       <img
@@ -46,7 +65,7 @@ export default function EduPlayLogo({
           borderRadius: radius,
           display: 'block',
           flexShrink: 0,
-          boxShadow: '0 2px 8px rgba(74,127,212,0.25)',
+          boxShadow: iconShadow ?? '0 2px 8px rgba(74,127,212,0.25)',
         }}
       />
 
@@ -56,8 +75,8 @@ export default function EduPlayLogo({
           fontFamily: '"Nunito", system-ui, sans-serif',
           fontWeight: 900,
           fontSize: fontSize,
-          letterSpacing: '-0.02em',
-          color: darkText ? '#111827' : 'white',
+          letterSpacing: letterSpacing ?? '-0.02em',
+          color: textColor ?? (darkText ? '#111827' : 'white'),
           whiteSpace: 'nowrap',
           lineHeight: 1,
         }}>

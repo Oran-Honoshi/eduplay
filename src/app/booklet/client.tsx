@@ -1,21 +1,7 @@
 'use client'
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
-
-// ── Types (inlined to avoid module resolution issues) ──────────
-type Subject = 'math' | 'hebrew' | 'english'
-interface TopicMeta { topic_slug: string; subject: Subject; grade: number; title_en: string; title_he: string }
-interface Visual { type: string; description: string; steps?: string[] }
-interface Example {
-  problem_en: string; problem_he: string; visual?: Visual
-  solution_steps_en: string[]; solution_steps_he: string[]
-  answer_en: string; answer_he: string
-}
-interface TopicExplanation extends TopicMeta {
-  summary_en: string; summary_he: string
-  key_points_en: string[]; key_points_he: string[]
-  main_visual: Visual; examples: Example[]
-}
+import type { TopicMeta, Visual, Example, TopicExplanation } from '@/lib/bookletTypes'
 
 // ── Visual Renderer (inlined) ──────────────────────────────────
 const C = {

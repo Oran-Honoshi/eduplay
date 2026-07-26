@@ -5,6 +5,7 @@ import {
   ChevronRight, Check, Menu, X, Users, BarChart2,
   Brain, Heart, Sparkles, Play, ArrowRight,
 } from 'lucide-react'
+import EduPlayLogo from '@/components/EduPlayLogo'
 
 // ─── Nav ─────────────────────────────────────────────────────
 function Navbar({ scrolled }: { scrolled: boolean }) {
@@ -23,16 +24,7 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
       fontFamily: '"Nunito", system-ui, sans-serif',
     }}>
       {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <img src="/icons/icon-512.png" alt="EduPlay"
-          style={{ width: 36, height: 36, borderRadius: 10, boxShadow: '0 2px 8px rgba(74,127,212,0.25)' }} />
-        <div style={{ fontWeight: 900, fontSize: 18, color: scrolled ? '#111827' : 'white', letterSpacing: '-0.02em' }}>
-          Edu<span style={{
-            background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>Play</span>
-        </div>
-      </div>
+      <EduPlayLogo textSize={18} darkText={scrolled} />
 
       {/* Desktop links */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -568,11 +560,8 @@ export default function LandingPage() {
           <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 32, marginBottom: 36 }}>
             {/* Brand */}
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <img src="/icons/icon-512.png" alt="EduPlay" style={{ width: 32, height: 32, borderRadius: 9 }} />
-                <div style={{ fontWeight: 900, fontSize: 17, color: 'white' }}>
-                  Edu<span style={{ background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Play</span>
-                </div>
+              <div style={{ marginBottom: 12 }}>
+                <EduPlayLogo size={32} gap={10} iconRadius={9} iconShadow="none" darkText={false} />
               </div>
               <p style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.65, maxWidth: 260 }}>
                 K–6 learning platform for Israeli families. Math, English and Hebrew — all in one place.

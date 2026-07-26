@@ -291,16 +291,17 @@ export function CelebrationModal({
 
 // ── NES Panel wrapper for Minecraft ───────────────────────────
 export function ThemePanel({
-  theme, T, children, style, className
+  theme, T, children, style, className, bg, borderColor, borderWidth
 }: {
-  theme: string, T: any, children: React.ReactNode, style?: any, className?: string
+  theme: string, T: any, children: React.ReactNode, style?: any, className?: string,
+  bg?: string, borderColor?: string, borderWidth?: number
 }) {
   if (theme === 'minecraft') {
     return (
       <div
         className={`nes-container is-dark ${className || ''}`}
         style={{
-          background: T.panel,
+          background: bg || T.panel,
           color: T.text,
           fontFamily: T.fontHead,
           ...style,
@@ -312,8 +313,8 @@ export function ThemePanel({
   }
   return (
     <div style={{
-      background: T.panel,
-      border: `2px solid ${T.border}`,
+      background: bg || T.panel,
+      border: `${borderWidth ?? 2}px solid ${borderColor || T.border}`,
       borderRadius: T.radius,
       boxShadow: T.shadow,
       ...style,

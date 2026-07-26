@@ -6,6 +6,7 @@ import {
   ChevronRight, Check, Loader2, Sun, Moon,
   ToggleLeft, ToggleRight, Sliders, Users, Zap,
 } from 'lucide-react'
+import EduPlayLogo from '@/components/EduPlayLogo'
 
 // ─── Tokens ───────────────────────────────────────────────────
 const L = {
@@ -100,8 +101,7 @@ function PageHeader({ dark, onToggleDark }: { dark: boolean; onToggleDark: () =>
           <ArrowLeft size={13} /> Dashboard
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src="/icons/icon-512.png" alt="EduPlay"
-            style={{ width: 32, height: 32, borderRadius: 9, boxShadow: '0 2px 8px rgba(74,127,212,0.25)' }} />
+          <EduPlayLogo showName={false} size={32} iconRadius={9} />
           <div>
             <div style={{ fontWeight: 900, fontSize: 15, color: T.text, letterSpacing: '-0.01em' }}>
               Edu<span style={{ background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Play</span>

@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Lock, Eye, EyeOff, ChevronRight, ArrowLeft, Users, Loader2 } from 'lucide-react'
+import EduPlayLogo from '@/components/EduPlayLogo'
 
 const FAMILY_ID = '11111111-1111-1111-1111-111111111111'
 
@@ -138,9 +139,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div style={{ marginBottom: 28 }}>
-          <div style={{ width: 62, height: 62, margin: '0 auto 12px', borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 24px rgba(74,127,212,0.3)' }}>
-            <img src="/icons/icon-512.png" alt="EduPlay" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
+          <EduPlayLogo showName={false} size={62} iconRadius={18} iconShadow="0 8px 24px rgba(74,127,212,0.3)" style={{ margin: '0 auto 12px', justifyContent: 'center' }} />
           <div style={{ fontWeight: 900, fontSize: 26, color: '#111827', letterSpacing: '-0.02em' }}>
             Edu<span style={{ background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Play</span>
           </div>

@@ -1,8 +1,8 @@
 export const FONT_SIZES = {
-  small:  { base: 11, question: 12, passage: 12, label: 'A-',  scale: 0.85 },
-  medium: { base: 13, question: 14, passage: 14, label: 'A',   scale: 1.0  },
-  large:  { base: 15, question: 17, passage: 16, label: 'A+',  scale: 1.2  },
-  xl:     { base: 18, question: 20, passage: 19, label: 'A++', scale: 1.4  },
+  small:  { base: 13, question: 14, passage: 13, label: 'A-',  scale: 0.85 },
+  medium: { base: 16, question: 16, passage: 15, label: 'A',   scale: 1.0  },
+  large:  { base: 19, question: 19, passage: 18, label: 'A+',  scale: 1.2  },
+  xl:     { base: 22, question: 22, passage: 21, label: 'A++', scale: 1.4  },
 }
 
 export type FontSizeKey = keyof typeof FONT_SIZES

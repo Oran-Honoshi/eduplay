@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import MathVisual from '@/components/MathVisual'
-import { ThemeDecorations, CelebrationModal, AnimatedBtn, Sparkles, THEME_CONFIG as SHARED_THEMES } from '@/components/theme'
+import { ThemeDecorations, CelebrationModal, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG as SHARED_THEMES } from '@/components/theme'
+import { FONT_SIZES } from '@/lib/fontSize'
 
 
 function Fraction({ n, d, size = 20 }: { n: any; d: any; size?: number }) {
@@ -541,12 +542,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
     (urlParams?.get('fs') || child?.font_size || 'medium') as 'small'|'medium'|'large'|'xl'
   )
 
-  const FS = {
-    small:  { base: 13, question: 14, passage: 13 },
-    medium: { base: 16, question: 16, passage: 15 },
-    large:  { base: 19, question: 19, passage: 18 },
-    xl:     { base: 22, question: 22, passage: 21 },
-  }[fontSize]
+  const FS = FONT_SIZES[fontSize]
 
   const currentQ   = questions[qIndex]
   const progressPct = Math.round((currentStep / totalSteps) * 100)
@@ -678,6 +674,13 @@ export default function LessonClient({ child, topic, questions, passage, passage
   return (
     <div style={{ minHeight:'100vh', background:T.bg, color:T.text, fontFamily:'"Nunito",sans-serif', overflowX:'hidden', position:'relative', fontSize: fontSize==='small'?'14px':fontSize==='medium'?'16px':fontSize==='large'?'19px':'22px' }} dir={isHE ? 'rtl' : 'ltr'}>
 
+      {/* TODO(bug): the apostrophe in this @import url('...') gets HTML-entity-escaped
+          (&#x27;) on the server render but not on the client re-render, so React logs a
+          hydration text mismatch + falls back to client-side rendering for this <style>
+          tag on every single page load. Unrelated to the options-shape work — present
+          before and after that migration. Low priority (cosmetic console noise, no visual
+          break observed), but real. Likely fix: switch to dangerouslySetInnerHTML for this
+          <style> tag, or drop the quotes from the url() (they're not required here). */}
       <style>{`
         @keyframes celebPop { from { transform:scale(0.5); opacity:0; } to { transform:scale(1); opacity:1; } }
         @keyframes spin { from { transform:rotate(-20deg) scale(0.8); } to { transform:rotate(0deg) scale(1); } }
@@ -877,7 +880,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
           ) : (
             <>
               {/* Learn panel */}
-              <div style={{ background:T.panel, border:`${theme==='minecraft'?3:1}px solid ${T.border}`, borderRadius:T.radius, padding:'18px', boxShadow:T.shadow }}>
+              <ThemePanel theme={theme} T={T} borderWidth={1} style={{ padding:'18px' }}>
                 <div style={{ background:T.panel2, border:`2px solid ${T.border}`, borderLeft:`5px solid ${subjColor}`, padding:'14px', marginBottom:'12px' }}>
                   <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:subjColor, marginBottom:'8px' }}>📘 {UI.learnThis}</div>
                   {getLearnContent(topic, T, isHE)}
@@ -897,11 +900,11 @@ export default function LessonClient({ child, topic, questions, passage, passage
                     </button>
                   )}
                 </div>
-              </div>
+              </ThemePanel>
 
               {/* Question panel */}
               {currentQ ? (
-                <div style={{ background:T.panel2, border:`${theme==='minecraft'?3:2}px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
+                <ThemePanel theme={theme} T={T} bg={T.panel2} style={{ padding:'16px' }}>
                   <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent4, marginBottom:'10px' }}>⚔️ {UI.practice}</div>
                   <div style={{ marginBottom:'10px' }}>
                     {/* Primary prompt — Hebrew when isHE */}
@@ -968,7 +971,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                     <button onClick={() => { setQIndex(i=>(i+1)%Math.max(questions.length,1)); setAnswered(false); setSelected(null); setFeedback(null); setHint(false) }} style={{ padding:'12px 18px', fontFamily:T.fontHead, fontSize:'15px', background:T.panel, border:`2px solid ${T.accent3}`, color:T.accent3, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>🔄</button>
                     <button onClick={nextStep} style={{ padding:'12px 20px', fontFamily:T.fontHead, fontSize:'16px', background:T.accent1, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, flex:1, fontWeight:800 }}>{UI.next}</button>
                   </div>
-                </div>
+                </ThemePanel>
               ) : (
                 <div style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'24px', textAlign:'center', color:T.text2 }}>
                   <div style={{ fontSize:'32px', marginBottom:'12px' }}>📚</div>
@@ -985,14 +988,14 @@ export default function LessonClient({ child, topic, questions, passage, passage
         <div className="lesson-sidebar" style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
 
           {/* Mascot */}
-          <div style={{ background:T.panel, border:`${theme==='minecraft'?3:2}px solid ${T.accent2}`, borderRadius:T.radius, padding:'14px', textAlign:'center', boxShadow:T.shadow }}>
+          <ThemePanel theme={theme} T={T} borderColor={T.accent2} style={{ padding:'14px', textAlign:'center' }}>
             <span style={{ fontSize:'56px', display:'block' }}>{TD.mascot}</span>
             <div style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2, margin:'6px 0 3px' }}>{UI.pipSays}</div>
             <div style={{ background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, padding:'8px', fontSize:'14px', color:T.text2, lineHeight:1.5, textAlign:'left' }}>{pipText}</div>
-          </div>
+          </ThemePanel>
 
           {/* Subject switcher */}
-          <div style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'10px', boxShadow:T.shadow }}>
+          <ThemePanel theme={theme} T={T} style={{ padding:'10px' }}>
             <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent2, marginBottom:'8px' }}>📚 {UI.subjects}</div>
             <div style={{ display:'flex', gap:'6px' }}>
               {['math','english','hebrew'].map(s => (
@@ -1009,10 +1012,10 @@ export default function LessonClient({ child, topic, questions, passage, passage
                 </button>
               ))}
             </div>
-          </div>
+          </ThemePanel>
 
           {/* Topics list */}
-          <div style={{ background:T.panel, border:`${theme==='minecraft'?3:2}px solid ${T.border}`, borderRadius:T.radius, overflow:'hidden', boxShadow:T.shadow }}>
+          <ThemePanel theme={theme} T={T} style={{ overflow:'hidden' }}>
             <div style={{ background:T.panel2, borderBottom:`2px solid ${T.border}`, padding:'8px 12px', fontFamily:T.fontHead, fontSize:'14px', color:subjColor }}>
               📋 {isHE ? topic?.subject?.label_he || UI.topics : topic?.subject?.label_en?.toUpperCase() || UI.topics}
             </div>
@@ -1037,7 +1040,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                 )
               })}
             </div>
-          </div>
+          </ThemePanel>
         </div>
       </div>
     </div>
