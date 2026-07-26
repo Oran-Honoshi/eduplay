@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
+import { createBrowserClient } from '@/lib/supabase'
 
 // ── Types ──────────────────────────────────────────────────────
 interface Passage {
@@ -20,8 +21,7 @@ interface Passage {
 }
 
 // ── Constants ──────────────────────────────────────────────────
-const SUPABASE_URL = 'https://jbbkwomcyvuzdtagogut.supabase.co'
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpiYmt3b21jeXZ1emR0YWdvZ3V0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0OTUyMzYsImV4cCI6MjA5MTA3MTIzNn0.lKzQTIugcbmI4kua6Y4PSaLXyqCYKxxmfQpArX3vvG4'
+const supabase = createBrowserClient()
 
 const GRADE_LABELS: Record<number, string> = {
   0: 'KG', 1: 'G1', 2: 'G2', 3: 'G3', 4: 'G4', 5: 'G5', 6: 'G6'
@@ -324,27 +324,23 @@ export default function PassagesPage() {
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    fetch(`${SUPABASE_URL}/rest/v1/reading_passages?select=*,passage_questions(id)&order=grade,passage_type,difficulty`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-    })
-      .then(r => r.json())
-      .then(data => {
+    supabase
+      .from('reading_passages')
+      .select('*,passage_questions(id)')
+      .order('grade').order('passage_type').order('difficulty')
+      .then(({ data }) => {
         // Join with subject info
-        fetch(`${SUPABASE_URL}/rest/v1/subjects?select=id,slug`, {
-          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+        supabase.from('subjects').select('id,slug').then(({ data: subjects }) => {
+          const subjectMap: Record<string, string> = {}
+          ;(subjects || []).forEach((s: any) => { subjectMap[s.id] = s.slug })
+          const enriched = (data || []).map((p: any) => ({
+            ...p,
+            subject: subjectMap[p.subject_id] ?? 'unknown',
+            question_count: p.passage_questions?.length ?? 0,
+          }))
+          setPassages(enriched)
+          setLoading(false)
         })
-          .then(r => r.json())
-          .then(subjects => {
-            const subjectMap: Record<string, string> = {}
-            subjects.forEach((s: any) => { subjectMap[s.id] = s.slug })
-            const enriched = (data || []).map((p: any) => ({
-              ...p,
-              subject: subjectMap[p.subject_id] ?? 'unknown',
-              question_count: p.passage_questions?.length ?? 0,
-            }))
-            setPassages(enriched)
-            setLoading(false)
-          })
       })
   }, [])
 
