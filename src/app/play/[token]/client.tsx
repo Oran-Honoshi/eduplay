@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { ThemeDecorations } from '@/components/theme'
-import { Heart, Star, Flame, Play, BookOpen, Palette, ShoppingBag, Globe, ChevronRight } from 'lucide-react'
+import { Heart, Star, Flame, Play, BookOpen, Palette, Globe, ChevronRight } from 'lucide-react'
 
 const SUBJECT_COLORS: any = {
   math:    '#4A7FD4',
@@ -317,12 +317,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
         )}
 
         {/* Bottom actions */}
-        <div className="portal-actions" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px', marginTop:'8px' }}>
-          <button onClick={() => window.location.href=`/store?childId=${child.id}&token=${token}`}
-            style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'12px', background:`linear-gradient(135deg,${T.accent},${T.accent2})`, border:'none', borderRadius:T.radius, fontWeight:800, fontSize:'13px', cursor:'pointer', color:'white', boxShadow:`0 4px 14px ${T.accent}30` }}>
-            <ShoppingBag size={16}/> XP Store
-          </button>
-
+        <div className="portal-actions" style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'10px', marginTop:'8px' }}>
           <button onClick={() => withSession(() => { window.location.href=`/theme?childId=${child.id}&name=${child.display_name}&current=${theme}&returnTo=/play/${token}` })}
             style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'12px', background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, fontWeight:800, fontSize:'13px', cursor:'pointer', color:T.text }}>
             <Palette size={16}/> Theme

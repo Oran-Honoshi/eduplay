@@ -8,31 +8,17 @@
     "start": "next start"
   },
   "dependencies": {
-    "@pixi/react": "^7.1.2",
-    "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "^9.6.0",
     "@supabase/supabase-js": "^2.39.0",
-    "@types/three": "^0.183.1",
-    "@types/topojson-client": "^3.1.5",
-    "@vercel/og": "^0.6.2",
     "bcryptjs": "^2.4.3",
-    "framer-motion": "^12.38.0",
     "jose": "^6.2.4",
-    "lottie-react": "^2.4.1",
     "lucide-react": "^1.8.0",
     "next": "14.1.0",
-    "pixi.js": "^8.18.1",
     "react": "^18",
     "react-dom": "^18",
-    "react-simple-maps": "^3.0.0",
-    "sharp": "^0.34.5",
-    "three": "^0.183.2",
-    "topojson-client": "^3.1.0",
-    "zod": "^3.22.4"
+    "react-simple-maps": "^3.0.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
-    "@types/d3": "^7.4.3",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
