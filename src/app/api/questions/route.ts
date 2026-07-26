@@ -6,7 +6,7 @@ import { requireParentOnlySession } from '@/lib/session'
 // Auto-saves generated questions to the database so they
 // accumulate over time for future lessons and worksheets.
 //
-// Body: { questions: QuestionInput[], source?: string }
+// Body: { questions: QuestionInput[] }
 // Each question: {
 //   topic_slug, difficulty, q_type,
 //   prompt_en, prompt_he?,
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { questions, source = 'generated' }: { questions: QuestionInput[]; source?: string } = body
+    const { questions }: { questions: QuestionInput[] } = body
 
     if (!Array.isArray(questions) || questions.length === 0) {
       return NextResponse.json({ error: 'questions array required' }, { status: 400 })
@@ -144,21 +144,7 @@ export async function POST(req: NextRequest) {
       explanation_en: q.explanation_en || null,
       visual_data:    q.visual_data || null,
       // AI-generated questions go in as approved=false for review
-      // Manually provided questions come in as approved=true
-      approved:       q.approved ?? (source === 'manual'),
-      // TODO(bug): `source` is not a column on the live `questions` table —
-      // every insert through this endpoint fails with "Could not find the
-      // 'source' column of 'questions' in the schema cache" (confirmed: this
-      // route has never successfully written a row to production). Two ways
-      // to resolve, needs a decision rather than a guess: (1) `source` was
-      // meant to track provenance (manual / generated / worksheet_builder,
-      // per this route's own `source` param and the worksheet-builder
-      // auto-save's `source: 'worksheet_builder'`) — add the column via
-      // migration, or (2) it was never actually wired up — drop this field
-      // and the `source` param entirely. Group with the api/passages POST
-      // missing-API-key fix — same "content-authoring endpoint doesn't
-      // actually work yet" bucket.
-      source,
+      approved:       q.approved ?? false,
     }))
 
     // Upsert — skip exact duplicates (same topic + prompt_en)
@@ -179,7 +165,6 @@ export async function POST(req: NextRequest) {
       saved:      savedCount,
       skipped:    questions.length - savedCount,
       total_sent: questions.length,
-      source,
     })
   } catch (err: any) {
     console.error('Questions API error:', err)
