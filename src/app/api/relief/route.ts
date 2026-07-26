@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
+import { getSession, requireOwnChildSession } from '@/lib/session'
 
+// Generic activity content, not per-child data — any authenticated session (child or
+// parent) can read it, no ownership check needed.
 export async function GET(req: NextRequest) {
+  const { child, parent } = await getSession()
+  if (!child && !parent) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const supabase = createServerClient()
   const { searchParams } = new URL(req.url)
-  const childId = searchParams.get('childId')
-  const grade   = parseInt(searchParams.get('grade') || '0')
-  const theme   = searchParams.get('theme') || 'mixed'
-  const type    = searchParams.get('type') // 'exercise' | 'brain_game' | 'video' | null
+  const grade = parseInt(searchParams.get('grade') || '0')
+  const theme = searchParams.get('theme') || 'mixed'
+  const type  = searchParams.get('type') // 'exercise' | 'brain_game' | 'video' | null
 
   let query = supabase
     .from('relief_activities')
@@ -42,35 +47,59 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createServerClient()
   const body = await req.json()
-  const { childId, activityId, xpSpent } = body
+  const { childId, activityId } = body
 
   if (!childId || !activityId) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
   }
 
-  if (xpSpent > 0) {
+  const auth = await requireOwnChildSession(childId)
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
+  }
+
+  const supabase = createServiceRoleClient()
+
+  // Cost and reward are both looked up server-side from the activity, never trusted
+  // from the client — the request body has no xpSpent field to spoof in the first
+  // place. Reward is granted for reaching this route at all — the frontend only
+  // calls it from the natural countdown-finish and "Done Early" paths, never from
+  // skip(), so simply not skipping is what earns it.
+  const { data: activity } = await supabase
+    .from('relief_activities')
+    .select('xp_cost, xp_reward')
+    .eq('id', activityId)
+    .single()
+
+  const cost = activity?.xp_cost || 0
+  const reward = activity?.xp_reward || 0
+
+  if (cost > 0 || reward > 0) {
     const { data: child } = await supabase
       .from('children')
       .select('xp_balance')
       .eq('id', childId)
       .single()
 
-    if ((child?.xp_balance || 0) < xpSpent) {
+    if (cost > 0 && (child?.xp_balance || 0) < cost) {
       return NextResponse.json({ error: 'Not enough XP' }, { status: 400 })
     }
 
     await supabase.from('children').update({
-      xp_balance: (child?.xp_balance || 0) - xpSpent,
+      xp_balance: (child?.xp_balance || 0) - cost + reward,
     }).eq('id', childId)
   }
 
   await supabase.from('child_relief_history').insert({
     child_id: childId,
     activity_id: activityId,
-    xp_spent: xpSpent || 0,
+    xp_spent: cost,
+    xp_earned: reward,
   })
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, xpEarned: reward })
 }

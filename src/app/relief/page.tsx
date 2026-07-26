@@ -151,6 +151,7 @@ export default function ReliefPage() {
   const [countdown, setCountdown] = useState(0)
   const [videoOpen, setVideoOpen] = useState(false)
   const [videoTime, setVideoTime] = useState(60)
+  const [xpEarned, setXpEarned]   = useState(10)
   const intervalRef               = useRef<any>(null)
   const videoIntervalRef          = useRef<any>(null)
 
@@ -207,10 +208,12 @@ export default function ReliefPage() {
   async function recordCompletion() {
     if (!childId || !activity) return
     try {
-      await fetch('/api/relief', {
+      const res  = await fetch('/api/relief', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ childId, activityId: activity.id, xpSpent: 0 }),
       })
+      const data = await res.json()
+      if (typeof data.xpEarned === 'number') setXpEarned(data.xpEarned)
     } catch {}
   }
 
@@ -578,7 +581,7 @@ export default function ReliefPage() {
               </div>
               <div style={{ textAlign: 'left' }}>
                 <div style={{ fontWeight: 900, fontSize: 19, color: '#B45309', letterSpacing: '-0.01em' }}>
-                  +10 XP Bonus!
+                  +{xpEarned} XP Bonus!
                 </div>
                 <div style={{ fontSize: 12, color: '#92400E', fontWeight: 600 }}>
                   For completing your activity break
