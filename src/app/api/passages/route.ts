@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
+import { authorizeChildAccess } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
   const supabase = createServerClient()
@@ -31,7 +32,19 @@ export async function GET(req: NextRequest) {
   }
 
   if (childId) {
-    const { data: history } = await supabase
+    const childAuth = await authorizeChildAccess(childId)
+    if (!childAuth.ok) {
+      return NextResponse.json(
+        { error: childAuth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+        { status: childAuth.status }
+      )
+    }
+
+    // child_passage_history has RLS enabled with no anon policy — read via the
+    // service-role client, relying on the authorizeChildAccess check above for
+    // ownership instead of a DB-level policy (the app uses its own JWT cookie
+    // sessions, not Supabase Auth, so there's no auth.uid() to write a policy against).
+    const { data: history } = await createServiceRoleClient()
       .from('child_passage_history').select('passage_id, completed').eq('child_id', childId)
     const seenMap = new Map((history || []).map((h: any) => [h.passage_id, h.completed]))
     result = result.map((p: any) => ({ ...p, seen: seenMap.has(p.id), completed: seenMap.get(p.id) ?? false }))
