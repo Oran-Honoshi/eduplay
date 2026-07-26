@@ -378,10 +378,6 @@ export default function LoginPage() {
                 }}>
                   {loading ? <><Loader2 size={16} style={{ animation: 'spin 0.7s linear infinite' }} /> Logging in…</> : 'Enter Dashboard →'}
                 </button>
-
-                <div style={{ marginTop: 12, fontSize: 12, color: '#9CA3AF', fontWeight: 600 }}>
-                  Default password: <strong style={{ color: '#6B7280' }}>eduplay2024</strong>
-                </div>
               </>
             )}
           </div>

@@ -46,13 +46,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Maximum 3 parents per family' }, { status: 400 })
   }
 
+  const hashedPassword = password ? await bcrypt.hash(password, 10) : password
+
   const { data, error } = await supabase
     .from('family_parents')
     .insert({
       family_id: familyId,
       name,
       email,
-      password,
+      password: hashedPassword,
       avatar_emoji: avatar_emoji || '👤',
       role: role || 'parent',
       sort_order: (existing?.length || 0) + 1,

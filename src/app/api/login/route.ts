@@ -1,13 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import bcrypt from 'bcryptjs'
+import { createServiceRoleClient } from '@/lib/supabase'
+import { isBcryptHash } from '@/lib/passwordHash.mjs'
+import { createChildSession, createParentSession } from '@/lib/session'
 
 const FAMILY_ID = '11111111-1111-1111-1111-111111111111'
 
+async function checkPassword(
+  candidate: string,
+  stored: string,
+  rehash: (newHash: string) => Promise<void>
+): Promise<boolean> {
+  if (isBcryptHash(stored)) {
+    return bcrypt.compare(candidate, stored)
+  }
+  const matches = candidate === stored
+  if (matches) {
+    await rehash(await bcrypt.hash(candidate, 10))
+  }
+  return matches
+}
+
 export async function POST(req: NextRequest) {
-  const supabase = createServerClient()
+  const supabase = createServiceRoleClient()
   const body = await req.json()
   const { pin, password } = body
 
+  // TODO(security): child PIN login has no rate limiting or lockout.
+  // - pin_code is compared in plaintext (still true as of 2026-07-23 recheck) — flagged in original
+  //   audit as lower priority than the missing rate limit, since PINs are only a 4-digit space anyway.
+  // - PIN space is 10,000 combinations (0000-9999) and this endpoint is unauthenticated, so it's
+  //   brute-forceable in a trivially small number of requests without throttling.
+  // - Needs attempt-based lockout per child per time window (e.g. N failed attempts -> temporary
+  //   lockout for that child id) before this is safe to leave as-is. Do not fix as a drive-by change
+  //   inside unrelated work (e.g. the IDOR pass) — track and fix as its own change.
   // Child PIN login
   if (pin) {
     const { data: children } = await supabase
@@ -20,6 +46,8 @@ export async function POST(req: NextRequest) {
     if (!child) {
       return NextResponse.json({ error: 'Wrong PIN — try again! 🔢' }, { status: 401 })
     }
+
+    await createChildSession(child.id, FAMILY_ID)
 
     return NextResponse.json({
       success: true,
@@ -36,28 +64,26 @@ export async function POST(req: NextRequest) {
 
   // Parent password login
 if (password) {
-  const { data: parentProfile } = await supabase
-    .from('family_parents')
-    .select('id, name, password, role, avatar_emoji')
-    .eq('family_id', FAMILY_ID)
-    .maybeSingle()
-
-  // Check individual parent password first
+  // Check individual parent passwords first
   const { data: allParents } = await supabase
     .from('family_parents')
     .select('id, name, password, role, avatar_emoji')
     .eq('family_id', FAMILY_ID)
 
-  const matchingParent = (allParents || []).find((p: any) => p.password === password)
-
-  if (matchingParent) {
-    return NextResponse.json({
-      success: true,
-      type: 'parent',
-      familyId: FAMILY_ID,
-      parentId: matchingParent.id,
-      parentName: matchingParent.name,
+  for (const parent of allParents || []) {
+    const ok = await checkPassword(password, parent.password, async (newHash) => {
+      await supabase.from('family_parents').update({ password: newHash }).eq('id', parent.id)
     })
+    if (ok) {
+      await createParentSession(parent.id, FAMILY_ID)
+      return NextResponse.json({
+        success: true,
+        type: 'parent',
+        familyId: FAMILY_ID,
+        parentId: parent.id,
+        parentName: parent.name,
+      })
+    }
   }
 
   // Fallback to family password
@@ -67,16 +93,21 @@ if (password) {
     .eq('id', FAMILY_ID)
     .maybeSingle()
 
-  const correctPassword = family?.parent_password || 'eduplay2024'
-  if (password !== correctPassword) {
-    return NextResponse.json({ error: 'Wrong password — try again! 🔑' }, { status: 401 })
+  if (family?.parent_password) {
+    const ok = await checkPassword(password, family.parent_password, async (newHash) => {
+      await supabase.from('families').update({ parent_password: newHash }).eq('id', FAMILY_ID)
+    })
+    if (ok) {
+      await createParentSession(null, FAMILY_ID)
+      return NextResponse.json({
+        success: true,
+        type: 'parent',
+        familyId: FAMILY_ID,
+      })
+    }
   }
 
-  return NextResponse.json({
-    success: true,
-    type: 'parent',
-    familyId: FAMILY_ID,
-  })
+  return NextResponse.json({ error: 'Wrong password — try again! 🔑' }, { status: 401 })
 }
 
   return NextResponse.json({ error: 'PIN or password required' }, { status: 400 })
