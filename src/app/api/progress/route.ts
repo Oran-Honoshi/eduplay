@@ -75,6 +75,19 @@ async function awardCardForTopicCompletion(supabase: any, childId: string) {
   }
 }
 
+// TODO(security): `correct` (checked 2026-07-26) is a client-supplied boolean, trusted
+// verbatim below — this route never re-queries `questions`/`options` to verify the claim
+// before writing `question_attempts` (line ~103) or awarding XP via `award_xp` (line ~110).
+// A modified client (or a crafted request with a real childId/session but a fabricated
+// `correct: true`) can farm XP and progress with zero actually-correct answers. This is
+// the same class of issue as the session-based IDOR ownership checks fixed across
+// child/parent routes (authorizeChildAccess below guards *who* can post, not *whether
+// the claim is true*) — grading itself needs to move server-side: look up questionId's
+// options and check isCorrect on the option matching answerGiven (options[].isCorrect
+// is the only field the actual
+// lesson UI trusts today — see src/app/lesson/client.tsx's checkAnswer — correct_answer
+// on the questions table is unused for grading and inconsistently formatted, so isCorrect
+// is the right source of truth to re-derive `correct` from here instead of the body).
 export async function POST(req: NextRequest) {
   const supabase = createServiceRoleClient()
   const body = await req.json()
