@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
-import { authorizeChildAccess } from '@/lib/session'
+import { authorizeChildAccess, requireParentOnlySession } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
   const supabase = createServerClient()
@@ -54,6 +54,14 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireParentOnlySession()
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
+  }
+
   const body = await req.json()
   const { grade, subject, type, difficulty, topic, language } = body
 

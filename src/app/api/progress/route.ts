@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/supabase'
+import { authorizeChildAccess } from '@/lib/session'
 
 // ── Card auto-award on topic completion ───────────────────────
 // When a child completes a topic for the first time, we pick
@@ -51,7 +52,12 @@ async function awardCardForTopicCompletion(supabase: any, childId: string) {
     const unowned = (availableCards || []).filter((c: any) => !ownedIds.has(c.id))
     if (unowned.length === 0) return null
 
-    // Weighted random: prefer common cards first (lower xp_cost)
+    // Uniformly random pick among the first min(unowned.length, 6) unowned cards,
+    // in whatever order the query above returned them — not weighted by rarity.
+    // TODO(product): weighted-by-rarity selection (favoring common cards) appears to
+    // have been intended but was never implemented. Doing it for real needs xp_cost/
+    // rarity pulled into the `availableCards` select above, plus actual weighting logic
+    // here instead of this flat random index.
     const card = unowned[Math.floor(Math.random() * Math.min(unowned.length, 6))]
 
     // 4. Award the card
@@ -70,12 +76,20 @@ async function awardCardForTopicCompletion(supabase: any, childId: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createServerClient()
+  const supabase = createServiceRoleClient()
   const body = await req.json()
   const { childId, questionId, topicId, answerGiven, correct, hintUsed, stepNumber, totalSteps } = body
 
   if (!childId || !topicId) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+  }
+
+  const auth = await authorizeChildAccess(childId)
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
   }
 
   try {
@@ -168,9 +182,17 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerClient()
+  const supabase = createServiceRoleClient()
   const childId = new URL(req.url).searchParams.get('childId')
   if (!childId) return NextResponse.json({ error: 'Missing childId' }, { status: 400 })
+
+  const auth = await authorizeChildAccess(childId)
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
+  }
 
   const { data: progress } = await supabase
     .from('child_topic_progress')

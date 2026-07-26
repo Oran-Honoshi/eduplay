@@ -1,9 +1,9 @@
-import { createServerClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/supabase'
 import ChildPortalClient from './client'
 import { redirect } from 'next/navigation'
 
 export default async function ChildPortalPage({ params }: { params: { token: string } }) {
-  const supabase = createServerClient()
+  const supabase = createServiceRoleClient()
 
   // Find child by token
   const { data: child } = await supabase
@@ -14,7 +14,15 @@ export default async function ChildPortalPage({ params }: { params: { token: str
 
   if (!child) redirect('/')
 
-  // Update last active
+  // TODO(product): fires on every portal load with no gate on actual engagement — a
+  // child (or anyone) opening this link bumps last_active_at even if they never pick
+  // a lesson or answer a question. Compare against api/progress/route.ts, which only
+  // touches last_active_at alongside a real child_topic_progress write. Any "last
+  // active" display sourced from this column currently reads as "portal opened", not
+  // "child engaged" — confirmed via child "Tom" (2026-07-26): last_active_at recent,
+  // zero rows in every per-child activity table. Needs a product call on whether to
+  // split into last_opened_at vs. last_engaged_at, or gate this update on some
+  // minimum interaction before shipping either way.
   await supabase
     .from('children')
     .update({ last_active_at: new Date().toISOString() })

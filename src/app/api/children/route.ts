@@ -1,10 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/supabase'
+import { getSession, requireFamilyMatch, authorizeChildAccess } from '@/lib/session'
+
+// pin_code and grade are parent-only regardless of whose row it is; everything
+// else in `allowed` below is self-service subject to the ownership check.
+const PARENT_ONLY_FIELDS = ['pin_code', 'grade']
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerClient()
+  const supabase = createServiceRoleClient()
   const childId = req.nextUrl.searchParams.get('childId')
   if (!childId) return NextResponse.json({ error: 'childId required' }, { status: 400 })
+
+  const auth = await authorizeChildAccess(childId)
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
+  }
 
   const { data: child, error } = await supabase
     .from('children')
@@ -17,10 +30,27 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const supabase = createServerClient()
+  const supabase = createServiceRoleClient()
   const body = await req.json()
   const { childId } = body
   if (!childId) return NextResponse.json({ error: 'childId required' }, { status: 400 })
+
+  const { child, parent } = await getSession()
+  if (!child && !parent) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  if (child) {
+    if (child.childId !== childId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  } else if (parent) {
+    const matches = await requireFamilyMatch(childId, parent.familyId)
+    if (!matches) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  if (child) {
+    const rejected = PARENT_ONLY_FIELDS.filter(f => body[f] !== undefined)
+    if (rejected.length > 0) {
+      return NextResponse.json({ error: `Parent session required for: ${rejected.join(', ')}` }, { status: 403 })
+    }
+  }
 
   const allowed = ['grade','theme','font_size','lang_screen','pin_code','relief_trigger','card_collect_mode','card_tokens','xp_toward_next_token']
   const update: Record<string, any> = {}

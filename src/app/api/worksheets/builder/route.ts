@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/supabase'
+import { authorizeChildAccess } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerClient()
+  const supabase = createServiceRoleClient()
   const { searchParams } = new URL(req.url)
 
   const childId       = searchParams.get('childId')
@@ -19,6 +20,14 @@ export async function GET(req: NextRequest) {
 
   if (!childId || topicIds.length === 0) {
     return NextResponse.json({ error: 'childId and topicIds required' }, { status: 400 })
+  }
+
+  const auth = await authorizeChildAccess(childId)
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
   }
 
   try {

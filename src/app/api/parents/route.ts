@@ -1,24 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import bcrypt from 'bcryptjs'
+import { createServiceRoleClient } from '@/lib/supabase'
+import { requireParentOnlySession } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerClient()
-  const familyId = new URL(req.url).searchParams.get('familyId')
-    || '11111111-1111-1111-1111-111111111111'
+  const auth = await requireParentOnlySession()
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
+  }
 
+  const supabase = createServiceRoleClient()
   const { data: parents } = await supabase
     .from('family_parents')
     .select('id, name, email, avatar_emoji, role, sort_order')
-    .eq('family_id', familyId)
+    .eq('family_id', auth.parent.familyId)
     .order('sort_order')
 
   return NextResponse.json({ parents: parents || [] })
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createServerClient()
+  const auth = await requireParentOnlySession()
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
+  }
+
+  const supabase = createServiceRoleClient()
   const body = await req.json()
-  const { familyId, name, email, password, avatar_emoji, role } = body
+  const { name, email, password, avatar_emoji, role } = body
+  const familyId = auth.parent.familyId
 
   // Max 3 parents check
   const { data: existing } = await supabase
@@ -49,14 +65,45 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const supabase = createServerClient()
+  const supabase = createServiceRoleClient()
   const body = await req.json()
   const { parentId, name, email, password, avatar_emoji } = body
+  if (!parentId) return NextResponse.json({ error: 'parentId required' }, { status: 400 })
 
+  const auth = await requireParentOnlySession()
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
+  }
+
+  const { data: target } = await supabase
+    .from('family_parents')
+    .select('id, family_id')
+    .eq('id', parentId)
+    .maybeSingle()
+
+  if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (target.family_id !== auth.parent.familyId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  // NOTE(product): any parent session in a family can update any OTHER parent's row in
+  // that same family via this route, including resetting their password — there's no
+  // check that the acting parent IS the target parent. This matches the shipped
+  // multi-parent UI (a family's parents manage each other's accounts from one shared
+  // dashboard, no per-parent re-auth step) and is a deliberate tradeoff, not an oversight.
+  // Not filed as TODO(security): the family-match check above is the actual security
+  // boundary (a parent from a different family can't touch this row at all), and within
+  // one family this is intended shared access, same trust model as the rest of the
+  // parent dashboard. Worth a future UX conversation though — e.g. requiring the target
+  // parent's own re-confirmation for a password change, or at minimum a "your password
+  // was changed by <name>" notification.
   const updates: any = {}
   if (name) updates.name = name
   if (email) updates.email = email
-  if (password) updates.password = password
+  if (password) updates.password = await bcrypt.hash(password, 10)
   if (avatar_emoji) updates.avatar_emoji = avatar_emoji
 
   await supabase.from('family_parents').update(updates).eq('id', parentId)
@@ -64,9 +111,37 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const supabase = createServerClient()
+  const supabase = createServiceRoleClient()
   const parentId = new URL(req.url).searchParams.get('parentId')
   if (!parentId) return NextResponse.json({ error: 'Missing parentId' }, { status: 400 })
+
+  const auth = await requireParentOnlySession()
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
+  }
+
+  const { data: target } = await supabase
+    .from('family_parents')
+    .select('id, family_id')
+    .eq('id', parentId)
+    .maybeSingle()
+
+  if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (target.family_id !== auth.parent.familyId) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const { count } = await supabase
+    .from('family_parents')
+    .select('id', { count: 'exact', head: true })
+    .eq('family_id', target.family_id)
+
+  if ((count ?? 0) <= 1) {
+    return NextResponse.json({ error: 'Cannot delete the last parent in a family' }, { status: 400 })
+  }
 
   await supabase.from('family_parents').delete().eq('id', parentId)
   return NextResponse.json({ success: true })

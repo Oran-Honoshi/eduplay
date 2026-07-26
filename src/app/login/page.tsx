@@ -31,7 +31,7 @@ export default function LoginPage() {
   async function loadParents() {
     if (parentsLoaded) return
     try {
-      const res  = await fetch(`/api/parents?familyId=${FAMILY_ID}`)
+      const res  = await fetch(`/api/parents/picker?familyId=${FAMILY_ID}`)
       const data = await res.json()
       setParents(data.parents || [])
     } catch {

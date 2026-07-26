@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ThemeDecorations } from '@/components/theme'
 import { Heart, Star, Flame, Play, BookOpen, Palette, ShoppingBag, Globe, ChevronRight } from 'lucide-react'
 
@@ -31,9 +31,47 @@ const mobileStyles = `
   }
 `
 
+// page.tsx is a Server Component and can't set cookies during render (Next 14 only
+// allows that from Route Handlers/Server Actions/Middleware), so the session cookie
+// has to be minted here on the client instead, via the from-token exchange route.
+async function establishChildSession(token: string): Promise<boolean> {
+  try {
+    const res = await fetch('/api/session/from-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 export default function ChildPortalClient({ child, subjects, allTopics, progress, lastTopic, token }: any) {
   const theme = child.theme || 'plain'
   const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
+
+  // Fired synchronously on first render (not inside useEffect) so the request is
+  // already in flight before the user can click anything — every handler below
+  // awaits this same promise before touching a session-gated API or navigating.
+  const [sessionPromise] = useState(() => establishChildSession(token))
+  const [sessionFailed, setSessionFailed] = useState(false)
+  const [toast, setToast] = useState<string|null>(null)
+
+  useEffect(() => {
+    sessionPromise.then(ok => { if (!ok) setSessionFailed(true) })
+  }, [sessionPromise])
+
+  function showToast(text: string) {
+    setToast(text)
+    setTimeout(() => setToast(null), 3500)
+  }
+
+  async function withSession(action: () => void) {
+    const ok = await sessionPromise
+    if (!ok) { setSessionFailed(true); return }
+    action()
+  }
 
   const [selectedSubject, setSelectedSubject] = useState<string|null>(null)
   const [langMode, setLangMode]               = useState(child.lang_screen || 'bilingual')
@@ -69,6 +107,8 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
   }
 
   async function startLesson(topicId: string) {
+    const ok = await sessionPromise
+    if (!ok) { setSessionFailed(true); return }
     try {
       const res = await fetch(`/api/progress?childId=${child.id}`)
       if (res.ok) {
@@ -81,8 +121,12 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
           setInProgressDisplay(data.progress.filter((p: any) => p.status === 'in_progress').length)
         }
         if (data.xp !== undefined) setXpDisplay(data.xp)
+      } else {
+        showToast("⚠️ Couldn't refresh your progress — showing the last saved values")
       }
-    } catch {}
+    } catch {
+      showToast("⚠️ Couldn't refresh your progress — showing the last saved values")
+    }
     window.location.href = `/lesson?topicId=${topicId}&childId=${child.id}&token=${token}&theme=${child.theme || 'plain'}&lang=${langMode}`
   }
 
@@ -279,7 +323,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
             <ShoppingBag size={16}/> XP Store
           </button>
 
-          <button onClick={() => window.location.href=`/theme?childId=${child.id}&name=${child.display_name}&current=${theme}&returnTo=/play/${token}`}
+          <button onClick={() => withSession(() => { window.location.href=`/theme?childId=${child.id}&name=${child.display_name}&current=${theme}&returnTo=/play/${token}` })}
             style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'12px', background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, fontWeight:800, fontSize:'13px', cursor:'pointer', color:T.text }}>
             <Palette size={16}/> Theme
           </button>
@@ -299,6 +343,18 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
           </div>
         </div>
       </div>
+
+      {sessionFailed && (
+        <div style={{ position:'fixed', top:0, left:0, right:0, zIndex:1000, background:'#C0392B', color:'white', padding:'12px 16px', textAlign:'center', fontWeight:800, fontSize:'13px', boxShadow:'0 2px 8px rgba(0,0,0,0.2)' }}>
+          ⚠️ We couldn't start your session. Please close this tab and open your play link again.
+        </div>
+      )}
+
+      {toast && (
+        <div style={{ position:'fixed', bottom:'20px', left:'50%', transform:'translateX(-50%)', zIndex:1000, background:'#1E2D4E', color:'white', padding:'10px 18px', borderRadius:'50px', fontWeight:700, fontSize:'13px', boxShadow:'0 4px 16px rgba(0,0,0,0.25)', maxWidth:'90vw', textAlign:'center' }}>
+          {toast}
+        </div>
+      )}
     </div>
   )
   return (

@@ -1,4 +1,5 @@
-import { createServerClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/supabase'
+import { authorizeChildAccess } from '@/lib/session'
 import LessonClient from './client'
 import { redirect } from 'next/navigation'
 
@@ -7,11 +8,14 @@ interface Props {
 }
 
 export default async function LessonPage({ searchParams }: Props) {
-  const supabase   = createServerClient()
+  const supabase   = createServiceRoleClient()
   const childId    = searchParams.childId || '22222222-2222-2222-2222-222222222002'
   const difficulty = searchParams.difficulty || 'easy'
   const isBonus    = searchParams.bonus === 'true'
   const needed     = isBonus ? 20 : 10
+
+  const auth = await authorizeChildAccess(childId)
+  if (!auth.ok) redirect(auth.status === 401 ? '/login' : '/dashboard?error=lesson_access_denied')
 
   const { data: child } = await supabase
     .from('children').select('*').eq('id', childId).single()

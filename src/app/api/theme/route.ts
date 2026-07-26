@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/supabase'
+import { authorizeChildAccess } from '@/lib/session'
 
 export async function POST(req: NextRequest) {
-  const supabase = createServerClient()
+  const supabase = createServiceRoleClient()
   const { childId, theme } = await req.json()
 
   if (!childId || !theme) {
     return NextResponse.json({ error: 'childId and theme required' }, { status: 400 })
+  }
+
+  const auth = await authorizeChildAccess(childId)
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
   }
 
   const validThemes = ['minecraft', 'princesses', 'adventure', 'space', 'lego', 'sports', 'plain']

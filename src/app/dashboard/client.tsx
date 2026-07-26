@@ -164,11 +164,12 @@ const TABS = [
   { key:'account',    label:'⚙️ Account'     },
 ]
 
-export default function DashboardClient({ data }: { data: any }) {
+export default function DashboardClient({ data, error }: { data: any; error?: string }) {
   const { family, children, progress, recommendations, parentName, isDemo } = data
   const [screen, setScreen]         = useState('overview')
   const [toast, setToast]           = useState<{ icon:string; text:string }|null>(null)
   const [approvalOpen, setApprovalOpen] = useState(false)
+  const [errorBanner, setErrorBanner]   = useState(error)
 
   const daysLeft = family
     ? Math.max(0, Math.ceil((new Date(family.trial_ends_at).getTime() - Date.now()) / 86400000))
@@ -275,6 +276,14 @@ export default function DashboardClient({ data }: { data: any }) {
           </div>
         </div>
       </header>
+
+      {/* Error banner */}
+      {errorBanner === 'lesson_access_denied' && (
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', background:'#FFF5F5', borderBottom:'1px solid #FEE2E2', color:'#DC2626', fontSize:'13px', fontWeight:700, padding:'10px 16px' }}>
+          <span>⚠️ That lesson isn't available. Please pick another one.</span>
+          <button onClick={() => setErrorBanner(undefined)} style={{ border:'none', background:'transparent', color:'#DC2626', fontWeight:800, cursor:'pointer', fontSize:'14px', lineHeight:1 }}>✕</button>
+        </div>
+      )}
 
       <div style={{ display:'flex', minHeight:'calc(100vh - 58px)' }}>
 
@@ -520,7 +529,7 @@ export default function DashboardClient({ data }: { data: any }) {
 
           {/* ── PARENTS ── */}
           {screen === 'parents' && (
-            <ParentsScreen familyId="11111111-1111-1111-1111-111111111111" showToast={showToast} />
+            <ParentsScreen familyId={family?.id} showToast={showToast} />
           )}
 
           {/* ── ACCOUNT ── */}

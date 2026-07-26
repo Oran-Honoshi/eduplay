@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
+import { requireParentOnlySession } from '@/lib/session'
 
 // ─── POST /api/questions ──────────────────────────────────────
 // Auto-saves generated questions to the database so they
@@ -32,6 +33,14 @@ interface QuestionInput {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireParentOnlySession()
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
+  }
+
   const supabase = createServerClient()
 
   try {

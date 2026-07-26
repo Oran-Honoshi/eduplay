@@ -1,10 +1,31 @@
 export const revalidate = 0
-import { createServerClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/supabase'
+import { requireParentOnlySession, getSession } from '@/lib/session'
 import DashboardClient from './client'
+import { redirect } from 'next/navigation'
 
-export default async function DashboardPage() {
-  const supabase = createServerClient()
-  const familyId = '11111111-1111-1111-1111-111111111111'
+interface Props {
+  searchParams: { error?: string }
+}
+
+export default async function DashboardPage({ searchParams }: Props) {
+  const supabase = createServiceRoleClient()
+
+  const auth = await requireParentOnlySession()
+  if (!auth.ok) {
+    // A child session belongs on their own portal, not the parent dashboard —
+    // this page is also the back-button target for cards/worksheets/passages/curriculum.
+    if (auth.status === 403) {
+      const { child } = await getSession()
+      const { data: childRow } = child
+        ? await supabase.from('children').select('access_token').eq('id', child.childId).single()
+        : { data: null }
+      redirect(childRow?.access_token ? `/play/${childRow.access_token}` : '/login')
+    }
+    redirect('/login')
+  }
+
+  const familyId = auth.parent.familyId
 
   const [
     { data: children },
@@ -46,6 +67,7 @@ export default async function DashboardPage() {
         parentName:      'Hila',
         isDemo:          false,
       }}
+      error={searchParams.error}
     />
   )
 }

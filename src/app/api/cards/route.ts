@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
+import { createServiceRoleClient } from '@/lib/supabase'
+import { authorizeChildAccess, requireChildSession } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerClient()
+  const supabase = createServiceRoleClient()
   const childId = req.nextUrl.searchParams.get('childId')
   if (!childId) return NextResponse.json({ error: 'childId required' }, { status: 400 })
+
+  const auth = await authorizeChildAccess(childId)
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
+      { status: auth.status }
+    )
+  }
 
   const [{ data: phases }, { data: cards }, { data: owned }] = await Promise.all([
     supabase.from('card_phases').select('*').eq('is_active', true).order('sort_order'),
@@ -20,9 +29,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createServerClient()
+  const supabase = createServiceRoleClient()
   const { childId, cardId, useToken } = await req.json()
   if (!childId || !cardId) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+
+  const childSession = await requireChildSession()
+  if (!childSession) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (childSession.childId !== childId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   // Get child token balance
   const { data: child } = await supabase
