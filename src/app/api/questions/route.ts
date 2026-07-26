@@ -32,6 +32,50 @@ interface QuestionInput {
   approved?: boolean
 }
 
+// ─── options shape guard ───────────────────────────────────────
+// Rejects malformed options outright rather than coercing them —
+// an object-shape {A,B,C,D} map silently accepted here is exactly
+// what produced the 1,793-row options migration.
+function validateOptionsShape(options: any, qIndex: number): string | null {
+  if (!Array.isArray(options)) {
+    return `Question ${qIndex}: options must be an array, not ${typeof options}`
+  }
+  if (options.length === 0) {
+    return `Question ${qIndex}: options array must not be empty`
+  }
+
+  let correctCount = 0
+  for (let i = 0; i < options.length; i++) {
+    const opt = options[i]
+    if (typeof opt !== 'object' || opt === null || Array.isArray(opt)) {
+      return `Question ${qIndex}, option ${i}: must be an object`
+    }
+    for (const key of ['label', 'value_en', 'value_he', 'isCorrect']) {
+      if (!(key in opt)) {
+        return `Question ${qIndex}, option ${i}: missing required key "${key}"`
+      }
+    }
+    if (typeof opt.label !== 'string' || !opt.label) {
+      return `Question ${qIndex}, option ${i}: label must be a non-empty string`
+    }
+    if (typeof opt.value_en !== 'string' || !opt.value_en) {
+      return `Question ${qIndex}, option ${i}: value_en must be a non-empty string`
+    }
+    if (opt.value_he !== null && typeof opt.value_he !== 'string') {
+      return `Question ${qIndex}, option ${i}: value_he must be a string or null`
+    }
+    if (typeof opt.isCorrect !== 'boolean') {
+      return `Question ${qIndex}, option ${i}: isCorrect must be a boolean`
+    }
+    if (opt.isCorrect) correctCount++
+  }
+
+  if (correctCount !== 1) {
+    return `Question ${qIndex}: options must have exactly one isCorrect:true (found ${correctCount})`
+  }
+  return null
+}
+
 export async function POST(req: NextRequest) {
   const auth = await requireParentOnlySession()
   if (!auth.ok) {
@@ -52,11 +96,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate each question has minimum required fields
-    for (const q of questions) {
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i]
       if (!q.topic_slug || !q.prompt_en || !q.correct_answer || !q.difficulty) {
         return NextResponse.json({
           error: 'Each question needs: topic_slug, prompt_en, correct_answer, difficulty',
         }, { status: 400 })
+      }
+      if (q.options != null) {
+        const shapeError = validateOptionsShape(q.options, i)
+        if (shapeError) {
+          return NextResponse.json({ error: shapeError }, { status: 400 })
+        }
       }
     }
 
@@ -95,6 +146,18 @@ export async function POST(req: NextRequest) {
       // AI-generated questions go in as approved=false for review
       // Manually provided questions come in as approved=true
       approved:       q.approved ?? (source === 'manual'),
+      // TODO(bug): `source` is not a column on the live `questions` table —
+      // every insert through this endpoint fails with "Could not find the
+      // 'source' column of 'questions' in the schema cache" (confirmed: this
+      // route has never successfully written a row to production). Two ways
+      // to resolve, needs a decision rather than a guess: (1) `source` was
+      // meant to track provenance (manual / generated / worksheet_builder,
+      // per this route's own `source` param and the worksheet-builder
+      // auto-save's `source: 'worksheet_builder'`) — add the column via
+      // migration, or (2) it was never actually wired up — drop this field
+      // and the `source` param entirely. Group with the api/passages POST
+      // missing-API-key fix — same "content-authoring endpoint doesn't
+      // actually work yet" bucket.
       source,
     }))
 
