@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import MathVisual from '@/components/MathVisual'
+import FractionText from '@/components/FractionText'
 import { ThemeDecorations, CelebrationModal, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG as SHARED_THEMES } from '@/components/theme'
 import { FONT_SIZES } from '@/lib/fontSize'
 
@@ -440,10 +441,10 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
 
         {/* Primary prompt — Hebrew when isHE */}
         <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>
-          {isHE && currentQ.prompt_he ? currentQ.prompt_he : currentQ.prompt_en}
+          <FractionText text={isHE && currentQ.prompt_he ? currentQ.prompt_he : currentQ.prompt_en} />
         </p>
         {langMode === 'bilingual' && currentQ?.prompt_he && !isHE && (
-          <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 10px', lineHeight:1.6 }}>{currentQ.prompt_he}</p>
+          <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 10px', lineHeight:1.6 }}><FractionText text={currentQ.prompt_he} /></p>
         )}
 
         {currentQ?.options && (
@@ -909,11 +910,11 @@ export default function LessonClient({ child, topic, questions, passage, passage
                   <div style={{ marginBottom:'10px' }}>
                     {/* Primary prompt — Hebrew when isHE */}
                     <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 6px', direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>
-                      {isHE && currentQ.prompt_he ? currentQ.prompt_he : currentQ.prompt_en}
+                      <FractionText text={isHE && currentQ.prompt_he ? currentQ.prompt_he : currentQ.prompt_en} />
                     </p>
                     {/* Secondary prompt in bilingual mode */}
                     {langMode === 'bilingual' && currentQ.prompt_he && !isHE && (
-                      <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 6px', lineHeight:1.6 }}>{currentQ.prompt_he}</p>
+                      <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 6px', lineHeight:1.6 }}><FractionText text={currentQ.prompt_he} /></p>
                     )}
                   </div>
 

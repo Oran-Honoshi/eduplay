@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
+import FractionText from '@/components/FractionText'
 
 // ── Types ──────────────────────────────────────────────────────
 interface Subject {
@@ -416,8 +417,8 @@ function PendingReviewList() {
             <p className="text-xs text-gray-300 shrink-0">{new Date(q.created_at).toLocaleString()}</p>
           </div>
 
-          <p className="text-sm font-semibold text-gray-900 mb-1">{q.prompt_en}</p>
-          {q.prompt_he && <p className="text-sm text-gray-500 mb-2" dir="rtl">{q.prompt_he}</p>}
+          <p className="text-sm font-semibold text-gray-900 mb-1"><FractionText text={q.prompt_en} /></p>
+          {q.prompt_he && <p className="text-sm text-gray-500 mb-2" dir="rtl"><FractionText text={q.prompt_he} /></p>}
 
           {q.options ? (
             <ul className="text-sm text-gray-700 mb-2 flex flex-col gap-0.5">
