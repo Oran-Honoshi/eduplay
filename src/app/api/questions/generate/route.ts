@@ -255,6 +255,9 @@ OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects
     const qType = VALID_Q_TYPES.includes(q.q_type) ? q.q_type : q_types[0]
     const qDifficulty = VALID_DIFFICULTIES.includes(q.difficulty) ? q.difficulty : difficulty
 
+    // TODO: the system prompt above never asks for or forwards a visual_data
+    // field, so AI-generated questions can never carry a diagram (fraction bar,
+    // shape, number line, etc.) — only the manual POST /api/questions path does.
     const input: QuestionInput = {
       topic_slug,
       difficulty: qDifficulty,
