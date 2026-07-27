@@ -223,7 +223,16 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
       const data = await res.json()
       if (data.success) {
         const n = data.inserted.length
-        setResult(`✅ Generated ${n} question${n !== 1 ? 's' : ''}${data.warnings ? ` (${data.warnings.length} skipped — see history)` : ''} — saved for review.`)
+        let skipNote = ''
+        if (data.warnings?.length > 0) {
+          const dupCount = data.warnings.filter((w: string) => w.includes('duplicate of an existing question')).length
+          const otherCount = data.warnings.length - dupCount
+          const parts = []
+          if (dupCount > 0) parts.push(`${dupCount} skipped as duplicate${dupCount !== 1 ? 's' : ''} of existing questions`)
+          if (otherCount > 0) parts.push(`${otherCount} skipped due to other errors — see history`)
+          skipNote = ` (${parts.join('; ')})`
+        }
+        setResult(`✅ Generated ${n} question${n !== 1 ? 's' : ''}${skipNote} — saved for review.`)
         setReferenceFile(null)
         onGenerated()
       } else {
