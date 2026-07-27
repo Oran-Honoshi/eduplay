@@ -379,6 +379,7 @@ function PendingReviewList() {
   const [questions, setQuestions] = useState<PendingQuestion[]>([])
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [approvingAll, setApprovingAll] = useState(false)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -401,6 +402,24 @@ function PendingReviewList() {
     setBusyId(null)
   }
 
+  const approveAll = async () => {
+    if (questions.length === 0) return
+    if (!confirm(`Approve all ${questions.length} question${questions.length === 1 ? '' : 's'}?`)) return
+    setApprovingAll(true)
+    const ids = questions.map(q => q.id)
+    const results = await Promise.all(ids.map(async id => {
+      const res = await fetch(`/api/questions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve' }),
+      })
+      return { id, ok: res.ok }
+    }))
+    const approvedIds = new Set(results.filter(r => r.ok).map(r => r.id))
+    setQuestions(prev => prev.filter(q => !approvedIds.has(q.id)))
+    setApprovingAll(false)
+  }
+
   if (loading) return <p className="text-sm text-gray-400">Loading…</p>
   if (questions.length === 0) {
     return <p className="text-sm text-gray-400">No pending questions — everything's been reviewed.</p>
@@ -408,6 +427,12 @@ function PendingReviewList() {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex justify-end">
+        <button onClick={approveAll} disabled={approvingAll || busyId !== null}
+          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+          {approvingAll ? 'Approving…' : `✓ Approve All (${questions.length})`}
+        </button>
+      </div>
       {questions.map(q => (
         <div key={q.id} className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center justify-between gap-3 mb-2">
@@ -436,11 +461,11 @@ function PendingReviewList() {
           {q.explanation_en && <p className="text-xs text-gray-400 mb-3">Explanation: {q.explanation_en}</p>}
 
           <div className="flex gap-2">
-            <button onClick={() => act(q.id, 'approve')} disabled={busyId === q.id}
+            <button onClick={() => act(q.id, 'approve')} disabled={busyId === q.id || approvingAll}
               className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
               ✓ Approve
             </button>
-            <button onClick={() => act(q.id, 'reject')} disabled={busyId === q.id}
+            <button onClick={() => act(q.id, 'reject')} disabled={busyId === q.id || approvingAll}
               className="px-4 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50 font-bold text-xs rounded-lg transition-colors">
               ✕ Reject
             </button>
