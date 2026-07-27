@@ -44,6 +44,20 @@ interface Prefill {
   customPrompt: string
 }
 
+interface PendingQuestion {
+  id: string
+  difficulty: string
+  q_type: string
+  prompt_en: string
+  prompt_he: string | null
+  options: { label: string; value_en: string; value_he: string | null; isCorrect: boolean }[] | null
+  correct_answer: string
+  hint_en: string | null
+  explanation_en: string | null
+  created_at: string
+  topics: { title_en: string; grade: number; subjects: { label_en: string; slug: string } | null } | null
+}
+
 // ── Constants ──────────────────────────────────────────────────
 const supabase = createBrowserClient()
 const MAX_COUNT = 20
@@ -311,8 +325,86 @@ function HistoryList({ rows, onReuse }: { rows: GenerationRow[]; onReuse: (row: 
   )
 }
 
+// ── Pending Review ────────────────────────────────────────────
+function PendingReviewList() {
+  const [questions, setQuestions] = useState<PendingQuestion[]>([])
+  const [loading, setLoading] = useState(true)
+  const [busyId, setBusyId] = useState<string | null>(null)
+
+  const load = useCallback(() => {
+    setLoading(true)
+    fetch('/api/questions/pending')
+      .then(r => r.json())
+      .then(data => setQuestions(data.questions || []))
+      .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const act = async (id: string, action: 'approve' | 'reject') => {
+    setBusyId(id)
+    const res = await fetch(`/api/questions/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    })
+    if (res.ok) setQuestions(prev => prev.filter(q => q.id !== id))
+    setBusyId(null)
+  }
+
+  if (loading) return <p className="text-sm text-gray-400">Loading…</p>
+  if (questions.length === 0) {
+    return <p className="text-sm text-gray-400">No pending questions — everything's been reviewed.</p>
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {questions.map(q => (
+        <div key={q.id} className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <p className="text-xs text-gray-400 font-semibold">
+              {q.topics?.subjects?.label_en || '—'} · {q.topics?.title_en || '—'} · Grade {q.topics?.grade ?? '—'} · {q.difficulty} · {q.q_type}
+            </p>
+            <p className="text-xs text-gray-300 shrink-0">{new Date(q.created_at).toLocaleString()}</p>
+          </div>
+
+          <p className="text-sm font-semibold text-gray-900 mb-1">{q.prompt_en}</p>
+          {q.prompt_he && <p className="text-sm text-gray-500 mb-2" dir="rtl">{q.prompt_he}</p>}
+
+          {q.options ? (
+            <ul className="text-sm text-gray-700 mb-2 flex flex-col gap-0.5">
+              {q.options.map((opt, i) => (
+                <li key={i} className={opt.isCorrect ? 'font-bold text-emerald-700' : ''}>
+                  {opt.label}. {opt.value_en} {opt.isCorrect ? '✓' : ''}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-700 mb-2"><span className="text-gray-400">Answer:</span> {q.correct_answer}</p>
+          )}
+
+          {q.hint_en && <p className="text-xs text-gray-400 mb-1">Hint: {q.hint_en}</p>}
+          {q.explanation_en && <p className="text-xs text-gray-400 mb-3">Explanation: {q.explanation_en}</p>}
+
+          <div className="flex gap-2">
+            <button onClick={() => act(q.id, 'approve')} disabled={busyId === q.id}
+              className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+              ✓ Approve
+            </button>
+            <button onClick={() => act(q.id, 'reject')} disabled={busyId === q.id}
+              className="px-4 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50 font-bold text-xs rounded-lg transition-colors">
+              ✕ Reject
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────
 export default function QuestionsPage() {
+  const [tab, setTab] = useState<'generate' | 'pending'>('generate')
   const [history, setHistory] = useState<GenerationRow[]>([])
   const [prefill, setPrefill] = useState<Prefill | null>(null)
 
@@ -334,24 +426,40 @@ export default function QuestionsPage() {
             ← Dashboard
           </button>
         </div>
+        <div className="max-w-4xl mx-auto flex gap-2 mt-3">
+          <button onClick={() => setTab('generate')}
+            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'generate' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+            Generate
+          </button>
+          <button onClick={() => setTab('pending')}
+            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'pending' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+            Pending Review
+          </button>
+        </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-6 flex flex-col gap-6">
-        <StyleControl />
-        <GeneratorPanel prefill={prefill} onGenerated={loadHistory} />
-        <HistoryList
-          rows={history}
-          onReuse={row => setPrefill({
-            subjectSlug: row.subject_slug,
-            grade: row.grade,
-            topicSlug: row.topic_slug,
-            qTypes: row.q_types,
-            difficulty: row.difficulty,
-            count: row.count,
-            progressive: row.progressive,
-            customPrompt: row.custom_prompt || '',
-          })}
-        />
+        {tab === 'generate' ? (
+          <>
+            <StyleControl />
+            <GeneratorPanel prefill={prefill} onGenerated={loadHistory} />
+            <HistoryList
+              rows={history}
+              onReuse={row => setPrefill({
+                subjectSlug: row.subject_slug,
+                grade: row.grade,
+                topicSlug: row.topic_slug,
+                qTypes: row.q_types,
+                difficulty: row.difficulty,
+                count: row.count,
+                progressive: row.progressive,
+                customPrompt: row.custom_prompt || '',
+              })}
+            />
+          </>
+        ) : (
+          <PendingReviewList />
+        )}
       </div>
     </div>
   )
