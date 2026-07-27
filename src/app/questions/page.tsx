@@ -65,6 +65,10 @@ const Q_TYPE_OPTIONS = [
   { value: 'multiple_choice', label: 'Multiple Choice' },
   { value: 'word_problem', label: 'Word Problem' },
 ]
+// Mirrors the caps enforced server-side in api/questions/generate/route.ts —
+// 3MB raw keeps base64+JSON under Vercel's ~4.5MB serverless request-body limit.
+const ALLOWED_REFERENCE_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
+const MAX_REFERENCE_FILE_BYTES = 3 * 1024 * 1024
 
 // ── Preferred-style control ──────────────────────────────────────
 function StyleControl() {
@@ -127,6 +131,8 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
   const [count, setCount] = useState(5)
   const [progressive, setProgressive] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
+  const [referenceFile, setReferenceFile] = useState<{ media_type: string; data: string; name: string; size: number } | null>(null)
+  const [fileError, setFileError] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState<string | null>(null)
 
@@ -170,6 +176,30 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
     setQTypes(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // clear so re-selecting the same file still fires onChange
+    if (!file) return
+    setFileError(null)
+
+    if (!ALLOWED_REFERENCE_TYPES.includes(file.type)) {
+      setFileError('Only JPG, PNG, or PDF files are supported.')
+      return
+    }
+    if (file.size > MAX_REFERENCE_FILE_BYTES) {
+      setFileError(`File is too large — max ${MAX_REFERENCE_FILE_BYTES / 1024 / 1024}MB.`)
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(',')[1] || ''
+      setReferenceFile({ media_type: file.type, data: base64, name: file.name, size: file.size })
+    }
+    reader.onerror = () => setFileError('Could not read that file — try again.')
+    reader.readAsDataURL(file)
+  }
+
   const generate = async () => {
     setGenerating(true)
     setResult(null)
@@ -186,12 +216,14 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
           count,
           progressive,
           custom_prompt: customPrompt || undefined,
+          reference_file: referenceFile ? { media_type: referenceFile.media_type, data: referenceFile.data } : undefined,
         }),
       })
       const data = await res.json()
       if (data.success) {
         const n = data.inserted.length
         setResult(`✅ Generated ${n} question${n !== 1 ? 's' : ''}${data.warnings ? ` (${data.warnings.length} skipped — see history)` : ''} — saved for review.`)
+        setReferenceFile(null)
         onGenerated()
       } else {
         setResult(`❌ Error: ${data.error}`)
@@ -279,6 +311,22 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
           rows={2} placeholder="e.g. focus on word problems involving money..."
           className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
         />
+      </div>
+
+      <div className="mb-4">
+        <label className="text-xs text-gray-400 font-semibold block mb-1">Reference file (optional)</label>
+        <p className="text-xs text-gray-400 mb-1.5">Upload a photo or PDF of a worksheet or textbook page — new questions will be modeled after its style, content, and difficulty.</p>
+        {referenceFile ? (
+          <div className="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 w-fit">
+            <span>📎 {referenceFile.name} ({(referenceFile.size / 1024).toFixed(0)}KB)</span>
+            <button onClick={() => setReferenceFile(null)} className="text-gray-400 hover:text-gray-600 font-bold" aria-label="Remove file">✕</button>
+          </div>
+        ) : (
+          <input type="file" accept="image/jpeg,image/png,application/pdf" onChange={handleFileChange}
+            className="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:text-emerald-700 file:text-xs file:font-semibold file:cursor-pointer hover:file:bg-emerald-100 cursor-pointer"
+          />
+        )}
+        {fileError && <p className="text-xs text-red-600 mt-1">{fileError}</p>}
       </div>
 
       <button onClick={generate} disabled={generating || !topicSlug || qTypes.length === 0}

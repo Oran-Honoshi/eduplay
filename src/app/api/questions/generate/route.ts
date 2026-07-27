@@ -19,6 +19,13 @@ const VALID_DIFFICULTIES = ['easy', 'medium', 'hard']
 const VALID_Q_TYPES = ['multiple_choice', 'word_problem']
 const MAX_COUNT = 20
 
+// reference_file: optional photo/PDF of a worksheet used as a style/content model
+// for generation. Capped at 3MB raw — Vercel serverless functions cap the request
+// body at ~4.5MB total, and base64 inflates raw bytes by ~33%, so this leaves
+// headroom for the rest of the JSON payload (well under Anthropic's own 32MB limit).
+const ALLOWED_REFERENCE_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
+const MAX_REFERENCE_FILE_BYTES = 3 * 1024 * 1024
+
 // ─── GET /api/questions/generate ───────────────────────────────
 // Recent generation-history rows for the caller's own family, used
 // to power the "make more like this" prefill on the /questions page.
@@ -88,6 +95,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'progressive must be a boolean' }, { status: 400 })
   }
 
+  let referenceFile: { media_type: string; data: string } | undefined
+  if (body.reference_file !== undefined && body.reference_file !== null) {
+    const rf = body.reference_file
+    if (
+      typeof rf !== 'object' ||
+      typeof rf.media_type !== 'string' || !ALLOWED_REFERENCE_TYPES.includes(rf.media_type) ||
+      typeof rf.data !== 'string' || !rf.data
+    ) {
+      return NextResponse.json(
+        { error: `reference_file must be { media_type: one of ${ALLOWED_REFERENCE_TYPES.join(', ')}, data: base64 string }` },
+        { status: 400 }
+      )
+    }
+    if (Buffer.byteLength(rf.data, 'base64') > MAX_REFERENCE_FILE_BYTES) {
+      return NextResponse.json(
+        { error: `reference_file exceeds the ${MAX_REFERENCE_FILE_BYTES / 1024 / 1024}MB limit` },
+        { status: 400 }
+      )
+    }
+    referenceFile = { media_type: rf.media_type, data: rf.data }
+  }
+
   const supabase = createServerClient()
 
   const { data: subjectRow } = await supabase.from('subjects').select('id').eq('slug', subject_slug).single()
@@ -146,10 +175,14 @@ export async function POST(req: NextRequest) {
     ? `Order the ${count} questions from easiest to hardest — ramp difficulty across the array rather than keeping it flat at "${difficulty}". Set each question's own "difficulty" field to match its position in the ramp.`
     : `All ${count} questions should be at "${difficulty}" difficulty. Set each question's "difficulty" field to "${difficulty}".`
 
+  const referenceInstruction = referenceFile
+    ? `\nA reference file (a photo or PDF of a worksheet or textbook excerpt) is attached. Model the new questions after its style, content, and difficulty — write new, original questions inspired by it, not copies of what's in it.`
+    : ''
+
   const systemPrompt = `You are an expert educational content writer for Israeli K-6 students, generating practice questions for the topic "${topicRow.title_en}" (grade ${grade}, subject ${subject_slug}).
 Generate exactly ${count} questions.
 Allowed question types: ${q_types.join(', ')} — use a mix if more than one is allowed.
-${progressiveInstruction}${styleGuidance}
+${progressiveInstruction}${styleGuidance}${referenceInstruction}
 For multiple_choice questions: "options" must be an array of exactly 4 objects, each {"label":"A"|"B"|"C"|"D","value_en":"...","value_he":null,"isCorrect":true|false}, with exactly one isCorrect:true.
 For word_problem questions: omit "options" (or set it to null); "correct_answer" holds the final answer as a plain string.
 OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects, each shaped:
@@ -158,6 +191,17 @@ OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects
   const userPrompt = custom_prompt
     ? `Generate the questions now. Additional instructions: ${custom_prompt}`
     : `Generate the questions now.`
+
+  // With a reference file attached, content is a multimodal array (image/document
+  // block + text); otherwise keep the plain string the API already accepted.
+  const messageContent = referenceFile
+    ? [
+        referenceFile.media_type === 'application/pdf'
+          ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: referenceFile.data } }
+          : { type: 'image', source: { type: 'base64', media_type: referenceFile.media_type, data: referenceFile.data } },
+        { type: 'text', text: userPrompt },
+      ]
+    : userPrompt
 
   let anthropicText: string
   try {
@@ -173,7 +217,7 @@ OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects
         max_tokens: Math.min(8192, 400 * count + 800),
         thinking: { type: 'disabled' },
         system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
+        messages: [{ role: 'user', content: messageContent }],
       }),
     })
 
