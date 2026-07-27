@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import FractionText from '@/components/FractionText'
 
@@ -28,6 +28,7 @@ interface GenerationRow {
   difficulty: string
   count: number
   progressive: boolean
+  language: 'en' | 'he' | 'bilingual'
   custom_prompt: string | null
   question_ids: string[]
   error: string | null
@@ -42,6 +43,7 @@ interface Prefill {
   difficulty: string
   count: number
   progressive: boolean
+  language: 'en' | 'he' | 'bilingual'
   customPrompt: string
 }
 
@@ -131,6 +133,8 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
   const [difficulty, setDifficulty] = useState('easy')
   const [count, setCount] = useState(5)
   const [progressive, setProgressive] = useState(false)
+  const [language, setLanguage] = useState<'en' | 'he' | 'bilingual'>('en')
+  const languageTouched = useRef(false)
   const [customPrompt, setCustomPrompt] = useState('')
   const [referenceFile, setReferenceFile] = useState<{ media_type: string; data: string; name: string; size: number } | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
@@ -153,6 +157,13 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
       .then(data => setTopics(data.topics || []))
   }, [subjectSlug, grade])
 
+  // Default output language to Hebrew for the Hebrew subject, English otherwise —
+  // unless the user (or a prefill) has already made an explicit choice.
+  useEffect(() => {
+    if (languageTouched.current) return
+    setLanguage(subjectSlug === 'hebrew' ? 'he' : 'en')
+  }, [subjectSlug])
+
   // Apply a "make more like this" prefill — state only, never auto-submits.
   // The user still has to review the fields and click Generate themselves.
   useEffect(() => {
@@ -164,6 +175,8 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
     setDifficulty(prefill.difficulty)
     setCount(prefill.count)
     setProgressive(prefill.progressive)
+    languageTouched.current = true
+    setLanguage(prefill.language)
     setCustomPrompt(prefill.customPrompt)
     setResult(null)
   }, [prefill])
@@ -216,6 +229,7 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
           difficulty,
           count,
           progressive,
+          language,
           custom_prompt: customPrompt || undefined,
           reference_file: referenceFile ? { media_type: referenceFile.media_type, data: referenceFile.data } : undefined,
         }),
@@ -296,6 +310,15 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
             onChange={e => setCount(Math.max(1, Math.min(MAX_COUNT, parseInt(e.target.value) || 1)))}
             className="w-20 px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
           />
+        </div>
+        <div>
+          <label className="text-xs text-gray-400 font-semibold block mb-1">Language</label>
+          <select value={language} onChange={e => { languageTouched.current = true; setLanguage(e.target.value as 'en' | 'he' | 'bilingual') }}
+            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
+            <option value="en">English</option>
+            <option value="he">Hebrew</option>
+            <option value="bilingual">Both</option>
+          </select>
         </div>
       </div>
 
@@ -542,6 +565,7 @@ export default function QuestionsPage() {
               difficulty: row.difficulty,
               count: row.count,
               progressive: row.progressive,
+              language: row.language || 'en',
               customPrompt: row.custom_prompt || '',
             })}
           />
