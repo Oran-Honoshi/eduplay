@@ -457,7 +457,7 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
                 <button className="answer-btn" key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
                   style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'10px 14px', cursor:answered?'default':'pointer', fontSize:'16px', fontWeight:700, display:'flex', alignItems:'center', gap:'10px', color:T.text, textAlign:isRTL?'right':'left', direction:isRTL?'rtl':'ltr', fontFamily:isRTL?'"Times New Roman",serif':'"Nunito",sans-serif' }}>
                   <span style={{ width:'22px', height:'22px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'"Noto Serif Hebrew","Times New Roman",serif', fontSize:'14px', flexShrink:0 }}>{opt.label}</span>
-                  {displayVal}
+                  <FractionText text={displayVal} />
                 </button>
               )
             })}
@@ -466,20 +466,20 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
 
         {currentQ?.hint_he && isHE && !answered && (
           <div style={{ fontSize:'12px', color:T.accent2, padding:'6px 10px', background:`${T.accent2}15`, borderRadius:T.radius, marginBottom:'8px', direction:'rtl', textAlign:'right' }}>
-            💡 {currentQ.hint_he}
+            💡 <FractionText text={currentQ.hint_he} />
           </div>
         )}
         {currentQ?.hint_en && !isHE && !answered && (
           <div style={{ fontSize:'12px', color:T.accent2, padding:'6px 10px', background:`${T.accent2}15`, borderRadius:T.radius, marginBottom:'8px' }}>
-            💡 {currentQ.hint_en}
+            💡 <FractionText text={currentQ.hint_en} />
           </div>
         )}
 
         {feedback && (
           <div style={{ border:`2px solid ${feedback.correct?T.accent3:'#E03030'}`, background:feedback.correct?'rgba(0,200,83,0.1)':'rgba(224,48,48,0.1)', borderRadius:T.radius, padding:'10px 14px', marginBottom:'10px', fontSize:'16px', color:T.text2 }}>
-            {feedback.explanation}
+            <FractionText text={feedback.explanation} />
             {currentQ?.explanation_en && (
-              <div style={{ marginTop:'6px', fontSize:'12px' }}>{currentQ.explanation_en}</div>
+              <div style={{ marginTop:'6px', fontSize:'12px' }}><FractionText text={currentQ.explanation_en} /></div>
             )}
           </div>
         )}
@@ -943,7 +943,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                           <button className="answer-btn" key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
                             style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'11px 12px', cursor:answered?'default':'pointer', fontFamily:isRTLAnswer?'"Times New Roman",serif':'Georgia,serif', fontSize:`${FS?.question || 14}px`, fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>
                             <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'12px', flexShrink:0 }}>{opt.label}</span>
-                            {displayVal}
+                            <FractionText text={displayVal} />
                           </button>
                         )
                       })}
@@ -953,7 +953,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                   {hintVisible && (currentQ.hint_en || currentQ.hint_he) && (
                     <div style={{ background:'rgba(255,215,0,0.07)', border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'10px 12px', marginBottom:'10px', direction:isHE?'rtl':'ltr' }}>
                       <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent2, marginBottom:'4px' }}>💡 {UI.hint}</div>
-                      <p style={{ fontSize:'16px', color:T.text2, margin:0 }}>{isHE ? (currentQ.hint_he || currentQ.hint_en) : currentQ.hint_en}</p>
+                      <p style={{ fontSize:'16px', color:T.text2, margin:0 }}><FractionText text={isHE ? (currentQ.hint_he || currentQ.hint_en) : currentQ.hint_en} /></p>
                     </div>
                   )}
 
@@ -962,7 +962,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                       <span style={{ fontSize:'24px' }}>{feedback.correct?'🎉':'💔'}</span>
                       <div>
                         <div style={{ fontFamily:T.fontHead, fontSize:'16px', color:feedback.correct?T.accent3:'#E03030', marginBottom:'3px' }}>{feedback.correct?UI.correct:UI.notQuite}</div>
-                        <div style={{ fontSize:'14px', color:T.text2, lineHeight:1.6, direction:isHE?'rtl':'ltr' }}>{isHE ? (feedback.explanation_he || feedback.explanation) : feedback.explanation}</div>
+                        <div style={{ fontSize:'14px', color:T.text2, lineHeight:1.6, direction:isHE?'rtl':'ltr' }}><FractionText text={isHE ? (feedback.explanation_he || feedback.explanation) : feedback.explanation} /></div>
                       </div>
                     </div>
                   )}

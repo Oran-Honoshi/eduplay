@@ -454,16 +454,16 @@ function PendingReviewList({ active }: { active: boolean }) {
             <ul className="text-sm text-gray-700 mb-2 flex flex-col gap-0.5">
               {q.options.map((opt, i) => (
                 <li key={i} className={opt.isCorrect ? 'font-bold text-emerald-700' : ''}>
-                  {opt.label}. {opt.value_en} {opt.isCorrect ? '✓' : ''}
+                  {opt.label}. <FractionText text={opt.value_en} /> {opt.isCorrect ? '✓' : ''}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-gray-700 mb-2"><span className="text-gray-400">Answer:</span> {q.correct_answer}</p>
+            <p className="text-sm text-gray-700 mb-2"><span className="text-gray-400">Answer:</span> <FractionText text={q.correct_answer} /></p>
           )}
 
-          {q.hint_en && <p className="text-xs text-gray-400 mb-1">Hint: {q.hint_en}</p>}
-          {q.explanation_en && <p className="text-xs text-gray-400 mb-3">Explanation: {q.explanation_en}</p>}
+          {q.hint_en && <p className="text-xs text-gray-400 mb-1">Hint: <FractionText text={q.hint_en} /></p>}
+          {q.explanation_en && <p className="text-xs text-gray-400 mb-3">Explanation: <FractionText text={q.explanation_en} /></p>}
 
           <div className="flex gap-2">
             <button onClick={() => act(q.id, 'approve')} disabled={busyId === q.id || approvingAll}

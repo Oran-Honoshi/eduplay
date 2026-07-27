@@ -142,23 +142,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ── Value renderer (fractions, mixed numbers) ─────────────────
-function renderValue(value: string): string {
-  if (!value) return ''
-  const mixedMatch = value.match(/^(\d+)\s+and\s+(\d+)[/](\d+)$/)
-  if (mixedMatch) {
-    return `${mixedMatch[1]}&thinsp;<span style="display:inline-table;vertical-align:middle;text-align:center;font-family:'Times New Roman',serif;margin:0 3px;"><span style="display:table-row;"><span style="display:table-cell;padding-bottom:1px;font-weight:700;font-size:13px;border-bottom:1.5px solid #1a1a2e;">${mixedMatch[2]}</span></span><span style="display:table-row;"><span style="display:table-cell;padding-top:1px;font-weight:700;font-size:13px;">${mixedMatch[3]}</span></span></span>`
-  }
-  const fracMatch = value.match(/^(\d+)[/](\d+)$/)
-  if (fracMatch) {
-    return `<span style="display:inline-table;vertical-align:middle;text-align:center;font-family:'Times New Roman',serif;margin:0 3px;"><span style="display:table-row;"><span style="display:table-cell;padding-bottom:1px;font-weight:700;font-size:13px;border-bottom:1.5px solid #1a1a2e;">${fracMatch[1]}</span></span><span style="display:table-row;"><span style="display:table-cell;padding-top:1px;font-weight:700;font-size:13px;">${fracMatch[2]}</span></span></span>`
-  }
-  if (value.includes(',') && value.includes('/')) {
-    return value.split(',').map(v => renderValue(v.trim())).join(', ')
-  }
-  return value
-}
-
 // ── Old fraction visual (backwards compat) ────────────────────
 // ── Infer visual_data from prompt text ───────────────────────────
 // Called when a question has no visual_data in the DB.
@@ -322,7 +305,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
         const displayVal = isHebrew && opt.value_he ? opt.value_he : opt.value_en
         return `<div class="option">
           <span class="opt-label">${opt.label}.</span>
-          <span class="opt-value">${renderValue(displayVal)}</span>
+          <span class="opt-value">${fractionsToHTML(displayVal)}</span>
         </div>`
       }).join('')}</div>`
     } else {
@@ -331,7 +314,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
     }
 
     const hintText = isHebrew && q.hint_he ? q.hint_he : q.hint_en
-    const hintHTML = showHints && hintText ? `<div class="hint">💡 <em>${hintText}</em></div>` : ''
+    const hintHTML = showHints && hintText ? `<div class="hint">💡 <em>${fractionsToHTML(hintText)}</em></div>` : ''
     const topicBadge = topics.length > 1
       ? `<span class="topic-badge">${isHebrew && q.topicTitleHe ? q.topicTitleHe : q.topicTitle}</span>` : ''
     const enText = !isHebrew && q.prompt_en ? `<div class="q-text-en">${fractionsToHTML(q.prompt_en)}</div>` : ''
@@ -364,7 +347,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
       <div class="key-grid">
         ${questions.map((q: any, i: number) => {
           const ans = isHebrew && q.correct_answer_he ? q.correct_answer_he : q.correct_answer
-          return `<div class="key-item"><div class="key-q">Q${i + 1}</div><div class="key-a">${renderValue(ans)}</div></div>`
+          return `<div class="key-item"><div class="key-q">Q${i + 1}</div><div class="key-a">${fractionsToHTML(ans)}</div></div>`
         }).join('')}
       </div>
     </div>` : ''
@@ -381,11 +364,11 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
           return `<div style="padding:12px 16px;border:1px solid #EEF1F6;border-radius:10px;page-break-inside:avoid;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
               <div style="font-size:12px;font-weight:900;color:white;background:#27AE60;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">Q${i + 1}</div>
-              <div style="font-size:13px;font-weight:700;color:#1A2E4A;${isHebrew ? 'direction:rtl;text-align:right;' : ''}">${prompt}</div>
+              <div style="font-size:13px;font-weight:700;color:#1A2E4A;${isHebrew ? 'direction:rtl;text-align:right;' : ''}">${fractionsToHTML(prompt)}</div>
             </div>
-            ${hint ? `<div style="font-size:12px;color:#F5A623;margin-bottom:6px;padding:5px 10px;background:#FFFBF0;border-left:3px solid #F5A623;border-radius:0 6px 6px 0;">💡 ${hint}</div>` : ''}
-            <div style="font-size:13px;color:#27AE60;font-weight:800;">✅ ${isHebrew ? 'תשובה' : 'Answer'}: ${renderValue(ans)}</div>
-            ${explain ? `<div style="font-size:12px;color:#5A6A7E;margin-top:5px;line-height:1.6;">📝 ${explain}</div>` : ''}
+            ${hint ? `<div style="font-size:12px;color:#F5A623;margin-bottom:6px;padding:5px 10px;background:#FFFBF0;border-left:3px solid #F5A623;border-radius:0 6px 6px 0;">💡 ${fractionsToHTML(hint)}</div>` : ''}
+            <div style="font-size:13px;color:#27AE60;font-weight:800;">✅ ${isHebrew ? 'תשובה' : 'Answer'}: ${fractionsToHTML(ans)}</div>
+            ${explain ? `<div style="font-size:12px;color:#5A6A7E;margin-top:5px;line-height:1.6;">📝 ${fractionsToHTML(explain)}</div>` : ''}
           </div>`
         }).join('')}
       </div>
