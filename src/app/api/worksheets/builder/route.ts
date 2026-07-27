@@ -346,8 +346,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
       <div class="answer-key-title">✅ ${isHebrew ? 'תשובות' : 'Answer Key'} — ${typeEmoji} ${typeLabel}</div>
       <div class="key-grid">
         ${questions.map((q: any, i: number) => {
-          const ans = isHebrew && q.correct_answer_he ? q.correct_answer_he : q.correct_answer
-          return `<div class="key-item"><div class="key-q">Q${i + 1}</div><div class="key-a">${fractionsToHTML(ans)}</div></div>`
+          return `<div class="key-item"><div class="key-q">Q${i + 1}</div><div class="key-a">${fractionsToHTML(q.correct_answer)}</div></div>`
         }).join('')}
       </div>
     </div>` : ''
@@ -360,7 +359,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
           const prompt  = isHebrew && q.prompt_he  ? q.prompt_he  : q.prompt_en
           const hint    = isHebrew && q.hint_he    ? q.hint_he    : q.hint_en
           const explain = q.explanation_en
-          const ans     = isHebrew && q.correct_answer_he ? q.correct_answer_he : q.correct_answer
+          const ans     = q.correct_answer
           return `<div style="padding:12px 16px;border:1px solid #EEF1F6;border-radius:10px;page-break-inside:avoid;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
               <div style="font-size:12px;font-weight:900;color:white;background:#27AE60;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">Q${i + 1}</div>
