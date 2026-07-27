@@ -331,8 +331,11 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
       </div>
 
       <button onClick={generate} disabled={generating || !topicSlug || qTypes.length === 0}
-        className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-sm rounded-xl transition-colors">
-        {generating ? '⏳ Generating...' : '✨ Generate'}
+        className={`px-5 py-2 text-white font-bold text-sm rounded-xl transition-colors inline-flex items-center gap-2 ${
+          generating ? 'bg-emerald-500 cursor-wait' : 'bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400'
+        }`}>
+        {generating && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />}
+        {generating ? 'Generating…' : '✨ Generate'}
       </button>
 
       {result && (
@@ -375,7 +378,7 @@ function HistoryList({ rows, onReuse }: { rows: GenerationRow[]; onReuse: (row: 
 }
 
 // ── Pending Review ────────────────────────────────────────────
-function PendingReviewList() {
+function PendingReviewList({ active }: { active: boolean }) {
   const [questions, setQuestions] = useState<PendingQuestion[]>([])
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -389,7 +392,9 @@ function PendingReviewList() {
       .finally(() => setLoading(false))
   }, [])
 
-  useEffect(() => { load() }, [load])
+  // Refetch each time this tab becomes active (rather than on mount) now that
+  // the component stays mounted across tab switches instead of being torn down.
+  useEffect(() => { if (active) load() }, [active, load])
 
   const act = async (id: string, action: 'approve' | 'reject') => {
     setBusyId(id)
@@ -513,27 +518,28 @@ export default function QuestionsPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-6 flex flex-col gap-6">
-        {tab === 'generate' ? (
-          <>
-            <StyleControl />
-            <GeneratorPanel prefill={prefill} onGenerated={loadHistory} />
-            <HistoryList
-              rows={history}
-              onReuse={row => setPrefill({
-                subjectSlug: row.subject_slug,
-                grade: row.grade,
-                topicSlug: row.topic_slug,
-                qTypes: row.q_types,
-                difficulty: row.difficulty,
-                count: row.count,
-                progressive: row.progressive,
-                customPrompt: row.custom_prompt || '',
-              })}
-            />
-          </>
-        ) : (
-          <PendingReviewList />
-        )}
+        {/* Both tabs stay mounted so switching tabs doesn't wipe GeneratorPanel's
+            in-progress form state — only the inactive one is visually hidden. */}
+        <div className={`flex flex-col gap-6 ${tab === 'generate' ? '' : 'hidden'}`}>
+          <StyleControl />
+          <GeneratorPanel prefill={prefill} onGenerated={loadHistory} />
+          <HistoryList
+            rows={history}
+            onReuse={row => setPrefill({
+              subjectSlug: row.subject_slug,
+              grade: row.grade,
+              topicSlug: row.topic_slug,
+              qTypes: row.q_types,
+              difficulty: row.difficulty,
+              count: row.count,
+              progressive: row.progressive,
+              customPrompt: row.custom_prompt || '',
+            })}
+          />
+        </div>
+        <div className={tab === 'pending' ? '' : 'hidden'}>
+          <PendingReviewList active={tab === 'pending'} />
+        </div>
       </div>
     </div>
   )
