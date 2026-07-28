@@ -3,6 +3,14 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import FractionText from '@/components/FractionText'
 
+// A stored *_he value that's byte-identical to its *_en counterpart is never
+// a real second-language rendering — showing a reader two identical
+// "different language" blocks is never useful information, regardless of
+// which field or why they ended up equal. Used to guard every prompt_he/
+// value_he/hint_he render below.
+const isDistinctHe = (he: string | null | undefined, en: string | null | undefined) =>
+  !!he && he !== en
+
 // ── Types ──────────────────────────────────────────────────────
 interface Subject {
   id: string
@@ -497,7 +505,7 @@ function PendingReviewList({ active }: { active: boolean }) {
           </div>
 
           <p className="text-sm font-semibold text-gray-900 mb-1"><FractionText text={q.prompt_en} /></p>
-          {q.prompt_he && <p className="text-sm text-gray-500 mb-2" dir="rtl"><FractionText text={q.prompt_he} /></p>}
+          {isDistinctHe(q.prompt_he, q.prompt_en) && <p className="text-sm text-gray-500 mb-2" dir="rtl"><FractionText text={q.prompt_he} /></p>}
 
           {(() => {
             const isRevealed = revealed.has(q.id)
@@ -508,7 +516,7 @@ function PendingReviewList({ active }: { active: boolean }) {
                     {q.options.map((opt, i) => (
                       <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-emerald-700' : ''}>
                         {opt.label}. <FractionText text={opt.value_en} />
-                        {opt.value_he && <span className="text-gray-400" dir="rtl"> · <FractionText text={opt.value_he} /></span>}
+                        {isDistinctHe(opt.value_he, opt.value_en) && <span className="text-gray-400" dir="rtl"> · <FractionText text={opt.value_he} /></span>}
                         {isRevealed && opt.isCorrect ? ' ✓' : ''}
                       </li>
                     ))}
@@ -523,7 +531,7 @@ function PendingReviewList({ active }: { active: boolean }) {
                 {isRevealed && q.hint_en && (
                   <p className="text-xs text-gray-400 mb-1">
                     Hint: <FractionText text={q.hint_en} />
-                    {q.hint_he && <span dir="rtl"> · <FractionText text={q.hint_he} /></span>}
+                    {isDistinctHe(q.hint_he, q.hint_en) && <span dir="rtl"> · <FractionText text={q.hint_he} /></span>}
                   </p>
                 )}
                 {isRevealed && q.explanation_en && (
@@ -778,14 +786,14 @@ function LibraryPanel({ active }: { active: boolean }) {
                       </p>
 
                       <p className="text-sm font-semibold text-gray-900 mb-1"><FractionText text={q.prompt_en} /></p>
-                      {q.prompt_he && <p className="text-sm text-gray-500 mb-2" dir="rtl"><FractionText text={q.prompt_he} /></p>}
+                      {isDistinctHe(q.prompt_he, q.prompt_en) && <p className="text-sm text-gray-500 mb-2" dir="rtl"><FractionText text={q.prompt_he} /></p>}
 
                       {q.options ? (
                         <ul className="text-sm text-gray-700 mb-2 flex flex-col gap-0.5">
                           {q.options.map((opt, i) => (
                             <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-emerald-700' : ''}>
                               {opt.label}. <FractionText text={opt.value_en} />
-                              {opt.value_he && <span className="text-gray-400" dir="rtl"> · <FractionText text={opt.value_he} /></span>}
+                              {isDistinctHe(opt.value_he, opt.value_en) && <span className="text-gray-400" dir="rtl"> · <FractionText text={opt.value_he} /></span>}
                               {isRevealed && opt.isCorrect ? ' ✓' : ''}
                             </li>
                           ))}
@@ -800,7 +808,7 @@ function LibraryPanel({ active }: { active: boolean }) {
                       {isRevealed && q.hint_en && (
                         <p className="text-xs text-gray-400 mb-1">
                           Hint: <FractionText text={q.hint_en} />
-                          {q.hint_he && <span dir="rtl"> · <FractionText text={q.hint_he} /></span>}
+                          {isDistinctHe(q.hint_he, q.hint_en) && <span dir="rtl"> · <FractionText text={q.hint_he} /></span>}
                         </p>
                       )}
                       {isRevealed && q.explanation_en && (
