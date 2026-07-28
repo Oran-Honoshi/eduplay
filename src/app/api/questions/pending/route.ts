@@ -21,7 +21,7 @@ export async function GET() {
     .from('questions')
     .select(`
       id, topic_id, difficulty, q_type, prompt_en, prompt_he,
-      options, correct_answer, hint_en, explanation_en, created_at,
+      options, correct_answer, hint_en, hint_he, explanation_en, created_at,
       topics ( title_en, grade, subjects ( label_en, slug ) )
     `)
     .eq('approved', false)

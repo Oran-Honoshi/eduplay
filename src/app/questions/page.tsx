@@ -56,6 +56,7 @@ interface PendingQuestion {
   options: { label: string; value_en: string; value_he: string | null; isCorrect: boolean }[] | null
   correct_answer: string
   hint_en: string | null
+  hint_he: string | null
   explanation_en: string | null
   created_at: string
   topics: { title_en: string; grade: number; subjects: { label_en: string; slug: string } | null } | null
@@ -341,7 +342,7 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
       <div className="mb-4">
         <label className="text-xs text-gray-400 font-semibold block mb-1">Custom instructions (optional)</label>
         <textarea value={customPrompt} onChange={e => setCustomPrompt(e.target.value)}
-          rows={2} placeholder="e.g. focus on word problems involving money..."
+          rows={2} placeholder="e.g. focus on word problems involving money..." dir="auto"
           className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
         />
       </div>
@@ -415,6 +416,15 @@ function PendingReviewList({ active }: { active: boolean }) {
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [approvingAll, setApprovingAll] = useState(false)
+  const [revealed, setRevealed] = useState<Set<string>>(new Set())
+
+  const toggleReveal = (id: string) => {
+    setRevealed(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
 
   const load = useCallback(() => {
     setLoading(true)
@@ -482,20 +492,44 @@ function PendingReviewList({ active }: { active: boolean }) {
           <p className="text-sm font-semibold text-gray-900 mb-1"><FractionText text={q.prompt_en} /></p>
           {q.prompt_he && <p className="text-sm text-gray-500 mb-2" dir="rtl"><FractionText text={q.prompt_he} /></p>}
 
-          {q.options ? (
-            <ul className="text-sm text-gray-700 mb-2 flex flex-col gap-0.5">
-              {q.options.map((opt, i) => (
-                <li key={i} className={opt.isCorrect ? 'font-bold text-emerald-700' : ''}>
-                  {opt.label}. <FractionText text={opt.value_en} /> {opt.isCorrect ? '✓' : ''}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-gray-700 mb-2"><span className="text-gray-400">Answer:</span> <FractionText text={q.correct_answer} /></p>
-          )}
+          {(() => {
+            const isRevealed = revealed.has(q.id)
+            return (
+              <>
+                {q.options ? (
+                  <ul className="text-sm text-gray-700 mb-2 flex flex-col gap-0.5">
+                    {q.options.map((opt, i) => (
+                      <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-emerald-700' : ''}>
+                        {opt.label}. <FractionText text={opt.value_en} />
+                        {opt.value_he && <span className="text-gray-400" dir="rtl"> · <FractionText text={opt.value_he} /></span>}
+                        {isRevealed && opt.isCorrect ? ' ✓' : ''}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-700 mb-2">
+                    <span className="text-gray-400">Answer:</span>{' '}
+                    {isRevealed ? <FractionText text={q.correct_answer} /> : <span className="text-gray-300 italic">hidden</span>}
+                  </p>
+                )}
 
-          {q.hint_en && <p className="text-xs text-gray-400 mb-1">Hint: <FractionText text={q.hint_en} /></p>}
-          {q.explanation_en && <p className="text-xs text-gray-400 mb-3">Explanation: <FractionText text={q.explanation_en} /></p>}
+                {isRevealed && q.hint_en && (
+                  <p className="text-xs text-gray-400 mb-1">
+                    Hint: <FractionText text={q.hint_en} />
+                    {q.hint_he && <span dir="rtl"> · <FractionText text={q.hint_he} /></span>}
+                  </p>
+                )}
+                {isRevealed && q.explanation_en && (
+                  <p className="text-xs text-gray-400 mb-3">Explanation: <FractionText text={q.explanation_en} /></p>
+                )}
+
+                <button onClick={() => toggleReveal(q.id)}
+                  className="text-xs font-semibold text-indigo-500 hover:text-indigo-700 mb-3 inline-block">
+                  {isRevealed ? '🙈 Hide answer & hints' : '👁 Reveal answer & hints'}
+                </button>
+              </>
+            )
+          })()}
 
           <div className="flex gap-2">
             <button onClick={() => act(q.id, 'approve')} disabled={busyId === q.id || approvingAll}

@@ -10,6 +10,11 @@ export async function GET(req: NextRequest) {
 
   const childId       = searchParams.get('childId')
   const topicIds      = searchParams.get('topicIds')?.split(',').filter(Boolean) || []
+  // TODO(product): questionIds already lets a caller hand-pick specific question IDs
+  // for this one child's worksheet, but no UI ever sends it — /worksheets always
+  // generates via topicIds (random from the shared approved pool). This is the
+  // closest thing in the codebase to per-child question assignment; worth reusing
+  // when we design that feature instead of building targeting from scratch.
   const questionIds   = searchParams.get('questionIds')?.split(',').filter(Boolean) || []
   const difficulty    = searchParams.get('difficulty') || 'mixed'
   const questionCount = parseInt(searchParams.get('questionCount') || '20')
@@ -102,6 +107,14 @@ export async function GET(req: NextRequest) {
       subject,
     })
 
+    // TODO(product): this auto-save writes straight to `questions` with
+    // approved: true, source: 'worksheet_builder' — a second creation path that
+    // completely bypasses Pending Review. A worksheet-generated question never
+    // enters the approval queue and is immediately eligible to be served to any
+    // child on that topic, with zero human review. Same shared-pool risk as the
+    // AI generator path, minus the review step we just built. Needs a decision:
+    // route this through approved:false + Pending Review too, or explicitly
+    // accept the gap and document why.
     // ── Auto-save questions back to DB (fire-and-forget) ─────────
     try {
       const toSave = finalQuestions
