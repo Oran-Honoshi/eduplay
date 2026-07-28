@@ -192,16 +192,18 @@ export async function POST(req: NextRequest) {
   // an English version — it's just derived from Hebrew-primary content rather than the reverse.
   const languageInstruction = {
     en: `Write every field in English only. Leave prompt_he, hint_he, and each option's "value_he" as null — do not translate anything into Hebrew.`,
-    he: `Write the primary version in Hebrew first, then add an English translation — every question MUST end up with both languages filled, with no exceptions:
+    he: `Write the primary version in Hebrew first, then add an English translation — every question should end up with both languages filled:
 - prompt_en AND prompt_he: both required, prompt_he written first as the primary version.
 - Each option's value_en AND value_he: both required for every option.
 - If you write a hint at all: hint_en AND hint_he are BOTH required together — never write hint_en alone and leave hint_he null. If you'd rather skip the Hebrew hint, omit hint_en too and leave the question with no hint.
-- explanation_en only — there is no Hebrew explanation field, leave it in English.`,
+- explanation_en only — there is no Hebrew explanation field, leave it in English.
+- Exception: if a prompt/option/hint is purely symbolic or numeric with no natural-language words to translate (e.g. "2/3 + 2/3 = ?"), there is nothing to write in Hebrew that differs from the English — leave that field's _he counterpart null rather than repeating the same text.`,
     bilingual: `Every question must read naturally as equally-primary content in both languages, not a translation of one into the other:
 - prompt_en AND prompt_he: both required.
 - Each option's value_en AND value_he: both required for every option.
 - If you write a hint at all: hint_en AND hint_he are BOTH required together — never write hint_en alone and leave hint_he null. If you'd rather skip the Hebrew hint, omit hint_en too and leave the question with no hint.
-- explanation_en only — there is no Hebrew explanation field, leave it in English.`,
+- explanation_en only — there is no Hebrew explanation field, leave it in English.
+- Exception: if a prompt/option/hint is purely symbolic or numeric with no natural-language words to translate (e.g. "2/3 + 2/3 = ?"), there is nothing to write in Hebrew that differs from the English — leave that field's _he counterpart null rather than repeating the same text.`,
   }[language]
 
   const systemPrompt = `You are an expert educational content writer for Israeli K-6 students, generating practice questions for the topic "${topicRow.title_en}" (grade ${grade}, subject ${subject_slug}).
@@ -276,10 +278,24 @@ OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects
   const insertedRows: { id: string; topic_id: string; difficulty: string; prompt_en: string }[] = []
   const failures: string[] = []
 
+  // For 'he'/'bilingual' mode, the system prompt requires every *_he field to
+  // be filled — but a purely symbolic prompt/option (e.g. "2/3 + 2/3 = ?") has
+  // nothing to translate, so the model can end up just echoing the English
+  // string back verbatim instead of leaving it null. Don't trust the model to
+  // self-judge that case correctly (that's the same instruction that produced
+  // the bug): a byte-identical *_he is never a real translation, so drop it
+  // regardless of what the prompt asked for.
+  const dedupeHe = (he: unknown, en: unknown): string | undefined =>
+    typeof he === 'string' && he !== '' && he !== en ? he : undefined
+
   for (let i = 0; i < parsedQuestions.length; i++) {
     const q = parsedQuestions[i]
     const qType = VALID_Q_TYPES.includes(q.q_type) ? q.q_type : q_types[0]
     const qDifficulty = VALID_DIFFICULTIES.includes(q.difficulty) ? q.difficulty : difficulty
+
+    const options = Array.isArray(q.options)
+      ? q.options.map((o: any) => ({ ...o, value_he: dedupeHe(o.value_he, o.value_en) ?? null }))
+      : q.options
 
     // TODO: the system prompt above never asks for or forwards a visual_data
     // field, so AI-generated questions can never carry a diagram (fraction bar,
@@ -289,11 +305,11 @@ OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects
       difficulty: qDifficulty,
       q_type: qType,
       prompt_en: q.prompt_en,
-      prompt_he: q.prompt_he || undefined,
-      options: q.options ?? undefined,
+      prompt_he: dedupeHe(q.prompt_he, q.prompt_en),
+      options: options ?? undefined,
       correct_answer: q.correct_answer,
       hint_en: q.hint_en || undefined,
-      hint_he: q.hint_he || undefined,
+      hint_he: dedupeHe(q.hint_he, q.hint_en),
       explanation_en: q.explanation_en || undefined,
       approved: false,
     }
