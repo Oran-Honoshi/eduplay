@@ -1,3 +1,11 @@
+// Next's App Router Data Cache caches any fetch() by default, including the ones
+// supabase-js makes internally — without this, the assignments query below (and every
+// other query on this page) can serve a stale response. Same fix already applied to
+// dashboard/page.tsx for the same reason; this page never needed it before because its
+// other server-fetched data (topics/progress/lastTopic) is only ever used as initial
+// state and gets superseded by a client-side refetch — the assignments banner is the
+// first thing here that depends on the server render itself being fresh.
+export const revalidate = 0
 import { createServiceRoleClient } from '@/lib/supabase'
 import ChildPortalClient from './client'
 import { redirect } from 'next/navigation'
@@ -57,6 +65,24 @@ export default async function ChildPortalPage({ params }: { params: { token: str
     lastTopic = lt
   }
 
+  // Get this child's still-open assignments (at least one item not yet resolved),
+  // oldest first, for the "assignments waiting" banner.
+  const { data: assignmentRows } = await supabase
+    .from('assignments')
+    .select('id, title, created_at, assignment_items(status)')
+    .eq('child_id', child.id)
+    .order('created_at')
+
+  const pendingAssignments = (assignmentRows || [])
+    .map((a: any) => {
+      const items = a.assignment_items || []
+      const completedItems = items.filter(
+        (it: any) => it.status !== 'not_started' && it.status !== 'attempt_1_wrong'
+      ).length
+      return { id: a.id, title: a.title, totalItems: items.length, completedItems }
+    })
+    .filter((a: any) => a.totalItems > 0 && a.completedItems < a.totalItems)
+
   return (
     <ChildPortalClient
       child={child}
@@ -64,6 +90,7 @@ export default async function ChildPortalPage({ params }: { params: { token: str
       allTopics={allTopics || []}
       progress={progress || []}
       lastTopic={lastTopic}
+      pendingAssignments={pendingAssignments}
       token={params.token}
     />
   )

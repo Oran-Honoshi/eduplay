@@ -46,7 +46,7 @@ async function establishChildSession(token: string): Promise<boolean> {
   }
 }
 
-export default function ChildPortalClient({ child, subjects, allTopics, progress, lastTopic, token }: any) {
+export default function ChildPortalClient({ child, subjects, allTopics, progress, lastTopic, pendingAssignments, token }: any) {
   const theme = child.theme || 'plain'
   const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
 
@@ -130,6 +130,12 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
   }
 
 
+  async function openAssignment(assignmentId: string) {
+    const ok = await sessionPromise
+    if (!ok) { setSessionFailed(true); return }
+    window.location.href = `/assignment?id=${assignmentId}&childId=${child.id}&token=${token}&theme=${child.theme || 'plain'}&lang=${langMode}`
+  }
+
   const THEME_DECOS: any = {
     minecraft:  { pattern: 'repeating-linear-gradient(0deg,rgba(93,158,47,0.06) 0,rgba(93,158,47,0.06) 1px,transparent 1px,transparent 32px),repeating-linear-gradient(90deg,rgba(93,158,47,0.06) 0,rgba(93,158,47,0.06) 1px,transparent 1px,transparent 32px)', corners: ['⛏️','💎','🌲','🧱'] },
     princesses: { pattern: 'radial-gradient(circle at 15% 15%,rgba(224,91,160,0.08) 0%,transparent 40%),radial-gradient(circle at 85% 85%,rgba(155,89,182,0.08) 0%,transparent 40%)', corners: ['🌸','✨','👑','🦋'] },
@@ -196,6 +202,34 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
       </header>
 
       <div style={{ maxWidth:'900px', margin:'0 auto', padding:'16px' }}>
+
+        {/* Assignments banner — shown above Resume since a parent-assigned task
+            isn't something the child picked, unlike the free-choice topic grid below */}
+        {pendingAssignments && pendingAssignments.length > 0 && (
+          <div style={{ background:'linear-gradient(135deg,#7C5CE0,#9B59B6)', borderRadius:T.radius, padding:'16px 20px', marginBottom:'20px', display:'flex', alignItems:'center', gap:'14px', boxShadow:'0 8px 24px rgba(124,92,224,0.3)', position:'relative', overflow:'hidden' }}>
+            <div style={{ position:'absolute', top:'-20px', right:'-20px', width:'120px', height:'120px', borderRadius:'50%', background:'rgba(255,255,255,0.07)', pointerEvents:'none' }}/>
+            <div style={{ width:'42px', height:'42px', borderRadius:T.radius, background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:'20px' }}>
+              📋
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:'10px', fontWeight:800, color:'rgba(255,255,255,0.8)', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:'3px' }}>
+                {langMode === 'he_only' ? 'מטלות ממתינות' : 'ASSIGNMENTS WAITING'}
+              </div>
+              <div style={{ fontWeight:900, fontSize:'15px', color:'white' }}>
+                {langMode === 'he_only'
+                  ? (pendingAssignments.length === 1 ? 'יש לך מטלה אחת להשלים!' : `יש לך ${pendingAssignments.length} מטלות להשלים!`)
+                  : (pendingAssignments.length === 1 ? 'You have 1 assignment to complete!' : `You have ${pendingAssignments.length} assignments to complete!`)}
+              </div>
+              {pendingAssignments[0].title && (
+                <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.7)', marginTop:'2px' }}>{pendingAssignments[0].title}</div>
+              )}
+            </div>
+            <button onClick={() => openAssignment(pendingAssignments[0].id)}
+              style={{ display:'flex', alignItems:'center', gap:'6px', padding:'10px 18px', background:'white', border:'none', borderRadius:'50px', fontWeight:900, fontSize:'13px', color:'#7C5CE0', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
+              {langMode === 'he_only' ? 'התחל' : 'Start'} <ChevronRight size={14}/>
+            </button>
+          </div>
+        )}
 
         {/* Resume banner */}
         {lastTopic && (
