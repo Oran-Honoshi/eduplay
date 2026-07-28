@@ -297,6 +297,46 @@ function AssignmentsScreen({ children, showToast }: any) {
   )
 }
 
+// ── AI Question Generator teaser ────────────────────────────────
+function QuestionsScreen() {
+  const [pendingCount, setPendingCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetch('/api/questions/pending')
+      .then(res => res.json())
+      .then(data => setPendingCount((data.questions || []).length))
+      .catch(() => {})
+  }, [])
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
+        <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>✨ AI Question Generator</h1>
+        <button onClick={() => window.location.href='/questions'} style={{ padding:'9px 18px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+          Open Full Generator →
+        </button>
+      </div>
+      <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'40px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', textAlign:'center' }}>
+        <div style={{ fontSize:'48px', marginBottom:'12px' }}>🧠</div>
+        <div style={{ fontFamily:'"Nunito",sans-serif', fontWeight:800, fontSize:'16px', color:'#1E2D4E', marginBottom:'8px' }}>Generate Custom Practice Questions</div>
+        <div style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px', maxWidth:'420px', margin:'0 auto 16px' }}>
+          Use AI to generate new questions by subject, topic and difficulty, review them before they go live, and browse the shared question library.
+        </div>
+        {!!pendingCount && (
+          <div style={{ display:'inline-flex', alignItems:'center', gap:'6px', background:'#FFF8EC', border:'1px solid #F5A623', color:'#F5A623', borderRadius:'50px', padding:'6px 14px', fontSize:'12px', fontWeight:800, marginBottom:'20px' }}>
+            ⏳ {pendingCount} question{pendingCount === 1 ? '' : 's'} awaiting review
+          </div>
+        )}
+        <div>
+          <button onClick={() => window.location.href='/questions'} style={{ padding:'12px 28px', borderRadius:'50px', border:'none', background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer', boxShadow:'0 4px 16px rgba(74,127,212,0.3)' }}>
+            ✨ Open Question Generator
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const CHILD_COLORS = [
   { bg:'linear-gradient(135deg,#FF9F43,#FF6B6B)', emoji:'🐱' },
   { bg:'linear-gradient(135deg,#5EC8F2,#4ECDC4)', emoji:'🐻' },
@@ -307,6 +347,7 @@ const TABS = [
   { key:'overview',   label:'🏠 Overview'    },
   { key:'progress',   label:'📊 Progress'    },
   { key:'worksheets', label:'🖨️ Worksheets'  },
+  { key:'questions',  label:'✨ AI Questions' },
   { key:'assignments', label:'📋 Assignments' },
   { key:'curriculum', label:'📚 Curriculum'  },
   { key:'parents',    label:'👨‍👩‍👧 Parents'   },
@@ -652,6 +693,11 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                 </div>
               </div>
             </div>
+          )}
+
+          {/* ── AI QUESTIONS ── */}
+          {screen === 'questions' && (
+            <QuestionsScreen />
           )}
 
           {/* ── ASSIGNMENTS ── */}
