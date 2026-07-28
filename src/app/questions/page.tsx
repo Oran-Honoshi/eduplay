@@ -577,6 +577,8 @@ function LibraryPanel({ active }: { active: boolean }) {
   const [answerKey, setAnswerKey] = useState(true)
   const [includeHints, setIncludeHints] = useState(false)
   const [solutionSteps, setSolutionSteps] = useState(false)
+  const [assigning, setAssigning] = useState(false)
+  const [assignResult, setAssignResult] = useState<{ ok: boolean; message: string } | null>(null)
 
   const toggleReveal = (id: string) => {
     setRevealed(prev => {
@@ -668,6 +670,33 @@ function LibraryPanel({ active }: { active: boolean }) {
       wsType,
     })
     window.open(`/api/worksheets/builder?${params}`, '_blank')
+  }
+
+  const assignToChild = async () => {
+    if (selectedQuestions.length === 0 || !childId) return
+    setAssigning(true)
+    setAssignResult(null)
+    try {
+      const res = await fetch('/api/assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId, questionIds: Array.from(selected) }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        const child = children.find(c => c.id === childId)
+        setAssignResult({
+          ok: true,
+          message: `✅ Assigned ${selectedQuestions.length} question${selectedQuestions.length === 1 ? '' : 's'} to ${child?.display_name || 'child'}!`,
+        })
+        setSelected(new Set())
+      } else {
+        setAssignResult({ ok: false, message: data.error || 'Could not create assignment' })
+      }
+    } catch {
+      setAssignResult({ ok: false, message: 'Could not reach the server' })
+    }
+    setAssigning(false)
   }
 
   return (
@@ -824,10 +853,22 @@ function LibraryPanel({ active }: { active: boolean }) {
             <input type="checkbox" checked={solutionSteps} onChange={e => setSolutionSteps(e.target.checked)} /> Steps
           </label>
 
-          <button onClick={createWorksheet} disabled={!childId}
-            className="ml-auto px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors shrink-0">
-            📄 Create Worksheet from {selected.size} Selected
-          </button>
+          <div className="ml-auto flex gap-2 shrink-0">
+            <button onClick={assignToChild} disabled={!childId || assigning}
+              className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+              {assigning ? 'Assigning…' : `🎯 Assign to Child`}
+            </button>
+            <button onClick={createWorksheet} disabled={!childId}
+              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+              📄 Create Worksheet from {selected.size} Selected
+            </button>
+          </div>
+        </div>
+      )}
+
+      {assignResult && (
+        <div className={`sticky bottom-4 rounded-xl border p-3 text-xs font-semibold ${assignResult.ok ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+          {assignResult.message}
         </div>
       )}
     </div>

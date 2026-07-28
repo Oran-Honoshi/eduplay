@@ -81,6 +81,9 @@ export async function POST(
   if (isCorrect) {
     await supabase.rpc('award_xp', { p_child_id: childId, p_amount: 25 })
   }
+  // Matches the lesson path (api/progress/route.ts) — streak is driven purely by
+  // same-day activity on the child, not by correctness, so it updates unconditionally.
+  await supabase.rpc('update_streak', { p_child_id: childId })
 
   return NextResponse.json({
     correct: isCorrect,

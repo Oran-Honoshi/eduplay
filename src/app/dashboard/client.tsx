@@ -149,6 +149,154 @@ function ParentsScreen({ familyId, showToast }: any) {
   )
 }
 
+// ── Assignment History ──────────────────────────────────────────
+// Per-child list of past assignments with a resolution breakdown, and two
+// explicit reassign actions — "retry with the same child" and "assign to a
+// different child" — rather than one button with an assumption baked in.
+// Both reuse the same POST /api/assignments creation endpoint: pull the
+// original assignment's question IDs via GET /api/assignments/[id], then
+// POST a brand-new assignment with those IDs against the chosen child.
+function AssignmentsScreen({ children, showToast }: any) {
+  const [assignments, setAssignments] = useState<Record<string, any[]>>({})
+  const [loading, setLoading]         = useState(true)
+  const [busyId, setBusyId]           = useState<string | null>(null)
+  const [pickerFor, setPickerFor]     = useState<string | null>(null)
+  const [pickerChildId, setPickerChildId] = useState('')
+
+  async function loadAssignments() {
+    setLoading(true)
+    try {
+      const entries = await Promise.all((children || []).map(async (c: any) => {
+        const res  = await fetch(`/api/assignments?childId=${c.id}`)
+        const data = await res.json()
+        return [c.id, data.assignments || []] as const
+      }))
+      setAssignments(Object.fromEntries(entries))
+    } catch {}
+    setLoading(false)
+  }
+
+  useEffect(() => { loadAssignments() }, [])
+
+  async function reassign(assignmentId: string, targetChildId: string, targetName: string) {
+    setBusyId(assignmentId)
+    try {
+      const detailRes = await fetch(`/api/assignments/${assignmentId}`)
+      const detail     = await detailRes.json()
+      const questionIds = (detail.items || []).map((it: any) => it.question?.id).filter(Boolean)
+      if (questionIds.length === 0) {
+        showToast('❌', 'Nothing to reassign')
+        return
+      }
+      const res  = await fetch('/api/assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: targetChildId, questionIds, title: detail.assignment?.title || undefined }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        showToast('🔁', `New assignment created for ${targetName}!`)
+        setPickerFor(null)
+        setPickerChildId('')
+        loadAssignments()
+      } else {
+        showToast('❌', data.error || 'Could not reassign')
+      }
+    } catch {
+      showToast('❌', 'Could not reassign')
+    }
+    setBusyId(null)
+  }
+
+  if (loading) return <div style={{ padding:'40px', textAlign:'center', color:'#9AA5B8' }}>Loading...</div>
+
+  const STATUS_META: any = {
+    correctFirstTry:  '✅',
+    correctAfterHint: '💡',
+    revealedAnswer:   '👀',
+  }
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+      <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>📋 Assignment History</h1>
+
+      {(children || []).map((child: any, i: number) => {
+        const col  = CHILD_COLORS[i % CHILD_COLORS.length]
+        const list = assignments[child.id] || []
+        return (
+          <div key={child.id} style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'14px' }}>
+              <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>{col.emoji}</div>
+              <h2 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'15px', margin:0, color:'#1E2D4E' }}>{child.display_name}</h2>
+            </div>
+
+            {list.length === 0 ? (
+              <div style={{ textAlign:'center', padding:'20px', color:'#9AA5B8', fontSize:'13px' }}>No assignments yet.</div>
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+                {list.map((a: any) => {
+                  const pct   = a.totalItems > 0 ? Math.round((a.completedItems / a.totalItems) * 100) : 0
+                  const isBusy = busyId === a.id
+                  return (
+                    <div key={a.id} style={{ background:'#F8F9FB', border:'1px solid #EEF1F6', borderRadius:'10px', padding:'14px' }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'10px', marginBottom:'8px', flexWrap:'wrap' }}>
+                        <div>
+                          <div style={{ fontWeight:800, fontSize:'13px', color:'#1E2D4E' }}>{a.title || 'Untitled assignment'}</div>
+                          <div style={{ fontSize:'11px', color:'#9AA5B8' }}>{new Date(a.created_at).toLocaleDateString()} · {a.completedItems}/{a.totalItems} done ({pct}%)</div>
+                        </div>
+                        <div style={{ display:'flex', gap:'8px', fontSize:'11px', color:'#5A6A7E' }}>
+                          {(['correctFirstTry', 'correctAfterHint', 'revealedAnswer'] as const).map(k => (
+                            a[k] > 0 && <span key={k}>{STATUS_META[k]} {a[k]}</span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', alignItems:'center' }}>
+                        <button disabled={isBusy} onClick={() => reassign(a.id, child.id, child.display_name)}
+                          style={{ padding:'6px 12px', borderRadius:'50px', border:'1px solid #EEF1F6', background:'white', color:'#4A7FD4', fontWeight:700, fontSize:'11px', cursor:'pointer', opacity:isBusy?0.6:1 }}>
+                          🔁 Retry with {child.display_name}
+                        </button>
+
+                        {pickerFor === a.id ? (
+                          <>
+                            <select value={pickerChildId} onChange={e => setPickerChildId(e.target.value)}
+                              style={{ padding:'6px 8px', borderRadius:'8px', border:'1px solid #EEF1F6', fontSize:'11px' }}>
+                              <option value="">Choose a child…</option>
+                              {(children || []).filter((c: any) => c.id !== child.id).map((c: any) => (
+                                <option key={c.id} value={c.id}>{c.display_name}</option>
+                              ))}
+                            </select>
+                            <button disabled={!pickerChildId || isBusy}
+                              onClick={() => reassign(a.id, pickerChildId, (children || []).find((c: any) => c.id === pickerChildId)?.display_name)}
+                              style={{ padding:'6px 12px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:700, fontSize:'11px', cursor:'pointer', opacity:(!pickerChildId||isBusy)?0.6:1 }}>
+                              Confirm
+                            </button>
+                            <button onClick={() => { setPickerFor(null); setPickerChildId('') }}
+                              style={{ padding:'6px 10px', borderRadius:'50px', border:'1px solid #EEF1F6', background:'white', color:'#9AA5B8', fontWeight:700, fontSize:'11px', cursor:'pointer' }}>
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          (children || []).length > 1 && (
+                            <button disabled={isBusy} onClick={() => { setPickerFor(a.id); setPickerChildId('') }}
+                              style={{ padding:'6px 12px', borderRadius:'50px', border:'1px solid #EEF1F6', background:'white', color:'#5A6A7E', fontWeight:700, fontSize:'11px', cursor:'pointer', opacity:isBusy?0.6:1 }}>
+                              👤 Assign to a different child
+                            </button>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 const CHILD_COLORS = [
   { bg:'linear-gradient(135deg,#FF9F43,#FF6B6B)', emoji:'🐱' },
   { bg:'linear-gradient(135deg,#5EC8F2,#4ECDC4)', emoji:'🐻' },
@@ -159,6 +307,7 @@ const TABS = [
   { key:'overview',   label:'🏠 Overview'    },
   { key:'progress',   label:'📊 Progress'    },
   { key:'worksheets', label:'🖨️ Worksheets'  },
+  { key:'assignments', label:'📋 Assignments' },
   { key:'curriculum', label:'📚 Curriculum'  },
   { key:'parents',    label:'👨‍👩‍👧 Parents'   },
   { key:'account',    label:'⚙️ Account'     },
@@ -503,6 +652,11 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                 </div>
               </div>
             </div>
+          )}
+
+          {/* ── ASSIGNMENTS ── */}
+          {screen === 'assignments' && (
+            <AssignmentsScreen children={children} showToast={showToast} />
           )}
 
           {/* ── CURRICULUM ── */}

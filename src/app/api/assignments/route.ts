@@ -4,7 +4,10 @@ import { requireParentOnlySession, requireFamilyMatch, authorizeChildAccess } fr
 
 // ─── POST /api/assignments ─────────────────────────────────────
 // Parent-only: creates an assignment for one child from a set of
-// already-approved question IDs (the Library tab's "Assign to Child" action).
+// already-approved question IDs. Called from the Library tab's "Assign to
+// Child" button (questions/page.tsx's LibraryPanel, next to "Create
+// Worksheet from N Selected") and from the dashboard's Assignments history
+// tab's reassign actions (dashboard/client.tsx's AssignmentsScreen).
 // Body: { childId, questionIds: string[], title?: string }
 //
 // v1 only accepts options-based (multiple-choice-shaped) questions — the grading
@@ -122,6 +125,11 @@ export async function GET(req: NextRequest) {
       created_at: a.created_at,
       totalItems: total,
       completedItems: completed,
+      // Breakdown for a parent's history view — how the child did on each
+      // resolved item, not just a pass/fail count.
+      correctFirstTry: items.filter((it: any) => it.status === 'correct_first_try').length,
+      correctAfterHint: items.filter((it: any) => it.status === 'correct_after_hint').length,
+      revealedAnswer: items.filter((it: any) => it.status === 'revealed_answer').length,
     }
   })
 
