@@ -75,23 +75,23 @@ async function awardCardForTopicCompletion(supabase: any, childId: string) {
   }
 }
 
-// TODO(security): `correct` (checked 2026-07-26) is a client-supplied boolean, trusted
-// verbatim below — this route never re-queries `questions`/`options` to verify the claim
-// before writing `question_attempts` (line ~103) or awarding XP via `award_xp` (line ~110).
-// A modified client (or a crafted request with a real childId/session but a fabricated
-// `correct: true`) can farm XP and progress with zero actually-correct answers. This is
-// the same class of issue as the session-based IDOR ownership checks fixed across
-// child/parent routes (authorizeChildAccess below guards *who* can post, not *whether
-// the claim is true*) — grading itself needs to move server-side: look up questionId's
-// options and check isCorrect on the option matching answerGiven (options[].isCorrect
-// is the only field the actual
-// lesson UI trusts today — see src/app/lesson/client.tsx's checkAnswer — correct_answer
-// on the questions table is unused for grading and inconsistently formatted, so isCorrect
-// is the right source of truth to re-derive `correct` from here instead of the body).
+// FIXED (2026-07-28): `correct` used to be a client-supplied boolean, trusted verbatim
+// (this route never re-queried `questions`/`options` to verify the claim before writing
+// `question_attempts` or awarding XP — a modified client, or a crafted request with a
+// real childId/session but a fabricated `correct: true`, could farm XP and progress with
+// zero actually-correct answers). Now re-derived below from the question's own `options`,
+// matching `answerGiven` against `options[].label` and reading `isCorrect` — the same
+// source of truth the lesson UI itself uses (src/app/lesson/client.tsx's checkAnswer).
+// `correct_answer` on the questions table is unused for grading and inconsistently
+// formatted, so `options[].isCorrect` remains the right field to check. The
+// client-supplied `correct` in the body is now ignored whenever questionId is present;
+// it's only still read as-is for the questionId-less step-completion POST (nextStep()),
+// which carries no question to verify against.
 export async function POST(req: NextRequest) {
   const supabase = createServiceRoleClient()
   const body = await req.json()
-  const { childId, questionId, topicId, answerGiven, correct, hintUsed, stepNumber, totalSteps } = body
+  const { childId, questionId, topicId, answerGiven, hintUsed, stepNumber, totalSteps } = body
+  let { correct } = body
 
   if (!childId || !topicId) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
@@ -106,6 +106,16 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // ── Re-derive correctness server-side ──────────────────────
+    if (questionId) {
+      const { data: question } = await supabase
+        .from('questions').select('options').eq('id', questionId).single()
+      const matchedOption = Array.isArray(question?.options)
+        ? question.options.find((o: any) => o.label === answerGiven)
+        : null
+      correct = !!matchedOption?.isCorrect
+    }
+
     // ── Record question attempt ────────────────────────────────
     if (questionId) {
       await supabase.from('question_attempts').insert({

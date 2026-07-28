@@ -622,6 +622,23 @@ export default function LessonClient({ child, topic, questions, passage, passage
       explanation_he: correct ? (currentQ.explanation_he || currentQ.explanation_en || '') : (currentQ.hint_he || currentQ.hint_en || ''),
     })
     setPip(correct ? '🎉 Excellent! You nailed it!' : "💡 Don't give up!")
+    // FIXED (2026-07-28): the /api/progress POST used to be nested inside the
+    // `if (correct)` block below, so a wrong answer never reached the server at all — no
+    // question_attempts row, no child_topic_progress update. Confirmed live against the DB
+    // before this fix: every existing question_attempts row (37/37) was correct=true,
+    // hint_used=false, attempt_number=1 — misses weren't rare, they were silently dropped.
+    // That also meant the "exclude recently seen questions" logic in lesson/page.tsx could
+    // only ever see correct answers, so a child could be re-served a question they'd
+    // already gotten wrong repeatedly while one they got right once rotated out — a live
+    // degradation of question variety, not just a data gap. Fetch now fires unconditionally;
+    // only the XP/celebration logic below stays gated on `correct`.
+    try {
+      await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child?.id, questionId: currentQ.id, topicId: topic?.id, answerGiven: opt.label, correct, hintUsed: hintVisible, stepNumber: currentStep, totalSteps }),
+      })
+    } catch {}
     if (correct) {
       const newXp = xpBalance + 25
       setXp(newXp)
@@ -632,13 +649,6 @@ export default function LessonClient({ child, topic, questions, passage, passage
         setXpMilestone(newMilestone)
         setTimeout(() => triggerCelebration('xp', `${newXp.toLocaleString()} XP reached! Amazing! 🚀`, '🏆'), 500)
       }
-      try {
-        await fetch('/api/progress', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ childId: child?.id, questionId: currentQ.id, topicId: topic?.id, answerGiven: opt.label, correct, hintUsed: hintVisible, stepNumber: currentStep, totalSteps }),
-        })
-      } catch {}
     }
   }
 
