@@ -587,6 +587,22 @@ function LibraryPanel({ active }: { active: boolean }) {
   const [solutionSteps, setSolutionSteps] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [assignResult, setAssignResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const assignResultTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Replaces raw setAssignResult everywhere: cancels any pending auto-dismiss
+  // timer before applying the new value (so an old timer can't clear a result
+  // that replaced it), then — for a non-null result — schedules the banner to
+  // clear itself after a few seconds rather than sitting on screen forever.
+  const showAssignResult = (result: { ok: boolean; message: string } | null) => {
+    if (assignResultTimer.current) clearTimeout(assignResultTimer.current)
+    assignResultTimer.current = null
+    setAssignResult(result)
+    if (result) {
+      assignResultTimer.current = setTimeout(() => setAssignResult(null), 4500)
+    }
+  }
+
+  useEffect(() => () => { if (assignResultTimer.current) clearTimeout(assignResultTimer.current) }, [])
 
   const toggleReveal = (id: string) => {
     setRevealed(prev => {
@@ -597,6 +613,7 @@ function LibraryPanel({ active }: { active: boolean }) {
   }
 
   const toggleSelect = (id: string) => {
+    showAssignResult(null)
     setSelected(prev => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
@@ -683,7 +700,7 @@ function LibraryPanel({ active }: { active: boolean }) {
   const assignToChild = async () => {
     if (selectedQuestions.length === 0 || !childId) return
     setAssigning(true)
-    setAssignResult(null)
+    showAssignResult(null)
     try {
       const res = await fetch('/api/assignments', {
         method: 'POST',
@@ -693,16 +710,16 @@ function LibraryPanel({ active }: { active: boolean }) {
       const data = await res.json()
       if (res.ok) {
         const child = children.find(c => c.id === childId)
-        setAssignResult({
+        showAssignResult({
           ok: true,
           message: `✅ Assigned ${selectedQuestions.length} question${selectedQuestions.length === 1 ? '' : 's'} to ${child?.display_name || 'child'}!`,
         })
         setSelected(new Set())
       } else {
-        setAssignResult({ ok: false, message: data.error || 'Could not create assignment' })
+        showAssignResult({ ok: false, message: data.error || 'Could not create assignment' })
       }
     } catch {
-      setAssignResult({ ok: false, message: 'Could not reach the server' })
+      showAssignResult({ ok: false, message: 'Could not reach the server' })
     }
     setAssigning(false)
   }
@@ -760,11 +777,11 @@ function LibraryPanel({ active }: { active: boolean }) {
           <div className="flex justify-between items-center">
             <span className="text-xs text-gray-400 font-semibold">{questions.length} question{questions.length === 1 ? '' : 's'}</span>
             <div className="flex gap-2">
-              <button onClick={() => setSelected(new Set(questions.map(q => q.id)))}
+              <button onClick={() => { showAssignResult(null); setSelected(new Set(questions.map(q => q.id))) }}
                 className="text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-lg px-3 py-1.5 hover:bg-indigo-50">
                 Select all shown
               </button>
-              <button onClick={() => setSelected(new Set())} disabled={selected.size === 0}
+              <button onClick={() => { showAssignResult(null); setSelected(new Set()) }} disabled={selected.size === 0}
                 className="text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50">
                 Clear selection
               </button>
