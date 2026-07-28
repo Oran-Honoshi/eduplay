@@ -107,6 +107,27 @@ export async function GET(req: NextRequest) {
       subject,
     })
 
+    // ── Log this generation to worksheet_generations (history/regenerate) ──
+    // Records the resolved question set for both the questionIds path (Library
+    // "create worksheet from selected") and the topicIds random-pull path — so
+    // even a random-pull worksheet becomes exactly reproducible via regenerate.
+    // Wrapped in try/catch: a logging failure must never break the print view.
+    try {
+      await supabase.from('worksheet_generations').insert({
+        family_id: child.family_id,
+        child_id: childId,
+        topic_ids: topics.map((t: any) => t.id),
+        ws_type: wsType,
+        difficulty,
+        question_count: finalQuestions.length,
+        lang_mode: langMode,
+        include_answer_key: includeKey,
+        include_hints: includeHints,
+        solution_steps: solutionSteps,
+        question_ids: finalQuestions.map((q: any) => q.id),
+      })
+    } catch {}
+
     // TODO(product): this auto-save writes straight to `questions` with
     // approved: true, source: 'worksheet_builder' — a second creation path that
     // completely bypasses Pending Review. A worksheet-generated question never

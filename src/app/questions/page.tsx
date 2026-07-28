@@ -49,6 +49,7 @@ interface Prefill {
 
 interface PendingQuestion {
   id: string
+  topic_id: string
   difficulty: string
   q_type: string
   prompt_en: string
@@ -60,6 +61,12 @@ interface PendingQuestion {
   explanation_en: string | null
   created_at: string
   topics: { title_en: string; grade: number; subjects: { label_en: string; slug: string } | null } | null
+}
+
+interface FamilyChild {
+  id: string
+  display_name: string
+  grade: number
 }
 
 // ── Constants ──────────────────────────────────────────────────
@@ -547,9 +554,289 @@ function PendingReviewList({ active }: { active: boolean }) {
   )
 }
 
+// ── Library Panel ─────────────────────────────────────────────
+// Browse approved questions by subject/grade/topic, select specific ones,
+// and build a worksheet from exactly that selection via the builder's
+// existing (previously unused) questionIds param.
+function LibraryPanel({ active }: { active: boolean }) {
+  const [subjects, setSubjects] = useState<Subject[]>([])
+  const [subjectSlug, setSubjectSlug] = useState('')
+  const [grade, setGrade] = useState(1)
+  const [topics, setTopics] = useState<Topic[]>([])
+  const [topicSlug, setTopicSlug] = useState('') // '' = all topics for this subject+grade
+  const [difficulty, setDifficulty] = useState('') // '' = all/mixed
+  const [questions, setQuestions] = useState<PendingQuestion[]>([])
+  const [loading, setLoading] = useState(false)
+  const [revealed, setRevealed] = useState<Set<string>>(new Set())
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  const [children, setChildren] = useState<FamilyChild[]>([])
+  const [childId, setChildId] = useState('')
+  const [wsType, setWsType] = useState<'practice' | 'quiz' | 'exam'>('practice')
+  const [langMode, setLangMode] = useState<'en_only' | 'bilingual' | 'he_only'>('bilingual')
+  const [answerKey, setAnswerKey] = useState(true)
+  const [includeHints, setIncludeHints] = useState(false)
+  const [solutionSteps, setSolutionSteps] = useState(false)
+
+  const toggleReveal = (id: string) => {
+    setRevealed(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  // Load subjects once, default to the first one
+  useEffect(() => {
+    supabase.from('subjects').select('*').order('sort_order').then(({ data }) => {
+      setSubjects(data || [])
+      setSubjectSlug(prev => prev || data?.[0]?.slug || '')
+    })
+  }, [])
+
+  // Refetch this family's children each time the tab becomes active
+  useEffect(() => {
+    if (!active) return
+    fetch('/api/family/children')
+      .then(r => r.json())
+      .then(data => {
+        setChildren(data.children || [])
+        setChildId(prev => prev || data.children?.[0]?.id || '')
+      })
+  }, [active])
+
+  // Fetch topics whenever subject/grade changes
+  useEffect(() => {
+    if (!subjectSlug) { setTopics([]); return }
+    fetch(`/api/topics?subject=${subjectSlug}&grade=${grade}`)
+      .then(r => r.json())
+      .then(data => {
+        setTopics(data.topics || [])
+        setTopicSlug('')
+      })
+  }, [subjectSlug, grade])
+
+  // Fetch approved questions whenever the filters resolve to a topic id set.
+  // Selection is reset here (rather than persisted across filter changes) so
+  // "N selected" always refers to questions actually visible on screen.
+  useEffect(() => {
+    const topicIds = topicSlug
+      ? topics.filter(t => t.slug === topicSlug).map(t => t.id)
+      : topics.map(t => t.id)
+
+    setRevealed(new Set())
+    setSelected(new Set())
+
+    if (topicIds.length === 0) { setQuestions([]); return }
+
+    setLoading(true)
+    const params = new URLSearchParams({ topicIds: topicIds.join(',') })
+    if (difficulty) params.set('difficulty', difficulty)
+    fetch(`/api/questions/library?${params}`)
+      .then(r => r.json())
+      .then(data => setQuestions(data.questions || []))
+      .finally(() => setLoading(false))
+  }, [topics, topicSlug, difficulty])
+
+  const selectedSubject = subjects.find(s => s.slug === subjectSlug)
+  const gradeOptions = selectedSubject
+    ? Array.from({ length: selectedSubject.max_grade - selectedSubject.min_grade + 1 }, (_, i) => selectedSubject.min_grade + i)
+    : [0, 1, 2, 3, 4, 5, 6]
+
+  const selectedQuestions = questions.filter(q => selected.has(q.id))
+
+  const createWorksheet = () => {
+    if (selectedQuestions.length === 0 || !childId) return
+    const topicIds = Array.from(new Set(selectedQuestions.map(q => q.topic_id)))
+    const params = new URLSearchParams({
+      childId,
+      topicIds: topicIds.join(','),
+      questionIds: Array.from(selected).join(','),
+      difficulty: difficulty || 'mixed',
+      lang: langMode,
+      answerKey: String(answerKey),
+      includeHints: String(includeHints),
+      solutionSteps: String(solutionSteps),
+      wsType,
+    })
+    window.open(`/api/worksheets/builder?${params}`, '_blank')
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div className="flex flex-wrap gap-3 items-end">
+          <div>
+            <label className="text-xs text-gray-400 font-semibold block mb-1">Subject</label>
+            <select value={subjectSlug} onChange={e => {
+              const newSlug = e.target.value
+              const s = subjects.find(x => x.slug === newSlug)
+              setSubjectSlug(newSlug)
+              if (s && (grade < s.min_grade || grade > s.max_grade)) setGrade(s.min_grade)
+            }}
+              className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              {subjects.map(s => <option key={s.slug} value={s.slug}>{s.label_en}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 font-semibold block mb-1">Grade</label>
+            <select value={grade} onChange={e => setGrade(parseInt(e.target.value))}
+              className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              {gradeOptions.map(g => <option key={g} value={g}>{g === 0 ? 'KG' : `Grade ${g}`}</option>)}
+            </select>
+          </div>
+          <div className="min-w-48">
+            <label className="text-xs text-gray-400 font-semibold block mb-1">Topic</label>
+            <select value={topicSlug} onChange={e => setTopicSlug(e.target.value)} disabled={topics.length === 0}
+              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:bg-gray-50 disabled:text-gray-400">
+              <option value="">All topics</option>
+              {topics.map(t => <option key={t.slug} value={t.slug}>{t.title_en}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 font-semibold block mb-1">Difficulty</label>
+            <select value={difficulty} onChange={e => setDifficulty(e.target.value)}
+              className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              <option value="">All</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-gray-400">Loading…</p>
+      ) : questions.length === 0 ? (
+        <p className="text-sm text-gray-400">No approved questions match these filters yet.</p>
+      ) : (
+        <>
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gray-400 font-semibold">{questions.length} question{questions.length === 1 ? '' : 's'}</span>
+            <div className="flex gap-2">
+              <button onClick={() => setSelected(new Set(questions.map(q => q.id)))}
+                className="text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-lg px-3 py-1.5 hover:bg-indigo-50">
+                Select all shown
+              </button>
+              <button onClick={() => setSelected(new Set())} disabled={selected.size === 0}
+                className="text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50">
+                Clear selection
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            {questions.map(q => {
+              const isRevealed = revealed.has(q.id)
+              const isSelected = selected.has(q.id)
+              return (
+                <div key={q.id} className={`bg-white rounded-2xl border p-5 ${isSelected ? 'border-indigo-300 ring-1 ring-indigo-100' : 'border-gray-100'}`}>
+                  <div className="flex items-start gap-3">
+                    <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(q.id)}
+                      className="mt-1 w-4 h-4 accent-indigo-600 cursor-pointer shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-400 font-semibold mb-2">
+                        {q.topics?.subjects?.label_en || '—'} · {q.topics?.title_en || '—'} · Grade {q.topics?.grade ?? '—'} · {q.difficulty} · {q.q_type}
+                      </p>
+
+                      <p className="text-sm font-semibold text-gray-900 mb-1"><FractionText text={q.prompt_en} /></p>
+                      {q.prompt_he && <p className="text-sm text-gray-500 mb-2" dir="rtl"><FractionText text={q.prompt_he} /></p>}
+
+                      {q.options ? (
+                        <ul className="text-sm text-gray-700 mb-2 flex flex-col gap-0.5">
+                          {q.options.map((opt, i) => (
+                            <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-emerald-700' : ''}>
+                              {opt.label}. <FractionText text={opt.value_en} />
+                              {opt.value_he && <span className="text-gray-400" dir="rtl"> · <FractionText text={opt.value_he} /></span>}
+                              {isRevealed && opt.isCorrect ? ' ✓' : ''}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-700 mb-2">
+                          <span className="text-gray-400">Answer:</span>{' '}
+                          {isRevealed ? <FractionText text={q.correct_answer} /> : <span className="text-gray-300 italic">hidden</span>}
+                        </p>
+                      )}
+
+                      {isRevealed && q.hint_en && (
+                        <p className="text-xs text-gray-400 mb-1">
+                          Hint: <FractionText text={q.hint_en} />
+                          {q.hint_he && <span dir="rtl"> · <FractionText text={q.hint_he} /></span>}
+                        </p>
+                      )}
+                      {isRevealed && q.explanation_en && (
+                        <p className="text-xs text-gray-400 mb-1">Explanation: <FractionText text={q.explanation_en} /></p>
+                      )}
+
+                      <button onClick={() => toggleReveal(q.id)}
+                        className="text-xs font-semibold text-indigo-500 hover:text-indigo-700 inline-block">
+                        {isRevealed ? '🙈 Hide answer & hints' : '👁 Reveal answer & hints'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {selected.size > 0 && (
+        <div className="sticky bottom-4 bg-white rounded-2xl border border-indigo-200 shadow-lg p-4 flex flex-wrap items-center gap-3">
+          <span className="text-sm font-black text-gray-900 shrink-0">{selected.size} selected</span>
+
+          <select value={childId} onChange={e => setChildId(e.target.value)}
+            className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
+            {children.map(c => <option key={c.id} value={c.id}>{c.display_name} (Grade {c.grade === 0 ? 'K' : c.grade})</option>)}
+          </select>
+
+          <select value={wsType} onChange={e => setWsType(e.target.value as any)}
+            className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
+            <option value="practice">Practice</option>
+            <option value="quiz">Quiz</option>
+            <option value="exam">Exam</option>
+          </select>
+
+          <select value={langMode} onChange={e => setLangMode(e.target.value as any)}
+            className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
+            <option value="en_only">English</option>
+            <option value="bilingual">Both</option>
+            <option value="he_only">Hebrew</option>
+          </select>
+
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+            <input type="checkbox" checked={answerKey} onChange={e => setAnswerKey(e.target.checked)} /> Answer key
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+            <input type="checkbox" checked={includeHints} onChange={e => setIncludeHints(e.target.checked)} /> Hints
+          </label>
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+            <input type="checkbox" checked={solutionSteps} onChange={e => setSolutionSteps(e.target.checked)} /> Steps
+          </label>
+
+          <button onClick={createWorksheet} disabled={!childId}
+            className="ml-auto px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors shrink-0">
+            📄 Create Worksheet from {selected.size} Selected
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────
 export default function QuestionsPage() {
-  const [tab, setTab] = useState<'generate' | 'pending'>('generate')
+  const [tab, setTab] = useState<'generate' | 'pending' | 'library'>('generate')
   const [history, setHistory] = useState<GenerationRow[]>([])
   const [prefill, setPrefill] = useState<Prefill | null>(null)
 
@@ -580,12 +867,16 @@ export default function QuestionsPage() {
             className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'pending' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
             Pending Review
           </button>
+          <button onClick={() => setTab('library')}
+            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'library' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+            📚 Library
+          </button>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-6 flex flex-col gap-6">
-        {/* Both tabs stay mounted so switching tabs doesn't wipe GeneratorPanel's
-            in-progress form state — only the inactive one is visually hidden. */}
+        {/* All tabs stay mounted so switching tabs doesn't wipe GeneratorPanel's
+            in-progress form state — only the inactive ones are visually hidden. */}
         <div className={`flex flex-col gap-6 ${tab === 'generate' ? '' : 'hidden'}`}>
           <StyleControl />
           <GeneratorPanel prefill={prefill} onGenerated={loadHistory} />
@@ -606,6 +897,9 @@ export default function QuestionsPage() {
         </div>
         <div className={tab === 'pending' ? '' : 'hidden'}>
           <PendingReviewList active={tab === 'pending'} />
+        </div>
+        <div className={tab === 'library' ? '' : 'hidden'}>
+          <LibraryPanel active={tab === 'library'} />
         </div>
       </div>
     </div>

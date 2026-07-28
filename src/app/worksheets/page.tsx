@@ -18,6 +18,10 @@ const D = {
   text:'#F1F5F9', textSec:'#94A3B8', textMuted:'#64748B', label:'#CBD5E1',
 }
 
+// TODO: hardcoded to this dev family's actual children (confirmed against
+// GET /api/family/children, which returns these same three ids) rather than
+// fetched per-family like dashboard/page.tsx does. Not fixed here — swap to
+// GET /api/family/children when this does get addressed.
 const CHILDREN = [
   { id:'22222222-2222-2222-2222-222222222001', name:'Lia',   grade:6, emoji:'🐱', color:'#FF6B6B', grad:'linear-gradient(135deg,#FF9F43,#FF6B6B)' },
   { id:'22222222-2222-2222-2222-222222222002', name:'Tamar', grade:4, emoji:'🐻', color:'#4A7FD4', grad:'linear-gradient(135deg,#4A7FD4,#2EC4B6)' },
@@ -78,7 +82,10 @@ function StepBadge({ n, color }: { n: number; color: string }) {
 }
 
 // ─── Page header ─────────────────────────────────────────────
-function PageHeader({ dark, onToggleDark }: { dark: boolean; onToggleDark: () => void }) {
+function PageHeader({ dark, onToggleDark, tab, onSwitchTab }: {
+  dark: boolean; onToggleDark: () => void
+  tab: 'builder' | 'history'; onSwitchTab: (t: 'builder' | 'history') => void
+}) {
   const T = dark ? D : L
   return (
     <header style={{
@@ -110,20 +117,37 @@ function PageHeader({ dark, onToggleDark }: { dark: boolean; onToggleDark: () =>
           </div>
         </div>
       </div>
-      <button onClick={onToggleDark} style={{
-        width: 34, height: 34, borderRadius: '50%',
-        border: `1px solid ${T.border}`, background: T.inputBg,
-        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: T.textSec,
-      }}>
-        {dark ? <Sun size={15} /> : <Moon size={15} />}
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', background: dark ? '#252836' : '#F3F4F6', borderRadius: 10, padding: 3, gap: 2 }}>
+          {([['builder', 'Builder'], ['history', 'History']] as const).map(([id, label]) => (
+            <button key={id} onClick={() => onSwitchTab(id)} style={{
+              padding: '6px 14px', border: 'none', borderRadius: 7,
+              background: tab === id ? T.card : 'transparent',
+              boxShadow: tab === id ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+              color: tab === id ? T.text : T.textMuted,
+              fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <button onClick={onToggleDark} style={{
+          width: 34, height: 34, borderRadius: '50%',
+          border: `1px solid ${T.border}`, background: T.inputBg,
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: T.textSec,
+        }}>
+          {dark ? <Sun size={15} /> : <Moon size={15} />}
+        </button>
+      </div>
     </header>
   )
 }
 
 // ─── Main builder ─────────────────────────────────────────────
-function WorksheetBuilder() {
+function WorksheetBuilder({ tab, onSwitchTab }: {
+  tab: 'builder' | 'history'; onSwitchTab: (t: 'builder' | 'history') => void
+}) {
   const searchParams = useSearchParams()
   const preChildId   = searchParams.get('childId')
 
@@ -195,7 +219,7 @@ function WorksheetBuilder() {
         }
       `}</style>
 
-      <PageHeader dark={dark} onToggleDark={() => setDark(v => !v)} />
+      <PageHeader dark={dark} onToggleDark={() => setDark(v => !v)} tab={tab} onSwitchTab={onSwitchTab} />
 
       <div style={{ maxWidth: 980, margin: '0 auto', padding: '28px 20px' }}>
 
@@ -563,14 +587,136 @@ function WorksheetBuilder() {
   )
 }
 
+// ─── History list ─────────────────────────────────────────────
+// Doesn't need useSearchParams, so it's kept out of the Suspense boundary
+// WorksheetBuilder requires — switching tabs never shows a loading flash.
+function WorksheetHistoryList({ onSwitchTab }: { onSwitchTab: (t: 'builder' | 'history') => void }) {
+  const [generations, setGenerations] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/worksheets/history')
+      .then(r => r.json())
+      .then(data => setGenerations(data.generations || []))
+      .finally(() => setLoading(false))
+  }, [])
+
+  function regenerate(g: any) {
+    const params = new URLSearchParams({
+      childId: g.child?.id || '',
+      topicIds: (g.topics || []).map((t: any) => t.id).join(','),
+      questionIds: (g.question_ids || []).join(','),
+      difficulty: g.difficulty,
+      lang: g.lang_mode,
+      answerKey: String(g.include_answer_key),
+      includeHints: String(g.include_hints),
+      solutionSteps: String(g.solution_steps),
+      wsType: g.ws_type,
+    })
+    window.open(`/api/worksheets/builder?${params}`, '_blank')
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: L.bg, fontFamily: '"Nunito", system-ui, sans-serif', color: L.text }}>
+      <header style={{
+        background: L.card, borderBottom: `1px solid ${L.border}`,
+        padding: '0 24px', height: 60,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        position: 'sticky', top: 0, zIndex: 100,
+        boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => window.location.href = '/dashboard'} style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            padding: '7px 14px', borderRadius: 50,
+            border: `1px solid ${L.border}`, background: L.card,
+            color: L.textSec, fontWeight: 700, fontSize: 12,
+            cursor: 'pointer', fontFamily: 'inherit',
+          }}>
+            <ArrowLeft size={13} /> Dashboard
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <EduPlayLogo showName={false} size={32} iconRadius={9} />
+            <div>
+              <div style={{ fontWeight: 900, fontSize: 15, color: L.text, letterSpacing: '-0.01em' }}>
+                Edu<span style={{ background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Play</span>
+              </div>
+              <div style={{ fontSize: 10, color: L.textMuted, fontWeight: 600 }}>Worksheet Builder</div>
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', background: '#F3F4F6', borderRadius: 10, padding: 3, gap: 2 }}>
+          {([['builder', 'Builder'], ['history', 'History']] as const).map(([id, label]) => (
+            <button key={id} onClick={() => onSwitchTab(id)} style={{
+              padding: '6px 14px', border: 'none', borderRadius: 7,
+              background: id === 'history' ? L.card : 'transparent',
+              boxShadow: id === 'history' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+              color: id === 'history' ? L.text : L.textMuted,
+              fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </header>
+
+      <div style={{ maxWidth: 780, margin: '0 auto', padding: '28px 20px' }}>
+        <h1 style={{ fontWeight: 900, fontSize: 24, margin: '0 0 5px', letterSpacing: '-0.02em', color: L.text }}>Worksheet History</h1>
+        <p style={{ color: L.textMuted, margin: '0 0 20px', fontSize: 13 }}>
+          Every worksheet you've generated, with an exact reprint of any of them.
+        </p>
+
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: L.textMuted, fontSize: 13 }}>
+            <Loader2 size={16} style={{ animation: 'spin 0.7s linear infinite' }} /> Loading…
+          </div>
+        ) : generations.length === 0 ? (
+          <p style={{ color: L.textMuted, fontSize: 13 }}>No worksheets generated yet.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {generations.map(g => (
+              <div key={g.id} style={{
+                background: L.card, border: `1px solid ${L.border}`, borderRadius: 16,
+                padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, fontSize: 13, color: L.text }}>
+                    {g.child?.display_name || 'Unknown child'} · {(g.topics || []).map((t: any) => t.title_en).join(', ') || '—'}
+                  </div>
+                  <div style={{ fontSize: 11, color: L.textMuted, marginTop: 2 }}>
+                    {g.ws_type} · {g.difficulty} · {g.question_count} question{g.question_count === 1 ? '' : 's'} · {new Date(g.generated_at).toLocaleString()}
+                  </div>
+                </div>
+                <button onClick={() => regenerate(g)} style={{
+                  flexShrink: 0, padding: '8px 16px', borderRadius: 50,
+                  border: 'none', background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)',
+                  color: 'white', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+                }}>
+                  🔁 Regenerate
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function WorksheetsPage() {
+  const [tab, setTab] = useState<'builder' | 'history'>('builder')
+
+  if (tab === 'history') {
+    return <WorksheetHistoryList onSwitchTab={setTab} />
+  }
+
   return (
     <Suspense fallback={
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '"Nunito",sans-serif', color: '#6B7280' }}>
         <Loader2 size={24} style={{ animation: 'spin 0.7s linear infinite' }} />
       </div>
     }>
-      <WorksheetBuilder />
+      <WorksheetBuilder tab={tab} onSwitchTab={setTab} />
     </Suspense>
   )
 }
