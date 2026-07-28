@@ -612,6 +612,7 @@ function WorksheetHistoryList({ onSwitchTab }: { onSwitchTab: (t: 'builder' | 'h
       includeHints: String(g.include_hints),
       solutionSteps: String(g.solution_steps),
       wsType: g.ws_type,
+      regenerate: 'true',
     })
     window.open(`/api/worksheets/builder?${params}`, '_blank')
   }

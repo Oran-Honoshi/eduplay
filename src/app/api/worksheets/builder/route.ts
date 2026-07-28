@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
   const includeHints  = searchParams.get('includeHints') === 'true'
   const solutionSteps = searchParams.get('solutionSteps') === 'true'
   const preview       = searchParams.get('preview') === 'true'
+  const isRegenerate  = searchParams.get('regenerate') === 'true'
 
   if (!childId || topicIds.length === 0) {
     return NextResponse.json({ error: 'childId and topicIds required' }, { status: 400 })
@@ -111,22 +112,27 @@ export async function GET(req: NextRequest) {
     // Records the resolved question set for both the questionIds path (Library
     // "create worksheet from selected") and the topicIds random-pull path — so
     // even a random-pull worksheet becomes exactly reproducible via regenerate.
+    // Skipped when isRegenerate: reprinting an existing history row is not a new
+    // generation event, and logging it again would make History inflate every
+    // time someone re-prints instead of reflecting distinct worksheets created.
     // Wrapped in try/catch: a logging failure must never break the print view.
-    try {
-      await supabase.from('worksheet_generations').insert({
-        family_id: child.family_id,
-        child_id: childId,
-        topic_ids: topics.map((t: any) => t.id),
-        ws_type: wsType,
-        difficulty,
-        question_count: finalQuestions.length,
-        lang_mode: langMode,
-        include_answer_key: includeKey,
-        include_hints: includeHints,
-        solution_steps: solutionSteps,
-        question_ids: finalQuestions.map((q: any) => q.id),
-      })
-    } catch {}
+    if (!isRegenerate) {
+      try {
+        await supabase.from('worksheet_generations').insert({
+          family_id: child.family_id,
+          child_id: childId,
+          topic_ids: topics.map((t: any) => t.id),
+          ws_type: wsType,
+          difficulty,
+          question_count: finalQuestions.length,
+          lang_mode: langMode,
+          include_answer_key: includeKey,
+          include_hints: includeHints,
+          solution_steps: solutionSteps,
+          question_ids: finalQuestions.map((q: any) => q.id),
+        })
+      } catch {}
+    }
 
     // TODO(product): this auto-save writes straight to `questions` with
     // approved: true, source: 'worksheet_builder' — a second creation path that
