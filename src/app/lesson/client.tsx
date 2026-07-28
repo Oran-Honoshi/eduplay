@@ -333,6 +333,13 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
   const currentQ = questions[qIndex]
   const isRTL    = passage?.is_rtl && isHE
 
+  // TODO(bug): confirmed 2026-07-28 — unlike the main lesson checkAnswer (this file,
+  // ~line 614, fixed same day), this one never had a persistence call to begin with, for
+  // either branch. Right or wrong, a reading-comprehension answer only updates local
+  // `score`/`feedback` state here — no /api/progress POST, so no question_attempts row
+  // and no child_topic_progress update, ever. Passage-quiz performance is completely
+  // invisible server-side today: no history, no XP, nothing feeding progress/parent
+  // views. Not fixed here — flagged for a separate priority call, same as the lesson bug.
   function checkAnswer(opt: any) {
     if (answered) return
     setAnswered(true)
