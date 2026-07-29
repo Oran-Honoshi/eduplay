@@ -2,14 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import FractionText from '@/components/FractionText'
-
-// A stored *_he value that's byte-identical to its *_en counterpart is never
-// a real second-language rendering — showing a reader two identical
-// "different language" blocks is never useful information, regardless of
-// which field or why they ended up equal. Used to guard every prompt_he/
-// value_he/hint_he render below.
-const isDistinctHe = (he: string | null | undefined, en: string | null | undefined) =>
-  !!he && he !== en
+import { isDistinctHe } from '@/lib/text'
 
 // ── Types ──────────────────────────────────────────────────────
 interface Subject {

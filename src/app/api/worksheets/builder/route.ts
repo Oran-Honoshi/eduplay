@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase'
 import { authorizeChildAccess } from '@/lib/session'
 import { renderMathVisualSVG } from '@/lib/mathVisual'
 import { fractionsToHTML } from '@/lib/fractionText'
+import { isDistinctHe } from '@/lib/text'
 
 export async function GET(req: NextRequest) {
   const supabase = createServiceRoleClient()
@@ -358,7 +359,8 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
     const topicBadge = topics.length > 1
       ? `<span class="topic-badge">${isHebrew && q.topicTitleHe ? q.topicTitleHe : q.topicTitle}</span>` : ''
     const enText = !isHebrew && q.prompt_en ? `<div class="q-text-en">${fractionsToHTML(q.prompt_en)}</div>` : ''
-    const heText = !isEnglish && q.prompt_he ? `<div class="q-text-he">${fractionsToHTML(q.prompt_he)}</div>` : ''
+    const heText = !isEnglish && q.prompt_he && (!isBilingual || isDistinctHe(q.prompt_he, q.prompt_en))
+      ? `<div class="q-text-he">${fractionsToHTML(q.prompt_he)}</div>` : ''
 
     return `
       <div class="question">

@@ -5,6 +5,7 @@ import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
 import { ThemeDecorations, CelebrationModal, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG } from '@/components/theme'
 import { getFontSize } from '@/lib/fontSize'
+import { isDistinctHe } from '@/lib/text'
 
 interface AssignmentItem {
   id: string
@@ -180,9 +181,9 @@ export default function AssignmentClient({ child, assignment, items: initialItem
           <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>
             <FractionText text={isHE && currentQ?.prompt_he ? currentQ.prompt_he : currentQ?.prompt_en} />
           </p>
-          {langMode === 'bilingual' && currentQ?.prompt_he && !isHE && (
+          {langMode === 'bilingual' && !isHE && isDistinctHe(currentQ?.prompt_he, currentQ?.prompt_en) && (
             <p style={{ fontSize:`${FS?.question || 13}px`, color:T.accent1, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 12px', lineHeight:1.6 }}>
-              <FractionText text={currentQ.prompt_he} />
+              <FractionText text={currentQ?.prompt_he} />
             </p>
           )}
 
