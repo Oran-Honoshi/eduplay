@@ -161,7 +161,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
       {/* Header */}
       <header style={{ background:T.panel, borderBottom:`2px solid ${T.border}`, padding:'0 16px', height:'56px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100 }}>
         <button onClick={goHome} style={{ display:'flex', alignItems:'center', gap:'6px', background:'none', border:'none', color:T.text2, fontWeight:700, fontSize:'13px', cursor:'pointer', padding:'8px' }}>
-          <ArrowLeft size={16}/> {isHE ? 'חזרה' : 'Back'}
+          <ArrowLeft size={16} style={isHE ? { transform:'scaleX(-1)' } : undefined}/> {isHE ? 'חזרה' : 'Back'}
         </button>
         <div style={{ fontFamily:T.fontHead, fontSize:theme==='minecraft'?'11px':'14px', color:T.accent1, fontWeight:800 }}>
           📋 {assignment.title || (isHE ? 'מטלה' : 'Assignment')}

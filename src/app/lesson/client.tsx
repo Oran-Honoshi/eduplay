@@ -952,11 +952,10 @@ export default function LessonClient({ child, topic, questions, passage, passage
                       {currentQ.options.map((opt: any) => {
                         const isCorrect    = opt.isCorrect && answered
                         const isWrong      = selected === opt.label && !opt.isCorrect && answered
-                        const isHebSubject = subjSlug === 'hebrew'
                         const displayVal   = isHE
                           ? (opt.value_he || opt.value_en || '')
                           : (opt.value_en || '')
-                        const isRTLAnswer  = isHE && isHebSubject
+                        const isRTLAnswer  = isHE
                         return (
                           <button className="answer-btn" key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
                             style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'11px 12px', cursor:answered?'default':'pointer', fontFamily:isRTLAnswer?'"Times New Roman",serif':'Georgia,serif', fontSize:`${FS?.question || 14}px`, fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>

@@ -450,7 +450,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
     .student-line { border-bottom: 1.5px solid #9AA5B8; width: 110px; display: inline-block; }
 
     .question { display: table; width: 100%; margin-bottom: 16px; border: 1px solid #EEF1F6; border-radius: 10px; overflow: hidden; page-break-inside: avoid; min-height: 100px; }
-    .q-left { display: table-cell; width: auto; padding: 12px 14px; vertical-align: top; border-right: 1px dashed #DEE2E6; }
+    .q-left { display: table-cell; width: auto; padding: 12px 14px; vertical-align: top; border-inline-end: 1px dashed #DEE2E6; }
     .q-workspace { display: table-cell; width: 180px; padding: 8px 10px; background: #FAFBFF; vertical-align: top; }
     .workspace-label { font-size: 9px; font-weight: 800; color: #C0C8D8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
     .ws-line { height: 22px; border-bottom: 1px solid #E8ECF4; }
