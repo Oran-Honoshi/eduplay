@@ -29,7 +29,7 @@ interface GenerationRow {
   difficulty: string
   count: number
   progressive: boolean
-  language: 'en' | 'he' | 'bilingual'
+  language: 'en_only' | 'he_only' | 'bilingual'
   custom_prompt: string | null
   question_ids: string[]
   error: string | null
@@ -44,7 +44,7 @@ interface Prefill {
   difficulty: string
   count: number
   progressive: boolean
-  language: 'en' | 'he' | 'bilingual'
+  language: 'en_only' | 'he_only' | 'bilingual'
   customPrompt: string
 }
 
@@ -142,7 +142,7 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
   const [difficulty, setDifficulty] = useState('easy')
   const [count, setCount] = useState(5)
   const [progressive, setProgressive] = useState(false)
-  const [language, setLanguage] = useState<'en' | 'he' | 'bilingual'>('en')
+  const [language, setLanguage] = useState<'en_only' | 'he_only' | 'bilingual'>('en_only')
   const languageTouched = useRef(false)
   const [customPrompt, setCustomPrompt] = useState('')
   const [referenceFile, setReferenceFile] = useState<{ media_type: string; data: string; name: string; size: number } | null>(null)
@@ -170,7 +170,7 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
   // unless the user (or a prefill) has already made an explicit choice.
   useEffect(() => {
     if (languageTouched.current) return
-    setLanguage(subjectSlug === 'hebrew' ? 'he' : 'en')
+    setLanguage(subjectSlug === 'hebrew' ? 'he_only' : 'en_only')
   }, [subjectSlug])
 
   // Apply a "make more like this" prefill — state only, never auto-submits.
@@ -322,10 +322,10 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
         </div>
         <div>
           <label className="text-xs text-gray-400 font-semibold block mb-1">Language</label>
-          <select value={language} onChange={e => { languageTouched.current = true; setLanguage(e.target.value as 'en' | 'he' | 'bilingual') }}
+          <select value={language} onChange={e => { languageTouched.current = true; setLanguage(e.target.value as 'en_only' | 'he_only' | 'bilingual') }}
             className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
-            <option value="en">English</option>
-            <option value="he">Hebrew</option>
+            <option value="en_only">English</option>
+            <option value="he_only">Hebrew</option>
             <option value="bilingual">Both</option>
           </select>
         </div>
@@ -949,7 +949,7 @@ export default function QuestionsPage() {
               difficulty: row.difficulty,
               count: row.count,
               progressive: row.progressive,
-              language: row.language || 'en',
+              language: row.language || 'en_only',
               customPrompt: row.custom_prompt || '',
             })}
           />

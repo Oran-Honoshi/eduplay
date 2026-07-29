@@ -17,7 +17,7 @@ import { insertQuestions, QuestionInput } from '@/lib/insertQuestions'
 
 const VALID_DIFFICULTIES = ['easy', 'medium', 'hard']
 const VALID_Q_TYPES = ['multiple_choice', 'word_problem']
-const VALID_LANGUAGES = ['en', 'he', 'bilingual']
+const VALID_LANGUAGES = ['en_only', 'he_only', 'bilingual']
 const MAX_COUNT = 20
 
 // reference_file: optional photo/PDF of a worksheet used as a style/content model
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
   const { subject_slug, grade, topic_slug, difficulty, progressive } = body
   const q_types: string[] = Array.isArray(body.q_types) ? [...new Set(body.q_types as string[])] : []
   const count = body.count
-  const language: string = typeof body.language === 'string' && body.language ? body.language : 'en'
+  const language: string = typeof body.language === 'string' && body.language ? body.language : 'en_only'
   const custom_prompt: string | undefined = typeof body.custom_prompt === 'string' && body.custom_prompt.trim()
     ? body.custom_prompt.trim()
     : undefined
@@ -188,11 +188,11 @@ export async function POST(req: NextRequest) {
     : ''
 
   // language controls whether/how the *_he fields get populated. prompt_en, correct_answer,
-  // and each option's value_en are NOT NULL/required regardless of mode, so 'he' still needs
+  // and each option's value_en are NOT NULL/required regardless of mode, so 'he_only' still needs
   // an English version — it's just derived from Hebrew-primary content rather than the reverse.
   const languageInstruction = {
-    en: `Write every field in English only. Leave prompt_he, hint_he, and each option's "value_he" as null — do not translate anything into Hebrew.`,
-    he: `Write the primary version in Hebrew first, then add an English translation — every question should end up with both languages filled:
+    en_only: `Write every field in English only. Leave prompt_he, hint_he, and each option's "value_he" as null — do not translate anything into Hebrew.`,
+    he_only: `Write the primary version in Hebrew first, then add an English translation — every question should end up with both languages filled:
 - prompt_en AND prompt_he: both required, prompt_he written first as the primary version.
 - Each option's value_en AND value_he: both required for every option.
 - If you write a hint at all: hint_en AND hint_he are BOTH required together — never write hint_en alone and leave hint_he null. If you'd rather skip the Hebrew hint, omit hint_en too and leave the question with no hint.
