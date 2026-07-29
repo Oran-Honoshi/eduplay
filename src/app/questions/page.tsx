@@ -672,6 +672,8 @@ function LibraryPanel({ active }: { active: boolean }) {
     : [0, 1, 2, 3, 4, 5, 6]
 
   const selectedQuestions = questions.filter(q => selected.has(q.id))
+  const selectedChild = children.find(c => c.id === childId)
+  const gradeMismatch = selectedChild && selectedChild.grade !== grade
 
   const createWorksheet = () => {
     if (selectedQuestions.length === 0 || !childId) return
@@ -870,6 +872,12 @@ function LibraryPanel({ active }: { active: boolean }) {
           <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
             <input type="checkbox" checked={solutionSteps} onChange={e => setSolutionSteps(e.target.checked)} /> Steps
           </label>
+
+          {gradeMismatch && (
+            <div className="basis-full text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+              ⚠️ {selectedChild!.display_name} is Grade {selectedChild!.grade === 0 ? 'K' : selectedChild!.grade} — you're assigning Grade {grade === 0 ? 'K' : grade} content.
+            </div>
+          )}
 
           <div className="ml-auto flex gap-2 shrink-0">
             <button onClick={assignToChild} disabled={!childId || assigning}
