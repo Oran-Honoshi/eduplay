@@ -73,21 +73,38 @@ export async function POST(req: NextRequest) {
 
     const isCompleted = !!(stepNumber && totalSteps && stepNumber >= totalSteps)
 
+    // `steps_total` doubles as the topic's personal-best step count, gating card-token
+    // awards below — it must only be written AT completion, never on the mid-lesson
+    // attempt calls that precede it. Every call in an attempt (not just the last one)
+    // carries the same `totalSteps`, so writing it on every call would let an attempt
+    // stamp its own totalSteps as the "prior" best before it actually finishes,
+    // making its own completion look like a repeat instead of a genuine new best.
+    let isNewBest = false
+
     if (existing) {
       const newAttempts = (existing.questions_attempted || 0) + (questionId ? 1 : 0)
       const newCorrect  = (existing.questions_correct || 0) + (correct ? 1 : 0)
       const newSteps    = stepNumber ? Math.max(existing.steps_completed || 0, stepNumber) : existing.steps_completed
 
+      const priorBestSteps = existing.steps_total || 0
+      isNewBest = isCompleted && totalSteps > priorBestSteps
+      // Math.max, not overwrite: without this, replaying the regular (shorter) lesson
+      // after a bonus round would silently drop steps_total back down, making the next
+      // bonus completion look like a fresh personal best and re-award a token for a
+      // topic that was already at its true high-water mark.
+      const newStepsTotal = isCompleted ? Math.max(totalSteps, priorBestSteps) : existing.steps_total
+
       await supabase.from('child_topic_progress').update({
         questions_attempted: newAttempts,
         questions_correct:   newCorrect,
         steps_completed:     newSteps,
-        steps_total:         totalSteps || existing.steps_total || 5,
+        steps_total:         newStepsTotal,
         status:              isCompleted ? 'completed' : 'in_progress',
         completed_at:        isCompleted ? new Date().toISOString() : existing.completed_at,
         last_attempted_at:   new Date().toISOString(),
       }).eq('child_id', childId).eq('topic_id', topicId)
     } else {
+      isNewBest = isCompleted && totalSteps > 0
       await supabase.from('child_topic_progress').insert({
         child_id:            childId,
         topic_id:            topicId,
@@ -95,7 +112,7 @@ export async function POST(req: NextRequest) {
         questions_attempted: questionId ? 1 : 0,
         questions_correct:   correct ? 1 : 0,
         steps_completed:     stepNumber || 0,
-        steps_total:         totalSteps || 5,
+        steps_total:         isCompleted ? totalSteps : null,
         last_attempted_at:   new Date().toISOString(),
         completed_at:        isCompleted ? new Date().toISOString() : null,
       })
@@ -110,6 +127,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success:   true,
       xpAwarded: correct ? 25 : 0,
+      isNewBest, // true only on the completion call that beats this topic's prior steps_total personal best
     })
   } catch (err: any) {
     console.error('Progress API error:', err)

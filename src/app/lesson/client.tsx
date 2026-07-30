@@ -664,11 +664,6 @@ export default function LessonClient({ child, topic, questions, passage, passage
     if (!answered) { setPip('⚠️ Answer the question first!'); return }
     const next = currentStep + 1
     if (next >= totalSteps) {
-      fetch('/api/progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: totalSteps, totalSteps }),
-      }).catch(() => {})
       // Trigger relief if configured
       const reliefTrigger = child?.relief_trigger || 'topic'
       if (reliefTrigger === 'lesson' || reliefTrigger === 'both') {
@@ -677,11 +672,29 @@ export default function LessonClient({ child, topic, questions, passage, passage
         }, 1500)
       }
       setCompleted(true)
-      triggerCelebration('lesson', isHE
-        ? (isBonus ? '!תרגיל בונוס הושלם! קרטיס נוסף שלך 🎴' : 'כל הכבוד! סיימת את השיעור! 🎓')
-        : (isBonus ? 'Bonus complete! Extra card earned! 🎴' : 'Lesson complete! Amazing work! 🎓'), isBonus ? '🎴' : '🎉')
-      // Award card token (always on lesson complete, extra on bonus)
-      fetch('/api/cards/token', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ childId: child?.id }) }).catch(()=>{})
+      // The card-token award (and the "card earned" wording below) is gated on the
+      // server's isNewBest verdict — a personal-best check against steps_total, not
+      // mere completion — so replaying a lesson or a bonus round that's already been
+      // done before doesn't farm a token every time.
+      fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: totalSteps, totalSteps }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          const cardEarned = !!data?.isNewBest
+          triggerCelebration('lesson', isHE
+            ? (isBonus ? (cardEarned ? '!תרגיל בונוס הושלם! קרטיס נוסף שלך 🎴' : '!תרגיל בונוס הושלם! כל הכבוד 🎓') : 'כל הכבוד! סיימת את השיעור! 🎓')
+            : (isBonus ? (cardEarned ? 'Bonus complete! Extra card earned! 🎴' : 'Bonus complete! Great practice! 🎓') : 'Lesson complete! Amazing work! 🎓'),
+            isBonus && cardEarned ? '🎴' : '🎉')
+          if (cardEarned) {
+            fetch('/api/cards/token', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ childId: child?.id }) }).catch(()=>{})
+          }
+        })
+        .catch(() => {
+          triggerCelebration('lesson', isHE ? 'כל הכבוד! סיימת את השיעור! 🎓' : 'Lesson complete! Amazing work! 🎓', '🎉')
+        })
       return
     }
     setCurrentStep(next)
