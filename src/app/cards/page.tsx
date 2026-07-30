@@ -21,8 +21,12 @@ interface Card {
 }
 interface Child {
   id: string; display_name: string
-  xp_total: number; xp_toward_next_token: number; xp_per_token: number
+  xp_total: number
   card_tokens: number; card_collect_mode: string
+}
+interface InProgressTopic {
+  steps_completed: number; steps_total: number
+  topic: { title_en: string; title_he: string; slug: string; subject: { slug: string; label_en: string } }
 }
 
 const RARITY: Record<string, { label: string; color: string; bg: string; text: string }> = {
@@ -45,28 +49,34 @@ function getCardImg(card: Card, w=400) {
 
 
 
-// ── XP Progress Bar toward next token ────────────────────────
-function TokenProgressBar({ child }: { child: Child }) {
-  const pct = Math.min(100, Math.round((child.xp_toward_next_token / child.xp_per_token) * 100))
-  const needed = child.xp_per_token - child.xp_toward_next_token
+// ── In-progress topic step bar ───────────────────────────────
+function InProgressBar({ topic }: { topic: InProgressTopic | null }) {
+  if (!topic) {
+    return (
+      <div style={{background:'white',borderRadius:14,padding:'16px',border:'1px solid #F3F4F6',display:'flex',alignItems:'center',gap:12}}>
+        <div style={{width:36,height:36,borderRadius:10,background:'#F3F4F6',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>🎯</div>
+        <div>
+          <div style={{fontWeight:800,fontSize:14,color:'#111827'}}>No lesson in progress</div>
+          <div style={{fontSize:11,color:'#9CA3AF'}}>Start a lesson to see your step progress here!</div>
+        </div>
+      </div>
+    )
+  }
+  const pct = Math.min(100, Math.round((topic.steps_completed / (topic.steps_total || 5)) * 100))
   return (
     <div style={{background:'white',borderRadius:14,padding:'12px 16px',border:'1px solid #F3F4F6'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <div style={{width:36,height:36,borderRadius:10,background:'linear-gradient(135deg,#F59E0B,#D97706)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>🎴</div>
+          <div style={{width:36,height:36,borderRadius:10,background:'linear-gradient(135deg,#F59E0B,#D97706)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>📚</div>
           <div>
-            <div style={{fontWeight:800,fontSize:15,color:'#111827'}}>{child.card_tokens} card{child.card_tokens!==1?'s':''} to collect</div>
-            <div style={{fontSize:11,color:'#9CA3AF'}}>{needed>0?`${needed} XP until next card`:'Complete a lesson to earn more!'}</div>
+            <div style={{fontWeight:800,fontSize:15,color:'#111827'}}>{topic.topic?.title_en}</div>
+            <div style={{fontSize:11,color:'#9CA3AF'}}>{topic.steps_completed}/{topic.steps_total || 5} steps done</div>
           </div>
         </div>
         <div style={{fontSize:13,fontWeight:800,color:'#F59E0B'}}>{pct}%</div>
       </div>
       <div style={{height:10,background:'#F3F4F6',borderRadius:99,overflow:'hidden'}}>
         <div style={{height:'100%',width:`${pct}%`,background:'linear-gradient(90deg,#F59E0B,#FBBF24)',borderRadius:99,transition:'width 0.6s ease'}}/>
-      </div>
-      <div style={{display:'flex',justifyContent:'space-between',marginTop:4}}>
-        <span style={{fontSize:10,color:'#D1D5DB'}}>0</span>
-        <span style={{fontSize:10,color:'#D1D5DB'}}>{child.xp_per_token} XP = 🎴 1 card</span>
       </div>
     </div>
   )
@@ -210,6 +220,7 @@ export default function CardsPage() {
   const [cards,setCards]       = useState<Card[]>([])
   const [ownedIds,setOwnedIds] = useState<Set<string>>(new Set())
   const [child,setChild]       = useState<Child|null>(null)
+  const [inProgress,setInProgress] = useState<InProgressTopic|null>(null)
   const [loading,setLoading]   = useState(true)
   const [activePhase,setActive]= useState<string|null>(null)
   const [openCard,setOpenCard] = useState<Card|null>(null)
@@ -226,11 +237,16 @@ export default function CardsPage() {
     Promise.all([
       fetch(`/api/cards?childId=${childId}`).then(r=>r.json()),
       fetch(`/api/children?childId=${childId}`).then(r=>r.json()),
-    ]).then(([cardsData,childData])=>{
+      fetch(`/api/progress?childId=${childId}`).then(r=>r.json()),
+    ]).then(([cardsData,childData,progressData])=>{
       setPhases(cardsData.phases||[])
       setCards(cardsData.cards||[])
       setOwnedIds(new Set(cardsData.ownedIds||[]))
       setChild(childData.child||null)
+      const inProgressTopics = (progressData.progress||[])
+        .filter((p: any) => p.status === 'in_progress')
+        .sort((a: any, b: any) => new Date(b.last_attempted_at).getTime() - new Date(a.last_attempted_at).getTime())
+      setInProgress(inProgressTopics[0] || null)
       if(cardsData.phases?.[0]) setActive(cardsData.phases[0].slug)
       setLoading(false)
     })
@@ -288,8 +304,8 @@ export default function CardsPage() {
       </header>
 
       <div style={{padding:'16px 20px',maxWidth:900,margin:'0 auto',display:'flex',flexDirection:'column',gap:16}}>
-        {/* XP progress toward next token */}
-        {child&&<TokenProgressBar child={child}/>}
+        {/* Real in-progress-topic step progress */}
+        <InProgressBar topic={inProgress}/>
 
         {/* World map — real geographic map */}
         <WorldMapComponent

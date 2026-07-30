@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   const { data: child, error } = await supabase
     .from('children')
-    .select('id, display_name, xp_total, xp_balance, xp_toward_next_token, xp_per_token, card_tokens, card_collect_mode, grade, theme, font_size, lang_screen, pin_code, relief_trigger')
+    .select('id, display_name, xp_total, xp_balance, card_tokens, card_collect_mode, grade, theme, font_size, lang_screen, pin_code, relief_trigger')
     .eq('id', childId)
     .single()
 
@@ -52,7 +52,7 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  const allowed = ['grade','theme','font_size','lang_screen','pin_code','relief_trigger','card_collect_mode','card_tokens','xp_toward_next_token']
+  const allowed = ['grade','theme','font_size','lang_screen','pin_code','relief_trigger','card_collect_mode','card_tokens']
   const update: Record<string, any> = {}
   for (const field of allowed) {
     if (body[field] !== undefined) update[field] = body[field]

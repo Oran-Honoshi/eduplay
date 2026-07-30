@@ -18,18 +18,16 @@ export async function POST(req: NextRequest) {
 
   const { data: child } = await supabase
     .from('children')
-    .select('card_tokens, xp_total, xp_toward_next_token, xp_per_token')
+    .select('card_tokens')
     .eq('id', childId)
     .single()
 
   if (!child) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const newTokens = (child.card_tokens || 0) + 1
-  const newXpToward = 0 // reset progress bar after earning token
 
   await supabase.from('children').update({
     card_tokens: newTokens,
-    xp_toward_next_token: newXpToward,
   }).eq('id', childId)
 
   return NextResponse.json({ success: true, newTokens })
