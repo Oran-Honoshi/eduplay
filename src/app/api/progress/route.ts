@@ -2,79 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { authorizeChildAccess } from '@/lib/session'
 
-// ── Card auto-award on topic completion ───────────────────────
-// When a child completes a topic for the first time, we pick
-// a random card they don't yet own from the current active phase
-// and unlock it automatically.
-async function awardCardForTopicCompletion(supabase: any, childId: string) {
-  try {
-    // 1. Get all cards this child already owns
-    const { data: owned } = await supabase
-      .from('child_animal_cards')
-      .select('card_id')
-      .eq('child_id', childId)
-
-    const ownedIds = new Set((owned || []).map((r: any) => r.card_id))
-
-    // 2. Get all phases ordered by sort_order — find the first incomplete one
-    const { data: phases } = await supabase
-      .from('card_phases')
-      .select('id, slug, cards_needed')
-      .order('sort_order')
-
-    if (!phases || phases.length === 0) return null
-
-    // Find active phase: first phase where child hasn't collected all cards
-    let activePhaseId: string | null = null
-    for (const phase of phases) {
-      const { data: phaseCards } = await supabase
-        .from('animal_cards')
-        .select('id')
-        .eq('phase_id', phase.id)
-
-      const phaseCardIds = (phaseCards || []).map((c: any) => c.id)
-      const unownedInPhase = phaseCardIds.filter((id: string) => !ownedIds.has(id))
-
-      if (unownedInPhase.length > 0) {
-        activePhaseId = phase.id
-        break
-      }
-    }
-
-    if (!activePhaseId) return null // All cards collected!
-
-    // 3. Pick a random unowned card from the active phase
-    const { data: availableCards } = await supabase
-      .from('animal_cards')
-      .select('id, name_en, phase_id')
-      .eq('phase_id', activePhaseId)
-
-    const unowned = (availableCards || []).filter((c: any) => !ownedIds.has(c.id))
-    if (unowned.length === 0) return null
-
-    // Uniformly random pick among the first min(unowned.length, 6) unowned cards,
-    // in whatever order the query above returned them — not weighted by rarity.
-    // TODO(product): weighted-by-rarity selection (favoring common cards) appears to
-    // have been intended but was never implemented. Doing it for real needs xp_cost/
-    // rarity pulled into the `availableCards` select above, plus actual weighting logic
-    // here instead of this flat random index.
-    const card = unowned[Math.floor(Math.random() * Math.min(unowned.length, 6))]
-
-    // 4. Award the card
-    await supabase.from('child_animal_cards').insert({
-      child_id:   childId,
-      card_id:    card.id,
-      earned_at:  new Date().toISOString(),
-      earned_via: 'topic_completion',
-    })
-
-    return card // Return so the client can show the unlock animation
-  } catch (err) {
-    console.error('Card award error:', err)
-    return null
-  }
-}
-
 // FIXED (2026-07-28): `correct` used to be a client-supplied boolean, trusted verbatim
 // (this route never re-queried `questions`/`options` to verify the claim before writing
 // `question_attempts` or awarding XP — a modified client, or a crafted request with a
@@ -146,9 +73,6 @@ export async function POST(req: NextRequest) {
 
     const isCompleted = !!(stepNumber && totalSteps && stepNumber >= totalSteps)
 
-    // Only award card if this is a FRESH completion (not already completed)
-    const wasAlreadyCompleted = existing?.status === 'completed'
-
     if (existing) {
       const newAttempts = (existing.questions_attempted || 0) + (questionId ? 1 : 0)
       const newCorrect  = (existing.questions_correct || 0) + (correct ? 1 : 0)
@@ -183,20 +107,9 @@ export async function POST(req: NextRequest) {
       last_active_at: new Date().toISOString(),
     }).eq('id', childId)
 
-    // ── Auto-award card on first topic completion ──────────────
-    let awardedCard = null
-    if (isCompleted && !wasAlreadyCompleted) {
-      awardedCard = await awardCardForTopicCompletion(supabase, childId)
-    }
-
     return NextResponse.json({
-      success:     true,
-      xpAwarded:   correct ? 25 : 0,
-      // awardedCard is returned to the client so it can show the unlock animation
-      awardedCard: awardedCard ? {
-        id:      awardedCard.id,
-        name_en: awardedCard.name_en,
-      } : null,
+      success:   true,
+      xpAwarded: correct ? 25 : 0,
     })
   } catch (err: any) {
     console.error('Progress API error:', err)
