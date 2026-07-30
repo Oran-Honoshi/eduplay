@@ -19,6 +19,20 @@ interface SectionDetail {
   curriculum_question_count: number | null
 }
 
+interface FileEntry {
+  id: string
+  media_type: string
+  original_filename: string
+  size_bytes: number
+  created_at: string
+  signed_url: string | null
+}
+
+// Mirrors the bucket's allowed_mime_types/file_size_limit (checkpoint 1) and
+// the server-side copy in api/notebook/sections/[id]/files/route.ts.
+const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
+const MAX_FILE_BYTES = 10 * 1024 * 1024
+
 // ── Primary discovery card ──────────────────────────────────────
 function CurriculumDiscoveryCard({ section }: { section: SectionDetail }) {
   if (!section.topic_id || section.curriculum_question_count === null) return null
@@ -36,8 +50,89 @@ function CurriculumDiscoveryCard({ section }: { section: SectionDetail }) {
   )
 }
 
+// ── File gallery ──────────────────────────────────────────────
+function FileGallery({ sectionId, files, onChanged }: { sectionId: string; files: FileEntry[]; onChanged: () => void }) {
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setUploadError(null)
+
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      setUploadError('Only JPG, PNG, or PDF files are supported.')
+      return
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      setUploadError(`File is too large — max ${MAX_FILE_BYTES / 1024 / 1024}MB.`)
+      return
+    }
+
+    setUploading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch(`/api/notebook/sections/${sectionId}/files`, { method: 'POST', body: formData })
+    const data = await res.json()
+    setUploading(false)
+    if (!res.ok) { setUploadError(data.error || 'Upload failed'); return }
+    onChanged()
+  }
+
+  const remove = async (fileId: string) => {
+    setDeletingId(fileId)
+    const res = await fetch(`/api/notebook/sections/${sectionId}/files/${fileId}`, { method: 'DELETE' })
+    setDeletingId(null)
+    if (!res.ok) {
+      const data = await res.json()
+      setUploadError(data.error || 'Failed to delete file')
+      return
+    }
+    onChanged()
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-black text-gray-900">Files</h3>
+        <label className="text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg px-3 py-1.5 cursor-pointer">
+          {uploading ? 'Uploading…' : '+ Upload File'}
+          <input type="file" accept={ALLOWED_FILE_TYPES.join(',')} onChange={handleFileChange} disabled={uploading} className="hidden" />
+        </label>
+      </div>
+      {uploadError && <div className="text-xs text-red-500 font-semibold">{uploadError}</div>}
+      {files.length === 0 && <div className="text-xs text-gray-400">No files uploaded yet.</div>}
+      <div className="grid grid-cols-3 gap-3">
+        {files.map(f => (
+          <div key={f.id} className="border border-gray-200 rounded-xl p-2 flex flex-col gap-1">
+            {f.media_type.startsWith('image/') && f.signed_url ? (
+              <a href={f.signed_url} target="_blank" rel="noreferrer">
+                <img src={f.signed_url} alt={f.original_filename} className="w-full h-24 object-cover rounded-lg" />
+              </a>
+            ) : (
+              <a href={f.signed_url || '#'} target="_blank" rel="noreferrer"
+                className="w-full h-24 flex items-center justify-center text-3xl bg-gray-50 rounded-lg">
+                📄
+              </a>
+            )}
+            <div className="text-xs text-gray-600 truncate" title={f.original_filename}>{f.original_filename}</div>
+            <div className="text-[10px] text-gray-400">{(f.size_bytes / 1024).toFixed(0)} KB</div>
+            <button onClick={() => remove(f.id)} disabled={deletingId === f.id}
+              className="text-xs font-bold text-red-500 hover:bg-red-50 disabled:opacity-50 rounded-lg py-1">
+              {deletingId === f.id ? 'Deleting…' : 'Delete'}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function NotebookSectionPage({ params }: { params: { id: string } }) {
   const [section, setSection] = useState<SectionDetail | null>(null)
+  const [files, setFiles] = useState<FileEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
@@ -70,6 +165,7 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
         if (data.error) { setError(data.error); return }
         const s: SectionDetail = data.section
         setSection(s)
+        setFiles(data.files || [])
         setTitle(s.title)
         setChapterName(s.chapter_name || '')
         setSubcategoryName(s.subcategory_name || '')
@@ -162,6 +258,8 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
         {section && (
           <>
             {section.topic_id && <CurriculumDiscoveryCard section={section} />}
+
+            <FileGallery sectionId={params.id} files={files} onChanged={load} />
 
             <div className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-col gap-3">
               <label className="text-xs font-semibold text-gray-400">Title</label>

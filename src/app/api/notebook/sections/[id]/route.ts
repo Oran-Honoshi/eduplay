@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { requireParentOnlySession } from '@/lib/session'
 
+const BUCKET = 'notebook-files'
+const SIGNED_URL_TTL_SECONDS = 3600
+
 // ─── GET /api/notebook/sections/[id] ───────────────────────────
-// Full detail for one section, plus the primary discovery signal: a count of
-// already-approved questions in the curriculum bank for the section's linked
-// topic (null when no topic is linked). This reads only public `questions`
-// data (approved=true, no family_id column at all) — zero new cross-family
-// exposure, distinct from the separate/cuttable secondary discovery endpoint.
+// Full detail for one section, its files (each with a short-TTL signed URL —
+// never a permanent/public link, matching the private-bucket posture from
+// checkpoint 1), plus the primary discovery signal: a count of already-
+// approved questions in the curriculum bank for the section's linked topic
+// (null when no topic is linked). The discovery count reads only public
+// `questions` data (approved=true, no family_id column at all) — zero new
+// cross-family exposure, distinct from the separate/cuttable secondary
+// discovery endpoint.
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireParentOnlySession()
   if (!auth.ok) {
@@ -40,7 +46,28 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     curriculumQuestionCount = count ?? 0
   }
 
-  return NextResponse.json({ section: { ...section, curriculum_question_count: curriculumQuestionCount } })
+  const { data: files } = await supabase
+    .from('notebook_files')
+    .select('id, media_type, original_filename, size_bytes, created_at, storage_path')
+    .eq('section_id', section.id)
+    .order('created_at', { ascending: false })
+
+  let filesWithUrls: any[] = []
+  if (files && files.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrls(files.map(f => f.storage_path), SIGNED_URL_TTL_SECONDS)
+    const urlByPath = new Map((signed || []).map(s => [s.path, s.signedUrl]))
+    filesWithUrls = files.map(({ storage_path, ...rest }) => ({
+      ...rest,
+      signed_url: urlByPath.get(storage_path) || null,
+    }))
+  }
+
+  return NextResponse.json({
+    section: { ...section, curriculum_question_count: curriculumQuestionCount },
+    files: filesWithUrls,
+  })
 }
 
 // ─── PATCH /api/notebook/sections/[id] ─────────────────────────
