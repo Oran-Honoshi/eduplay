@@ -297,6 +297,32 @@ function AssignmentsScreen({ children, showToast }: any) {
   )
 }
 
+// ── Notebook teaser ──────────────────────────────────────────────
+function NotebookScreen() {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
+        <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>🗂️ Notebook</h1>
+        <button onClick={() => window.location.href='/notebook'} style={{ padding:'9px 18px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+          Open Notebook →
+        </button>
+      </div>
+      <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'40px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', textAlign:'center' }}>
+        <div style={{ fontSize:'48px', marginBottom:'12px' }}>🗂️</div>
+        <div style={{ fontFamily:'"Nunito",sans-serif', fontWeight:800, fontSize:'16px', color:'#1E2D4E', marginBottom:'8px' }}>Your Family's Notebook</div>
+        <div style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px', maxWidth:'420px', margin:'0 auto 16px' }}>
+          Organize notes, reference material, and questions into sections by chapter and subcategory — durable context you can reuse for future question generation.
+        </div>
+        <div>
+          <button onClick={() => window.location.href='/notebook'} style={{ padding:'12px 28px', borderRadius:'50px', border:'none', background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer', boxShadow:'0 4px 16px rgba(74,127,212,0.3)' }}>
+            🗂️ Open Notebook
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── AI Question Generator teaser ────────────────────────────────
 function QuestionsScreen() {
   const [pendingCount, setPendingCount] = useState<number | null>(null)
@@ -349,6 +375,7 @@ const TABS = [
   { key:'worksheets', label:'🖨️ Worksheets'  },
   { key:'questions',  label:'✨ AI Questions' },
   { key:'assignments', label:'📋 Assignments' },
+  { key:'notebook',   label:'🗂️ Notebook'    },
   { key:'curriculum', label:'📚 Curriculum'  },
   { key:'parents',    label:'👨‍👩‍👧 Parents'   },
   { key:'account',    label:'⚙️ Account'     },
@@ -703,6 +730,11 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
           {/* ── ASSIGNMENTS ── */}
           {screen === 'assignments' && (
             <AssignmentsScreen children={children} showToast={showToast} />
+          )}
+
+          {/* ── NOTEBOOK ── */}
+          {screen === 'notebook' && (
+            <NotebookScreen />
           )}
 
           {/* ── CURRICULUM ── */}
