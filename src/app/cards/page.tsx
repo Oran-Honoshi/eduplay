@@ -5,14 +5,14 @@ import WorldMapComponent from '@/components/WorldMap'
 
 interface Phase {
   id: string; slug: string; name_en: string; name_he: string
-  description_en: string; sort_order: number; cards_needed: number
+  description_en: string; sort_order: number
   color: string; emoji: string
 }
 interface Card {
   id: string; phase_id: string; slug: string
   name_en: string; name_he: string; location_en: string; location_he: string
   rarity: 'common'|'rare'|'epic'|'legendary'
-  xp_cost: number; unsplash_id: string; image_url: string; emoji: string
+  unsplash_id: string; image_url: string; emoji: string
   fact_en: string; fact_he: string
   facts_en: string[]; facts_he: string[]
   habitat_en: string; habitat_he: string; speed: string; lifespan: string
@@ -22,7 +22,7 @@ interface Card {
 interface Child {
   id: string; display_name: string
   xp_total: number
-  card_tokens: number; card_collect_mode: string
+  card_tokens: number
 }
 interface InProgressTopic {
   steps_completed: number; steps_total: number

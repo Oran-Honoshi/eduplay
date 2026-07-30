@@ -743,7 +743,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                 <p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Manage grade, font size, break settings and PIN for each child.</p>
 
                 {/* Column headers */}
-                <div className="manage-headers" style={{ display:'grid', gridTemplateColumns:'1fr 110px 110px 120px 110px 120px 80px', gap:'8px', padding:'0 14px', marginBottom:'6px' }}>
+                <div className="manage-headers" style={{ display:'grid', gridTemplateColumns:'1fr 110px 110px 110px 120px 80px', gap:'8px', padding:'0 14px', marginBottom:'6px' }}>
                   {[
                     { label:'Child', tip:'' },
                     { label:'Grade', tip:'School year' },
@@ -761,7 +761,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                   {(children || []).map((child: any, i: number) => {
                     const col = CHILD_COLORS[i % CHILD_COLORS.length]
                     return (
-                      <div key={child.id} className="manage-row" style={{ display:'grid', gridTemplateColumns:'1fr 110px 110px 120px 110px 120px 80px', gap:'8px', alignItems:'center', padding:'12px 14px', background:'#F8F9FB', borderRadius:'10px', border:'1px solid #EEF1F6' }}>
+                      <div key={child.id} className="manage-row" style={{ display:'grid', gridTemplateColumns:'1fr 110px 110px 110px 120px 80px', gap:'8px', alignItems:'center', padding:'12px 14px', background:'#F8F9FB', borderRadius:'10px', border:'1px solid #EEF1F6' }}>
 
                         {/* Child */}
                         <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
@@ -800,18 +800,6 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                           <option value="plain">📚 Classic</option>
                           <option value="minecraft">⛏️ Minecraft</option>
                           <option value="princesses">👑 Princesses</option>
-                        </select>
-
-                        {/* Card collect mode */}
-                        <select defaultValue={child.card_collect_mode || 'choice'}
-                          onChange={async (e) => {
-                            await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, card_collect_mode:e.target.value }) })
-                            showToast('🎴', `${child.display_name}'s card mode updated!`)
-                          }}
-                          style={{ padding:'6px 8px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'12px', color:'#1E2D4E', cursor:'pointer', width:'100%' }}>
-                          <option value="choice">🎯 Free Choice</option>
-                          <option value="region_random">🌍 Region Random</option>
-                          <option value="full_random">🎲 Full Random</option>
                         </select>
 
                         {/* Font size */}
