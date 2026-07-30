@@ -25,6 +25,7 @@ const mobileStyles = `
     .portal-stats { grid-template-columns: repeat(2,1fr) !important; }
     .portal-topics { grid-template-columns: repeat(2,1fr) !important; }
     .portal-actions { grid-template-columns: repeat(2,1fr) !important; }
+    .portal-cards-tile { grid-column: span 2 !important; }
     .portal-header-right { gap: 6px !important; }
     .portal-lang { display: none !important; }
   }
@@ -350,7 +351,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
         )}
 
         {/* Bottom actions */}
-        <div className="portal-actions" style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'10px', marginTop:'8px' }}>
+        <div className="portal-actions" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px', marginTop:'8px' }}>
           <button onClick={() => withSession(() => { window.location.href=`/theme?childId=${child.id}&name=${child.display_name}&current=${theme}&returnTo=/play/${token}` })}
             style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'12px', background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, fontWeight:800, fontSize:'13px', cursor:'pointer', color:T.text }}>
             <Palette size={16}/> Theme
@@ -369,6 +370,17 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
               </button>
             ))}
           </div>
+
+          <button onClick={() => withSession(() => { window.location.href=`/cards?childId=${child.id}&token=${token}` })}
+            className="portal-cards-tile"
+            style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'12px', background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, fontWeight:800, fontSize:'13px', cursor:'pointer', color:T.text, position:'relative' }}>
+            🎴 My Cards
+            {child.card_tokens > 0 && (
+              <span style={{ position:'absolute', top:'-7px', right:'-7px', background:'#FF6B6B', color:'white', fontSize:'10px', fontWeight:900, borderRadius:'50px', minWidth:'18px', height:'18px', display:'flex', alignItems:'center', justifyContent:'center', padding:'0 4px', boxShadow:'0 2px 4px rgba(0,0,0,0.2)' }}>
+                {child.card_tokens}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
