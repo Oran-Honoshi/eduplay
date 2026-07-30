@@ -64,9 +64,19 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }))
   }
 
+  const { data: linkedQuestions } = await supabase
+    .from('notebook_section_questions')
+    .select(`
+      id, added_via, created_at,
+      question:questions ( id, prompt_en, difficulty, q_type, topic:topics ( title_en, grade, subject:subjects ( label_en, slug ) ) )
+    `)
+    .eq('section_id', section.id)
+    .order('created_at', { ascending: false })
+
   return NextResponse.json({
     section: { ...section, curriculum_question_count: curriculumQuestionCount },
     files: filesWithUrls,
+    linked_questions: linkedQuestions || [],
   })
 }
 

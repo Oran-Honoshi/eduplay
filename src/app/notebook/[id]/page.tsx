@@ -28,6 +28,19 @@ interface FileEntry {
   signed_url: string | null
 }
 
+interface LinkedQuestion {
+  id: string
+  added_via: 'manual' | 'generated'
+  created_at: string
+  question: {
+    id: string
+    prompt_en: string
+    difficulty: string
+    q_type: string
+    topic: { title_en: string; grade: number; subject: { label_en: string; slug: string } | null } | null
+  } | null
+}
+
 // Mirrors the bucket's allowed_mime_types/file_size_limit (checkpoint 1) and
 // the server-side copy in api/notebook/sections/[id]/files/route.ts.
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
@@ -130,9 +143,53 @@ function FileGallery({ sectionId, files, onChanged }: { sectionId: string; files
   )
 }
 
+// ── Linked questions list ────────────────────────────────────────
+function LinkedQuestionsList({ sectionId, links, onChanged }: { sectionId: string; links: LinkedQuestion[]; onChanged: () => void }) {
+  const [unlinkingId, setUnlinkingId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const unlink = async (linkId: string) => {
+    setUnlinkingId(linkId)
+    const res = await fetch(`/api/notebook/sections/${sectionId}/questions/${linkId}`, { method: 'DELETE' })
+    setUnlinkingId(null)
+    if (!res.ok) {
+      const data = await res.json()
+      setError(data.error || 'Failed to unlink question')
+      return
+    }
+    onChanged()
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-col gap-3">
+      <h3 className="text-sm font-black text-gray-900">Linked Questions</h3>
+      <p className="text-xs text-gray-400">Add questions from the Library tab's "Add to Notebook Section" action.</p>
+      {error && <div className="text-xs text-red-500 font-semibold">{error}</div>}
+      {links.length === 0 && <div className="text-xs text-gray-400">No questions linked yet.</div>}
+      <div className="flex flex-col gap-2">
+        {links.map(link => (
+          <div key={link.id} className="border border-gray-200 rounded-xl p-3 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[10px] font-semibold text-gray-400 mb-1">
+                {link.question?.topic?.subject?.label_en || '—'} · {link.question?.topic?.title_en || '—'} · {link.question?.difficulty} · {link.added_via === 'generated' ? '✨ generated' : 'manual'}
+              </div>
+              <div className="text-sm text-gray-800 truncate">{link.question?.prompt_en || '(question no longer available)'}</div>
+            </div>
+            <button onClick={() => unlink(link.id)} disabled={unlinkingId === link.id}
+              className="shrink-0 text-xs font-bold text-red-500 hover:bg-red-50 disabled:opacity-50 rounded-lg px-2 py-1">
+              {unlinkingId === link.id ? 'Removing…' : 'Unlink'}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function NotebookSectionPage({ params }: { params: { id: string } }) {
   const [section, setSection] = useState<SectionDetail | null>(null)
   const [files, setFiles] = useState<FileEntry[]>([])
+  const [linkedQuestions, setLinkedQuestions] = useState<LinkedQuestion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
@@ -166,6 +223,7 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
         const s: SectionDetail = data.section
         setSection(s)
         setFiles(data.files || [])
+        setLinkedQuestions(data.linked_questions || [])
         setTitle(s.title)
         setChapterName(s.chapter_name || '')
         setSubcategoryName(s.subcategory_name || '')
@@ -260,6 +318,8 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
             {section.topic_id && <CurriculumDiscoveryCard section={section} />}
 
             <FileGallery sectionId={params.id} files={files} onChanged={load} />
+
+            <LinkedQuestionsList sectionId={params.id} links={linkedQuestions} onChanged={load} />
 
             <div className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-col gap-3">
               <label className="text-xs font-semibold text-gray-400">Title</label>

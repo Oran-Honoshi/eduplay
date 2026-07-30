@@ -582,6 +582,12 @@ function LibraryPanel({ active }: { active: boolean }) {
   const [assignResult, setAssignResult] = useState<{ ok: boolean; message: string } | null>(null)
   const assignResultTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const [notebookSections, setNotebookSections] = useState<{ id: string; title: string }[]>([])
+  const [showNotebookPicker, setShowNotebookPicker] = useState(false)
+  const [notebookSectionId, setNotebookSectionId] = useState('')
+  const [newSectionTitle, setNewSectionTitle] = useState('')
+  const [addingToNotebook, setAddingToNotebook] = useState(false)
+
   // Replaces raw setAssignResult everywhere: cancels any pending auto-dismiss
   // timer before applying the new value (so an old timer can't clear a result
   // that replaced it), then — for a non-null result — schedules the banner to
@@ -631,6 +637,13 @@ function LibraryPanel({ active }: { active: boolean }) {
         setChildren(data.children || [])
         setChildId(prev => prev || data.children?.[0]?.id || '')
       })
+  }, [active])
+
+  useEffect(() => {
+    if (!active) return
+    fetch('/api/notebook/sections')
+      .then(r => r.json())
+      .then(data => setNotebookSections(data.sections || []))
   }, [active])
 
   // Fetch topics whenever subject/grade changes
@@ -717,6 +730,53 @@ function LibraryPanel({ active }: { active: boolean }) {
       showAssignResult({ ok: false, message: 'Could not reach the server' })
     }
     setAssigning(false)
+  }
+
+  const addToNotebookSection = async () => {
+    if (selectedQuestions.length === 0) return
+    if (!notebookSectionId && !newSectionTitle.trim()) return
+    setAddingToNotebook(true)
+    showAssignResult(null)
+    try {
+      let sectionId = notebookSectionId
+      if (!sectionId) {
+        const createRes = await fetch('/api/notebook/sections', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: newSectionTitle.trim() }),
+        })
+        const createData = await createRes.json()
+        if (!createRes.ok) {
+          showAssignResult({ ok: false, message: createData.error || 'Could not create section' })
+          setAddingToNotebook(false)
+          return
+        }
+        sectionId = createData.section.id
+        setNotebookSections(prev => [{ id: sectionId, title: createData.section.title }, ...prev])
+      }
+
+      const res = await fetch(`/api/notebook/sections/${sectionId}/questions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionIds: Array.from(selected) }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        const section = notebookSections.find(s => s.id === sectionId)
+        showAssignResult({
+          ok: true,
+          message: `✅ Added ${selectedQuestions.length} question${selectedQuestions.length === 1 ? '' : 's'} to "${section?.title || newSectionTitle || 'section'}"!`,
+        })
+        setSelected(new Set())
+        setShowNotebookPicker(false)
+        setNewSectionTitle('')
+      } else {
+        showAssignResult({ ok: false, message: data.error || 'Could not add to notebook section' })
+      }
+    } catch {
+      showAssignResult({ ok: false, message: 'Could not reach the server' })
+    }
+    setAddingToNotebook(false)
   }
 
   return (
@@ -888,7 +948,29 @@ function LibraryPanel({ active }: { active: boolean }) {
               className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
               📄 Create Worksheet from {selected.size} Selected
             </button>
+            <button onClick={() => setShowNotebookPicker(v => !v)}
+              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors">
+              🗂️ Add to Notebook Section
+            </button>
           </div>
+
+          {showNotebookPicker && (
+            <div className="basis-full flex flex-wrap items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-lg p-3">
+              <select value={notebookSectionId} onChange={e => { setNotebookSectionId(e.target.value); setNewSectionTitle('') }}
+                className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <option value="">— choose a section —</option>
+                {notebookSections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+              </select>
+              <span className="text-xs text-gray-400">or</span>
+              <input value={newSectionTitle} onChange={e => { setNewSectionTitle(e.target.value); setNotebookSectionId('') }}
+                placeholder="New section title"
+                className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+              <button onClick={addToNotebookSection} disabled={addingToNotebook || (!notebookSectionId && !newSectionTitle.trim())}
+                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+                {addingToNotebook ? 'Adding…' : `Add ${selected.size} Question${selected.size === 1 ? '' : 's'}`}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
