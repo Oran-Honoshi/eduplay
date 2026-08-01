@@ -706,21 +706,14 @@ export default function LessonClient({ child, topic, questions, passage, passage
   return (
     <div style={{ minHeight:'100vh', background:T.bg, color:T.text, fontFamily:'"Nunito",sans-serif', overflowX:'hidden', position:'relative', fontSize: fontSize==='small'?'14px':fontSize==='medium'?'16px':fontSize==='large'?'19px':'22px' }} dir={isHE ? 'rtl' : 'ltr'}>
 
-      {/* TODO(bug): the apostrophe in this @import url('...') gets HTML-entity-escaped
-          (&#x27;) on the server render but not on the client re-render, so React logs a
-          hydration text mismatch + falls back to client-side rendering for this <style>
-          tag on every single page load. Unrelated to the options-shape work — present
-          before and after that migration. Low priority (cosmetic console noise, no visual
-          break observed), but real. Likely fix: switch to dangerouslySetInnerHTML for this
-          <style> tag, or drop the quotes from the url() (they're not required here). */}
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes celebPop { from { transform:scale(0.5); opacity:0; } to { transform:scale(1); opacity:1; } }
         @keyframes spin { from { transform:rotate(-20deg) scale(0.8); } to { transform:rotate(0deg) scale(1); } }
         @keyframes float0 { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
         @keyframes float1 { from { transform:translateY(30px); opacity:0; } to { transform:translateY(0); opacity:1; } }
         @keyframes float2 { from { transform:translateY(25px); opacity:0; } to { transform:translateY(0); opacity:1; } }
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Cinzel+Decorative:wght@400;700&family=Nunito:wght@400;700;800;900&display=swap');
-      `}</style>
+      ` }} />
 
       <ThemeDecorations theme={theme}/>
 
