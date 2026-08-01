@@ -1,7 +1,8 @@
 'use client'
 import { useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
+import { THEME_CONFIG } from '@/components/theme'
 
 const THEMES = [
   {
@@ -72,8 +73,41 @@ const THEMES = [
   },
 ]
 
+// Real Home layout re-skinned with the selected theme's actual THEME_CONFIG
+// tokens (bg/panel/border/radius/font/accents/mascot/shadow) — not the
+// picker's own decorative swatch gradients above, which are just this
+// screen's chrome and were never meant to represent the real app.
+function MiniHomePreview({ theme }: { theme: string }) {
+  const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
+  return (
+    <div style={{ background: T.bg, borderRadius: '14px', padding: '14px', border: `1px solid ${T.border}` }}>
+      <div style={{ background: T.panel, borderRadius: T.radius === '0px' ? '4px' : T.radius, border: `1.5px solid ${T.border}`, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+        <div style={{ width: 22, height: 22, borderRadius: T.radius === '0px' ? '4px' : '50%', background: `linear-gradient(135deg,${T.accent1},${T.accent2})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>{T.mascot}</div>
+        <div style={{ fontFamily: T.fontHead, fontSize: 9, fontWeight: 900, color: T.accent1 }}>EduPlay</div>
+        <div style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, color: T.accent2 }}>⭐ 1,250</div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px', marginBottom: '10px' }}>
+        {['✅', '⭐', '🔥'].map((icon, i) => (
+          <div key={i} style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: '8px 4px', textAlign: 'center' }}>
+            <div style={{ fontSize: 14 }}>{icon}</div>
+            <div style={{ fontSize: 9, color: T.text, opacity: .6, fontWeight: 700, marginTop: 2 }}>{['Done', 'XP', 'Streak'][i]}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ background: T.panel, border: `2px solid ${T.accent1}`, borderRadius: T.radius, padding: '10px', boxShadow: T.shadow }}>
+        <div style={{ fontFamily: T.fontHead, fontWeight: 800, fontSize: 11, color: T.text, marginBottom: 4 }}>Fractions — Equal Parts</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 10, color: T.accent2, fontWeight: 800 }}>⭐ +150</span>
+          <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: '50px', background: T.accent1, color: 'white' }}>Start</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ThemeSelector() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const childId   = searchParams.get('childId') || ''
   const childName = searchParams.get('name') || 'there'
   const current   = searchParams.get('current') || 'plain'
@@ -85,7 +119,7 @@ function ThemeSelector() {
 
   async function saveTheme() {
     if (selected === current) {
-      window.location.href = returnTo
+      router.push(returnTo)
       return
     }
     setSaving(true)
@@ -102,7 +136,7 @@ function ThemeSelector() {
         const dest = returnTo.includes('?')
           ? `${returnTo}&theme=${selected}`
           : `${returnTo}?theme=${selected}`
-        window.location.href = dest
+        router.push(dest)
       }, 1200)
     } catch {
       setSaving(false)
@@ -170,6 +204,13 @@ function ThemeSelector() {
           ))}
         </div>
 
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 800, color: selectedTheme.text, opacity: .7, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Live Preview
+          </div>
+          <MiniHomePreview theme={selected}/>
+        </div>
+
         <button
           onClick={saveTheme}
           disabled={saving || saved}
@@ -191,7 +232,7 @@ function ThemeSelector() {
         </button>
 
         <button
-          onClick={() => window.location.href = returnTo}
+          onClick={() => router.push(returnTo)}
           style={{ display: 'block', margin: '12px auto 0', background: 'transparent', border: 'none', color: selectedTheme.text, opacity: .7, fontSize: '13px', cursor: 'pointer', fontFamily: '"Nunito", sans-serif' }}>
           ← Back without changing
         </button>
