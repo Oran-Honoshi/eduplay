@@ -540,14 +540,22 @@ export default function LessonClient({ child, topic, questions, passage, passage
   const [xpBalance, setXp]        = useState(child?.xp_balance || 0)
   const [xpNotif, setXpNotif]     = useState<string|null>(null)
   const [completed, setCompleted] = useState(false)
+  const [completionInfo, setCompletionInfo] = useState<{ message: string; emoji: string } | null>(null)
 
-  const [celebration, setCelebration] = useState<{type: string; message: string; emoji: string} | null>(null)
+  const [celebration, setCelebration] = useState<{ message: string; emoji: string } | null>(null)
   const [sparkleActive, setSparkleActive] = useState(false)
   const [xpMilestone, setXpMilestone] = useState(Math.floor((child?.xp_total || 0) / 1000))
   const [passageOpen, setPassageOpen] = useState(false)
 
-  function triggerCelebration(type: string, message: string, emoji: string) {
-    setCelebration({ type, message, emoji })
+  // Only the XP-milestone celebration uses this now — lesson completion used
+  // to ALSO fire this on top of the completion overlay below (CelebrationModal
+  // at z-index 9999 briefly stacked over the completion screen's own z-index
+  // 9998, since the celebration's 4s auto-dismiss ran concurrently with the
+  // completion screen staying open). Fixed by folding the completion message
+  // into the completion overlay itself (see completionInfo) instead of firing
+  // a second overlay on top of it.
+  function triggerCelebration(message: string, emoji: string) {
+    setCelebration({ message, emoji })
     setTimeout(() => setCelebration(null), 4000)
   }
 
@@ -661,7 +669,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
       const newMilestone = Math.floor(newXp / 1000)
       if (newMilestone > xpMilestone) {
         setXpMilestone(newMilestone)
-        setTimeout(() => triggerCelebration('xp', `${newXp.toLocaleString()} XP reached! Amazing! 🚀`, '🏆'), 500)
+        setTimeout(() => triggerCelebration(`${newXp.toLocaleString()} XP reached! Amazing! 🚀`, '🏆'), 500)
       }
     }
   }
@@ -690,16 +698,18 @@ export default function LessonClient({ child, topic, questions, passage, passage
         .then(r => r.json())
         .then(data => {
           const cardEarned = !!data?.isNewBest
-          triggerCelebration('lesson', isHE
-            ? (isBonus ? (cardEarned ? '!תרגיל בונוס הושלם! קרטיס נוסף שלך 🎴' : '!תרגיל בונוס הושלם! כל הכבוד 🎓') : 'כל הכבוד! סיימת את השיעור! 🎓')
-            : (isBonus ? (cardEarned ? 'Bonus complete! Extra card earned! 🎴' : 'Bonus complete! Great practice! 🎓') : 'Lesson complete! Amazing work! 🎓'),
-            isBonus && cardEarned ? '🎴' : '🎉')
+          setCompletionInfo({
+            message: isHE
+              ? (isBonus ? (cardEarned ? '!תרגיל בונוס הושלם! קרטיס נוסף שלך 🎴' : '!תרגיל בונוס הושלם! כל הכבוד 🎓') : 'כל הכבוד! סיימת את השיעור! 🎓')
+              : (isBonus ? (cardEarned ? 'Bonus complete! Extra card earned! 🎴' : 'Bonus complete! Great practice! 🎓') : 'Lesson complete! Amazing work! 🎓'),
+            emoji: isBonus && cardEarned ? '🎴' : '🎉',
+          })
           if (cardEarned) {
             fetch('/api/cards/token', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ childId: child?.id }) }).catch(()=>{})
           }
         })
         .catch(() => {
-          triggerCelebration('lesson', isHE ? 'כל הכבוד! סיימת את השיעור! 🎓' : 'Lesson complete! Amazing work! 🎓', '🎉')
+          setCompletionInfo({ message: isHE ? 'כל הכבוד! סיימת את השיעור! 🎓' : 'Lesson complete! Amazing work! 🎓', emoji: '🎉' })
         })
       return
     }
@@ -734,7 +744,14 @@ export default function LessonClient({ child, topic, questions, passage, passage
       {completed && (
         <div style={{ position:'fixed', inset:0, zIndex:9998, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
           <div style={{ background:T.panel, border:`4px solid ${T.accent2}`, borderRadius:T.radius, padding:'36px', textAlign:'center', maxWidth:'420px', width:'100%', boxShadow:T.shadow }}>
-            <h2 style={{ fontFamily:T.fontHead, fontSize:'16px', color:T.accent2, marginBottom:'10px' }}>{UI.complete}</h2>
+            {completionInfo ? (
+              <>
+                <div style={{ fontSize:56, marginBottom:12 }}>{completionInfo.emoji}</div>
+                <h2 style={{ fontFamily:T.fontHead, fontSize:'16px', color:T.accent2, marginBottom:'10px' }}>{completionInfo.message}</h2>
+              </>
+            ) : (
+              <h2 style={{ fontFamily:T.fontHead, fontSize:'16px', color:T.accent2, marginBottom:'10px' }}>{UI.complete}</h2>
+            )}
             <div style={{ fontSize:'44px', letterSpacing:'6px', margin:'12px 0' }}>⭐⭐⭐</div>
             <p style={{ fontSize:'16px', color:T.text2, marginBottom:'8px' }}>{UI.mastered} <strong style={{ color:T.accent2 }}>{isHE ? topic?.title_he || topic?.title_en : topic?.title_en}</strong>!</p>
             <p style={{ fontSize:'14px', color:T.text2, marginBottom:'20px' }}>{UI.xpEarned}</p>
@@ -764,7 +781,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                   goBack()
                 }
               }} style={{ flex:1, padding:'12px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'14px', cursor:'pointer' }}>{UI.home}</button>
-              <button onClick={() => { setCompleted(false); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'14px', cursor:'pointer' }}>{UI.again}</button>
+              <button onClick={() => { setCompleted(false); setCompletionInfo(null); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'14px', cursor:'pointer' }}>{UI.again}</button>
             </div>
           </div>
         </div>
