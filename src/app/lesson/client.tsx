@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
-import { ThemeDecorations, CelebrationModal, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG as SHARED_THEMES } from '@/components/theme'
+import { ThemeDecorations, CelebrationModal, KidOverlay, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG as SHARED_THEMES } from '@/components/theme'
 import { FONT_SIZES } from '@/lib/fontSize'
 import { isDistinctHe } from '@/lib/text'
 
@@ -27,43 +27,6 @@ const PIP_LINES: any = {
   sports:     'Great hustle! Keep pushing! 🔥',
 }
 
-
-const THEME_DECORATIONS: any = {
-  minecraft: {
-    bgPattern: `repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 32px),
-                repeating-linear-gradient(90deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 32px)`,
-    floaters: ['⛏️','🪨','🌲','💎','🧱','🐛','☁️','⭐'],
-    celebrationEmoji: '💎',
-    celebrationBg: 'linear-gradient(135deg,#1A1A2E,#2D4A1E)',
-    celebrationBorder: '#82FF00',
-    cornerDeco: ['⛏️','🌲','🧱','⭐'],
-  },
-  princesses: {
-    bgPattern: `radial-gradient(circle at 20% 20%, rgba(255,192,203,0.2) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(221,160,221,0.2) 0%, transparent 50%)`,
-    floaters: ['🌸','✨','🦋','💫','🌺','👑','🌈','💖'],
-    celebrationEmoji: '👑',
-    celebrationBg: 'linear-gradient(135deg,#FFF0F8,#FFE4F4)',
-    celebrationBorder: '#E05BA0',
-    cornerDeco: ['🌸','✨','💖','🌺'],
-  },
-  plain: {
-    bgPattern: 'none',
-    floaters: ['⭐','🌟','✨','🎯','📚','💡','🚀','🎉'],
-    celebrationEmoji: '🌟',
-    celebrationBg: 'linear-gradient(135deg,#F0F8FF,#E8F5E9)',
-    celebrationBorder: '#4A90D9',
-    cornerDeco: ['⭐','📚','💡','🚀'],
-  },
-  sports: {
-    bgPattern: 'none',
-    floaters: ['⚽','🏆','⭐','🥇','🎉','🔥','👟','🎽'],
-    celebrationEmoji: '🏆',
-    celebrationBg: 'linear-gradient(135deg,#1D3557,#2C4C7C)',
-    celebrationBorder: '#F4762A',
-    cornerDeco: ['⚽','🏆','⭐','🎽'],
-  },
-}
 
 const SUBJECT_COLORS: any = {
   math:    '#4A7FD4',
@@ -736,14 +699,16 @@ export default function LessonClient({ child, topic, questions, passage, passage
       <style>{lessonStyles}</style>
 
       {xpNotif && (
-        <div style={{ position:'fixed', top:'70px', right:'20px', zIndex:9999, background:T.panel, border:`3px solid ${T.xp}`, borderRadius:T.radius, padding:'10px 18px', fontFamily:T.fontHead, fontSize:'14px', color:T.xp, boxShadow:T.shadow, pointerEvents:'none' }}>
-          {xpNotif}
-        </div>
+        <KidOverlay position="top-right">
+          <div style={{ background:T.panel, border:`3px solid ${T.xp}`, borderRadius:T.radius, padding:'10px 18px', fontFamily:T.fontHead, fontSize:'14px', color:T.xp, boxShadow:T.shadow }}>
+            {xpNotif}
+          </div>
+        </KidOverlay>
       )}
 
       {completed && (
-        <div style={{ position:'fixed', inset:0, zIndex:9998, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }}>
-          <div style={{ background:T.panel, border:`4px solid ${T.accent2}`, borderRadius:T.radius, padding:'36px', textAlign:'center', maxWidth:'420px', width:'100%', boxShadow:T.shadow }}>
+        <KidOverlay position="center" interactive>
+          <div className="completion-modal" style={{ background:T.panel, border:`4px solid ${T.accent2}`, borderRadius:T.radius, padding:'36px', textAlign:'center', maxWidth:'420px', width:'100%', boxShadow:T.shadow }}>
             {completionInfo ? (
               <>
                 <div style={{ fontSize:56, marginBottom:12 }}>{completionInfo.emoji}</div>
@@ -784,7 +749,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
               <button onClick={() => { setCompleted(false); setCompletionInfo(null); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'14px', cursor:'pointer' }}>{UI.again}</button>
             </div>
           </div>
-        </div>
+        </KidOverlay>
       )}
 
 

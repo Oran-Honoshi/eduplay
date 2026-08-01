@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Heart, Star, Flame, Play, BookOpen, Palette, Globe, ChevronRight } from 'lucide-react'
-import { THEME_CONFIG, KidNavBar } from '@/components/theme'
+import { THEME_CONFIG, KidNavBar, KidOverlay } from '@/components/theme'
 
 const SUBJECT_COLORS: any = {
   math:    '#4A7FD4',
@@ -376,9 +376,11 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
       </div>
 
       {sessionFailed && (
-        <div style={{ position:'fixed', top:0, left:0, right:0, zIndex:1000, background:'#C0392B', color:'white', padding:'12px 16px', textAlign:'center', fontWeight:800, fontSize:'13px', boxShadow:'0 2px 8px rgba(0,0,0,0.2)' }}>
-          ⚠️ We couldn't start your session. Please close this tab and open your play link again.
-        </div>
+        <KidOverlay position="top-banner">
+          <div style={{ background:'#C0392B', color:'white', padding:'12px 16px', textAlign:'center', fontWeight:800, fontSize:'13px', boxShadow:'0 2px 8px rgba(0,0,0,0.2)' }}>
+            ⚠️ We couldn't start your session. Please close this tab and open your play link again.
+          </div>
+        </KidOverlay>
       )}
 
       {toast && (

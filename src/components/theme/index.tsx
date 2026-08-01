@@ -321,6 +321,37 @@ export function CelebrationModal({
   )
 }
 
+// ── Kid Overlay — shared fixed-position shell for the kid side's other
+// fixed overlays (XP notification, lesson-complete screen, session-failed
+// banner). Deliberately separate from CelebrationModal above: that one is a
+// different, already-shared shape (always centered, non-interactive,
+// caller-timed auto-dismiss) used by both lesson and assignment celebration
+// moments, and its signature didn't need to change for these three. This
+// only covers the 3 position/interaction combinations those three actually
+// use — not a general-purpose overlay system.
+export function KidOverlay({
+  position, interactive, children
+}: {
+  position: 'top-right' | 'top-banner' | 'center'
+  interactive?: boolean
+  children: React.ReactNode
+}) {
+  const positionStyle: React.CSSProperties =
+    position === 'top-right' ? { top: '70px', right: '20px' } :
+    position === 'top-banner' ? { top: 0, left: 0, right: 0 } :
+    { inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: interactive ? 'rgba(0,0,0,0.85)' : 'rgba(0,0,0,0.4)' }
+
+  return (
+    <div style={{
+      position: 'fixed', zIndex: 9999,
+      pointerEvents: interactive ? 'auto' : 'none',
+      ...positionStyle,
+    }}>
+      {children}
+    </div>
+  )
+}
+
 // ── NES Panel wrapper for Minecraft ───────────────────────────
 export function ThemePanel({
   theme, T, children, style, className, bg, borderColor, borderWidth
