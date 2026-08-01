@@ -136,6 +136,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
     minecraft:  { pattern: 'repeating-linear-gradient(0deg,rgba(93,158,47,0.06) 0,rgba(93,158,47,0.06) 1px,transparent 1px,transparent 32px),repeating-linear-gradient(90deg,rgba(93,158,47,0.06) 0,rgba(93,158,47,0.06) 1px,transparent 1px,transparent 32px)', corners: ['⛏️','💎','🌲','🧱'] },
     princesses: { pattern: 'radial-gradient(circle at 15% 15%,rgba(224,91,160,0.08) 0%,transparent 40%),radial-gradient(circle at 85% 85%,rgba(155,89,182,0.08) 0%,transparent 40%)', corners: ['🌸','✨','👑','🦋'] },
     plain:      { pattern: 'none', corners: [] },
+    sports:     { pattern: 'none', corners: ['⚽','🏆','⭐','🎽'] },
   }
   const TD = THEME_DECOS[theme] || THEME_DECOS.plain
   return (

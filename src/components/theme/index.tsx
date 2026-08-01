@@ -86,6 +86,36 @@ export const THEME_CONFIG: Record<string, any> = {
     celebrationBorder: '#4A7FD4',
     floaters: ['⭐','🌟','✨','🎯','📚','💡','🚀','🎉'],
   },
+  // Per design_handoff_eduplay_redesign/README.md: pageBg, radius, accent (orange),
+  // font (Manrope) and body text (navy) are the documented spec. accent2-4/xp/pattern/
+  // corners/floaters have no design reference and are this pass's own call, kept
+  // consistent with how the other three themes use those slots.
+  sports: {
+    bg: '#EAF2FB',
+    panel: '#FFFFFF',
+    panel2: '#EAF2FB',
+    border: '#DCE7F5',
+    accent1: '#F4762A',
+    accent2: '#FFD700',
+    accent3: '#1D3557',
+    accent4: '#2C4C7C',
+    xp: '#3DDC84',
+    text: '#1D3557',
+    text2: 'rgba(29,53,87,0.6)',
+    radius: '10px',
+    fontHead: '"Manrope",sans-serif',
+    shadow: '0 4px 16px rgba(29,53,87,0.12)',
+    btnShadow: '0 4px 14px rgba(244,118,42,0.35)',
+    mascot: '🦁',
+    nesPanel: null,
+    nesBtn: null,
+    pattern: 'none',
+    corners: ['⚽','🏆','⭐','🎽'],
+    celebrationEmoji: '🏆',
+    celebrationBg: 'linear-gradient(135deg,#1D3557,#2C4C7C)',
+    celebrationBorder: '#F4762A',
+    floaters: ['⚽','🏆','⭐','🥇','🎉','🔥','👟','🎽'],
+  },
 }
 
 // ── Animated Answer Button ─────────────────────────────────────

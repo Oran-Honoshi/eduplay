@@ -24,6 +24,7 @@ const PIP_LINES: any = {
   minecraft:  'Keep going! Every answer makes you stronger! 💪',
   princesses: 'You are doing amazingly! Keep shining! ✨',
   plain:      'Great work! Keep going! 🌟',
+  sports:     'Great hustle! Keep pushing! 🔥',
 }
 
 
@@ -53,6 +54,14 @@ const THEME_DECORATIONS: any = {
     celebrationBg: 'linear-gradient(135deg,#F0F8FF,#E8F5E9)',
     celebrationBorder: '#4A90D9',
     cornerDeco: ['⭐','📚','💡','🚀'],
+  },
+  sports: {
+    bgPattern: 'none',
+    floaters: ['⚽','🏆','⭐','🥇','🎉','🔥','👟','🎽'],
+    celebrationEmoji: '🏆',
+    celebrationBg: 'linear-gradient(135deg,#1D3557,#2C4C7C)',
+    celebrationBorder: '#F4762A',
+    cornerDeco: ['⚽','🏆','⭐','🎽'],
   },
 }
 

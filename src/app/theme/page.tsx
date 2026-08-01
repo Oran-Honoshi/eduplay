@@ -62,13 +62,13 @@ const THEMES = [
   {
     id: 'sports',
     name: 'Sports',
-    emoji: '⚽',
-    desc: 'Coming soon!',
-    bg: 'linear-gradient(135deg,#1a5c2a,#2ecc71)',
-    border: '#F1C40F',
+    emoji: '🦁',
+    desc: 'Team colors, game on!',
+    bg: 'linear-gradient(135deg,#1D3557,#2C4C7C)',
+    border: '#F4762A',
     text: '#FFFFFF',
-    accent: '#F1C40F',
-    available: false,
+    accent: '#F4762A',
+    available: true,
   },
 ]
 
