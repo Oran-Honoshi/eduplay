@@ -146,6 +146,66 @@ function FileGallery({ sectionId, files, onChanged }: { sectionId: string; files
   )
 }
 
+// ── Recipe editor ────────────────────────────────────────────────
+// Single textarea, manual edit only — no AI-assist seeding (v1 decision).
+// Feeds the generator prompt in a later checkpoint.
+function RecipeEditor({ sectionId }: { sectionId: string }) {
+  const [promptText, setPromptText] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [savedAt, setSavedAt] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/notebook/sections/${sectionId}/recipe`)
+      .then(r => r.json())
+      .then(data => {
+        setPromptText(data.recipe?.prompt_text || '')
+        setSavedAt(data.recipe?.updated_at || null)
+      })
+      .finally(() => setLoading(false))
+  }, [sectionId])
+
+  const save = async () => {
+    setSaving(true)
+    setError(null)
+    const res = await fetch(`/api/notebook/sections/${sectionId}/recipe`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ promptText }),
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (!res.ok) { setError(data.error || 'Failed to save recipe'); return }
+    setPromptText(data.recipe?.prompt_text || '')
+    setSavedAt(data.recipe?.updated_at || null)
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-4 flex flex-col gap-3">
+      <h3 className="text-sm font-black text-[#1f2a28]">Recipe</h3>
+      <p className="text-xs text-[#9aa6a3]">
+        Free-text instructions for the question generator (e.g. style, focus, constraints). Edited manually — nothing here is auto-filled.
+      </p>
+      {loading ? (
+        <div className="text-xs text-[#9aa6a3]">Loading…</div>
+      ) : (
+        <textarea value={promptText} onChange={e => setPromptText(e.target.value)} rows={6}
+          placeholder="e.g. Focus on two-digit subtraction with borrowing. Use word problems about snacks and toys."
+          className="border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 text-sm" />
+      )}
+      {error && <div className="text-xs text-[#DC2626] font-semibold">{error}</div>}
+      <div className="flex items-center gap-3">
+        <button onClick={save} disabled={saving || loading}
+          className="flex items-center gap-1.5 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 rounded-lg px-3 py-1.5">
+          <Save size={12} /> {saving ? 'Saving…' : 'Save Recipe'}
+        </button>
+        {savedAt && !saving && <span className="text-[10px] text-[#9aa6a3]">Last saved {new Date(savedAt).toLocaleString()}</span>}
+      </div>
+    </div>
+  )
+}
+
 // ── Linked questions list ────────────────────────────────────────
 function LinkedQuestionsList({ sectionId, links, onChanged }: { sectionId: string; links: LinkedQuestion[]; onChanged: () => void }) {
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null)
@@ -326,6 +386,8 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
             <FileGallery sectionId={params.id} files={files} onChanged={load} />
 
             <LinkedQuestionsList sectionId={params.id} links={linkedQuestions} onChanged={load} />
+
+            <RecipeEditor sectionId={params.id} />
 
             <div className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-4 flex flex-col gap-3">
               <label className="text-xs font-semibold text-[#9aa6a3]">Title</label>
