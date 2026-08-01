@@ -427,13 +427,121 @@ function HistoryList({ rows, onReuse }: { rows: GenerationRow[]; onReuse: (row: 
   )
 }
 
+// ── Bulk-approve review modal ───────────────────────────────────
+// Replaces a bare confirm(count) — the 2026-08-01 incident happened because
+// the old dialog carried a number, not the content behind it, so a bulk
+// approve could fire with zero human judgment applied to any individual
+// question. This shows every question's real content and only enables the
+// confirm button once the full list has actually been scrolled through.
+function BulkApproveModal({
+  questions, onCancel, onConfirmed,
+}: {
+  questions: PendingQuestion[]
+  onCancel: () => void
+  onConfirmed: (approvedIds: string[]) => void
+}) {
+  const [scrolledToEnd, setScrolledToEnd] = useState(false)
+  const [approving, setApproving] = useState(false)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  // A short list that never needs scrolling shouldn't be gated on a scroll
+  // event that can't fire — check on mount whether it already fits.
+  useEffect(() => {
+    const el = listRef.current
+    if (el && el.scrollHeight <= el.clientHeight + 8) setScrolledToEnd(true)
+  }, [])
+
+  const checkScroll = () => {
+    if (scrolledToEnd) return
+    const el = listRef.current
+    if (el && el.scrollTop + el.clientHeight >= el.scrollHeight - 8) setScrolledToEnd(true)
+  }
+
+  const confirm = async () => {
+    setApproving(true)
+    const results = await Promise.all(questions.map(async q => {
+      const res = await fetch(`/api/questions/${q.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'approve' }),
+      })
+      return { id: q.id, ok: res.ok }
+    }))
+    setApproving(false)
+    onConfirmed(results.filter(r => r.ok).map(r => r.id))
+  }
+
+  return (
+    <div className="fixed inset-0 z-[999] bg-black/55 flex items-center justify-center p-5" onClick={onCancel}>
+      <div className="bg-white rounded-[20px] shadow-[0_24px_60px_rgba(15,30,26,0.22)] w-full max-w-[460px] max-h-[520px] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="px-6 pt-[22px] pb-3.5 border-b border-[#e9e6dd]">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10.5px] font-bold uppercase tracking-wide text-[#7C6BAE]">Bulk approve</span>
+            <span className="font-mono text-[11px] font-bold text-[#8a6414] bg-[#FFF3D6] px-2.5 py-0.5 rounded-full">
+              {questions.length} question{questions.length === 1 ? '' : 's'}
+            </span>
+          </div>
+          <h3 className="font-extrabold text-[16px] text-[#1f2a28] m-0 mb-1">Approve everything in this queue?</h3>
+          <p className="text-[12.5px] text-[#9aa6a3] m-0">Scroll to review each one before approving</p>
+        </div>
+
+        <div ref={listRef} onScroll={checkScroll} className="overflow-y-auto px-6 py-1.5 flex-1">
+          {questions.map(q => (
+            <div key={q.id} className="py-3 border-b border-[#e9e6dd] last:border-b-0">
+              <div className="text-[10.5px] text-[#9aa6a3] font-bold uppercase tracking-wide mb-1">
+                {q.topics?.subjects?.label_en || '—'} · {q.topics?.title_en || '—'} · Grade {q.topics?.grade ?? '—'} · {q.difficulty}
+              </div>
+              <div className="text-[13px] text-[#1f2a28] leading-snug"><FractionText text={q.prompt_en} /></div>
+            </div>
+          ))}
+          <div className="text-center text-[11px] text-[#9aa6a3] italic py-2.5">— end of queue —</div>
+        </div>
+
+        <div className="px-6 pt-4 pb-[22px] border-t border-[#e9e6dd]">
+          {!scrolledToEnd && (
+            <div className="flex items-center gap-1.5 text-[11.5px] text-[#8a6414] bg-[#FFF3D6] rounded-lg px-2.5 py-2 mb-3">
+              <AlertTriangle size={13} /> Scroll to review all {questions.length} before approving
+            </div>
+          )}
+          <div className="flex gap-2.5">
+            <button onClick={confirm} disabled={!scrolledToEnd || approving}
+              className="flex-1 flex items-center justify-center gap-1.5 py-[11px] rounded-full bg-[#0F766E] disabled:opacity-40 text-white font-extrabold text-[13px] transition-opacity">
+              {approving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+              {approving ? 'Approving…' : `Approve All (${questions.length})`}
+            </button>
+            <button onClick={onCancel} disabled={approving}
+              className="flex-1 py-[11px] rounded-full border border-[rgba(15,118,110,.14)] text-[#7a8f8b] font-extrabold text-[13px] disabled:opacity-40">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Undo toast ───────────────────────────────────────────────
+function UndoToast({ text, onUndo }: { text: string; onUndo: () => void }) {
+  return (
+    <div className="fixed bottom-6 right-6 z-[9999] bg-[#1f2a28] text-white rounded-xl px-4 py-3.5 text-[13px] font-bold shadow-[0_24px_60px_rgba(15,30,26,0.22)] flex items-center gap-3 max-w-[340px]">
+      <span className="text-lg">✅</span>
+      <span className="flex-1">{text}</span>
+      <button onClick={onUndo} className="text-[#3FCDBB] font-extrabold text-[12.5px] underline whitespace-nowrap">Undo</button>
+    </div>
+  )
+}
+
 // ── Pending Review ────────────────────────────────────────────
 function PendingReviewList({ active }: { active: boolean }) {
   const [questions, setQuestions] = useState<PendingQuestion[]>([])
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
-  const [approvingAll, setApprovingAll] = useState(false)
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const [undo, setUndo] = useState<{ ids: string[] } | null>(null)
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => { if (undoTimer.current) clearTimeout(undoTimer.current) }, [])
 
   const toggleReveal = (id: string) => {
     setRevealed(prev => {
@@ -466,22 +574,30 @@ function PendingReviewList({ active }: { active: boolean }) {
     setBusyId(null)
   }
 
-  const approveAll = async () => {
-    if (questions.length === 0) return
-    if (!confirm(`Approve all ${questions.length} question${questions.length === 1 ? '' : 's'}?`)) return
-    setApprovingAll(true)
-    const ids = questions.map(q => q.id)
-    const results = await Promise.all(ids.map(async id => {
-      const res = await fetch(`/api/questions/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'approve' }),
-      })
-      return { id, ok: res.ok }
-    }))
-    const approvedIds = new Set(results.filter(r => r.ok).map(r => r.id))
-    setQuestions(prev => prev.filter(q => !approvedIds.has(q.id)))
-    setApprovingAll(false)
+  // Undo re-PATCHes the same IDs back to approved:false via the API's new
+  // 'unapprove' action, then reloads from the server (rather than splicing
+  // state back in) so the queue reflects whatever else may have changed
+  // during the 10s window, not just what this tab remembers.
+  const handleUndo = async () => {
+    if (!undo) return
+    if (undoTimer.current) clearTimeout(undoTimer.current)
+    const ids = undo.ids
+    setUndo(null)
+    await Promise.all(ids.map(id => fetch(`/api/questions/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'unapprove' }),
+    })))
+    load()
+  }
+
+  const handleConfirmed = (approvedIds: string[]) => {
+    setReviewOpen(false)
+    setQuestions(prev => prev.filter(q => !approvedIds.includes(q.id)))
+    if (approvedIds.length === 0) return
+    setUndo({ ids: approvedIds })
+    if (undoTimer.current) clearTimeout(undoTimer.current)
+    undoTimer.current = setTimeout(() => setUndo(null), 10000)
   }
 
   if (loading) return <p className="text-sm text-[#9aa6a3]">Loading…</p>
@@ -491,10 +607,23 @@ function PendingReviewList({ active }: { active: boolean }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {reviewOpen && (
+        <BulkApproveModal
+          questions={questions}
+          onCancel={() => setReviewOpen(false)}
+          onConfirmed={handleConfirmed}
+        />
+      )}
+      {undo && (
+        <UndoToast
+          text={`Approved ${undo.ids.length} question${undo.ids.length === 1 ? '' : 's'}`}
+          onUndo={handleUndo}
+        />
+      )}
       <div className="flex justify-end">
-        <button onClick={approveAll} disabled={approvingAll || busyId !== null}
+        <button onClick={() => setReviewOpen(true)} disabled={busyId !== null}
           className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
-          <Check size={12} /> {approvingAll ? 'Approving…' : `Approve All (${questions.length})`}
+          <Check size={12} /> {`Approve All (${questions.length})`}
         </button>
       </div>
       {questions.map(q => (
@@ -549,11 +678,11 @@ function PendingReviewList({ active }: { active: boolean }) {
           })()}
 
           <div className="flex gap-2">
-            <button onClick={() => act(q.id, 'approve')} disabled={busyId === q.id || approvingAll}
+            <button onClick={() => act(q.id, 'approve')} disabled={busyId === q.id || reviewOpen}
               className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
               <Check size={12} /> Approve
             </button>
-            <button onClick={() => act(q.id, 'reject')} disabled={busyId === q.id || approvingAll}
+            <button onClick={() => act(q.id, 'reject')} disabled={busyId === q.id || reviewOpen}
               className="flex items-center gap-1.5 px-4 py-1.5 bg-[#FFF5F5] hover:bg-[#FFE5E5] text-[#DC2626] disabled:opacity-50 font-bold text-xs rounded-lg transition-colors">
               <X size={12} /> Reject
             </button>

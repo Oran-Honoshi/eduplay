@@ -3,10 +3,15 @@ import { createServiceRoleClient } from '@/lib/supabase'
 import { requireParentOnlySession } from '@/lib/session'
 
 // ─── PATCH /api/questions/[id] ─────────────────────────────────
-// Approve or reject a pending (approved:false) question.
-// Body: { action: 'approve' | 'reject' }
+// Approve, reject, or unapprove a question.
+// Body: { action: 'approve' | 'reject' | 'unapprove' }
 // Deliberately NOT scoped to the caller's family — same shared-review
 // tradeoff as GET /api/questions/pending. Accepted, not an oversight.
+//
+// 'unapprove' exists to back the bulk-approve review modal's undo window —
+// approve only ever flipped a boolean, so undo is just flipping it back.
+// Not exposed in the Pending Review UI itself (nothing there needs to
+// un-approve an already-approved question outside that undo flow).
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireParentOnlySession()
@@ -18,14 +23,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const { action } = await req.json()
-  if (action !== 'approve' && action !== 'reject') {
-    return NextResponse.json({ error: 'action must be "approve" or "reject"' }, { status: 400 })
+  if (action !== 'approve' && action !== 'reject' && action !== 'unapprove') {
+    return NextResponse.json({ error: 'action must be "approve", "reject", or "unapprove"' }, { status: 400 })
   }
 
   const supabase = createServiceRoleClient()
 
-  if (action === 'approve') {
-    const { error } = await supabase.from('questions').update({ approved: true }).eq('id', params.id)
+  if (action === 'approve' || action === 'unapprove') {
+    const { error } = await supabase.from('questions').update({ approved: action === 'approve' }).eq('id', params.id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ success: true })
   }
