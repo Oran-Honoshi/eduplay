@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Heart, Star, Flame, Play, BookOpen, Palette, Globe, ChevronRight } from 'lucide-react'
+import { THEME_CONFIG } from '@/components/theme'
 
 const SUBJECT_COLORS: any = {
   math:    '#4A7FD4',
@@ -12,12 +13,6 @@ const SUBJECT_ICONS: any = {
   math:    '📐',
   english: '📖',
   hebrew:  '🇮🇱',
-}
-
-const THEME_CONFIG: any = {
-  minecraft:  { bg:'#1A1A2E', panel:'#2D2D2D', border:'#555', text:'#F5F5DC', accent:'#5D9E2F', accent2:'#FFD700', radius:'0px',  font:'"Press Start 2P",monospace', mascot:'🦔' },
-  princesses: { bg:'#FFF0F8', panel:'#FFFFFF', border:'#F4AFCF', text:'#3D1A2E', accent:'#E05BA0', accent2:'#FFD700', radius:'20px', font:'"Cinzel Decorative",serif',   mascot:'🦄' },
-  plain:      { bg:'#F8F9FB', panel:'#FFFFFF', border:'#EEF1F6', text:'#1E2D4E', accent:'#4A7FD4', accent2:'#2EC4B6', radius:'12px', font:'"Nunito",sans-serif',          mascot:'🦉' },
 }
 
 const mobileStyles = `
@@ -155,11 +150,11 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
       {/* Header */}
       <header style={{ background:T.panel, borderBottom:`2px solid ${T.border}`, padding:'0 16px', height:'56px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-          <div style={{ width:'34px', height:'34px', background:`linear-gradient(135deg,${T.accent},${T.accent2})`, borderRadius:T.radius==='0px'?'4px':T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>
+          <div style={{ width:'34px', height:'34px', background:`linear-gradient(135deg,${T.accent1},${T.accent2})`, borderRadius:T.radius==='0px'?'4px':T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>
             {T.mascot}
           </div>
           <div>
-            <div style={{ fontFamily:T.font, fontSize:'10px', fontWeight:900, color:T.accent, letterSpacing:T.font.includes('Press')?'0':'normal' }}>EduPlay</div>
+            <div style={{ fontFamily:T.fontHead, fontSize:'10px', fontWeight:900, color:T.accent1, letterSpacing:T.fontHead.includes('Press')?'0':'normal' }}>EduPlay</div>
             <div style={{ fontSize:'11px', color:T.text, opacity:.7 }}>Hi {child.display_name}! 👋</div>
           </div>
         </div>
@@ -173,9 +168,9 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
           </div>
 
           {/* XP */}
-          <div style={{ display:'flex', alignItems:'center', gap:'5px', background:`${T.accent}15`, border:`1.5px solid ${T.accent}40`, borderRadius:'50px', padding:'4px 12px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'5px', background:`${T.accent1}15`, border:`1.5px solid ${T.accent1}40`, borderRadius:'50px', padding:'4px 12px' }}>
             <Star size={12} fill={T.accent2} color={T.accent2}/>
-            <span style={{ fontWeight:900, fontSize:'13px', color:T.accent }}>{xpDisplay.toLocaleString()}</span>
+            <span style={{ fontWeight:900, fontSize:'13px', color:T.accent1 }}>{xpDisplay.toLocaleString()}</span>
           </div>
 
           {/* Streak */}
@@ -194,7 +189,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
               { id:'he_only', label:'🇮🇱' },
             ].map(l => (
               <button key={l.id} onClick={() => setLangMode(l.id)}
-                style={{ padding:'5px 10px', border:'none', background:langMode===l.id?T.accent:'transparent', color:langMode===l.id?'white':T.text, fontWeight:800, fontSize:'13px', cursor:'pointer', transition:'all 0.15s' }}>
+                style={{ padding:'5px 10px', border:'none', background:langMode===l.id?T.accent1:'transparent', color:langMode===l.id?'white':T.text, fontWeight:800, fontSize:'13px', cursor:'pointer', transition:'all 0.15s' }}>
                 {l.label}
               </button>
             ))}
@@ -234,7 +229,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
 
         {/* Resume banner */}
         {lastTopic && (
-          <div style={{ background:`linear-gradient(135deg,${T.accent},${T.accent2})`, borderRadius:T.radius, padding:'16px 20px', marginBottom:'20px', display:'flex', alignItems:'center', gap:'14px', boxShadow:`0 8px 24px ${T.accent}30`, position:'relative', overflow:'hidden' }}>
+          <div style={{ background:`linear-gradient(135deg,${T.accent1},${T.accent2})`, borderRadius:T.radius, padding:'16px 20px', marginBottom:'20px', display:'flex', alignItems:'center', gap:'14px', boxShadow:`0 8px 24px ${T.accent1}30`, position:'relative', overflow:'hidden' }}>
             <div style={{ position:'absolute', top:'-20px', right:'-20px', width:'120px', height:'120px', borderRadius:'50%', background:'rgba(255,255,255,0.07)', pointerEvents:'none' }}/>
             <div style={{ width:'42px', height:'42px', borderRadius:T.radius, background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
               <Play size={20} fill="white" color="white"/>
@@ -245,7 +240,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
               <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.7)', marginTop:'2px' }}>{lastTopic.subject?.label_en}</div>
             </div>
             <button onClick={() => startLesson(lastTopic.id)}
-              style={{ display:'flex', alignItems:'center', gap:'6px', padding:'10px 18px', background:'white', border:'none', borderRadius:'50px', fontWeight:900, fontSize:'13px', color:T.accent, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
+              style={{ display:'flex', alignItems:'center', gap:'6px', padding:'10px 18px', background:'white', border:'none', borderRadius:'50px', fontWeight:900, fontSize:'13px', color:T.accent1, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
               Continue <ChevronRight size={14}/>
             </button>
           </div>
@@ -255,7 +250,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
         <div className="portal-stats" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'10px', marginBottom:'20px' }}>
           {[
             { label:'Completed',  value:completedDisplay,         icon:'✅', color:'#27AE60' },
-            { label:'In Progress',value:inProgressDisplay,        icon:'▶️', color:T.accent  },
+            { label:'In Progress',value:inProgressDisplay,        icon:'▶️', color:T.accent1  },
             { label:'Total XP',   value:xpDisplay.toLocaleString(),icon:'⭐', color:T.accent2 },
             { label:'Streak',     value:`${child.streak_current||0}d`, icon:'🔥', color:'#FF6B6B' },
           ].map(stat => (
@@ -270,11 +265,11 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
         {/* Subject filter */}
         <div style={{ display:'flex', gap:'8px', marginBottom:'16px', flexWrap:'wrap' }}>
           <button onClick={() => setSelectedSubject(null)}
-            style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 16px', borderRadius:'50px', border:`2px solid ${!selectedSubject?T.accent:'rgba(0,0,0,0.1)'}`, background:!selectedSubject?`${T.accent}15`:T.panel, color:!selectedSubject?T.accent:T.text, fontWeight:800, fontSize:'12px', cursor:'pointer', transition:'all 0.15s' }}>
+            style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 16px', borderRadius:'50px', border:`2px solid ${!selectedSubject?T.accent1:'rgba(0,0,0,0.1)'}`, background:!selectedSubject?`${T.accent1}15`:T.panel, color:!selectedSubject?T.accent1:T.text, fontWeight:800, fontSize:'12px', cursor:'pointer', transition:'all 0.15s' }}>
             <BookOpen size={14}/> All Subjects
           </button>
           {subjects.map((subj: any) => {
-            const color = SUBJECT_COLORS[subj.slug] || T.accent
+            const color = SUBJECT_COLORS[subj.slug] || T.accent1
             const active = selectedSubject === subj.slug
             return (
               <button key={subj.slug} onClick={() => setSelectedSubject(subj.slug)}
@@ -291,7 +286,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
             const p          = progressMap[topic.id]
             const pct        = getProgressPct(topic.id)
             const statusIcon = getStatusIcon(topic.id)
-            const subjColor  = SUBJECT_COLORS[topic.subject?.slug] || T.accent
+            const subjColor  = SUBJECT_COLORS[topic.subject?.slug] || T.accent1
             const isCompleted  = p?.status === 'completed'
             const isInProgress = p?.status === 'in_progress'
 
@@ -365,7 +360,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
               { id:'he_only',   label:'🇮🇱' },
             ].map(l => (
               <button key={l.id} onClick={() => setLangMode(l.id)}
-                style={{ flex:1, padding:'12px 4px', border:'none', background:langMode===l.id?T.accent:'transparent', color:langMode===l.id?'white':T.text, fontWeight:800, fontSize:'14px', cursor:'pointer', transition:'all 0.15s' }}>
+                style={{ flex:1, padding:'12px 4px', border:'none', background:langMode===l.id?T.accent1:'transparent', color:langMode===l.id?'white':T.text, fontWeight:800, fontSize:'14px', cursor:'pointer', transition:'all 0.15s' }}>
                 {l.label}
               </button>
             ))}

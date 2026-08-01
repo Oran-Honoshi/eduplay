@@ -17,16 +17,13 @@ function Fraction({ n, d, size = 20 }: { n: any; d: any; size?: number }) {
   )
 }
 
-const THEMES: any = {
-  minecraft:  { bg:'#1A1A2E', panel:'#2D2D2D', panel2:'#1a1a1a', border:'#555', accent1:'#5D9E2F', accent2:'#FFD700', accent3:'#39D9D9', accent4:'#FF6B00', xp:'#82FF00', text:'#F5F5DC', text2:'rgba(245,245,220,0.6)', radius:'0px', fontHead:'"Press Start 2P",monospace', shadow:'4px 4px 0 rgba(0,0,0,0.7)', btnShadow:'4px 4px 0 #000' },
-  princesses: { bg:'#FFF0F8', panel:'#FFFFFF', panel2:'#FFF0F8', border:'#F4AFCF', accent1:'#E05BA0', accent2:'#FFD700', accent3:'#9B59B6', accent4:'#FF8C69', xp:'#E05BA0', text:'#3D1A2E', text2:'rgba(61,26,46,0.6)', radius:'20px', fontHead:'"Cinzel Decorative",serif', shadow:'0 8px 24px rgba(224,91,160,0.18)', btnShadow:'0 4px 16px rgba(224,91,160,0.35)' },
-  plain:      { bg:'#F8F9FA', panel:'#FFFFFF', panel2:'#F8F9FA', border:'#DEE2E6', accent1:'#4A90D9', accent2:'#F0A500', accent3:'#27AE60', accent4:'#E67E22', xp:'#27AE60', text:'#212529', text2:'#6C757D', radius:'12px', fontHead:'"Nunito",sans-serif', shadow:'0 2px 12px rgba(0,0,0,0.08)', btnShadow:'0 2px 8px rgba(0,0,0,0.12)' },
-}
-
-const MASCOTS: any = {
-  minecraft:  { mascot:'🦔', pip:'Keep going! Every answer makes you stronger! 💪' },
-  princesses: { mascot:'🦄', pip:'You are doing amazingly! Keep shining! ✨' },
-  plain:      { mascot:'🦉', pip:'Great work! Keep going! 🌟' },
+// Core color/font/shadow tokens come from the shared THEME_CONFIG (imported
+// as SHARED_THEMES below) — this file used to keep its own byte-identical
+// copy, which meant every new theme had to be added twice to stay in sync.
+const PIP_LINES: any = {
+  minecraft:  'Keep going! Every answer makes you stronger! 💪',
+  princesses: 'You are doing amazingly! Keep shining! ✨',
+  plain:      'Great work! Keep going! 🌟',
 }
 
 
@@ -515,8 +512,8 @@ export default function LessonClient({ child, topic, questions, passage, passage
   const langMode  = (urlParams?.get('lang') || child?.lang_screen || 'bilingual') as string
   const isBonus   = urlParams?.get('bonus') === 'true'
 
-  const T   = THEMES[theme] || THEMES.plain
-  const TD  = MASCOTS[theme] || MASCOTS.plain
+  const T   = SHARED_THEMES[theme] || SHARED_THEMES.plain
+  const pipLine = PIP_LINES[theme] || PIP_LINES.plain
   const subjSlug  = topic?.subject?.slug || 'math'
   const subjColor = SUBJECT_COLORS[subjSlug] || T.accent1
   const isHE      = langMode === 'he_only'
@@ -546,7 +543,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
   }
 
 
-  const [pipText, setPip]         = useState(TD.pip)
+  const [pipText, setPip]         = useState(pipLine)
   const [fontSize, setFontSize]   = useState<'small'|'medium'|'large'|'xl'>(
     (urlParams?.get('fs') || child?.font_size || 'medium') as 'small'|'medium'|'large'|'xl'
   )
@@ -700,7 +697,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
     setCurrentStep(next)
     setQIndex(i => Math.min(i + 1, questions.length - 1))
     setAnswered(false); setSelected(null); setFeedback(null); setHint(false)
-    setPip(TD.pip)
+    setPip(pipLine)
   }
 
   return (
@@ -1013,7 +1010,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
 
           {/* Mascot */}
           <ThemePanel theme={theme} T={T} borderColor={T.accent2} style={{ padding:'14px', textAlign:'center' }}>
-            <span style={{ fontSize:'56px', display:'block' }}>{TD.mascot}</span>
+            <span style={{ fontSize:'56px', display:'block' }}>{T.mascot}</span>
             <div style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2, margin:'6px 0 3px' }}>{UI.pipSays}</div>
             <div style={{ background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, padding:'8px', fontSize:'14px', color:T.text2, lineHeight:1.5, textAlign:'left' }}>{pipText}</div>
           </ThemePanel>
