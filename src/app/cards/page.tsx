@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { ArrowLeft, Check, X, ChevronRight, Gift, Target, BookOpen, CreditCard, Globe, MapPin, PartyPopper, Zap, Trophy } from 'lucide-react'
+import { Check, X, ChevronRight, Gift, Target, BookOpen, CreditCard, Globe, MapPin, PartyPopper, Zap, Trophy } from 'lucide-react'
 import WorldMapComponent from '@/components/WorldMap'
+import { KidNavBar } from '@/components/theme'
 
 interface Phase {
   id: string; slug: string; name_en: string; name_he: string
@@ -23,6 +24,7 @@ interface Child {
   id: string; display_name: string
   xp_total: number
   card_tokens: number
+  theme: string
 }
 interface InProgressTopic {
   steps_completed: number; steps_total: number
@@ -280,16 +282,12 @@ export default function CardsPage() {
 
   return (
     <div style={{minHeight:'100vh',background:'#F7F5F0',fontFamily:'"Nunito",sans-serif'}}>
-      {toast&&<div style={{position:'fixed',bottom:20,right:20,zIndex:300,padding:'12px 18px',borderRadius:14,background:'#F0FDF4',border:'1px solid #86EFAC',color:'#166534',fontWeight:700,fontSize:13,boxShadow:'0 8px 24px rgba(0,0,0,0.1)',display:'flex',alignItems:'center',gap:6}}><PartyPopper size={15}/> {toast}</div>}
+      {toast&&<div style={{position:'fixed',bottom:84,right:20,zIndex:300,padding:'12px 18px',borderRadius:14,background:'#F0FDF4',border:'1px solid #86EFAC',color:'#166534',fontWeight:700,fontSize:13,boxShadow:'0 8px 24px rgba(0,0,0,0.1)',display:'flex',alignItems:'center',gap:6}}><PartyPopper size={15}/> {toast}</div>}
       {openCard&&<CardModal card={openCard} onClose={()=>setOpenCard(null)}/>}
 
       {/* Header */}
       <header style={{background:'white',borderBottom:'1px solid rgba(15,118,110,.14)',padding:'0 20px',height:58,display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:100,boxShadow:'0 2px 12px rgba(0,0,0,0.04)'}}>
         <div style={{display:'flex',alignItems:'center',gap:12}}>
-          <button onClick={()=>window.location.href=token?`/play/${token}`:'/dashboard'}
-            style={{display:'flex',alignItems:'center',gap:5,padding:'7px 13px',borderRadius:10,border:'1.5px solid rgba(15,118,110,.14)',background:'white',color:'#374151',fontWeight:700,fontSize:13,cursor:'pointer'}}>
-            <ArrowLeft size={13}/> Back
-          </button>
           <div>
             <div style={{fontWeight:800,fontSize:17,color:'#111827',letterSpacing:'-0.02em',fontFamily:'"Baloo 2",sans-serif'}}>Animal Collection</div>
             <div style={{fontSize:11,color:'#9aa6a3',fontWeight:600}}>{ownedIds.size}/{cards.length} cards · {completedRegions} region{completedRegions!==1?'s':''} complete</div>
@@ -303,7 +301,7 @@ export default function CardsPage() {
         </div>
       </header>
 
-      <div style={{padding:'16px 20px',maxWidth:900,margin:'0 auto',display:'flex',flexDirection:'column',gap:16}}>
+      <div style={{padding:'16px 20px 84px',maxWidth:900,margin:'0 auto',display:'flex',flexDirection:'column',gap:16}}>
         {/* Real in-progress-topic step progress */}
         <InProgressBar topic={inProgress}/>
 
@@ -382,6 +380,8 @@ export default function CardsPage() {
           </div>
         )}
       </div>
+
+      <KidNavBar theme={child?.theme || 'plain'} active="rewards" childId={childId} token={token}/>
     </div>
   )
 }

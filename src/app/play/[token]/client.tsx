@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Heart, Star, Flame, Play, BookOpen, Palette, Globe, ChevronRight } from 'lucide-react'
-import { THEME_CONFIG } from '@/components/theme'
+import { THEME_CONFIG, KidNavBar } from '@/components/theme'
 
 const SUBJECT_COLORS: any = {
   math:    '#4A7FD4',
@@ -198,7 +198,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
         </div>
       </header>
 
-      <div style={{ maxWidth:'900px', margin:'0 auto', padding:'16px' }}>
+      <div style={{ maxWidth:'900px', margin:'0 auto', padding:'16px 16px 84px' }}>
 
         {/* Assignments banner — shown above Resume since a parent-assigned task
             isn't something the child picked, unlike the free-choice topic grid below */}
@@ -387,10 +387,12 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
       )}
 
       {toast && (
-        <div style={{ position:'fixed', bottom:'20px', left:'50%', transform:'translateX(-50%)', zIndex:1000, background:'#1E2D4E', color:'white', padding:'10px 18px', borderRadius:'50px', fontWeight:700, fontSize:'13px', boxShadow:'0 4px 16px rgba(0,0,0,0.25)', maxWidth:'90vw', textAlign:'center' }}>
+        <div style={{ position:'fixed', bottom:'84px', left:'50%', transform:'translateX(-50%)', zIndex:1000, background:'#1E2D4E', color:'white', padding:'10px 18px', borderRadius:'50px', fontWeight:700, fontSize:'13px', boxShadow:'0 4px 16px rgba(0,0,0,0.25)', maxWidth:'90vw', textAlign:'center' }}>
           {toast}
         </div>
       )}
+
+      <KidNavBar theme={theme} active="home" childId={child.id} token={token}/>
     </div>
   )
 }

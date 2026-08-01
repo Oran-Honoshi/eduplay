@@ -1,5 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { Home, ClipboardList, Trophy } from 'lucide-react'
 
 // ── Theme config (single source of truth across all screens) ──
 export const THEME_CONFIG: Record<string, any> = {
@@ -351,5 +353,52 @@ export function ThemePanel({
     }}>
       {children}
     </div>
+  )
+}
+
+// ── Kid Nav Bar — persistent Home / Assignments / Rewards shell ────────
+// Mounted on /play/[token] and /cards only; /lesson and /assignment stay
+// nav-free focused runners. The "Assignments" destination doesn't exist yet
+// (that's its own checkpoint) — the link is wired now so nothing here needs
+// to change once that page lands.
+export function KidNavBar({
+  theme, active, childId, token
+}: {
+  theme: string, active: 'home' | 'assignments' | 'rewards', childId: string, token?: string
+}) {
+  const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
+  const tokenQS = token ? `&token=${token}` : ''
+
+  const items: Array<{ key: 'home' | 'assignments' | 'rewards', label: string, Icon: any, href: string }> = [
+    { key: 'home',        label: 'Home',        Icon: Home,          href: token ? `/play/${token}` : '/dashboard' },
+    { key: 'assignments', label: 'Assignments', Icon: ClipboardList, href: `/assignments?childId=${childId}${tokenQS}` },
+    { key: 'rewards',     label: 'Rewards',      Icon: Trophy,        href: `/cards?childId=${childId}${tokenQS}` },
+  ]
+
+  return (
+    <nav style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200,
+      background: T.panel, borderTop: `2px solid ${T.border}`,
+      display: 'flex', justifyContent: 'space-around',
+      padding: '8px 0', boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
+    }}>
+      {items.map(({ key, label, Icon, href }) => {
+        const isActive = key === active
+        return (
+          <Link key={key} href={href}
+            onClick={e => { if (isActive) e.preventDefault() }}
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+              textDecoration: 'none', color: isActive ? T.accent1 : T.text,
+              opacity: isActive ? 1 : 0.55, fontFamily: T.fontHead,
+              fontSize: '9px', fontWeight: 800, padding: '4px 14px', flex: 1,
+              cursor: isActive ? 'default' : 'pointer',
+            }}>
+            <Icon size={20} strokeWidth={isActive ? 2.5 : 2}/>
+            <span>{label}</span>
+          </Link>
+        )
+      })}
+    </nav>
   )
 }
