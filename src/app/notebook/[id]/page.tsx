@@ -1,6 +1,9 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
+import { ArrowLeft, Plus, FileText, Trash2, Unlink, Save, BookOpen, Notebook as NotebookIcon } from 'lucide-react'
+import ParentHeaderBar from '@/components/ParentHeaderBar'
+import { PARENT_COLORS } from '@/lib/parentTheme'
 
 const supabase = createBrowserClient()
 
@@ -50,14 +53,14 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024
 function CurriculumDiscoveryCard({ section }: { section: SectionDetail }) {
   if (!section.topic_id || section.curriculum_question_count === null) return null
   return (
-    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center justify-between gap-4">
-      <div className="text-sm text-emerald-800">
+    <div className="bg-[#E4F3F1] border border-[#0F766E33] rounded-2xl p-4 flex items-center justify-between gap-4">
+      <div className="text-sm text-[#0B5C56]">
         <strong>{section.curriculum_question_count}</strong> approved question{section.curriculum_question_count === 1 ? '' : 's'} already
         exist{section.curriculum_question_count === 1 ? 's' : ''} in the curriculum bank for <strong>{section.topic?.title_en}</strong>.
       </div>
       <button onClick={() => window.location.href = '/questions'}
-        className="shrink-0 text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg px-3 py-1.5">
-        Browse Library →
+        className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0B5C56] rounded-lg px-3 py-1.5">
+        Browse Library <BookOpen size={12} />
       </button>
     </div>
   )
@@ -107,34 +110,34 @@ function FileGallery({ sectionId, files, onChanged }: { sectionId: string; files
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-col gap-3">
+    <div className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-black text-gray-900">Files</h3>
-        <label className="text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg px-3 py-1.5 cursor-pointer">
-          {uploading ? 'Uploading…' : '+ Upload File'}
+        <h3 className="text-sm font-black text-[#1f2a28]">Files</h3>
+        <label className="flex items-center gap-1.5 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0B5C56] rounded-lg px-3 py-1.5 cursor-pointer">
+          <Plus size={12} /> {uploading ? 'Uploading…' : 'Upload File'}
           <input type="file" accept={ALLOWED_FILE_TYPES.join(',')} onChange={handleFileChange} disabled={uploading} className="hidden" />
         </label>
       </div>
-      {uploadError && <div className="text-xs text-red-500 font-semibold">{uploadError}</div>}
-      {files.length === 0 && <div className="text-xs text-gray-400">No files uploaded yet.</div>}
+      {uploadError && <div className="text-xs text-[#DC2626] font-semibold">{uploadError}</div>}
+      {files.length === 0 && <div className="text-xs text-[#9aa6a3]">No files uploaded yet.</div>}
       <div className="grid grid-cols-3 gap-3">
         {files.map(f => (
-          <div key={f.id} className="border border-gray-200 rounded-xl p-2 flex flex-col gap-1">
+          <div key={f.id} className="border border-[rgba(15,118,110,.14)] rounded-xl p-2 flex flex-col gap-1">
             {f.media_type.startsWith('image/') && f.signed_url ? (
               <a href={f.signed_url} target="_blank" rel="noreferrer">
                 <img src={f.signed_url} alt={f.original_filename} className="w-full h-24 object-cover rounded-lg" />
               </a>
             ) : (
               <a href={f.signed_url || '#'} target="_blank" rel="noreferrer"
-                className="w-full h-24 flex items-center justify-center text-3xl bg-gray-50 rounded-lg">
-                📄
+                className="w-full h-24 flex items-center justify-center bg-[#F7F5F0] rounded-lg">
+                <FileText size={28} color={PARENT_COLORS.textMuted} />
               </a>
             )}
-            <div className="text-xs text-gray-600 truncate" title={f.original_filename}>{f.original_filename}</div>
-            <div className="text-[10px] text-gray-400">{(f.size_bytes / 1024).toFixed(0)} KB</div>
+            <div className="text-xs text-[#7a8f8b] truncate" title={f.original_filename}>{f.original_filename}</div>
+            <div className="text-[10px] text-[#9aa6a3]">{(f.size_bytes / 1024).toFixed(0)} KB</div>
             <button onClick={() => remove(f.id)} disabled={deletingId === f.id}
-              className="text-xs font-bold text-red-500 hover:bg-red-50 disabled:opacity-50 rounded-lg py-1">
-              {deletingId === f.id ? 'Deleting…' : 'Delete'}
+              className="flex items-center justify-center gap-1 text-xs font-bold text-[#DC2626] hover:bg-[#FFF5F5] disabled:opacity-50 rounded-lg py-1">
+              <Trash2 size={11} /> {deletingId === f.id ? 'Deleting…' : 'Delete'}
             </button>
           </div>
         ))}
@@ -161,23 +164,23 @@ function LinkedQuestionsList({ sectionId, links, onChanged }: { sectionId: strin
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-col gap-3">
-      <h3 className="text-sm font-black text-gray-900">Linked Questions</h3>
-      <p className="text-xs text-gray-400">Add questions from the Library tab's "Add to Notebook Section" action.</p>
-      {error && <div className="text-xs text-red-500 font-semibold">{error}</div>}
-      {links.length === 0 && <div className="text-xs text-gray-400">No questions linked yet.</div>}
+    <div className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-4 flex flex-col gap-3">
+      <h3 className="text-sm font-black text-[#1f2a28]">Linked Questions</h3>
+      <p className="text-xs text-[#9aa6a3]">Add questions from the Library tab's "Add to Notebook Section" action.</p>
+      {error && <div className="text-xs text-[#DC2626] font-semibold">{error}</div>}
+      {links.length === 0 && <div className="text-xs text-[#9aa6a3]">No questions linked yet.</div>}
       <div className="flex flex-col gap-2">
         {links.map(link => (
-          <div key={link.id} className="border border-gray-200 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div key={link.id} className="border border-[rgba(15,118,110,.14)] rounded-xl p-3 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="text-[10px] font-semibold text-gray-400 mb-1">
+              <div className="text-[10px] font-semibold text-[#9aa6a3] mb-1">
                 {link.question?.topic?.subject?.label_en || '—'} · {link.question?.topic?.title_en || '—'} · {link.question?.difficulty} · {link.added_via === 'generated' ? '✨ generated' : 'manual'}
               </div>
-              <div className="text-sm text-gray-800 truncate">{link.question?.prompt_en || '(question no longer available)'}</div>
+              <div className="text-sm text-[#1f2a28] truncate">{link.question?.prompt_en || '(question no longer available)'}</div>
             </div>
             <button onClick={() => unlink(link.id)} disabled={unlinkingId === link.id}
-              className="shrink-0 text-xs font-bold text-red-500 hover:bg-red-50 disabled:opacity-50 rounded-lg px-2 py-1">
-              {unlinkingId === link.id ? 'Removing…' : 'Unlink'}
+              className="shrink-0 flex items-center gap-1 text-xs font-bold text-[#DC2626] hover:bg-[#FFF5F5] disabled:opacity-50 rounded-lg px-2 py-1">
+              <Unlink size={11} /> {unlinkingId === link.id ? 'Removing…' : 'Unlink'}
             </button>
           </div>
         ))}
@@ -291,27 +294,30 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center font-[Nunito]">
-        <div className="text-sm text-gray-400">Section not found.</div>
+      <div className="min-h-screen bg-[#F7F5F0] flex items-center justify-center font-[Manrope]">
+        <div className="text-sm text-[#9aa6a3]">Section not found.</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-[Nunito]">
-      <div className="bg-white border-b border-gray-100 px-6 py-4 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          <h1 className="text-xl font-black text-gray-900">🗂️ Notebook Section</h1>
+    <div className="min-h-screen bg-[#F7F5F0] font-[Manrope]">
+      <ParentHeaderBar
+        center={<span className="text-sm font-semibold text-[#9aa6a3]">/ Notebook Section</span>}
+        right={
           <button onClick={() => window.location.href = '/notebook'}
-            className="text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">
-            ← Notebook
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#7a8f8b] border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-1.5 hover:bg-[#F7F5F0]">
+            <ArrowLeft size={12} /> Notebook
           </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-4xl mx-auto px-6 py-6 flex flex-col gap-4">
-        {loading && <div className="text-sm text-gray-400">Loading…</div>}
-        {error && <div className="text-sm text-red-500 font-semibold">{error}</div>}
+        <h1 className="flex items-center gap-2 text-xl font-extrabold text-[#1f2a28]">
+          <NotebookIcon size={18} color={PARENT_COLORS.primary} /> Notebook Section
+        </h1>
+        {loading && <div className="text-sm text-[#9aa6a3]">Loading…</div>}
+        {error && <div className="text-sm text-[#DC2626] font-semibold">{error}</div>}
 
         {section && (
           <>
@@ -321,62 +327,62 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
 
             <LinkedQuestionsList sectionId={params.id} links={linkedQuestions} onChanged={load} />
 
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 flex flex-col gap-3">
-              <label className="text-xs font-semibold text-gray-400">Title</label>
+            <div className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-4 flex flex-col gap-3">
+              <label className="text-xs font-semibold text-[#9aa6a3]">Title</label>
               <input value={title} onChange={e => setTitle(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                className="border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 text-sm" />
 
               <div className="flex gap-2">
                 <div className="flex-1 flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-gray-400">Chapter</label>
+                  <label className="text-xs font-semibold text-[#9aa6a3]">Chapter</label>
                   <input value={chapterName} onChange={e => setChapterName(e.target.value)}
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    className="border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 text-sm" />
                 </div>
                 <div className="flex-1 flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-gray-400">Subcategory</label>
+                  <label className="text-xs font-semibold text-[#9aa6a3]">Subcategory</label>
                   <input value={subcategoryName} onChange={e => setSubcategoryName(e.target.value)}
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                    className="border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 text-sm" />
                 </div>
               </div>
 
-              <label className="text-xs font-semibold text-gray-400">Tags (comma separated)</label>
+              <label className="text-xs font-semibold text-[#9aa6a3]">Tags (comma separated)</label>
               <input value={tagsInput} onChange={e => setTagsInput(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                className="border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 text-sm" />
 
-              <label className="text-xs font-semibold text-gray-400">Notes</label>
+              <label className="text-xs font-semibold text-[#9aa6a3]">Notes</label>
               <textarea value={bodyText} onChange={e => setBodyText(e.target.value)} rows={8}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                className="border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 text-sm" />
 
-              <label className="text-xs font-semibold text-gray-400">Link to curriculum topic (optional — powers the discovery card above)</label>
+              <label className="text-xs font-semibold text-[#9aa6a3]">Link to curriculum topic (optional — powers the discovery card above)</label>
               <div className="flex gap-2">
                 <select value={subjectSlug} onChange={e => { setSubjectSlug(e.target.value); setTopicId('') }}
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                  className="flex-1 border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 text-sm">
                   <option value="">— no subject —</option>
                   {subjects.map(s => <option key={s.slug} value={s.slug}>{s.label_en}</option>)}
                 </select>
                 <select value={grade} onChange={e => { setGrade(parseInt(e.target.value)); setTopicId('') }}
                   disabled={!subjectSlug}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                  className="border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 text-sm">
                   {gradeOptions.map(g => <option key={g} value={g}>{g === 0 ? 'K' : `Grade ${g}`}</option>)}
                 </select>
                 <select value={topicId} onChange={e => setTopicId(e.target.value)}
                   disabled={!subjectSlug}
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                  className="flex-1 border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 text-sm">
                   <option value="">— no topic —</option>
                   {topics.map(t => <option key={t.id} value={t.id}>{t.title_en}</option>)}
                 </select>
               </div>
 
-              {saveError && <div className="text-xs text-red-500 font-semibold">{saveError}</div>}
+              {saveError && <div className="text-xs text-[#DC2626] font-semibold">{saveError}</div>}
 
               <div className="flex gap-2">
                 <button onClick={save} disabled={saving}
-                  className="text-sm font-bold text-white bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 rounded-xl px-4 py-2">
-                  {saving ? 'Saving…' : 'Save'}
+                  className="flex items-center gap-1.5 text-sm font-bold text-white bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 rounded-xl px-4 py-2">
+                  <Save size={13} /> {saving ? 'Saving…' : 'Save'}
                 </button>
                 <button onClick={remove} disabled={deleting}
-                  className="text-sm font-bold text-red-500 hover:bg-red-50 disabled:opacity-50 rounded-xl px-4 py-2">
-                  {deleting ? 'Deleting…' : 'Delete Section'}
+                  className="flex items-center gap-1.5 text-sm font-bold text-[#DC2626] hover:bg-[#FFF5F5] disabled:opacity-50 rounded-xl px-4 py-2">
+                  <Trash2 size={13} /> {deleting ? 'Deleting…' : 'Delete Section'}
                 </button>
               </div>
             </div>
