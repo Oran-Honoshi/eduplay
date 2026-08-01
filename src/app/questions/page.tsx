@@ -3,6 +3,12 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import FractionText from '@/components/FractionText'
 import { isDistinctHe } from '@/lib/text'
+import {
+  Sparkles, BookOpen, Eye, EyeOff, Paperclip, X, Check, UserPlus, FileText,
+  Notebook as NotebookIcon, AlertTriangle, ArrowLeft, Loader2,
+} from 'lucide-react'
+import ParentHeaderBar from '@/components/ParentHeaderBar'
+import { PARENT_COLORS } from '@/lib/parentTheme'
 
 // ── Types ──────────────────────────────────────────────────────
 interface Subject {
@@ -114,17 +120,17 @@ function StyleControl() {
   if (!loaded) return null
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-2">
-      <label className="text-xs text-gray-400 font-semibold shrink-0">Preferred style</label>
+    <div className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-4 flex items-center gap-2">
+      <label className="text-xs text-[#9aa6a3] font-semibold shrink-0">Preferred style</label>
       <input
         type="text"
         value={style}
         onChange={e => setStyle(e.target.value)}
         placeholder="e.g. use real-world sports examples, keep wording short..."
-        className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
+        className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]"
       />
       <button onClick={save} disabled={saving}
-        className="shrink-0 px-3 py-1.5 text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap">
+        className="shrink-0 px-3 py-1.5 text-xs font-semibold text-[#7a8f8b] border border-[rgba(15,118,110,.14)] rounded-lg hover:bg-[#F7F5F0] disabled:opacity-50 whitespace-nowrap">
         {saving ? 'Saving…' : saved ? '✅ Saved' : 'Save style'}
       </button>
     </div>
@@ -268,16 +274,16 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-emerald-100 p-5">
+    <div className="bg-white rounded-2xl border border-[#0F766E33] p-5">
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-lg">✨</span>
-        <h2 className="text-sm font-black text-gray-900">Generate New Questions</h2>
-        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">AI</span>
+        <Sparkles size={16} color={PARENT_COLORS.primary} />
+        <h2 className="text-sm font-black text-[#1f2a28]">Generate New Questions</h2>
+        <span className="text-xs bg-[#E4F3F1] text-[#0F766E] px-2 py-0.5 rounded-full font-semibold">AI</span>
       </div>
 
       <div className="flex flex-wrap gap-3 items-end mb-4">
         <div>
-          <label className="text-xs text-gray-400 font-semibold block mb-1">Subject</label>
+          <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Subject</label>
           <select value={subjectSlug} onChange={e => {
             const newSlug = e.target.value
             const s = subjects.find(x => x.slug === newSlug)
@@ -285,45 +291,45 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
             setTopicSlug('')
             if (s && (grade < s.min_grade || grade > s.max_grade)) setGrade(s.min_grade)
           }}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
+            className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]">
             {subjects.map(s => <option key={s.slug} value={s.slug}>{s.label_en}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-xs text-gray-400 font-semibold block mb-1">Grade</label>
+          <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Grade</label>
           <select value={grade} onChange={e => { setGrade(parseInt(e.target.value)); setTopicSlug('') }}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
+            className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]">
             {gradeOptions.map(g => <option key={g} value={g}>{g === 0 ? 'KG' : `Grade ${g}`}</option>)}
           </select>
         </div>
         <div className="min-w-48">
-          <label className="text-xs text-gray-400 font-semibold block mb-1">Topic</label>
+          <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Topic</label>
           <select value={topicSlug} onChange={e => setTopicSlug(e.target.value)} disabled={topics.length === 0}
-            className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:bg-gray-50 disabled:text-gray-400">
+            className="w-full px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33] disabled:bg-[#F7F5F0] disabled:text-[#9aa6a3]">
             <option value="">{topics.length === 0 ? 'No topics for this grade' : 'Select a topic...'}</option>
             {topics.map(t => <option key={t.slug} value={t.slug}>{t.title_en}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-xs text-gray-400 font-semibold block mb-1">Difficulty</label>
+          <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Difficulty</label>
           <select value={difficulty} onChange={e => setDifficulty(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
+            className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]">
             <option value="easy">Easy</option>
             <option value="medium">Medium</option>
             <option value="hard">Hard</option>
           </select>
         </div>
         <div>
-          <label className="text-xs text-gray-400 font-semibold block mb-1">Count</label>
+          <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Count</label>
           <input type="number" min={1} max={MAX_COUNT} value={count}
             onChange={e => setCount(Math.max(1, Math.min(MAX_COUNT, parseInt(e.target.value) || 1)))}
-            className="w-20 px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
+            className="w-20 px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]"
           />
         </div>
         <div>
-          <label className="text-xs text-gray-400 font-semibold block mb-1">Language</label>
+          <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Language</label>
           <select value={language} onChange={e => { languageTouched.current = true; setLanguage(e.target.value as 'en_only' | 'he_only' | 'bilingual') }}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
+            className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]">
             <option value="en_only">English</option>
             <option value="he_only">Hebrew</option>
             <option value="bilingual">Both</option>
@@ -333,54 +339,57 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
 
       <div className="flex flex-wrap gap-4 items-center mb-4">
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-400 font-semibold">Question types</span>
+          <span className="text-xs text-[#9aa6a3] font-semibold">Question types</span>
           {Q_TYPE_OPTIONS.map(opt => (
-            <label key={opt.value} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+            <label key={opt.value} className="flex items-center gap-1.5 text-sm text-[#1f2a28] cursor-pointer">
               <input type="checkbox" checked={qTypes.includes(opt.value)} onChange={() => toggleQType(opt.value)} />
               {opt.label}
             </label>
           ))}
         </div>
-        <label className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+        <label className="flex items-center gap-1.5 text-sm text-[#1f2a28] cursor-pointer">
           <input type="checkbox" checked={progressive} onChange={e => setProgressive(e.target.checked)} />
           Progressive difficulty
         </label>
       </div>
 
       <div className="mb-4">
-        <label className="text-xs text-gray-400 font-semibold block mb-1">Custom instructions (optional)</label>
+        <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Custom instructions (optional)</label>
         <textarea value={customPrompt} onChange={e => setCustomPrompt(e.target.value)}
           rows={2} placeholder="e.g. focus on word problems involving money..." dir="auto"
-          className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
+          className="w-full px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]"
         />
       </div>
 
       <div className="mb-4">
-        <label className="text-xs text-gray-400 font-semibold block mb-1">Reference file (optional)</label>
-        <p className="text-xs text-gray-400 mb-1.5">Upload a photo or PDF of a worksheet or textbook page — new questions will be modeled after its style, content, and difficulty.</p>
+        <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Reference file (optional)</label>
+        <p className="text-xs text-[#9aa6a3] mb-1.5">Upload a photo or PDF of a worksheet or textbook page — new questions will be modeled after its style, content, and difficulty.</p>
         {referenceFile ? (
-          <div className="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 w-fit">
-            <span>📎 {referenceFile.name} ({(referenceFile.size / 1024).toFixed(0)}KB)</span>
-            <button onClick={() => setReferenceFile(null)} className="text-gray-400 hover:text-gray-600 font-bold" aria-label="Remove file">✕</button>
+          <div className="flex items-center gap-2 text-sm text-[#1f2a28] bg-[#F7F5F0] border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 w-fit">
+            <Paperclip size={13} color={PARENT_COLORS.textMuted} />
+            <span>{referenceFile.name} ({(referenceFile.size / 1024).toFixed(0)}KB)</span>
+            <button onClick={() => setReferenceFile(null)} className="text-[#9aa6a3] hover:text-[#7a8f8b]" aria-label="Remove file"><X size={13} /></button>
           </div>
         ) : (
           <input type="file" accept="image/jpeg,image/png,application/pdf" onChange={handleFileChange}
-            className="text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:text-emerald-700 file:text-xs file:font-semibold file:cursor-pointer hover:file:bg-emerald-100 cursor-pointer"
+            className="text-sm text-[#7a8f8b] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-[#E4F3F1] file:text-[#0F766E] file:text-xs file:font-semibold file:cursor-pointer hover:file:bg-[#0F766E22] cursor-pointer"
           />
         )}
-        {fileError && <p className="text-xs text-red-600 mt-1">{fileError}</p>}
+        {fileError && <p className="text-xs text-[#DC2626] mt-1">{fileError}</p>}
       </div>
 
       <button onClick={generate} disabled={generating || !topicSlug || qTypes.length === 0}
         className={`px-5 py-2 text-white font-bold text-sm rounded-xl transition-colors inline-flex items-center gap-2 ${
-          generating ? 'bg-emerald-500 cursor-wait' : 'bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400'
+          generating ? 'bg-[#0F766E] cursor-wait' : 'bg-[#0F766E] hover:bg-[#0B5C56] disabled:bg-[#f0efe9] disabled:text-[#9aa6a3]'
         }`}>
-        {generating && <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />}
-        {generating ? 'Generating…' : '✨ Generate'}
+        {generating
+          ? <><Loader2 size={14} className="animate-spin" /> Generating…</>
+          : <><Sparkles size={14} /> Generate</>
+        }
       </button>
 
       {result && (
-        <p className="mt-3 text-xs font-semibold" style={{ color: result.startsWith('✅') ? '#065F46' : '#991B1B' }}>
+        <p className="mt-3 text-xs font-semibold" style={{ color: result.startsWith('✅') ? PARENT_COLORS.primary : PARENT_COLORS.danger }}>
           {result}
         </p>
       )}
@@ -393,22 +402,22 @@ function HistoryList({ rows, onReuse }: { rows: GenerationRow[]; onReuse: (row: 
   if (rows.length === 0) return null
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5">
-      <h2 className="text-sm font-black text-gray-900 mb-3">Recent Generations</h2>
-      <div className="flex flex-col divide-y divide-gray-50">
+    <div className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-5">
+      <h2 className="text-sm font-black text-[#1f2a28] mb-3">Recent Generations</h2>
+      <div className="flex flex-col divide-y divide-[#f0efe9]">
         {rows.map(row => (
           <div key={row.id} className="flex items-center justify-between gap-3 py-3">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-800 truncate">
+              <p className="text-sm font-semibold text-[#374151] truncate">
                 {row.topic_slug} · Grade {row.grade} · {row.difficulty} · {row.q_types.join(', ')}
               </p>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-[#9aa6a3] mt-0.5">
                 {new Date(row.created_at).toLocaleString()} · {row.question_ids.length}/{row.count} saved
-                {row.error && <span className="text-amber-600"> · {row.error}</span>}
+                {row.error && <span className="text-[#B7862F]"> · {row.error}</span>}
               </p>
             </div>
             <button onClick={() => onReuse(row)}
-              className="shrink-0 text-xs font-semibold text-emerald-600 border border-emerald-200 rounded-lg px-3 py-1.5 hover:bg-emerald-50">
+              className="shrink-0 text-xs font-semibold text-[#0F766E] border border-[#0F766E33] rounded-lg px-3 py-1.5 hover:bg-[#E4F3F1]">
               Make more like this
             </button>
           </div>
@@ -475,65 +484,65 @@ function PendingReviewList({ active }: { active: boolean }) {
     setApprovingAll(false)
   }
 
-  if (loading) return <p className="text-sm text-gray-400">Loading…</p>
+  if (loading) return <p className="text-sm text-[#9aa6a3]">Loading…</p>
   if (questions.length === 0) {
-    return <p className="text-sm text-gray-400">No pending questions — everything's been reviewed.</p>
+    return <p className="text-sm text-[#9aa6a3]">No pending questions — everything's been reviewed.</p>
   }
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
         <button onClick={approveAll} disabled={approvingAll || busyId !== null}
-          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
-          {approvingAll ? 'Approving…' : `✓ Approve All (${questions.length})`}
+          className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+          <Check size={12} /> {approvingAll ? 'Approving…' : `Approve All (${questions.length})`}
         </button>
       </div>
       {questions.map(q => (
-        <div key={q.id} className="bg-white rounded-2xl border border-gray-100 p-5">
+        <div key={q.id} className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-5">
           <div className="flex items-center justify-between gap-3 mb-2">
-            <p className="text-xs text-gray-400 font-semibold">
+            <p className="text-xs text-[#9aa6a3] font-semibold">
               {q.topics?.subjects?.label_en || '—'} · {q.topics?.title_en || '—'} · Grade {q.topics?.grade ?? '—'} · {q.difficulty} · {q.q_type}
             </p>
-            <p className="text-xs text-gray-300 shrink-0">{new Date(q.created_at).toLocaleString()}</p>
+            <p className="text-xs text-[#9aa6a3] shrink-0">{new Date(q.created_at).toLocaleString()}</p>
           </div>
 
-          <p className="text-sm font-semibold text-gray-900 mb-1"><FractionText text={q.prompt_en} /></p>
-          {isDistinctHe(q.prompt_he, q.prompt_en) && <p className="text-sm text-gray-500 mb-2" dir="rtl"><FractionText text={q.prompt_he} /></p>}
+          <p className="text-sm font-semibold text-[#1f2a28] mb-1"><FractionText text={q.prompt_en} /></p>
+          {isDistinctHe(q.prompt_he, q.prompt_en) && <p className="text-sm text-[#7a8f8b] mb-2" dir="rtl"><FractionText text={q.prompt_he} /></p>}
 
           {(() => {
             const isRevealed = revealed.has(q.id)
             return (
               <>
                 {q.options ? (
-                  <ul className="text-sm text-gray-700 mb-2 flex flex-col gap-0.5">
+                  <ul className="text-sm text-[#374151] mb-2 flex flex-col gap-0.5">
                     {q.options.map((opt, i) => (
-                      <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-emerald-700' : ''}>
+                      <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-[#0F766E]' : ''}>
                         {opt.label}. <FractionText text={opt.value_en} />
-                        {isDistinctHe(opt.value_he, opt.value_en) && <span className="text-gray-400" dir="rtl"> · <FractionText text={opt.value_he} /></span>}
+                        {isDistinctHe(opt.value_he, opt.value_en) && <span className="text-[#9aa6a3]" dir="rtl"> · <FractionText text={opt.value_he} /></span>}
                         {isRevealed && opt.isCorrect ? ' ✓' : ''}
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-gray-700 mb-2">
-                    <span className="text-gray-400">Answer:</span>{' '}
-                    {isRevealed ? <FractionText text={q.correct_answer} /> : <span className="text-gray-300 italic">hidden</span>}
+                  <p className="text-sm text-[#374151] mb-2">
+                    <span className="text-[#9aa6a3]">Answer:</span>{' '}
+                    {isRevealed ? <FractionText text={q.correct_answer} /> : <span className="text-[#c9cfc9] italic">hidden</span>}
                   </p>
                 )}
 
                 {isRevealed && q.hint_en && (
-                  <p className="text-xs text-gray-400 mb-1">
+                  <p className="text-xs text-[#9aa6a3] mb-1">
                     Hint: <FractionText text={q.hint_en} />
                     {isDistinctHe(q.hint_he, q.hint_en) && <span dir="rtl"> · <FractionText text={q.hint_he} /></span>}
                   </p>
                 )}
                 {isRevealed && q.explanation_en && (
-                  <p className="text-xs text-gray-400 mb-3">Explanation: <FractionText text={q.explanation_en} /></p>
+                  <p className="text-xs text-[#9aa6a3] mb-3">Explanation: <FractionText text={q.explanation_en} /></p>
                 )}
 
                 <button onClick={() => toggleReveal(q.id)}
-                  className="text-xs font-semibold text-indigo-500 hover:text-indigo-700 mb-3 inline-block">
-                  {isRevealed ? '🙈 Hide answer & hints' : '👁 Reveal answer & hints'}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-[#7C6BAE] hover:text-[#5f5388] mb-3">
+                  {isRevealed ? <><EyeOff size={12} /> Hide answer & hints</> : <><Eye size={12} /> Reveal answer & hints</>}
                 </button>
               </>
             )
@@ -541,12 +550,12 @@ function PendingReviewList({ active }: { active: boolean }) {
 
           <div className="flex gap-2">
             <button onClick={() => act(q.id, 'approve')} disabled={busyId === q.id || approvingAll}
-              className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
-              ✓ Approve
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+              <Check size={12} /> Approve
             </button>
             <button onClick={() => act(q.id, 'reject')} disabled={busyId === q.id || approvingAll}
-              className="px-4 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50 font-bold text-xs rounded-lg transition-colors">
-              ✕ Reject
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#FFF5F5] hover:bg-[#FFE5E5] text-[#DC2626] disabled:opacity-50 font-bold text-xs rounded-lg transition-colors">
+              <X size={12} /> Reject
             </button>
           </div>
         </div>
@@ -781,39 +790,39 @@ function LibraryPanel({ active }: { active: boolean }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
+      <div className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-5">
         <div className="flex flex-wrap gap-3 items-end">
           <div>
-            <label className="text-xs text-gray-400 font-semibold block mb-1">Subject</label>
+            <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Subject</label>
             <select value={subjectSlug} onChange={e => {
               const newSlug = e.target.value
               const s = subjects.find(x => x.slug === newSlug)
               setSubjectSlug(newSlug)
               if (s && (grade < s.min_grade || grade > s.max_grade)) setGrade(s.min_grade)
             }}
-              className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
               {subjects.map(s => <option key={s.slug} value={s.slug}>{s.label_en}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-400 font-semibold block mb-1">Grade</label>
+            <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Grade</label>
             <select value={grade} onChange={e => setGrade(parseInt(e.target.value))}
-              className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
               {gradeOptions.map(g => <option key={g} value={g}>{g === 0 ? 'KG' : `Grade ${g}`}</option>)}
             </select>
           </div>
           <div className="min-w-48">
-            <label className="text-xs text-gray-400 font-semibold block mb-1">Topic</label>
+            <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Topic</label>
             <select value={topicSlug} onChange={e => setTopicSlug(e.target.value)} disabled={topics.length === 0}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:bg-gray-50 disabled:text-gray-400">
+              className="w-full px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33] disabled:bg-[#F7F5F0] disabled:text-[#9aa6a3]">
               <option value="">All topics</option>
               {topics.map(t => <option key={t.slug} value={t.slug}>{t.title_en}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-400 font-semibold block mb-1">Difficulty</label>
+            <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Difficulty</label>
             <select value={difficulty} onChange={e => setDifficulty(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
               <option value="">All</option>
               <option value="easy">Easy</option>
               <option value="medium">Medium</option>
@@ -824,20 +833,20 @@ function LibraryPanel({ active }: { active: boolean }) {
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-400">Loading…</p>
+        <p className="text-sm text-[#9aa6a3]">Loading…</p>
       ) : questions.length === 0 ? (
-        <p className="text-sm text-gray-400">No approved questions match these filters yet.</p>
+        <p className="text-sm text-[#9aa6a3]">No approved questions match these filters yet.</p>
       ) : (
         <>
           <div className="flex justify-between items-center">
-            <span className="text-xs text-gray-400 font-semibold">{questions.length} question{questions.length === 1 ? '' : 's'}</span>
+            <span className="text-xs text-[#9aa6a3] font-semibold">{questions.length} question{questions.length === 1 ? '' : 's'}</span>
             <div className="flex gap-2">
               <button onClick={() => { showAssignResult(null); setSelected(new Set(questions.map(q => q.id))) }}
-                className="text-xs font-semibold text-indigo-600 border border-indigo-200 rounded-lg px-3 py-1.5 hover:bg-indigo-50">
+                className="text-xs font-semibold text-[#7C6BAE] border border-[#7C6BAE33] rounded-lg px-3 py-1.5 hover:bg-[#EFE9FA]">
                 Select all shown
               </button>
               <button onClick={() => { showAssignResult(null); setSelected(new Set()) }} disabled={selected.size === 0}
-                className="text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 disabled:opacity-50">
+                className="text-xs font-semibold text-[#7a8f8b] border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-1.5 hover:bg-[#F7F5F0] disabled:opacity-50">
                 Clear selection
               </button>
             </div>
@@ -848,48 +857,48 @@ function LibraryPanel({ active }: { active: boolean }) {
               const isRevealed = revealed.has(q.id)
               const isSelected = selected.has(q.id)
               return (
-                <div key={q.id} className={`bg-white rounded-2xl border p-5 ${isSelected ? 'border-indigo-300 ring-1 ring-indigo-100' : 'border-gray-100'}`}>
+                <div key={q.id} className={`bg-white rounded-2xl border p-5 ${isSelected ? 'border-[#7C6BAE99] ring-1 ring-[#7C6BAE33]' : 'border-[rgba(15,118,110,.14)]'}`}>
                   <div className="flex items-start gap-3">
                     <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(q.id)}
-                      className="mt-1 w-4 h-4 accent-indigo-600 cursor-pointer shrink-0" />
+                      className="mt-1 w-4 h-4 accent-[#7C6BAE] cursor-pointer shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-gray-400 font-semibold mb-2">
+                      <p className="text-xs text-[#9aa6a3] font-semibold mb-2">
                         {q.topics?.subjects?.label_en || '—'} · {q.topics?.title_en || '—'} · Grade {q.topics?.grade ?? '—'} · {q.difficulty} · {q.q_type}
                       </p>
 
-                      <p className="text-sm font-semibold text-gray-900 mb-1"><FractionText text={q.prompt_en} /></p>
-                      {isDistinctHe(q.prompt_he, q.prompt_en) && <p className="text-sm text-gray-500 mb-2" dir="rtl"><FractionText text={q.prompt_he} /></p>}
+                      <p className="text-sm font-semibold text-[#1f2a28] mb-1"><FractionText text={q.prompt_en} /></p>
+                      {isDistinctHe(q.prompt_he, q.prompt_en) && <p className="text-sm text-[#7a8f8b] mb-2" dir="rtl"><FractionText text={q.prompt_he} /></p>}
 
                       {q.options ? (
-                        <ul className="text-sm text-gray-700 mb-2 flex flex-col gap-0.5">
+                        <ul className="text-sm text-[#374151] mb-2 flex flex-col gap-0.5">
                           {q.options.map((opt, i) => (
-                            <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-emerald-700' : ''}>
+                            <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-[#0F766E]' : ''}>
                               {opt.label}. <FractionText text={opt.value_en} />
-                              {isDistinctHe(opt.value_he, opt.value_en) && <span className="text-gray-400" dir="rtl"> · <FractionText text={opt.value_he} /></span>}
+                              {isDistinctHe(opt.value_he, opt.value_en) && <span className="text-[#9aa6a3]" dir="rtl"> · <FractionText text={opt.value_he} /></span>}
                               {isRevealed && opt.isCorrect ? ' ✓' : ''}
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <p className="text-sm text-gray-700 mb-2">
-                          <span className="text-gray-400">Answer:</span>{' '}
-                          {isRevealed ? <FractionText text={q.correct_answer} /> : <span className="text-gray-300 italic">hidden</span>}
+                        <p className="text-sm text-[#374151] mb-2">
+                          <span className="text-[#9aa6a3]">Answer:</span>{' '}
+                          {isRevealed ? <FractionText text={q.correct_answer} /> : <span className="text-[#c9cfc9] italic">hidden</span>}
                         </p>
                       )}
 
                       {isRevealed && q.hint_en && (
-                        <p className="text-xs text-gray-400 mb-1">
+                        <p className="text-xs text-[#9aa6a3] mb-1">
                           Hint: <FractionText text={q.hint_en} />
                           {isDistinctHe(q.hint_he, q.hint_en) && <span dir="rtl"> · <FractionText text={q.hint_he} /></span>}
                         </p>
                       )}
                       {isRevealed && q.explanation_en && (
-                        <p className="text-xs text-gray-400 mb-1">Explanation: <FractionText text={q.explanation_en} /></p>
+                        <p className="text-xs text-[#9aa6a3] mb-1">Explanation: <FractionText text={q.explanation_en} /></p>
                       )}
 
                       <button onClick={() => toggleReveal(q.id)}
-                        className="text-xs font-semibold text-indigo-500 hover:text-indigo-700 inline-block">
-                        {isRevealed ? '🙈 Hide answer & hints' : '👁 Reveal answer & hints'}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-[#7C6BAE] hover:text-[#5f5388]">
+                        {isRevealed ? <><EyeOff size={12} /> Hide answer & hints</> : <><Eye size={12} /> Reveal answer & hints</>}
                       </button>
                     </div>
                   </div>
@@ -901,72 +910,72 @@ function LibraryPanel({ active }: { active: boolean }) {
       )}
 
       {selected.size > 0 && (
-        <div className="sticky bottom-4 bg-white rounded-2xl border border-indigo-200 shadow-lg p-4 flex flex-wrap items-center gap-3">
-          <span className="text-sm font-black text-gray-900 shrink-0">{selected.size} selected</span>
+        <div className="sticky bottom-4 bg-white rounded-2xl border border-[#7C6BAE4d] shadow-lg p-4 flex flex-wrap items-center gap-3">
+          <span className="text-sm font-black text-[#1f2a28] shrink-0">{selected.size} selected</span>
 
           <select value={childId} onChange={e => setChildId(e.target.value)}
-            className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
+            className="px-3 py-1.5 text-xs rounded-lg border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
             {children.map(c => <option key={c.id} value={c.id}>{c.display_name} (Grade {c.grade === 0 ? 'K' : c.grade})</option>)}
           </select>
 
           <select value={wsType} onChange={e => setWsType(e.target.value as any)}
-            className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
+            className="px-3 py-1.5 text-xs rounded-lg border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
             <option value="practice">Practice</option>
             <option value="quiz">Quiz</option>
             <option value="exam">Exam</option>
           </select>
 
           <select value={langMode} onChange={e => setLangMode(e.target.value as any)}
-            className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300">
+            className="px-3 py-1.5 text-xs rounded-lg border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
             <option value="en_only">English</option>
             <option value="bilingual">Both</option>
             <option value="he_only">Hebrew</option>
           </select>
 
-          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-[#374151] cursor-pointer">
             <input type="checkbox" checked={answerKey} onChange={e => setAnswerKey(e.target.checked)} /> Answer key
           </label>
-          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-[#374151] cursor-pointer">
             <input type="checkbox" checked={includeHints} onChange={e => setIncludeHints(e.target.checked)} /> Hints
           </label>
-          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-[#374151] cursor-pointer">
             <input type="checkbox" checked={solutionSteps} onChange={e => setSolutionSteps(e.target.checked)} /> Steps
           </label>
 
           {gradeMismatch && (
-            <div className="basis-full text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
-              ⚠️ {selectedChild!.display_name} is Grade {selectedChild!.grade === 0 ? 'K' : selectedChild!.grade} — you're assigning Grade {grade === 0 ? 'K' : grade} content.
+            <div className="basis-full flex items-center gap-1.5 text-xs font-semibold text-[#B7862F] bg-[#FFF3D6] border border-[#E0A92733] rounded-lg px-3 py-1.5">
+              <AlertTriangle size={12} /> {selectedChild!.display_name} is Grade {selectedChild!.grade === 0 ? 'K' : selectedChild!.grade} — you're assigning Grade {grade === 0 ? 'K' : grade} content.
             </div>
           )}
 
           <div className="ml-auto flex gap-2 shrink-0">
             <button onClick={assignToChild} disabled={!childId || assigning}
-              className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
-              {assigning ? 'Assigning…' : `🎯 Assign to Child`}
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+              <UserPlus size={12} /> {assigning ? 'Assigning…' : `Assign to Child`}
             </button>
             <button onClick={createWorksheet} disabled={!childId}
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
-              📄 Create Worksheet from {selected.size} Selected
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#7C6BAE] hover:bg-[#5f5388] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+              <FileText size={12} /> Create Worksheet from {selected.size} Selected
             </button>
             <button onClick={() => setShowNotebookPicker(v => !v)}
-              className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors">
-              🗂️ Add to Notebook Section
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0F766E] hover:bg-[#0B5C56] text-white font-bold text-xs rounded-lg transition-colors">
+              <NotebookIcon size={12} /> Add to Notebook Section
             </button>
           </div>
 
           {showNotebookPicker && (
-            <div className="basis-full flex flex-wrap items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-lg p-3">
+            <div className="basis-full flex flex-wrap items-center gap-2 bg-[#E4F3F1] border border-[#0F766E33] rounded-lg p-3">
               <select value={notebookSectionId} onChange={e => { setNotebookSectionId(e.target.value); setNewSectionTitle('') }}
-                className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                className="px-3 py-1.5 text-xs rounded-lg border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]">
                 <option value="">— choose a section —</option>
                 {notebookSections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
               </select>
-              <span className="text-xs text-gray-400">or</span>
+              <span className="text-xs text-[#9aa6a3]">or</span>
               <input value={newSectionTitle} onChange={e => { setNewSectionTitle(e.target.value); setNotebookSectionId('') }}
                 placeholder="New section title"
-                className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300" />
+                className="px-3 py-1.5 text-xs rounded-lg border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]" />
               <button onClick={addToNotebookSection} disabled={addingToNotebook || (!notebookSectionId && !newSectionTitle.trim())}
-                className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+                className="px-4 py-1.5 bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
                 {addingToNotebook ? 'Adding…' : `Add ${selected.size} Question${selected.size === 1 ? '' : 's'}`}
               </button>
             </div>
@@ -975,7 +984,7 @@ function LibraryPanel({ active }: { active: boolean }) {
       )}
 
       {assignResult && (
-        <div className={`sticky bottom-4 rounded-xl border p-3 text-xs font-semibold ${assignResult.ok ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+        <div className={`sticky bottom-4 rounded-xl border p-3 text-xs font-semibold ${assignResult.ok ? 'bg-[#E4F3F1] border-[#0F766E33] text-[#0F766E]' : 'bg-[#FFF5F5] border-[#FEE2E2] text-[#DC2626]'}`}>
           {assignResult.message}
         </div>
       )}
@@ -998,27 +1007,32 @@ export default function QuestionsPage() {
   useEffect(() => { loadHistory() }, [loadHistory])
 
   return (
-    <div className="min-h-screen bg-gray-50 font-[Nunito]">
-      <div className="bg-white border-b border-gray-100 px-6 py-4 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          <h1 className="text-xl font-black text-gray-900">❓ Question Generator</h1>
+    <div className="min-h-screen bg-[#F7F5F0] font-[Manrope]">
+      <ParentHeaderBar
+        center={<span className="text-sm font-semibold text-[#9aa6a3]">/ AI Questions</span>}
+        right={
           <button onClick={() => window.location.href = '/dashboard'}
-            className="text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">
-            ← Dashboard
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#7a8f8b] border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-1.5 hover:bg-[#F7F5F0]">
+            <ArrowLeft size={12} /> Dashboard
           </button>
-        </div>
-        <div className="max-w-4xl mx-auto flex gap-2 mt-3">
+        }
+      />
+      <div className="bg-white border-b border-[rgba(15,118,110,.14)] px-6 py-4 sticky top-16 z-10">
+        <div className="max-w-4xl mx-auto flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-xl font-extrabold text-[#1f2a28] mr-2">
+            <Sparkles size={18} color={PARENT_COLORS.primary} /> AI Questions
+          </h1>
           <button onClick={() => setTab('generate')}
-            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'generate' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'generate' ? 'bg-[#0F766E] text-white' : 'text-[#7a8f8b] hover:bg-[#F7F5F0]'}`}>
             Generate
           </button>
           <button onClick={() => setTab('pending')}
-            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'pending' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'pending' ? 'bg-[#0F766E] text-white' : 'text-[#7a8f8b] hover:bg-[#F7F5F0]'}`}>
             Pending Review
           </button>
           <button onClick={() => setTab('library')}
-            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'library' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
-            📚 Library
+            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'library' ? 'bg-[#0F766E] text-white' : 'text-[#7a8f8b] hover:bg-[#F7F5F0]'}`}>
+            <BookOpen size={12} /> Library
           </button>
         </div>
       </div>
