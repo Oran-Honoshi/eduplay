@@ -66,6 +66,39 @@ function CurriculumDiscoveryCard({ section }: { section: SectionDetail }) {
   )
 }
 
+// ── Secondary discovery card ─────────────────────────────────────
+// Count-only cross-family signal (checkpoint 7): renders nothing at all
+// below the API's own suppression threshold — no "0 matches" state, since
+// that would still leak "you're below the threshold" information the
+// endpoint is designed to hide.
+function SecondaryDiscoveryCard({ section }: { section: SectionDetail }) {
+  const [count, setCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    const hasSignal = !!(section.chapter_name || section.subcategory_name || (section.tags && section.tags.length > 0))
+    if (!hasSignal) { setCount(null); return }
+
+    const params = new URLSearchParams()
+    if (section.chapter_name) params.set('chapterName', section.chapter_name)
+    if (section.subcategory_name) params.set('subcategoryName', section.subcategory_name)
+    if (section.tags && section.tags.length > 0) params.set('tags', section.tags.join(','))
+
+    let cancelled = false
+    fetch(`/api/notebook/discovery?${params.toString()}`)
+      .then(r => r.json())
+      .then(data => { if (!cancelled) setCount(typeof data.count === 'number' ? data.count : null) })
+    return () => { cancelled = true }
+  }, [section.chapter_name, section.subcategory_name, section.tags])
+
+  if (!count || count <= 0) return null
+
+  return (
+    <div className="bg-[#FFF3D6] border border-[#E0A92733] rounded-2xl p-4 text-sm text-[#B7862F]">
+      <strong>{count}</strong> other families have similar notebook content for this chapter, subcategory, and tags.
+    </div>
+  )
+}
+
 // ── File gallery ──────────────────────────────────────────────
 function FileGallery({ sectionId, files, onChanged }: { sectionId: string; files: FileEntry[]; onChanged: () => void }) {
   const [uploading, setUploading] = useState(false)
@@ -382,6 +415,8 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
         {section && (
           <>
             {section.topic_id && <CurriculumDiscoveryCard section={section} />}
+
+            <SecondaryDiscoveryCard section={section} />
 
             <FileGallery sectionId={params.id} files={files} onChanged={load} />
 
