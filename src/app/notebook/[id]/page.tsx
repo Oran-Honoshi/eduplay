@@ -4,6 +4,7 @@ import { createBrowserClient } from '@/lib/supabase'
 import { ArrowLeft, Plus, FileText, Trash2, Unlink, Save, BookOpen, Notebook as NotebookIcon } from 'lucide-react'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import { PARENT_COLORS } from '@/lib/parentTheme'
+import { ParentModal, ParentModalFooter } from '@/components/ParentModal'
 
 const supabase = createBrowserClient()
 
@@ -305,6 +306,7 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -376,11 +378,11 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
   }
 
   const remove = async () => {
-    if (!confirm('Delete this section? This cannot be undone.')) return
     setDeleting(true)
     const res = await fetch(`/api/notebook/sections/${params.id}`, { method: 'DELETE' })
     if (res.ok) { window.location.href = '/notebook'; return }
     setDeleting(false)
+    setConfirmingDelete(false)
     const data = await res.json()
     setSaveError(data.error || 'Failed to delete')
   }
@@ -477,7 +479,7 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
                   className="flex items-center gap-1.5 text-sm font-bold text-white bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 rounded-xl px-4 py-2">
                   <Save size={13} /> {saving ? 'Saving…' : 'Save'}
                 </button>
-                <button onClick={remove} disabled={deleting}
+                <button onClick={() => setConfirmingDelete(true)} disabled={deleting}
                   className="flex items-center gap-1.5 text-sm font-bold text-[#DC2626] hover:bg-[#FFF5F5] disabled:opacity-50 rounded-xl px-4 py-2">
                   <Trash2 size={13} /> {deleting ? 'Deleting…' : 'Delete Section'}
                 </button>
@@ -486,6 +488,24 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
           </>
         )}
       </div>
+      {confirmingDelete && (
+        <ParentModal
+          variant="danger"
+          eyebrowText="Delete section"
+          title={`Delete "${section?.title}"?`}
+          description="This removes the section, its files, and its linked questions. This cannot be undone."
+          onCancel={() => setConfirmingDelete(false)}
+        >
+          <ParentModalFooter
+            variant="danger"
+            confirmLabel="Delete"
+            confirmingLabel="Deleting…"
+            confirming={deleting}
+            onConfirm={remove}
+            onCancel={() => setConfirmingDelete(false)}
+          />
+        </ParentModal>
+      )}
     </div>
   )
 }

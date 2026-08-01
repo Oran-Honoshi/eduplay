@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import { PARENT_COLORS, PARENT_FONTS, CHILD_AVATAR_COLORS } from '@/lib/parentTheme'
+import { ParentModal, ParentModalFooter } from '@/components/ParentModal'
 
 function ParentsScreen({ familyId, showToast }: any) {
   const [parents, setParents]   = useState<any[]>([])
@@ -17,6 +18,8 @@ function ParentsScreen({ familyId, showToast }: any) {
   const [newPass, setNewPass]   = useState('')
   const [newEmoji, setNewEmoji] = useState('👤')
   const [saving, setSaving]     = useState(false)
+  const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null)
+  const [removing, setRemoving] = useState(false)
 
   const PARENT_EMOJIS = ['👤','👨','👩','👴','👵','🧑','👨‍💼','👩‍💼','🧔','👱']
 
@@ -53,10 +56,13 @@ function ParentsScreen({ familyId, showToast }: any) {
     setSaving(false)
   }
 
-  async function removeParent(parentId: string, name: string) {
-    if (!confirm(`Remove ${name} as a parent?`)) return
-    await fetch(`/api/parents?parentId=${parentId}`, { method:'DELETE' })
-    showToast('🗑️', `${name} removed`)
+  async function confirmRemoveParent() {
+    if (!removeTarget) return
+    setRemoving(true)
+    await fetch(`/api/parents?parentId=${removeTarget.id}`, { method:'DELETE' })
+    setRemoving(false)
+    showToast('🗑️', `${removeTarget.name} removed`)
+    setRemoveTarget(null)
     loadParents()
   }
 
@@ -107,7 +113,7 @@ function ParentsScreen({ familyId, showToast }: any) {
                 <div style={{ fontSize:'12px', color:PARENT_COLORS.textMuted }}>{parent.email || 'No email set'}</div>
               </div>
               {i > 0 && (
-                <button onClick={() => removeParent(parent.id, parent.name)}
+                <button onClick={() => setRemoveTarget({ id: parent.id, name: parent.name })}
                   style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 12px', borderRadius:'50px', border:`1px solid ${PARENT_COLORS.dangerBorder}`, background:PARENT_COLORS.dangerLight, color:PARENT_COLORS.danger, fontWeight:700, fontSize:'12px', cursor:'pointer' }}>
                   <Trash2 size={12} /> Remove
                 </button>
@@ -160,6 +166,24 @@ function ParentsScreen({ familyId, showToast }: any) {
             </button>
           </div>
         </div>
+      )}
+      {removeTarget && (
+        <ParentModal
+          variant="danger"
+          eyebrowText="Remove parent"
+          title={`Remove ${removeTarget.name} as a parent?`}
+          description="They'll lose access to this family account. This cannot be undone."
+          onCancel={() => setRemoveTarget(null)}
+        >
+          <ParentModalFooter
+            variant="danger"
+            confirmLabel="Remove"
+            confirmingLabel="Removing…"
+            confirming={removing}
+            onConfirm={confirmRemoveParent}
+            onCancel={() => setRemoveTarget(null)}
+          />
+        </ParentModal>
       )}
     </div>
   )
