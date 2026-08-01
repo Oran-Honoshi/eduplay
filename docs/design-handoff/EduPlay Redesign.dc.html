@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Fredoka:wght@500;600;700&family=Baloo+2:wght@600;700&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#F7F5F0}
+a{color:#0F766E}a:hover{color:#0B5C56}
+::-webkit-scrollbar{width:8px;height:8px}
+</style>
+</helmet>
+
+<div style="font-family:Manrope,system-ui,sans-serif;background:#191d24;padding:10px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;color:#fff">
+<span style="font-size:10px;font-weight:800;letter-spacing:.08em;color:#8b93a8;text-transform:uppercase">Preview</span>
+<div style="display:flex;gap:4px">
+<button onClick="{{ setView_parent }}" style="border:none;cursor:pointer;font:600 12px Manrope,sans-serif;padding:6px 12px;border-radius:7px;background:{{ viewBtn.parent.bg }};color:{{ viewBtn.parent.color }}">Parent view</button>
+<button onClick="{{ setView_kid }}" style="border:none;cursor:pointer;font:600 12px Manrope,sans-serif;padding:6px 12px;border-radius:7px;background:{{ viewBtn.kid.bg }};color:{{ viewBtn.kid.color }}">Kid view</button>
+</div>
+<sc-if value="{{ isKid }}">
+<div style="display:flex;gap:4px;border-left:1px solid #333;padding-left:14px">
+<button onClick="{{ setKid_login }}" style="border:none;cursor:pointer;font:600 12px Manrope,sans-serif;padding:6px 10px;border-radius:7px;background:{{ kidBtn.login.bg }};color:{{ kidBtn.login.color }}">Login</button>
+<button onClick="{{ setKid_home }}" style="border:none;cursor:pointer;font:600 12px Manrope,sans-serif;padding:6px 10px;border-radius:7px;background:{{ kidBtn.home.bg }};color:{{ kidBtn.home.color }}">Home</button>
+<button onClick="{{ setKid_lesson }}" style="border:none;cursor:pointer;font:600 12px Manrope,sans-serif;padding:6px 10px;border-radius:7px;background:{{ kidBtn.lesson.bg }};color:{{ kidBtn.lesson.color }}">Lesson</button>
+<button onClick="{{ setKid_theme }}" style="border:none;cursor:pointer;font:600 12px Manrope,sans-serif;padding:6px 10px;border-radius:7px;background:{{ kidBtn.theme.bg }};color:{{ kidBtn.theme.color }}">Theme picker</button>
+<button onClick="{{ setKid_rewards }}" style="border:none;cursor:pointer;font:600 12px Manrope,sans-serif;padding:6px 10px;border-radius:7px;background:{{ kidBtn.rewards.bg }};color:{{ kidBtn.rewards.color }}">Rewards</button>
+</div>
+</sc-if>
+<div style="display:flex;gap:4px;border-left:1px solid #333;padding-left:14px;margin-inline-start:auto">
+<button onClick="{{ setLang_en }}" style="border:none;cursor:pointer;font:600 12px Manrope,sans-serif;padding:6px 10px;border-radius:7px;background:{{ langBtn.en.bg }};color:{{ langBtn.en.color }}">EN</button>
+<button onClick="{{ setLang_he }}" style="border:none;cursor:pointer;font:600 12px Manrope,sans-serif;padding:6px 10px;border-radius:7px;background:{{ langBtn.he.bg }};color:{{ langBtn.he.color }}">עברית</button>
+<button onClick="{{ setLang_bi }}" style="border:none;cursor:pointer;font:600 12px Manrope,sans-serif;padding:6px 10px;border-radius:7px;background:{{ langBtn.bi.bg }};color:{{ langBtn.bi.color }}">Bilingual</button>
+</div>
+</div>
+
+<div dir="{{ dir }}" style="min-height:100vh;background:#F7F5F0;color:#1f2a28">
+
+<sc-if value="{{ isParent }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;min-height:100vh">
+
+<div style="display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:64px;background:#fff;border-bottom:1px solid rgba(15,118,110,.14);flex-shrink:0">
+<div style="display:flex;align-items:center;gap:10px">
+<div style="width:32px;height:32px;border-radius:9px;background:#0F766E;display:flex;align-items:center;justify-content:center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+</div>
+<span style="font-family:Manrope,sans-serif;font-weight:800;font-size:17px;color:#1f2a28">Edu<span style="color:#0F766E">Play</span></span>
+</div>
+<div style="display:flex;gap:2px;flex-wrap:nowrap;overflow-x:auto;flex:1;min-width:0;margin:0 12px">
+<button onClick="{{ setTab_overview }}" style="border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font:600 12.5px Manrope,sans-serif;padding:8px 12px;border-radius:8px;background:{{ navStyle.overview.bg }};color:{{ navStyle.overview.color }}">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg>Overview</button>
+<button onClick="{{ setTab_progress }}" style="border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font:600 12.5px Manrope,sans-serif;padding:8px 12px;border-radius:8px;background:{{ navStyle.progress.bg }};color:{{ navStyle.progress.color }}">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 012-2h4v15"/><path d="M20 19V6a2 2 0 00-2-2h-4v15"/></svg>Progress</button>
+<button onClick="{{ setTab_worksheets }}" style="border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font:600 12.5px Manrope,sans-serif;padding:8px 12px;border-radius:8px;background:{{ navStyle.worksheets.bg }};color:{{ navStyle.worksheets.color }}">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 8h7M8.5 12h7M8.5 16h4"/></svg>Worksheets</button>
+<button onClick="{{ setTab_ai }}" style="border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font:600 12.5px Manrope,sans-serif;padding:8px 12px;border-radius:8px;background:{{ navStyle.ai.bg }};color:{{ navStyle.ai.color }}">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2-5.4 3.2 1.3-6-4.6-4.1 6.1-.6z"/></svg>AI Questions</button>
+<button onClick="{{ setTab_assignments }}" style="border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font:600 12.5px Manrope,sans-serif;padding:8px 12px;border-radius:8px;background:{{ navStyle.assignments.bg }};color:{{ navStyle.assignments.color }}">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 3.5h6v2H9z"/><path d="M9 11l2 2 4-4"/></svg>Assignments</button>
+<button onClick="{{ setTab_curriculum }}" style="border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font:600 12.5px Manrope,sans-serif;padding:8px 12px;border-radius:8px;background:{{ navStyle.curriculum.bg }};color:{{ navStyle.curriculum.color }}">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 016.5 2H12v20H6.5A2.5 2.5 0 014 19.5z"/><path d="M20 4.5A2.5 2.5 0 0017.5 2H12v20h5.5a2.5 2.5 0 002.5-2.5z"/></svg>Curriculum</button>
+<button onClick="{{ setTab_parents }}" style="border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font:600 12.5px Manrope,sans-serif;padding:8px 12px;border-radius:8px;background:{{ navStyle.parents.bg }};color:{{ navStyle.parents.color }}">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="18" cy="8" r="2.4"/><path d="M16.5 14.6c2.3.4 3.8 2.2 3.8 5.4"/></svg>Parents</button>
+<button onClick="{{ setTab_account }}" style="border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font:600 12.5px Manrope,sans-serif;padding:8px 12px;border-radius:8px;background:{{ navStyle.account.bg }};color:{{ navStyle.account.color }}">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.6 7.6 0 000-2l2-1.5-2-3.4-2.3.9a7.6 7.6 0 00-1.7-1L15 3.5h-4l-.4 2.5a7.6 7.6 0 00-1.7 1l-2.3-.9-2 3.4L6.6 11a7.6 7.6 0 000 2l-2 1.5 2 3.4 2.3-.9a7.6 7.6 0 001.7 1l.4 2.5h4l.4-2.5a7.6 7.6 0 001.7-1l2.3.9 2-3.4z"/></svg>Account</button>
+</div>
+<div style="display:flex;align-items:center;gap:14px">
+<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid rgba(15,118,110,.25);border-radius:20px;font:700 12px Manrope,sans-serif;color:#0F766E">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>252 days left</div>
+<div style="width:32px;height:32px;border-radius:50%;background:#0F766E;color:#fff;display:flex;align-items:center;justify-content:center;font:700 13px Manrope,sans-serif">H</div>
+</div>
+</div>
+
+<div style="display:flex;flex:1">
+<div style="width:216px;flex-shrink:0;background:#fff;border-inline-end:1px solid rgba(15,118,110,.14);padding:20px 16px;display:flex;flex-direction:column;gap:14px">
+<span style="font:700 10.5px Manrope,sans-serif;letter-spacing:.08em;color:#9aa6a3;text-transform:uppercase">Family</span>
+<div style="display:flex;flex-direction:column;gap:4px">
+<div style="display:flex;align-items:center;gap:10px;padding:8px 6px;border-radius:9px">
+<div style="width:34px;height:34px;border-radius:50%;background:#FFD8B8;display:flex;align-items:center;justify-content:center;font:700 13px Baloo 2,sans-serif;color:#B7862F">T</div>
+<div style="flex:1;min-width:0"><div style="font:700 12.5px Manrope,sans-serif;color:#1f2a28">Tamar</div><div style="font-size:10.5px;color:#9aa6a3">Grade 4</div></div>
+<svg width="26" height="26" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="#eee" stroke-width="4"/><circle cx="18" cy="18" r="15" fill="none" stroke="#0F766E" stroke-width="4" stroke-dasharray="70 94" stroke-linecap="round" transform="rotate(-90 18 18)"/></svg>
+</div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 6px;border-radius:9px">
+<div style="width:34px;height:34px;border-radius:50%;background:#BFE8DE;display:flex;align-items:center;justify-content:center;font:700 13px Baloo 2,sans-serif;color:#3F8E7F">L</div>
+<div style="flex:1;min-width:0"><div style="font:700 12.5px Manrope,sans-serif;color:#1f2a28">Lia</div><div style="font-size:10.5px;color:#9aa6a3">Grade 6</div></div>
+<svg width="26" height="26" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="#eee" stroke-width="4"/><circle cx="18" cy="18" r="15" fill="none" stroke="#E8A87C" stroke-width="4" stroke-dasharray="45 94" stroke-linecap="round" transform="rotate(-90 18 18)"/></circle></svg>
+</div>
+<div style="display:flex;align-items:center;gap:10px;padding:8px 6px;border-radius:9px">
+<div style="width:34px;height:34px;border-radius:50%;background:#DCD3F5;display:flex;align-items:center;justify-content:center;font:700 13px Baloo 2,sans-serif;color:#7C6BAE">T</div>
+<div style="flex:1;min-width:0"><div style="font:700 12.5px Manrope,sans-serif;color:#1f2a28">Tom</div><div style="font-size:10.5px;color:#9aa6a3">Kindergarten</div></div>
+<svg width="26" height="26" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="#eee" stroke-width="4"/><circle cx="18" cy="18" r="15" fill="none" stroke="#B7A6E0" stroke-width="4" stroke-dasharray="6 94" stroke-linecap="round" transform="rotate(-90 18 18)"/></circle></svg>
+</div>
+</div>
+<div style="margin-top:auto;border:1px solid rgba(15,118,110,.25);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;background:#F7F5F0">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c3 3 5 6 5 10a5 5 0 01-10 0c0-4 2-7 5-10z"/><path d="M9 16l-3 5M15 16l3 5"/></svg>
+<div style="font:700 12.5px Manrope,sans-serif;color:#1f2a28">Unlimited worksheets & 5 children</div>
+<button style="border:none;cursor:pointer;background:#0F766E;color:#fff;font:700 12px Manrope,sans-serif;padding:8px;border-radius:8px">Upgrade — $20/mo</button>
+</div>
+</div>
+
+<div style="flex:1;padding:28px;min-width:0">
+
+<sc-if value="{{ tabOverview }}">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+<div><div style="font:800 22px Manrope,sans-serif;color:#1f2a28">Good morning, Hila</div><div style="font-size:12.5px;color:#7a8f8b;margin-top:2px">Here's how your family is doing today</div></div>
+<div style="display:flex;gap:8px">
+<button style="border:1px solid rgba(15,118,110,.25);background:#fff;cursor:pointer;border-radius:9px;padding:9px 14px;font:700 12.5px Manrope,sans-serif;color:#0F766E;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v5h-5"/></svg>Refresh</button>
+<button style="border:none;background:#0F766E;cursor:pointer;border-radius:9px;padding:9px 16px;font:700 12.5px Manrope,sans-serif;color:#fff;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8.5 8h7M8.5 12h7"/></svg>Worksheet Builder</button>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px">
+<div style="background:#fff;border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px;min-width:0">
+<div style="width:36px;height:36px;flex-shrink:0;border-radius:9px;background:#FFF3D6;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="#E0A927" stroke="none"><path d="M12 2l2.9 6.6L22 9.2l-5 4.9L18.2 21 12 17.3 5.8 21 7 14.1l-5-4.9 7.1-.6z"/></svg></div>
+<div style="min-width:0"><div style="font:800 18px Manrope,sans-serif;color:#1f2a28">925</div><div style="font-size:10.5px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em">Total XP</div></div>
+</div>
+<div style="background:#fff;border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px;min-width:0">
+<div style="width:36px;height:36px;flex-shrink:0;border-radius:9px;background:#FFE3D9;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="#E8724C" stroke="none"><path d="M12 2c2 4-2 5-2 8a4 4 0 008 0c0-2-1-3-1-3s2 1 2 5a7 7 0 11-14 0c0-5 4-7 7-10z"/></svg></div>
+<div style="min-width:0"><div style="font:800 18px Manrope,sans-serif;color:#1f2a28">1</div><div style="font-size:10.5px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em">Active Streaks</div></div>
+</div>
+<div style="background:#fff;border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px;min-width:0">
+<div style="width:36px;height:36px;flex-shrink:0;border-radius:9px;background:#E4F3F1;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/></svg></div>
+<div style="min-width:0"><div style="font:800 18px Manrope,sans-serif;color:#1f2a28">2</div><div style="font-size:10.5px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em">Lessons Done</div></div>
+</div>
+<div style="background:#fff;border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px;min-width:0">
+<div style="width:36px;height:36px;flex-shrink:0;border-radius:9px;background:#EFE9FA;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C6BAE" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M5 19h14"/></svg></div>
+<div style="min-width:0"><div style="font:800 18px Manrope,sans-serif;color:#1f2a28">0</div><div style="font-size:10.5px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em">Downloads</div></div>
+</div>
+</div>
+<div style="display:flex;gap:16px;flex-wrap:wrap">
+<div style="flex:1;min-width:230px;background:#fff;border-radius:14px;padding:18px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="width:38px;height:38px;border-radius:50%;background:#FFD8B8;display:flex;align-items:center;justify-content:center;font:700 14px Baloo 2,sans-serif;color:#B7862F">T</div><div><div style="font:700 14px Manrope,sans-serif">Tamar</div><div style="font-size:11px;color:#9aa6a3">Grade 4 · 500 XP</div></div></div>
+<div style="display:flex;gap:16px;align-items:center;margin-bottom:12px">
+<svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="23" fill="none" stroke="#eee" stroke-width="6"/><circle cx="28" cy="28" r="23" fill="none" stroke="#0F766E" stroke-width="6" stroke-dasharray="108 144" stroke-linecap="round" transform="rotate(-90 28 28)"/><text x="28" y="33" text-anchor="middle" font-size="13" font-weight="800" fill="#1f2a28" font-family="Manrope">74%</text></svg>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;justify-content:space-between;font-size:10.5px;color:#7a8f8b"><span>Math</span><span>82%</span></div>
+<div style="height:5px;border-radius:3px;background:#eee"><div style="width:82%;height:100%;border-radius:3px;background:#0F766E"></div></div>
+<div style="display:flex;justify-content:space-between;font-size:10.5px;color:#7a8f8b"><span>Hebrew</span><span>60%</span></div>
+<div style="height:5px;border-radius:3px;background:#eee"><div style="width:60%;height:100%;border-radius:3px;background:#E8A87C"></div></div>
+</div>
+</div>
+<button style="width:100%;border:1px solid rgba(15,118,110,.3);background:transparent;color:#0F766E;font:700 12.5px Manrope,sans-serif;padding:9px;border-radius:9px;cursor:pointer">Continue Lesson</button>
+</div>
+<div style="flex:1;min-width:230px;background:#fff;border-radius:14px;padding:18px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="width:38px;height:38px;border-radius:50%;background:#BFE8DE;display:flex;align-items:center;justify-content:center;font:700 14px Baloo 2,sans-serif;color:#3F8E7F">L</div><div><div style="font:700 14px Manrope,sans-serif">Lia</div><div style="font-size:11px;color:#9aa6a3">Grade 6 · 425 XP</div></div></div>
+<div style="display:flex;gap:16px;align-items:center;margin-bottom:12px">
+<svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="23" fill="none" stroke="#eee" stroke-width="6"/><circle cx="28" cy="28" r="23" fill="none" stroke="#0F766E" stroke-width="6" stroke-dasharray="68 144" stroke-linecap="round" transform="rotate(-90 28 28)"/><text x="28" y="33" text-anchor="middle" font-size="13" font-weight="800" fill="#1f2a28" font-family="Manrope">48%</text></svg>
+<div style="flex:1;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;justify-content:space-between;font-size:10.5px;color:#7a8f8b"><span>Math</span><span>40%</span></div>
+<div style="height:5px;border-radius:3px;background:#eee"><div style="width:40%;height:100%;border-radius:3px;background:#0F766E"></div></div>
+<div style="display:flex;justify-content:space-between;font-size:10.5px;color:#7a8f8b"><span>Hebrew</span><span>—</span></div>
+<div style="height:5px;border-radius:3px;background:#eee"><div style="width:0%;height:100%;border-radius:3px;background:#E8A87C"></div></div>
+</div>
+</div>
+<button style="width:100%;border:1px solid rgba(15,118,110,.3);background:transparent;color:#0F766E;font:700 12.5px Manrope,sans-serif;padding:9px;border-radius:9px;cursor:pointer">Continue Lesson</button>
+</div>
+<div style="flex:1;min-width:230px;background:#fff;border-radius:14px;padding:18px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="width:38px;height:38px;border-radius:50%;background:#DCD3F5;display:flex;align-items:center;justify-content:center;font:700 14px Baloo 2,sans-serif;color:#7C6BAE">T</div><div><div style="font:700 14px Manrope,sans-serif">Tom</div><div style="font-size:11px;color:#9aa6a3">Kindergarten · 0 XP</div></div></div>
+<div style="display:flex;align-items:center;justify-content:center;height:56px;color:#9aa6a3;font-size:11.5px;text-align:center">No lessons started yet</div>
+<button style="width:100%;border:none;background:#0F766E;color:#fff;font:700 12.5px Manrope,sans-serif;padding:9px;border-radius:9px;cursor:pointer">Encourage Tom to begin</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tabProgress }}">
+<div style="font:800 20px Manrope,sans-serif;margin-bottom:18px">Progress Reports</div>
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="background:#fff;border-radius:14px;padding:18px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+<div style="display:flex;align-items:center;gap:10px"><div style="width:38px;height:38px;border-radius:50%;background:#FFD8B8;display:flex;align-items:center;justify-content:center;font:700 14px Baloo 2,sans-serif;color:#B7862F">T</div><div><div style="font:700 14px Manrope,sans-serif">Tamar</div><div style="font-size:11px;color:#9aa6a3">Grade 4 · 500 XP · 2 day streak</div></div></div>
+<button style="border:none;background:#0F766E;color:#fff;font:700 12px Manrope,sans-serif;padding:8px 14px;border-radius:8px;cursor:pointer">Start Lesson</button>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:grid;grid-template-columns:2fr 1fr 1.4fr;font-size:10.5px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em;padding:0 2px"><span>Topic</span><span>Status</span><span>Progress</span></div>
+<div style="display:grid;grid-template-columns:2fr 1fr 1.4fr;align-items:center;font-size:12.5px;padding:8px 2px;border-top:1px solid #f0efe9"><span style="font-weight:600">Whole Numbers & Place Value</span><span style="background:#E4F3F1;color:#3F8E7F;font-weight:700;font-size:10.5px;padding:3px 8px;border-radius:20px;width:fit-content">Done</span><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:5px;border-radius:3px;background:#eee"><div style="width:100%;height:100%;border-radius:3px;background:#0F766E"></div></div><span style="font-size:11px;color:#7a8f8b">100%</span></div></div>
+<div style="display:grid;grid-template-columns:2fr 1fr 1.4fr;align-items:center;font-size:12.5px;padding:8px 2px;border-top:1px solid #f0efe9"><span style="font-weight:600">Numbers to a Million</span><span style="background:#EFE9FA;color:#7C6BAE;font-weight:700;font-size:10.5px;padding:3px 8px;border-radius:20px;width:fit-content">In Progress</span><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:5px;border-radius:3px;background:#eee"><div style="width:20%;height:100%;border-radius:3px;background:#7C6BAE"></div></div><span style="font-size:11px;color:#7a8f8b">20%</span></div></div>
+<div style="display:grid;grid-template-columns:2fr 1fr 1.4fr;align-items:center;font-size:12.5px;padding:8px 2px;border-top:1px solid #f0efe9"><span style="font-weight:600">Fractions — Equal Parts</span><span style="background:#EFE9FA;color:#7C6BAE;font-weight:700;font-size:10.5px;padding:3px 8px;border-radius:20px;width:fit-content">In Progress</span><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:5px;border-radius:3px;background:#eee"><div style="width:40%;height:100%;border-radius:3px;background:#7C6BAE"></div></div><span style="font-size:11px;color:#7a8f8b">40%</span></div></div>
+</div>
+</div>
+<div style="background:#fff;border-radius:14px;padding:18px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+<div style="display:flex;align-items:center;gap:10px"><div style="width:38px;height:38px;border-radius:50%;background:#BFE8DE;display:flex;align-items:center;justify-content:center;font:700 14px Baloo 2,sans-serif;color:#3F8E7F">L</div><div><div style="font:700 14px Manrope,sans-serif">Lia</div><div style="font-size:11px;color:#9aa6a3">Grade 6 · 425 XP</div></div></div>
+<button style="border:none;background:#0F766E;color:#fff;font:700 12px Manrope,sans-serif;padding:8px 14px;border-radius:8px;cursor:pointer">Start Lesson</button>
+</div>
+<div style="display:grid;grid-template-columns:2fr 1fr 1.4fr;align-items:center;font-size:12.5px;padding:8px 2px;border-top:1px solid #f0efe9"><span style="font-weight:600">Four Operations with Fractions</span><span style="background:#EFE9FA;color:#7C6BAE;font-weight:700;font-size:10.5px;padding:3px 8px;border-radius:20px;width:fit-content">In Progress</span><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:5px;border-radius:3px;background:#eee"><div style="width:40%;height:100%;border-radius:3px;background:#7C6BAE"></div></div><span style="font-size:11px;color:#7a8f8b">40%</span></div></div>
+<div style="display:grid;grid-template-columns:2fr 1fr 1.4fr;align-items:center;font-size:12.5px;padding:8px 2px;border-top:1px solid #f0efe9"><span style="font-weight:600">Algebra Basics</span><span style="background:#E4F3F1;color:#3F8E7F;font-weight:700;font-size:10.5px;padding:3px 8px;border-radius:20px;width:fit-content">Done</span><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:5px;border-radius:3px;background:#eee"><div style="width:100%;height:100%;border-radius:3px;background:#0F766E"></div></div><span style="font-size:11px;color:#7a8f8b">100%</span></div></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tabWorksheets }}">
+<div style="font:800 20px Manrope,sans-serif;margin-bottom:6px">Worksheets & Exams</div>
+<div style="display:flex;align-items:center;gap:8px;background:#EFE9FA;color:#5f4f8f;font-size:12px;padding:10px 14px;border-radius:10px;margin-bottom:18px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7C6BAE" stroke-width="1.8"><rect x="6" y="3" width="12" height="18" rx="1.5"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>EduPlay worksheets are curriculum-aligned. Parents are encouraged to review all materials.</div>
+<div style="display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap">
+<div style="flex:1;min-width:160px;background:#fff;border-radius:12px;padding:16px;text-align:center"><div style="width:38px;height:38px;border-radius:50%;background:#FFD8B8;display:flex;align-items:center;justify-content:center;font:700 14px Baloo 2,sans-serif;color:#B7862F;margin:0 auto 8px">T</div><div style="font:700 13px Manrope,sans-serif;margin-bottom:2px">Tamar</div><div style="font-size:11px;color:#9aa6a3;margin-bottom:10px">Grade 4</div><button style="width:100%;border:none;background:#0F766E;color:#fff;font:700 12px Manrope,sans-serif;padding:9px;border-radius:8px;cursor:pointer">Build Worksheet</button></div>
+<div style="flex:1;min-width:160px;background:#fff;border-radius:12px;padding:16px;text-align:center"><div style="width:38px;height:38px;border-radius:50%;background:#BFE8DE;display:flex;align-items:center;justify-content:center;font:700 14px Baloo 2,sans-serif;color:#3F8E7F;margin:0 auto 8px">L</div><div style="font:700 13px Manrope,sans-serif;margin-bottom:2px">Lia</div><div style="font-size:11px;color:#9aa6a3;margin-bottom:10px">Grade 6</div><button style="width:100%;border:none;background:#0F766E;color:#fff;font:700 12px Manrope,sans-serif;padding:9px;border-radius:8px;cursor:pointer">Build Worksheet</button></div>
+<div style="flex:1;min-width:160px;background:#fff;border-radius:12px;padding:16px;text-align:center"><div style="width:38px;height:38px;border-radius:50%;background:#DCD3F5;display:flex;align-items:center;justify-content:center;font:700 14px Baloo 2,sans-serif;color:#7C6BAE;margin:0 auto 8px">T</div><div style="font:700 13px Manrope,sans-serif;margin-bottom:2px">Tom</div><div style="font-size:11px;color:#9aa6a3;margin-bottom:10px">Kindergarten</div><button style="width:100%;border:none;background:#0F766E;color:#fff;font:700 12px Manrope,sans-serif;padding:9px;border-radius:8px;cursor:pointer">Build Worksheet</button></div>
+</div>
+<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+<div style="flex:2;min-width:320px;background:#fff;border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:16px">
+<div style="font:700 14px Manrope,sans-serif">1 · Select Child</div>
+<div style="display:flex;gap:8px"><div style="flex:1;text-align:center;padding:10px;border:2px solid #0F766E;border-radius:10px;background:#E4F3F1;font:700 12px Manrope,sans-serif;color:#0F766E">Tamar</div><div style="flex:1;text-align:center;padding:10px;border:1px solid #eee;border-radius:10px;font:700 12px Manrope,sans-serif;color:#7a8f8b">Lia</div><div style="flex:1;text-align:center;padding:10px;border:1px solid #eee;border-radius:10px;font:700 12px Manrope,sans-serif;color:#7a8f8b">Tom</div></div>
+<div style="font:700 14px Manrope,sans-serif">2 · Select Topics <span style="font-weight:400;color:#9aa6a3;font-size:11px">(3 of 3 selected)</span></div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid #0F766E;border-radius:9px;background:#E4F3F1"><svg width="16" height="16" viewBox="0 0 24 24" fill="#0F766E"><path d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.4z"/></svg><span style="flex:1;font:600 12.5px Manrope,sans-serif">ABC & Phonics</span><span style="font-size:11px;color:#9aa6a3">+175 XP</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid #0F766E;border-radius:9px;background:#E4F3F1"><svg width="16" height="16" viewBox="0 0 24 24" fill="#0F766E"><path d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.4z"/></svg><span style="flex:1;font:600 12.5px Manrope,sans-serif">Basic Vocabulary</span><span style="font-size:11px;color:#9aa6a3">+175 XP</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid #0F766E;border-radius:9px;background:#E4F3F1"><svg width="16" height="16" viewBox="0 0 24 24" fill="#0F766E"><path d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.4z"/></svg><span style="flex:1;font:600 12.5px Manrope,sans-serif">First Speaking Skills</span><span style="font-size:11px;color:#9aa6a3">+175 XP</span></div>
+</div>
+<div style="font:700 14px Manrope,sans-serif">3 · Options</div>
+<div style="display:flex;gap:16px;flex-wrap:wrap">
+<div style="flex:1;min-width:140px">
+<div style="font-size:10.5px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Worksheet Type</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<div style="padding:8px 10px;border:1.5px solid #0F766E;border-radius:8px;background:#E4F3F1;font:700 12px Manrope,sans-serif;color:#0F766E">Practice</div>
+<div style="padding:8px 10px;border:1px solid #eee;border-radius:8px;font:600 12px Manrope,sans-serif;color:#7a8f8b">Quiz</div>
+<div style="padding:8px 10px;border:1px solid #eee;border-radius:8px;font:600 12px Manrope,sans-serif;color:#7a8f8b">Exam</div>
+</div>
+</div>
+<div style="flex:1;min-width:140px">
+<div style="font-size:10.5px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Difficulty</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap"><div style="padding:6px 12px;border-radius:20px;border:1px solid #eee;font:600 11.5px Manrope,sans-serif;color:#7a8f8b">Easy</div><div style="padding:6px 12px;border-radius:20px;border:1px solid #eee;font:600 11.5px Manrope,sans-serif;color:#7a8f8b">Medium</div><div style="padding:6px 12px;border-radius:20px;background:#7C6BAE;color:#fff;font:600 11.5px Manrope,sans-serif">Mixed</div></div>
+<div style="font-size:10.5px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em;margin:12px 0 6px">Language</div>
+<div style="display:flex;gap:6px"><div style="padding:6px 12px;border-radius:8px;border:1px solid #eee;font:600 11.5px Manrope,sans-serif;color:#7a8f8b">EN</div><div style="padding:6px 12px;border-radius:8px;background:#0F766E;color:#fff;font:600 11.5px Manrope,sans-serif">Both</div><div style="padding:6px 12px;border-radius:8px;border:1px solid #eee;font:600 11.5px Manrope,sans-serif;color:#7a8f8b">HE</div></div>
+</div>
+</div>
+</div>
+<div style="flex:1;min-width:230px;background:#fff;border-radius:14px;padding:18px;position:sticky;top:20px">
+<div style="font:700 14px Manrope,sans-serif;margin-bottom:12px">Worksheet Summary</div>
+<div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:#7a8f8b">
+<div style="display:flex;justify-content:space-between"><span>Child</span><span style="color:#1f2a28;font-weight:600">Tamar (Grade 4)</span></div>
+<div style="display:flex;justify-content:space-between"><span>Topics</span><span style="color:#1f2a28;font-weight:600">3 of 3</span></div>
+<div style="display:flex;justify-content:space-between"><span>Questions</span><span style="color:#1f2a28;font-weight:600">20</span></div>
+<div style="display:flex;justify-content:space-between"><span>Language</span><span style="color:#1f2a28;font-weight:600">Bilingual</span></div>
+<div style="display:flex;justify-content:space-between"><span>Answer Key</span><span style="color:#1f2a28;font-weight:600">No</span></div>
+</div>
+<button style="width:100%;margin-top:16px;border:none;background:#0F766E;color:#fff;font:700 13px Manrope,sans-serif;padding:11px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M5 19h14"/></svg>Generate Worksheet</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tabAI }}">
+<div style="font:800 20px Manrope,sans-serif;margin-bottom:14px">AI Question Generator</div>
+<div style="display:flex;gap:4px;margin-bottom:18px">
+<div style="padding:8px 16px;border-radius:8px;background:#0F766E;color:#fff;font:700 12.5px Manrope,sans-serif">Generate</div>
+<div style="padding:8px 16px;border-radius:8px;color:#7a8f8b;font:700 12.5px Manrope,sans-serif;display:flex;align-items:center;gap:6px">Pending Review <span style="background:#FFE3D9;color:#B7862F;font-size:10.5px;padding:1px 7px;border-radius:20px">5</span></div>
+<div style="padding:8px 16px;border-radius:8px;color:#7a8f8b;font:700 12.5px Manrope,sans-serif">Library</div>
+</div>
+<div style="display:flex;gap:16px;flex-wrap:wrap">
+<div style="flex:2;min-width:320px;display:flex;flex-direction:column;gap:14px">
+<div style="background:#fff;border-radius:12px;padding:14px;display:flex;align-items:center;gap:10px">
+<span style="font:700 12px Manrope,sans-serif;color:#7a8f8b;flex-shrink:0">Preferred style</span>
+<input placeholder="e.g. use sports examples, keep wording short..." style="flex:1;border:1px solid #eee;border-radius:8px;padding:8px 10px;font-size:12.5px;color:#1f2a28"></input>
+<button style="border:none;background:#F7F5F0;color:#0F766E;font:700 12px Manrope,sans-serif;padding:8px 14px;border-radius:8px;cursor:pointer">Save</button>
+</div>
+<div style="background:#fff;border-radius:14px;padding:18px">
+<div style="display:flex;align-items:center;gap:8px;font:700 14px Manrope,sans-serif;margin-bottom:14px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2-5.4 3.2 1.3-6-4.6-4.1 6.1-.6z"/></svg>Generate New Questions</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+<div><div style="font-size:10.5px;color:#9aa6a3;margin-bottom:4px">Subject</div><div style="border:1px solid #eee;border-radius:8px;padding:9px 10px;font-size:12.5px">Mathematics</div></div>
+<div><div style="font-size:10.5px;color:#9aa6a3;margin-bottom:4px">Grade</div><div style="border:1px solid #eee;border-radius:8px;padding:9px 10px;font-size:12.5px">Grade 1</div></div>
+<div><div style="font-size:10.5px;color:#9aa6a3;margin-bottom:4px">Topic</div><div style="border:1px solid #eee;border-radius:8px;padding:9px 10px;font-size:12.5px">Select a topic…</div></div>
+<div><div style="font-size:10.5px;color:#9aa6a3;margin-bottom:4px">Difficulty</div><div style="border:1px solid #eee;border-radius:8px;padding:9px 10px;font-size:12.5px">Easy</div></div>
+</div>
+<div style="display:flex;gap:16px;margin-bottom:12px;font-size:12.5px">
+<label style="display:flex;align-items:center;gap:6px"><input type="checkbox" checked=""></input>Multiple Choice</label>
+<label style="display:flex;align-items:center;gap:6px"><input type="checkbox"></input>Word Problem</label>
+<label style="display:flex;align-items:center;gap:6px"><input type="checkbox"></input>Progressive difficulty</label>
+</div>
+<div style="border:1.5px dashed #d8d4c8;border-radius:10px;padding:14px;text-align:center;color:#9aa6a3;font-size:12px;margin-bottom:14px">Optional: upload a worksheet photo or PDF to model questions after</div>
+<button style="border:none;background:#0F766E;color:#fff;font:700 13px Manrope,sans-serif;padding:11px 20px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2-5.4 3.2 1.3-6-4.6-4.1 6.1-.6z"/></svg>Generate</button>
+</div>
+</div>
+<div style="flex:1;min-width:260px;background:#fff;border-radius:14px;padding:18px">
+<div style="font:700 13.5px Manrope,sans-serif;margin-bottom:12px">Recent Generations</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="border-top:1px solid #f0efe9;padding-top:10px"><div style="font:700 12.5px Manrope,sans-serif">Fraction Addition · Grade 4</div><div style="font-size:11px;color:#9aa6a3;margin:2px 0 8px">Easy · 18/20 saved</div><button style="border:1px solid rgba(15,118,110,.25);background:transparent;color:#0F766E;font:700 11.5px Manrope,sans-serif;padding:6px 12px;border-radius:7px;cursor:pointer">Make more like this</button></div>
+<div style="border-top:1px solid #f0efe9;padding-top:10px"><div style="font:700 12.5px Manrope,sans-serif">Addition & Subtraction · Grade 2</div><div style="font-size:11px;color:#9aa6a3;margin:2px 0 8px">Easy · 1/1 saved</div><button style="border:1px solid rgba(15,118,110,.25);background:transparent;color:#0F766E;font:700 11.5px Manrope,sans-serif;padding:6px 12px;border-radius:7px;cursor:pointer">Make more like this</button></div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tabAssignments }}">
+<div style="font:800 20px Manrope,sans-serif;margin-bottom:18px">Assignment History</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="background:#fff;border-radius:14px;padding:18px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="width:34px;height:34px;border-radius:50%;background:#FFD8B8;display:flex;align-items:center;justify-content:center;font:700 13px Baloo 2,sans-serif;color:#B7862F">T</div><span style="font:700 13.5px Manrope,sans-serif">Tamar</span></div>
+<div style="color:#9aa6a3;font-size:12px;text-align:center;padding:12px 0">No assignments yet.</div>
+</div>
+<div style="background:#fff;border-radius:14px;padding:18px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><div style="width:34px;height:34px;border-radius:50%;background:#BFE8DE;display:flex;align-items:center;justify-content:center;font:700 13px Baloo 2,sans-serif;color:#3F8E7F">L</div><span style="font:700 13.5px Manrope,sans-serif">Lia</span></div>
+<div style="border:1px solid #f0efe9;border-radius:10px;padding:12px">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div style="font:700 12.5px Manrope,sans-serif">Manual QA — all 3 states</div><div style="font-size:11px;color:#9aa6a3">7/28/2026 · 3/3 done (100%)</div></div><div style="display:flex;align-items:center;gap:4px;background:#E4F3F1;color:#3F8E7F;font:700 11.5px Manrope,sans-serif;padding:3px 9px;border-radius:20px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3F8E7F" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>3</div></div>
+<div style="display:flex;gap:8px"><button style="border:1px solid rgba(15,118,110,.25);background:transparent;color:#0F766E;font:700 11.5px Manrope,sans-serif;padding:6px 12px;border-radius:7px;cursor:pointer">Retry with Lia</button><button style="border:1px solid #eee;background:transparent;color:#7a8f8b;font:700 11.5px Manrope,sans-serif;padding:6px 12px;border-radius:7px;cursor:pointer">Assign to a different child</button></div>
+</div>
+</div>
+<div style="background:#fff;border-radius:14px;padding:18px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="width:34px;height:34px;border-radius:50%;background:#DCD3F5;display:flex;align-items:center;justify-content:center;font:700 13px Baloo 2,sans-serif;color:#7C6BAE">T</div><span style="font:700 13.5px Manrope,sans-serif">Tom</span></div>
+<div style="color:#9aa6a3;font-size:12px;text-align:center;padding:12px 0">No assignments yet.</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tabCurriculum }}">
+<div style="display:flex;gap:16px">
+<div style="width:220px;flex-shrink:0;background:#fff;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:16px">
+<div><div style="font-size:10.5px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Learning as</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;background:#E4F3F1;border:1px solid #0F766E"><div style="width:22px;height:22px;border-radius:50%;background:#BFE8DE"></div><span style="font:700 12px Manrope,sans-serif">Lia</span></div>
+<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px"><div style="width:22px;height:22px;border-radius:50%;background:#FFD8B8"></div><span style="font:600 12px Manrope,sans-serif;color:#7a8f8b">Tamar</span></div>
+<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px"><div style="width:22px;height:22px;border-radius:50%;background:#DCD3F5"></div><span style="font:600 12px Manrope,sans-serif;color:#7a8f8b">Tom</span></div>
+</div></div>
+<div><div style="font-size:10.5px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Subject</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<div style="padding:8px;border-radius:8px;background:#0F766E;color:#fff;font:700 12px Manrope,sans-serif">Mathematics</div>
+<div style="padding:8px;border-radius:8px;font:600 12px Manrope,sans-serif;color:#7a8f8b">English</div>
+<div style="padding:8px;border-radius:8px;font:600 12px Manrope,sans-serif;color:#7a8f8b">Hebrew</div>
+</div></div>
+<div><div style="font-size:10.5px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Grade</div>
+<div style="display:flex;flex-direction:column;gap:2px;font-size:12px">
+<span style="padding:5px 8px;color:#7a8f8b">Kindergarten</span><span style="padding:5px 8px;color:#7a8f8b">Grade 1</span><span style="padding:5px 8px;color:#7a8f8b">Grade 2</span><span style="padding:5px 8px;color:#7a8f8b">Grade 3</span><span style="padding:5px 8px;border-radius:7px;background:#E4F3F1;color:#0F766E;font-weight:700">Grade 4</span><span style="padding:5px 8px;color:#7a8f8b">Grade 5</span><span style="padding:5px 8px;color:#7a8f8b">Grade 6</span>
+</div></div>
+</div>
+<div style="flex:1;min-width:0">
+<div style="background:linear-gradient(135deg,#0F766E,#3F8E7F);border-radius:14px;padding:18px;color:#fff;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+<div><div style="font:800 16px Manrope,sans-serif">Grade 4 · Mathematics</div><div style="font-size:12px;opacity:.85;margin-top:2px">14 topics · Starting as Lia</div></div>
+<button style="border:none;background:#fff;color:#0F766E;font:700 12.5px Manrope,sans-serif;padding:9px 16px;border-radius:9px;cursor:pointer">▶ Start</button>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div style="background:#fff;border-radius:12px;padding:14px"><div style="font-size:10.5px;color:#9aa6a3;margin-bottom:4px">1</div><div style="font:700 13px Manrope,sans-serif;margin-bottom:2px">Whole Numbers & Place Value</div><div style="font-size:11px;color:#9aa6a3;margin-bottom:8px">Counting, ordering, comparing</div><div style="font-size:11px;color:#0F766E;font-weight:700">+150 XP · 5 lessons</div></div>
+<div style="background:#fff;border-radius:12px;padding:14px"><div style="font-size:10.5px;color:#9aa6a3;margin-bottom:4px">2</div><div style="font:700 13px Manrope,sans-serif;margin-bottom:2px">Numbers to a Million</div><div style="font-size:11px;color:#9aa6a3;margin-bottom:8px">Read, write and order large numbers</div><div style="font-size:11px;color:#0F766E;font-weight:700">+175 XP · 5 lessons</div></div>
+<div style="background:#fff;border-radius:12px;padding:14px"><div style="font-size:10.5px;color:#9aa6a3;margin-bottom:4px">3</div><div style="font:700 13px Manrope,sans-serif;margin-bottom:2px">Fractions — Equal Parts</div><div style="font-size:11px;color:#9aa6a3;margin-bottom:8px">Numerators, denominators, equal parts</div><div style="font-size:11px;color:#0F766E;font-weight:700">+150 XP · 5 lessons</div></div>
+<div style="background:#fff;border-radius:12px;padding:14px"><div style="font-size:10.5px;color:#9aa6a3;margin-bottom:4px">4</div><div style="font:700 13px Manrope,sans-serif;margin-bottom:2px">Classifying Triangles</div><div style="font-size:11px;color:#9aa6a3;margin-bottom:8px">Classify triangles by sides and angles</div><div style="font-size:11px;color:#0F766E;font-weight:700">+175 XP · 5 lessons</div></div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tabParents }}">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font:800 20px Manrope,sans-serif">Parent Profiles</div><button style="border:none;background:#0F766E;color:#fff;font:700 12.5px Manrope,sans-serif;padding:9px 16px;border-radius:9px;cursor:pointer">+ Add Parent</button></div>
+<div style="font-size:12.5px;color:#7a8f8b;margin-bottom:18px">Up to 3 parents or guardians can share oversight of this family account.</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="background:#fff;border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px">
+<div style="width:38px;height:38px;border-radius:50%;background:#E4F3F1;display:flex;align-items:center;justify-content:center;font:700 14px Manrope,sans-serif;color:#0F766E">O</div>
+<div style="flex:1"><div style="font:700 13.5px Manrope,sans-serif">Oran <span style="background:#0F766E;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-inline-start:6px">Admin</span></div><div style="font-size:11.5px;color:#9aa6a3">oran@honoshi.com</div></div>
+<input placeholder="New password" style="border:1px solid #eee;border-radius:8px;padding:8px 10px;font-size:12px;width:170px"></input>
+<button style="border:none;background:#F7F5F0;color:#0F766E;font:700 12px Manrope,sans-serif;padding:8px 14px;border-radius:8px;cursor:pointer">Update</button>
+</div>
+<div style="background:#fff;border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px">
+<div style="width:38px;height:38px;border-radius:50%;background:#FFE3D9;display:flex;align-items:center;justify-content:center;font:700 14px Manrope,sans-serif;color:#B7862F">H</div>
+<div style="flex:1"><div style="font:700 13.5px Manrope,sans-serif">Hila <span style="border:1px solid #ddd;color:#7a8f8b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-inline-start:6px">Parent</span></div><div style="font-size:11.5px;color:#9aa6a3">hila@honoshi.com</div></div>
+<input placeholder="New password" style="border:1px solid #eee;border-radius:8px;padding:8px 10px;font-size:12px;width:170px"></input>
+<button style="border:none;background:#F7F5F0;color:#0F766E;font:700 12px Manrope,sans-serif;padding:8px 14px;border-radius:8px;cursor:pointer">Update</button>
+<button style="border:none;background:transparent;color:#C2637A;font:700 12px Manrope,sans-serif;cursor:pointer">Remove</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ tabAccount }}">
+<div style="font:800 20px Manrope,sans-serif;margin-bottom:18px">Account</div>
+<div style="background:#fff;border-radius:14px;padding:18px;margin-bottom:16px">
+<div style="font:700 14px Manrope,sans-serif;margin-bottom:2px">Manage Children</div>
+<div style="font-size:11.5px;color:#9aa6a3;margin-bottom:14px">Grade, font size, break settings and PIN for each child.</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:8px;align-items:center;font-size:12px;padding:8px 0;border-bottom:1px solid #f0efe9">
+<div style="display:flex;align-items:center;gap:8px"><div style="width:26px;height:26px;border-radius:50%;background:#FFD8B8"></div>Tamar</div>
+<div style="border:1px solid #eee;border-radius:7px;padding:6px 8px">Grade 4</div><div style="border:1px solid #eee;border-radius:7px;padding:6px 8px">Classic</div><div style="border:1px solid #eee;border-radius:7px;padding:6px 8px">Free Choice</div><div style="border:1px solid #eee;border-radius:7px;padding:6px 8px;text-align:center;letter-spacing:2px">••••</div>
+</div>
+<div style="display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:8px;align-items:center;font-size:12px;padding:8px 0;border-bottom:1px solid #f0efe9">
+<div style="display:flex;align-items:center;gap:8px"><div style="width:26px;height:26px;border-radius:50%;background:#BFE8DE"></div>Lia</div>
+<div style="border:1px solid #eee;border-radius:7px;padding:6px 8px">Grade 6</div><div style="border:1px solid #eee;border-radius:7px;padding:6px 8px">Classic</div><div style="border:1px solid #eee;border-radius:7px;padding:6px 8px">Per Topic</div><div style="border:1px solid #eee;border-radius:7px;padding:6px 8px;text-align:center;letter-spacing:2px">••••</div>
+</div>
+<div style="display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:8px;align-items:center;font-size:12px;padding:8px 0">
+<div style="display:flex;align-items:center;gap:8px"><div style="width:26px;height:26px;border-radius:50%;background:#DCD3F5"></div>Tom</div>
+<div style="border:1px solid #eee;border-radius:7px;padding:6px 8px">Kindergarten</div><div style="border:1px solid #eee;border-radius:7px;padding:6px 8px">Classic</div><div style="border:1px solid #eee;border-radius:7px;padding:6px 8px">Per Topic</div><div style="border:1px solid #eee;border-radius:7px;padding:6px 8px;text-align:center;letter-spacing:2px">••••</div>
+</div>
+</div>
+</div>
+<div style="background:#fff;border-radius:14px;padding:18px">
+<div style="font:700 14px Manrope,sans-serif;margin-bottom:2px">Child Links</div>
+<div style="font-size:11.5px;color:#9aa6a3;margin-bottom:14px">Share these links — each opens a child's personal learning portal.</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0efe9"><div style="width:28px;height:28px;border-radius:50%;background:#FFD8B8"></div><div style="flex:1"><div style="font:700 12.5px Manrope,sans-serif">Tamar — Grade 4</div><div style="font-size:11px;color:#9aa6a3">eduplay.app/play/961234c8…</div></div><button style="border:1px solid #eee;background:transparent;color:#0F766E;font:700 11.5px Manrope,sans-serif;padding:6px 12px;border-radius:7px;cursor:pointer">Copy</button><button style="border:none;background:#F7F5F0;color:#0F766E;font:700 11.5px Manrope,sans-serif;padding:6px 12px;border-radius:7px;cursor:pointer">Open</button></div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 0"><div style="width:28px;height:28px;border-radius:50%;background:#BFE8DE"></div><div style="flex:1"><div style="font:700 12.5px Manrope,sans-serif">Lia — Grade 6</div><div style="font-size:11px;color:#9aa6a3">eduplay.app/play/28dcb658…</div></div><button style="border:1px solid #eee;background:transparent;color:#0F766E;font:700 11.5px Manrope,sans-serif;padding:6px 12px;border-radius:7px;cursor:pointer">Copy</button><button style="border:none;background:#F7F5F0;color:#0F766E;font:700 11.5px Manrope,sans-serif;padding:6px 12px;border-radius:7px;cursor:pointer">Open</button></div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isKid }}">
+<div style="display:flex;flex-direction:column;min-height:100vh;background:#F7F5F0">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:60px;background:#fff;border-bottom:1px solid rgba(15,118,110,.14);flex-shrink:0">
+<span style="font-family:Manrope,sans-serif;font-weight:800;font-size:16px">Edu<span style="color:#0F766E">Play</span></span>
+<div style="display:flex;align-items:center;gap:10px">
+<div style="display:flex;align-items:center;gap:5px;background:#FFF3D6;color:#B7862F;font:700 12px Manrope,sans-serif;padding:5px 10px;border-radius:20px"><svg width="13" height="13" viewBox="0 0 24 24" fill="#E0A927"><path d="M12 2l2.9 6.6L22 9.2l-5 4.9L18.2 21 12 17.3 5.8 21 7 14.1l-5-4.9 7.1-.6z"/></svg>495</div>
+<div style="display:flex;align-items:center;gap:5px;background:#FFE3D9;color:#B45435;font:700 12px Manrope,sans-serif;padding:5px 10px;border-radius:20px"><svg width="13" height="13" viewBox="0 0 24 24" fill="#E8724C"><path d="M12 2c2 4-2 5-2 8a4 4 0 008 0c0-2-1-3-1-3s2 1 2 5a7 7 0 11-14 0c0-5 4-7 7-10z"/></svg>3</div>
+<div style="width:30px;height:30px;border-radius:50%;background:#BFE8DE;display:flex;align-items:center;justify-content:center;font:700 13px Baloo 2,sans-serif;color:#3F8E7F">L</div>
+</div>
+</div>
+
+<sc-if value="{{ kidNotLogin }}">
+<div style="display:flex;gap:6px;padding:10px 24px;background:#fff;border-bottom:1px solid rgba(15,118,110,.1);flex-shrink:0">
+<sc-for list="{{ kidNavItems }}" as="item" hint-placeholder-count="3">
+<button onClick="{{ item.go }}" disabled="{{ item.disabled }}" title="Coming soon" style="border:none;cursor:pointer;font:700 13px Manrope,sans-serif;padding:8px 16px;border-radius:20px;background:{{ item.bg }};color:{{ item.color }}">{{ item.label }}</button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ kidLogin }}">
+<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:30px">
+<div style="background:#fff;border-radius:20px;padding:32px;width:380px;text-align:center">
+<img src="assets/pip-mascot.png" alt="Pip the owl" style="width:64px;height:64px;object-fit:contain;margin:0 auto 8px;display:block">
+<div style="font:700 20px 'Baloo 2',sans-serif;margin-bottom:20px;color:#1f2a28">Who's playing?</div>
+<div style="display:flex;justify-content:center;gap:16px;margin-bottom:24px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:50%;background:#FFD8B8;display:flex;align-items:center;justify-content:center;font:700 20px 'Baloo 2',sans-serif;color:#B7862F;border:3px solid transparent">T</div><span style="font:600 11.5px Manrope,sans-serif;color:#7a8f8b">Tamar</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:50%;background:#BFE8DE;display:flex;align-items:center;justify-content:center;font:700 20px 'Baloo 2',sans-serif;color:#3F8E7F;border:3px solid #0F766E">L</div><span style="font:700 11.5px Manrope,sans-serif;color:#1f2a28">Lia</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:56px;height:56px;border-radius:50%;background:#DCD3F5;display:flex;align-items:center;justify-content:center;font:700 20px 'Baloo 2',sans-serif;color:#7C6BAE;border:3px solid transparent">T</div><span style="font:600 11.5px Manrope,sans-serif;color:#7a8f8b">Tom</span></div>
+</div>
+<div style="font:600 12.5px Manrope,sans-serif;color:#7a8f8b;margin-bottom:10px">Enter your PIN</div>
+<div style="display:flex;justify-content:center;gap:8px;margin-bottom:18px">
+<div style="width:14px;height:14px;border-radius:50%;background:#0F766E"></div><div style="width:14px;height:14px;border-radius:50%;background:#0F766E"></div><div style="width:14px;height:14px;border-radius:50%;border:2px solid #ddd"></div><div style="width:14px;height:14px;border-radius:50%;border:2px solid #ddd"></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+<div style="padding:14px;border-radius:12px;background:#F7F5F0;font:700 16px Manrope,sans-serif">1</div><div style="padding:14px;border-radius:12px;background:#F7F5F0;font:700 16px Manrope,sans-serif">2</div><div style="padding:14px;border-radius:12px;background:#F7F5F0;font:700 16px Manrope,sans-serif">3</div>
+<div style="padding:14px;border-radius:12px;background:#F7F5F0;font:700 16px Manrope,sans-serif">4</div><div style="padding:14px;border-radius:12px;background:#F7F5F0;font:700 16px Manrope,sans-serif">5</div><div style="padding:14px;border-radius:12px;background:#F7F5F0;font:700 16px Manrope,sans-serif">6</div>
+<div style="padding:14px;border-radius:12px;background:#F7F5F0;font:700 16px Manrope,sans-serif">7</div><div style="padding:14px;border-radius:12px;background:#F7F5F0;font:700 16px Manrope,sans-serif">8</div><div style="padding:14px;border-radius:12px;background:#F7F5F0;font:700 16px Manrope,sans-serif">9</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ kidHome }}">
+<div style="flex:1;padding:24px 28px">
+<div style="background:linear-gradient(135deg,#BFE8DE,#DCD3F5);border-radius:16px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+<div><div style="font:700 11px Manrope,sans-serif;color:#3F8E7F;text-transform:uppercase;letter-spacing:.04em">Continue where you left off</div><div style="font:700 16px 'Baloo 2',sans-serif;color:#1f2a28;margin-top:2px">Algebra Basics · Mathematics</div></div>
+<button style="border:none;background:#fff;color:#0F766E;font:700 12.5px Manrope,sans-serif;padding:10px 18px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px">Continue <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></button>
+</div>
+<div style="display:flex;gap:12px;margin-bottom:18px">
+<div style="flex:1;background:#fff;border-radius:12px;padding:12px;text-align:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="1.8" style="margin:0 auto 4px;display:block"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/></svg><div style="font:800 16px Manrope,sans-serif">1</div><div style="font-size:10px;color:#9aa6a3;text-transform:uppercase">Completed</div></div>
+<div style="flex:1;background:#fff;border-radius:12px;padding:12px;text-align:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="#7C6BAE" style="margin:0 auto 4px;display:block"><path d="M8 5v14l11-7z"/></svg><div style="font:800 16px Manrope,sans-serif">1</div><div style="font-size:10px;color:#9aa6a3;text-transform:uppercase">In Progress</div></div>
+<div style="flex:1;background:#fff;border-radius:12px;padding:12px;text-align:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="#E0A927" style="margin:0 auto 4px;display:block"><path d="M12 2l2.9 6.6L22 9.2l-5 4.9L18.2 21 12 17.3 5.8 21 7 14.1l-5-4.9 7.1-.6z"/></svg><div style="font:800 16px Manrope,sans-serif">495</div><div style="font-size:10px;color:#9aa6a3;text-transform:uppercase">Total XP</div></div>
+<div style="flex:1;background:#fff;border-radius:12px;padding:12px;text-align:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="#E8724C" style="margin:0 auto 4px;display:block"><path d="M12 2c2 4-2 5-2 8a4 4 0 008 0c0-2-1-3-1-3s2 1 2 5a7 7 0 11-14 0c0-5 4-7 7-10z"/></svg><div style="font:800 16px Manrope,sans-serif">0d</div><div style="font-size:10px;color:#9aa6a3;text-transform:uppercase">Streak</div></div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:18px">
+<sc-for list="{{ subjectTabs }}" as="t" hint-placeholder-count="4">
+<button onClick="{{ t.go }}" style="border:none;cursor:pointer;padding:8px 16px;border-radius:20px;background:{{ t.bg }};color:{{ t.color }};font:700 12px Manrope,sans-serif">{{ t.label }}</button>
+</sc-for>
+</div>
+
+<div style="display:flex;align-items:center;gap:10px;justify-content:center">
+<button onClick="{{ goPrevPage }}" aria-label="Previous lesson" style="flex-shrink:0;width:36px;height:36px;border-radius:50%;border:none;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2.4" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+
+<div onTouchStart="{{ onBookTouchStart }}" onTouchEnd="{{ onBookTouchEnd }}" onMouseDown="{{ onBookTouchStart }}" onMouseUp="{{ onBookTouchEnd }}" style="width:100%;max-width:360px;background:#fff;border-radius:20px;padding:24px;box-shadow:0 6px 24px rgba(31,42,40,.08);text-align:center;cursor:grab;user-select:none">
+<div style="width:64px;height:64px;border-radius:16px;background:{{ currentLesson.iconBg }};display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="{{ currentLesson.iconColor }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6M9 13h4"/></svg></div>
+<div style="font-size:11px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">{{ currentLesson.subject }}</div>
+<div style="font:700 17px 'Baloo 2',sans-serif;color:#1f2a28;margin-bottom:14px">{{ currentLesson.title }}</div>
+<div style="font-size:12.5px;color:#0F766E;font-weight:700;margin-bottom:18px">+{{ currentLesson.xp }} XP</div>
+<button style="border:none;background:#0F766E;color:#fff;font:700 13px Manrope,sans-serif;padding:12px 28px;border-radius:20px;cursor:pointer;width:100%">Start Lesson</button>
+</div>
+
+<button onClick="{{ goNextPage }}" aria-label="Next lesson" style="flex-shrink:0;width:36px;height:36px;border-radius:50%;border:none;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2.4" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></button>
+</div>
+
+<div style="display:flex;justify-content:center;gap:6px;margin-top:14px">
+<sc-for list="{{ lessonDots }}" as="d" hint-placeholder-count="3">
+<button onClick="{{ d.go }}" style="border:none;height:7px;width:{{ d.w }};border-radius:4px;background:{{ d.bg }};cursor:pointer;padding:0"></button>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ kidRewards }}">
+<div style="flex:1;padding:24px 28px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+<div><div style="font:700 19px 'Baloo 2',sans-serif;color:#1f2a28">Animal Collection</div><div style="font-size:12px;color:#7a8f8b;margin-top:2px">{{ totalCollected }}/{{ totalCards }} cards · {{ regionsComplete }} region complete</div></div>
+<div style="display:flex;align-items:center;gap:6px;background:#FFF3D6;color:#B7862F;font:700 12.5px Manrope,sans-serif;padding:8px 14px;border-radius:20px"><svg width="14" height="14" viewBox="0 0 24 24" fill="#E0A927"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M8 8V6a4 4 0 018 0v2"/></svg>{{ totalCollected }} cards</div>
+</div>
+
+<div style="position:relative;background:#1B2340;border-radius:20px;height:280px;overflow:hidden;margin-bottom:18px">
+<sc-for list="{{ regionList }}" as="r" hint-placeholder-count="6">
+<div onClick="{{ r.select }}" title="{{ r.label }}" style="position:absolute;top:{{ r.top }};left:{{ r.left }};width:{{ r.size }};height:{{ r.size }};transform:translate(-50%,-50%);border-radius:38% 62% 55% 45%/45% 40% 60% 55%;background:{{ r.mapBg }};box-shadow:{{ r.mapGlow }};cursor:pointer;transition:box-shadow .2s"></div>
+</sc-for>
+<div style="position:absolute;bottom:12px;right:14px;display:flex;gap:14px;font:600 10.5px Manrope,sans-serif;color:#c7cbd6">
+<div style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:#E0A927;display:inline-block"></span>Completed</div>
+<div style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:#3a4a63;display:inline-block"></span>Locked</div>
+</div>
+</div>
+
+<div style="display:flex;gap:8px;margin-bottom:18px;overflow-x:auto;padding-bottom:4px">
+<sc-for list="{{ regionList }}" as="r" hint-placeholder-count="6">
+<button onClick="{{ r.select }}" style="flex-shrink:0;display:flex;align-items:center;gap:6px;border:1.5px solid {{ r.pillBorder }};background:{{ r.pillBg }};color:{{ r.pillColor }};font:700 12px Manrope,sans-serif;padding:8px 14px;border-radius:20px;cursor:pointer;white-space:nowrap">{{ r.label }} <span style="opacity:.75;font-weight:600">{{ r.collected }}/{{ r.total }}</span></button>
+</sc-for>
+</div>
+
+<div style="background:#F7F5F0;border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+<div style="display:flex;align-items:center;gap:12px">
+<div style="width:36px;height:36px;border-radius:10px;background:#E4F3F1;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18 14 14 0 010-18z"/></svg></div>
+<div><div style="font:700 14px 'Baloo 2',sans-serif;color:#1f2a28">{{ selectedRegion.label }}</div><div style="font-size:11.5px;color:#7a8f8b">{{ selectedRegion.desc }}</div></div>
+</div>
+<div style="text-align:right;flex-shrink:0"><div style="font:800 16px Manrope,sans-serif;color:#0F766E">{{ selectedRegion.collected }}/{{ selectedRegion.total }}</div><div style="font-size:9.5px;color:#9aa6a3;text-transform:uppercase">Collected</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px">
+<sc-for list="{{ selectedRegion.animals }}" as="a" hint-placeholder-count="6">
+<div style="background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)">
+<div style="position:relative;width:100%;height:110px">
+<image-slot id="{{ a.id }}" shape="rect" placeholder="Drop animal photo" style="width:100%;height:100%;opacity:{{ a.imgOpacity }}"></image-slot>
+<sc-if value="{{ a.collected }}" hint-placeholder-val="{{ true }}">
+<div style="position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;background:#0F766E;display:flex;align-items:center;justify-content:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg></div>
+</sc-if>
+</div>
+<div style="padding:10px 12px">
+<div style="font:700 12.5px Manrope,sans-serif;color:#1f2a28;margin-bottom:2px">{{ a.name }}</div>
+<div style="font-size:10.5px;color:#9aa6a3">{{ a.location }}</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ kidLesson }}">
+<div style="flex:1;padding:24px 28px;display:flex;gap:20px;flex-wrap:wrap">
+<div style="flex:2;min-width:320px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;gap:12px">
+<button style="border:none;background:#fff;color:#0F766E;font:700 12px Manrope,sans-serif;padding:8px 14px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2" stroke-linecap="round" style="{{ flipStyle }}"><path d="M15 5l-7 7 7 7"/></svg>Back</button>
+<div style="flex:1;height:6px;background:#eee;border-radius:3px"><div style="width:16%;height:100%;background:#0F766E;border-radius:3px"></div></div>
+</div>
+<div style="background:#fff;border-radius:16px;padding:20px">
+<div style="display:flex;align-items:center;gap:8px;font:700 11px Manrope,sans-serif;color:#0F766E;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h5"/></svg>Learn This</div>
+<div style="font-size:13.5px;color:#1f2a28;margin-bottom:12px">In <b>algebra</b>, letters stand for unknown numbers.</div>
+<div style="background:#F7F5F0;border-radius:10px;padding:14px;text-align:center;font:700 16px Manrope,sans-serif;color:#1f2a28;margin-bottom:12px">x + 5 = 12 → x = 7</div>
+<div style="font-size:12.5px;color:#7a8f8b">Do the <b style="color:#0F766E">opposite operation</b> on both sides to solve.</div>
+</div>
+<div style="background:#fff;border-radius:16px;padding:20px">
+<div style="font:700 11px Manrope,sans-serif;color:#B7862F;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Practice Question</div>
+<div style="font:700 15px Manrope,sans-serif;color:#1f2a28;margin-bottom:16px">Solve 3x = 18.</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+<div style="border:1.5px solid #eee;border-radius:10px;padding:12px 16px;font:600 13px Manrope,sans-serif;display:flex;gap:10px"><span style="color:#9aa6a3;font-weight:700">A</span>6</div>
+<div style="border:1.5px solid #eee;border-radius:10px;padding:12px 16px;font:600 13px Manrope,sans-serif;display:flex;gap:10px"><span style="color:#9aa6a3;font-weight:700">B</span>3</div>
+<div style="border:1.5px solid #0F766E;background:#E4F3F1;border-radius:10px;padding:12px 16px;font:700 13px Manrope,sans-serif;display:flex;gap:10px;color:#0F766E"><span style="font-weight:700">C</span>9</div>
+<div style="border:1.5px solid #eee;border-radius:10px;padding:12px 16px;font:600 13px Manrope,sans-serif;display:flex;gap:10px"><span style="color:#9aa6a3;font-weight:700">D</span>12</div>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center">
+<div style="display:flex;gap:8px">
+<button style="border:1px solid #F0D28A;background:#FFF9EC;color:#B7862F;font:700 12px Manrope,sans-serif;padding:9px 14px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B7862F" stroke-width="1.8"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3 11c.6.5 1 1.2 1 2h4c0-.8.4-1.5 1-2a6 6 0 00-3-11z"/></svg>Hint</button>
+<button style="border:1px solid #eee;background:#fff;color:#7a8f8b;font:700 12px Manrope,sans-serif;padding:9px 12px;border-radius:9px;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7a8f8b" stroke-width="1.8"><path d="M4 4.5A2.5 2.5 0 016.5 2H12v20H6.5A2.5 2.5 0 014 19.5z"/><path d="M20 4.5A2.5 2.5 0 0017.5 2H12v20h5.5a2.5 2.5 0 002.5-2.5z"/></svg></button>
+</div>
+<button style="border:none;background:#0F766E;color:#fff;font:700 13px Manrope,sans-serif;padding:10px 22px;border-radius:9px;cursor:pointer">Next</button>
+</div>
+</div>
+</div>
+<div style="width:230px;flex-shrink:0;display:flex;flex-direction:column;gap:14px">
+<div style="background:#fff;border-radius:14px;padding:16px;text-align:center">
+<div style="width:56px;height:56px;border-radius:50%;background:#FFE3D9;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;overflow:hidden"><img src="assets/pip-mascot.png" alt="Pip the owl" style="width:46px;height:46px;object-fit:contain"></div>
+<div style="font:700 10.5px Manrope,sans-serif;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Pip says</div>
+<div style="background:#F7F5F0;border-radius:10px;padding:8px 10px;font:600 12px Manrope,sans-serif;color:#1f2a28">Great work! Keep going</div>
+</div>
+<div style="background:#fff;border-radius:14px;padding:14px">
+<div style="font-size:10.5px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Subjects</div>
+<div style="display:flex;gap:6px">
+<div style="flex:1;padding:8px;border-radius:8px;background:#E4F3F1;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9h6M9 13h4"/></svg></div>
+<div style="flex:1;padding:8px;border-radius:8px;background:#F7F5F0;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9aa6a3" stroke-width="1.8"><path d="M4 19V6a2 2 0 012-2h4v15"/><path d="M20 19V6a2 2 0 00-2-2h-4v15"/></svg></div>
+<div style="flex:1;padding:8px;border-radius:8px;background:#F7F5F0;display:flex;align-items:center;justify-content:center;font:700 13px Manrope,sans-serif;color:#9aa6a3">א</div>
+</div>
+</div>
+<div style="background:#fff;border-radius:14px;padding:14px">
+<div style="font-size:10.5px;color:#9aa6a3;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">Mathematics</div>
+<div style="display:flex;flex-direction:column;gap:2px;font-size:12px">
+<div style="display:flex;justify-content:space-between;padding:6px 8px;border-radius:7px;background:#E4F3F1;color:#0F766E;font-weight:700">Ratios & Proportions<span>+250</span></div>
+<div style="display:flex;justify-content:space-between;padding:6px 8px;color:#7a8f8b">Ratio & Scale<span>+225</span></div>
+<div style="display:flex;justify-content:space-between;padding:6px 8px;color:#7a8f8b">Four Operations w/ Fractions<span>+225</span></div>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ kidTheme }}">
+<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:30px">
+<div style="background:#fff;border-radius:20px;padding:32px;width:480px;text-align:center">
+<div style="font:700 20px 'Baloo 2',sans-serif;margin-bottom:2px">Pick your theme, Lia!</div>
+<div style="font-size:12.5px;color:#7a8f8b;margin-bottom:20px">Your whole app will change to match</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
+<div onClick="{{ setTheme_minecraft }}" style="border-radius:12px;overflow:hidden;cursor:pointer;border:2px solid {{ themeBorder.minecraft }}"><div style="height:56px;background:#1B2340;display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="#C6FF3D"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></svg></div><div style="padding:8px;font:700 11.5px Manrope,sans-serif">Minecraft</div></div>
+<div onClick="{{ setTheme_princesses }}" style="border-radius:12px;overflow:hidden;cursor:pointer;border:2px solid {{ themeBorder.princesses }}"><div style="height:56px;background:linear-gradient(135deg,#FFD1DC,#F7C6E0);display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="#C2637A"><path d="M12 2l1.8 5.5 5.7.2-4.5 3.6 1.6 5.4L12 13.5 7.4 16.7 9 11.3 4.5 7.7l5.7-.2z"/></svg></div><div style="padding:8px;font:700 11.5px Manrope,sans-serif">Princesses</div></div>
+<div onClick="{{ setTheme_classic }}" style="border-radius:12px;overflow:hidden;cursor:pointer;border:2px solid {{ themeBorder.classic }}"><div style="height:56px;background:linear-gradient(135deg,#BFE8DE,#DCD3F5);display:flex;align-items:center;justify-content:center;position:relative"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg></div><div style="padding:8px;font:700 11.5px Manrope,sans-serif;color:#0F766E">Classic</div></div>
+<div onClick="{{ setTheme_sports }}" style="border-radius:12px;overflow:hidden;cursor:pointer;border:2px solid {{ themeBorder.sports }}"><div style="height:56px;background:linear-gradient(120deg,#1D3557,#2C4C7C);display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="#F4762A"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.3 7.2 16.9l.9-5.4-3.9-3.8 5.4-.8z"/><circle cx="12" cy="10" r="2.2" fill="#fff"/></svg></div><div style="padding:8px;font:700 11.5px Manrope,sans-serif">Sports</div></div>
+<div style="border-radius:12px;overflow:hidden;opacity:.5"><div style="height:56px;background:#ddd"></div><div style="padding:8px;font:700 11px Manrope,sans-serif;color:#9aa6a3">Adventure · Soon</div></div>
+<div style="border-radius:12px;overflow:hidden;opacity:.5"><div style="height:56px;background:#ddd"></div><div style="padding:8px;font:700 11px Manrope,sans-serif;color:#9aa6a3">Space · Soon</div></div>
+</div>
+
+<div style="background:{{ skin.pageBg }};border-radius:16px;padding:16px;text-align:left;margin-bottom:20px">
+<div style="font:700 10px Manrope,sans-serif;color:#9aa6a3;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Live preview — {{ skin.label }}</div>
+<div style="background:{{ skin.headerBg }};border-radius:{{ skin.radius }};border:{{ skin.border }};box-shadow:{{ skin.shadow }};padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+<div><div style="font:700 9.5px {{ skin.font }};color:{{ skin.headerSub }};text-transform:uppercase;letter-spacing:.04em">Continue learning</div><div style="font:700 13px {{ skin.font }};color:{{ skin.headerText }};margin-top:2px">Algebra Basics</div></div>
+<div style="width:26px;height:26px;border-radius:50%;background:{{ skin.accent }};display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ skin.accentText }}" stroke-width="2.5" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg></div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:10px">
+<div style="flex:1;background:{{ skin.panelBg }};border-radius:{{ skin.radius }};border:{{ skin.border }};box-shadow:{{ skin.shadow }};padding:10px;text-align:center"><div style="width:14px;height:14px;border-radius:50%;background:{{ skin.badge1 }};margin:0 auto 5px"></div><div style="font:800 13px Manrope,sans-serif;color:{{ skin.textColor }}">495</div><div style="font-size:8.5px;color:#9aa6a3;text-transform:uppercase">XP</div></div>
+<div style="flex:1;background:{{ skin.panelBg }};border-radius:{{ skin.radius }};border:{{ skin.border }};box-shadow:{{ skin.shadow }};padding:10px;text-align:center"><div style="width:14px;height:14px;border-radius:50%;background:{{ skin.badge2 }};margin:0 auto 5px"></div><div style="font:800 13px Manrope,sans-serif;color:{{ skin.textColor }}">1</div><div style="font-size:8.5px;color:#9aa6a3;text-transform:uppercase">In Progress</div></div>
+<div style="flex:1;background:{{ skin.panelBg }};border-radius:{{ skin.radius }};border:{{ skin.border }};box-shadow:{{ skin.shadow }};padding:10px;text-align:center"><div style="width:14px;height:14px;border-radius:50%;background:{{ skin.badge3 }};margin:0 auto 5px"></div><div style="font:800 13px Manrope,sans-serif;color:{{ skin.textColor }}">3</div><div style="font-size:8.5px;color:#9aa6a3;text-transform:uppercase">Streak</div></div>
+</div>
+<div style="display:flex;gap:8px">
+<div style="flex:1;background:{{ skin.panelBg }};border-radius:{{ skin.radius }};border:{{ skin.border }};box-shadow:{{ skin.shadow }};padding:10px">
+<div style="width:20px;height:20px;border-radius:5px;background:{{ skin.chipBg }};margin-bottom:6px"></div>
+<div style="font:700 10px Manrope,sans-serif;color:{{ skin.textColor }};margin-bottom:6px">Fractions</div>
+<button style="border:none;background:{{ skin.accent }};color:{{ skin.accentText }};font:700 9px Manrope,sans-serif;padding:4px 9px;border-radius:{{ skin.radius }};cursor:pointer">Start</button>
+</div>
+<div style="flex:1;background:{{ skin.panelBg }};border-radius:{{ skin.radius }};border:{{ skin.border }};box-shadow:{{ skin.shadow }};padding:10px">
+<div style="width:20px;height:20px;border-radius:5px;background:{{ skin.chipBg }};margin-bottom:6px"></div>
+<div style="font:700 10px Manrope,sans-serif;color:{{ skin.textColor }};margin-bottom:6px">Reading</div>
+<button style="border:none;background:{{ skin.accent }};color:{{ skin.accentText }};font:700 9px Manrope,sans-serif;padding:4px 9px;border-radius:{{ skin.radius }};cursor:pointer">Start</button>
+</div>
+<div style="flex:1;background:{{ skin.panelBg }};border-radius:{{ skin.radius }};border:{{ skin.border }};box-shadow:{{ skin.shadow }};padding:10px">
+<div style="width:20px;height:20px;border-radius:5px;background:{{ skin.chipBg }};margin-bottom:6px"></div>
+<div style="font:700 10px Manrope,sans-serif;color:{{ skin.textColor }};margin-bottom:6px">Texts</div>
+<button style="border:none;background:{{ skin.accent }};color:{{ skin.accentText }};font:700 9px Manrope,sans-serif;padding:4px 9px;border-radius:{{ skin.radius }};cursor:pointer">Start</button>
+</div>
+</div>
+</div>
+
+<button style="width:100%;border:none;background:#0F766E;color:#fff;font:700 13px Manrope,sans-serif;padding:12px;border-radius:10px;cursor:pointer;margin-bottom:8px">{{ skin.useLabel }}</button>
+<a href="#" style="font-size:11.5px;color:#9aa6a3">← Back without changing</a>
+</div>
+</div>
+</sc-if>
+
+</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { view: 'parent', parentTab: 'overview', kidScreen: 'home', lang: 'en', themePreview: 'classic', rewardsRegion: 'africa', kidSubject: 'all', kidPage: 0, swipeStartX: null };
+
+  renderVals() {
+    const s = this.state;
+    const dir = s.lang === 'en' ? 'ltr' : 'rtl';
+    const tabs = ['overview','progress','worksheets','ai','assignments','curriculum','parents','account'];
+    const navStyle = {};
+    tabs.forEach(t => { navStyle[t] = { bg: s.parentTab === t ? '#0F766E' : 'transparent', color: s.parentTab === t ? '#fff' : '#1f2a28' }; });
+    const kids = ['login','home','lesson','theme','rewards'];
+    const kidBtn = {};
+    kids.forEach(k => { kidBtn[k] = { bg: s.kidScreen === k ? '#0F766E' : 'transparent', color: s.kidScreen === k ? '#fff' : '#c7cbd6' }; });
+
+    const kidNavItems = [
+      { key: 'home', label: 'Home' },
+      { key: 'assignments', label: 'Assignments' },
+      { key: 'rewards', label: 'Rewards' }
+    ].map((it, i) => ({ ...it, id: 'nav' + i,
+      active: s.kidScreen === it.key,
+      go: it.key === 'assignments' ? undefined : (() => this.setState({ kidScreen: it.key })) }));
+    kidNavItems.forEach(it => { it.bg = it.active ? '#0F766E' : 'transparent'; it.color = it.active ? '#fff' : (it.key === 'assignments' ? '#c7cbd6' : '#7a8f8b'); it.disabled = it.key === 'assignments'; });
+
+    const REGION_DEFS = [
+      { key: 'africa', label: 'Africa', total: 6, desc: 'Explore the savanna, jungle and desert wildlife of Africa', top: '46%', left: '48%', size: '90px' },
+      { key: 'asia', label: 'Asia', total: 6, desc: "Discover the incredible animals of Asia's forests and mountains", top: '30%', left: '66%', size: '110px' },
+      { key: 'northamerica', label: 'North America', total: 6, desc: 'Meet the creatures roaming North America\'s wilds', top: '24%', left: '18%', size: '90px' },
+      { key: 'southamerica', label: 'South America', total: 6, desc: 'Journey through the rainforests of South America', top: '62%', left: '26%', size: '70px' },
+      { key: 'europe', label: 'Europe', total: 6, desc: 'Uncover the wildlife of European woodlands and coasts', top: '22%', left: '48%', size: '55px' },
+      { key: 'oceania', label: 'Oceania', total: 6, desc: 'Spot the unique animals of Oceania\'s islands', top: '68%', left: '82%', size: '55px' }
+    ];
+    const africaAnimals = [
+      { name: 'Lion', location: 'Masai Mara, Kenya' },
+      { name: 'Elephant', location: 'Okavango Delta, Botswana' },
+      { name: 'Cheetah', location: 'Serengeti, Tanzania' },
+      { name: 'Mountain Gorilla', location: 'Bwindi, Uganda' },
+      { name: 'Flamingo', location: 'Lake Nakuru, Kenya' },
+      { name: 'Nile Crocodile', location: 'Okavango Delta, Botswana' }
+    ];
+    const regionList = REGION_DEFS.map(r => {
+      const collected = r.key === 'africa' ? r.total : 0;
+      const complete = collected === r.total;
+      const active = s.rewardsRegion === r.key;
+      const animals = r.key === 'africa'
+        ? africaAnimals.map((a, i) => ({ ...a, id: 'animal-' + r.key + '-' + i, collected: true, imgOpacity: 1 }))
+        : Array.from({ length: r.total }, (_, i) => ({ name: 'Mystery Animal', location: '???', id: 'animal-' + r.key + '-' + i, collected: false, imgOpacity: 0.35 }));
+      return { ...r, collected, complete, active,
+        pillBg: active ? '#0F766E' : '#fff', pillColor: active ? '#fff' : '#4a5a57',
+        pillBorder: active ? '#0F766E' : '#e6e2d8',
+        mapBg: complete ? '#E0A927' : (active ? '#7FD9C4' : '#3a4a63'),
+        mapGlow: complete ? '0 0 24px rgba(224,169,39,.55)' : (active ? '0 0 20px rgba(127,217,196,.5)' : 'none'),
+        select: () => this.setState({ rewardsRegion: r.key }),
+        animals };
+    });
+    const selectedRegion = regionList.find(r => r.active) || regionList[0];
+    const totalCollected = regionList.reduce((sum, r) => sum + r.collected, 0);
+    const totalCards = regionList.reduce((sum, r) => sum + r.total, 0);
+    const regionsComplete = regionList.filter(r => r.complete).length;
+
+    const ALL_LESSONS = [
+      { subject: 'Mathematics', title: 'Four Operations with Fractions', xp: 225, status: 'continue', iconBg: '#E4F3F1', iconColor: '#0F766E' },
+      { subject: 'English', title: 'Reading Comprehension Gr6', xp: 225, status: 'start', iconBg: '#FFE3D9', iconColor: '#E8724C' },
+      { subject: 'Hebrew', title: 'Synthesising Multiple Texts', xp: 225, status: 'start', iconBg: '#FFD8B8', iconColor: '#B7862F' },
+      { subject: 'Mathematics', title: 'Shapes and Angles', xp: 180, status: 'start', iconBg: '#E4F3F1', iconColor: '#0F766E' },
+      { subject: 'English', title: 'Story Writing Basics', xp: 200, status: 'start', iconBg: '#FFE3D9', iconColor: '#E8724C' }
+    ];
+    const subjects = ['all', 'Mathematics', 'English', 'Hebrew'];
+    const subjectTabs = subjects.map(sub => ({ key: sub, label: sub === 'all' ? 'All Subjects' : sub,
+      active: (s.kidSubject || 'all') === sub,
+      go: () => this.setState({ kidSubject: sub, kidPage: 0 }) }));
+    subjectTabs.forEach(t => { t.bg = t.active ? '#0F766E' : '#fff'; t.color = t.active ? '#fff' : '#7a8f8b'; });
+    const filteredLessons = ALL_LESSONS.filter(l => (s.kidSubject || 'all') === 'all' || l.subject === s.kidSubject);
+    const pageCount = filteredLessons.length;
+    const kidPage = Math.min(s.kidPage || 0, Math.max(0, pageCount - 1));
+    const currentLesson = filteredLessons[kidPage] || filteredLessons[0];
+    const lessonDots = filteredLessons.map((l, i) => ({ id: 'dot-' + i, active: i === kidPage, go: () => this.setState({ kidPage: i }) }));
+    lessonDots.forEach(d => { d.bg = d.active ? '#0F766E' : '#e2ded2'; d.w = d.active ? '18px' : '7px'; });
+    const goPrevPage = () => this.setState(st => ({ kidPage: (st.kidPage || 0) > 0 ? st.kidPage - 1 : pageCount - 1 }));
+    const goNextPage = () => this.setState(st => ({ kidPage: ((st.kidPage || 0) + 1) % pageCount }));
+    const onBookTouchStart = (e) => { this._swipeX = e.touches ? e.touches[0].clientX : e.clientX; };
+    const onBookTouchEnd = (e) => {
+      const endX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+      if (this._swipeX == null) return;
+      const dx = endX - this._swipeX;
+      if (dx > 40) goPrevPage(); else if (dx < -40) goNextPage();
+      this._swipeX = null;
+    };
+
+    const tp = s.themePreview || 'classic';
+    const themeBorder = {};
+    ['classic','minecraft','princesses','sports'].forEach(k => { themeBorder[k] = tp === k ? '#0F766E' : 'transparent'; });
+    const SKINS = {
+      classic: { label:'Classic', useLabel:'Use Classic Theme', pageBg:'#F7F5F0', panelBg:'#fff', radius:'14px', border:'none', shadow:'none',
+        headerBg:'linear-gradient(135deg,#BFE8DE,#DCD3F5)', headerText:'#1f2a28', headerSub:'#3F8E7F', textColor:'#1f2a28',
+        accent:'#0F766E', accentText:'#fff', font:"'Baloo 2',sans-serif", chipBg:'#E4F3F1',
+        badge1:'#E0A927', badge2:'#7C6BAE', badge3:'#E8724C' },
+      minecraft: { label:'Minecraft', useLabel:'Use Minecraft Theme', pageBg:'#20304a', panelBg:'#33465f', radius:'2px', border:'3px solid #101a2c', shadow:'3px 3px 0 #101a2c',
+        headerBg:'#1B2340', headerText:'#C6FF3D', headerSub:'#9db3c9', textColor:'#C6FF3D',
+        accent:'#9BE23D', accentText:'#1B2340', font:"'Courier New',monospace", chipBg:'#425a3d',
+        badge1:'#E0A927', badge2:'#7C9BFF', badge3:'#E8724C' },
+      princesses: { label:'Princesses', useLabel:'Use Princesses Theme', pageBg:'#FDEFF6', panelBg:'#fff', radius:'22px', border:'2px solid #F7C6E0', shadow:'0 4px 14px rgba(194,99,122,.12)',
+        headerBg:'linear-gradient(135deg,#FFD1DC,#DCD3F5)', headerText:'#7C4159', headerSub:'#C2637A', textColor:'#7C4159',
+        accent:'#C2637A', accentText:'#fff', font:"'Baloo 2',sans-serif", chipBg:'#FDE4EE',
+        badge1:'#E0B75C', badge2:'#B695D9', badge3:'#E8724C' },
+      sports: { label:'Sports', useLabel:'Use Sports Theme', pageBg:'#EAF2FB', panelBg:'#fff', radius:'10px', border:'none', shadow:'0 2px 8px rgba(29,53,87,.08)',
+        headerBg:'linear-gradient(120deg,#1D3557,#2C4C7C)', headerText:'#fff', headerSub:'#9FC0E8', textColor:'#1D3557',
+        accent:'#F4762A', accentText:'#fff', font:"Manrope,sans-serif", chipBg:'#E4EDF7',
+        badge1:'#F4762A', badge2:'#1D3557', badge3:'#2CA58D' }
+    };
+    const skin = SKINS[tp];
+    const langs = ['en','he','bi'];
+    const langBtn = {};
+    langs.forEach(l => { langBtn[l] = { bg: s.lang === l ? '#0F766E' : 'transparent', color: s.lang === l ? '#fff' : '#c7cbd6' }; });
+    const viewBtn = {
+      parent: { bg: s.view === 'parent' ? '#0F766E' : 'transparent', color: s.view === 'parent' ? '#fff' : '#c7cbd6' },
+      kid: { bg: s.view === 'kid' ? '#0F766E' : 'transparent', color: s.view === 'kid' ? '#fff' : '#c7cbd6' },
+    };
+    return {
+      dir,
+      isParent: s.view === 'parent', isKid: s.view === 'kid',
+      viewBtn, navStyle, kidBtn, langBtn,
+      tabOverview: s.parentTab === 'overview', tabProgress: s.parentTab === 'progress',
+      tabWorksheets: s.parentTab === 'worksheets', tabAI: s.parentTab === 'ai',
+      tabAssignments: s.parentTab === 'assignments', tabCurriculum: s.parentTab === 'curriculum',
+      tabParents: s.parentTab === 'parents', tabAccount: s.parentTab === 'account',
+      kidLogin: s.kidScreen === 'login', kidHome: s.kidScreen === 'home',
+      kidLesson: s.kidScreen === 'lesson', kidTheme: s.kidScreen === 'theme',
+      kidRewards: s.kidScreen === 'rewards', kidNotLogin: s.kidScreen !== 'login',
+      flipStyle: dir === 'rtl' ? 'transform:scaleX(-1)' : '',
+      setView_parent: () => this.setState({ view: 'parent' }),
+      setView_kid: () => this.setState({ view: 'kid' }),
+      setTab_overview: () => this.setState({ parentTab: 'overview' }),
+      setTab_progress: () => this.setState({ parentTab: 'progress' }),
+      setTab_worksheets: () => this.setState({ parentTab: 'worksheets' }),
+      setTab_ai: () => this.setState({ parentTab: 'ai' }),
+      setTab_assignments: () => this.setState({ parentTab: 'assignments' }),
+      setTab_curriculum: () => this.setState({ parentTab: 'curriculum' }),
+      setTab_parents: () => this.setState({ parentTab: 'parents' }),
+      setTab_account: () => this.setState({ parentTab: 'account' }),
+      setKid_login: () => this.setState({ kidScreen: 'login' }),
+      setKid_home: () => this.setState({ kidScreen: 'home' }),
+      setKid_lesson: () => this.setState({ kidScreen: 'lesson' }),
+      setKid_theme: () => this.setState({ kidScreen: 'theme' }),
+      setKid_rewards: () => this.setState({ kidScreen: 'rewards' }),
+      kidNavItems, regionList, selectedRegion, totalCollected, totalCards, regionsComplete,
+      subjectTabs, currentLesson, lessonDots, pageCount, goPrevPage, goNextPage, onBookTouchStart, onBookTouchEnd,
+      themeBorder, skin,
+      setTheme_classic: () => this.setState({ themePreview: 'classic' }),
+      setTheme_minecraft: () => this.setState({ themePreview: 'minecraft' }),
+      setTheme_princesses: () => this.setState({ themePreview: 'princesses' }),
+      setTheme_sports: () => this.setState({ themePreview: 'sports' }),
+      setLang_en: () => this.setState({ lang: 'en' }),
+      setLang_he: () => this.setState({ lang: 'he' }),
+      setLang_bi: () => this.setState({ lang: 'bi' }),
+    };
+  }
+}
+</script>
+</body>
+</html>
