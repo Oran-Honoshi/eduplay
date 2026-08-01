@@ -4,14 +4,21 @@ import { useSearchParams } from 'next/navigation'
 import {
   ArrowLeft, FileText, BookOpen, Calculator, Globe2,
   ChevronRight, Check, Loader2, Sun, Moon,
-  ToggleLeft, ToggleRight, Sliders, Users, Zap,
+  ToggleLeft, ToggleRight, Sliders, Users, Zap, RefreshCw,
 } from 'lucide-react'
 import EduPlayLogo from '@/components/EduPlayLogo'
+import ParentHeaderBar from '@/components/ParentHeaderBar'
+import { PARENT_COLORS, PARENT_FONTS, CHILD_AVATAR_COLORS } from '@/lib/parentTheme'
 
 // ─── Tokens ───────────────────────────────────────────────────
+// Light palette matches the rest of the redesigned parent portal. Dark mode
+// is a real, self-contained feature with no equivalent anywhere else in the
+// app (the design doc has no dark-mode spec at all) — left as its own
+// internally-consistent palette rather than inventing a "dark PARENT_COLORS"
+// that doesn't exist anywhere else.
 const L = {
-  bg:'#F9FAFB', card:'#FFFFFF', border:'#E5E7EB', inputBg:'#FAFAFA',
-  text:'#111827', textSec:'#6B7280', textMuted:'#9CA3AF', label:'#374151',
+  bg:PARENT_COLORS.pageBg, card:PARENT_COLORS.card, border:PARENT_COLORS.border, inputBg:PARENT_COLORS.pageBg,
+  text:PARENT_COLORS.text, textSec:PARENT_COLORS.textSecondary, textMuted:PARENT_COLORS.textMuted, label:PARENT_COLORS.textSecondary,
 }
 const D = {
   bg:'#0F1117', card:'#1E2130', border:'#2A2D3E', inputBg:'#252836',
@@ -21,13 +28,17 @@ const D = {
 // TODO: hardcoded to this dev family's actual children (confirmed against
 // GET /api/family/children, which returns these same three ids) rather than
 // fetched per-family like dashboard/page.tsx does. Not fixed here — swap to
-// GET /api/family/children when this does get addressed.
+// GET /api/family/children when this does get addressed. The identical
+// hardcoded array (same 3 ids) is independently copy-pasted in
+// curriculum/page.tsx too — same root cause, fix both together.
 const CHILDREN = [
-  { id:'22222222-2222-2222-2222-222222222001', name:'Lia',   grade:6, emoji:'🐱', color:'#FF6B6B', grad:'linear-gradient(135deg,#FF9F43,#FF6B6B)' },
-  { id:'22222222-2222-2222-2222-222222222002', name:'Tamar', grade:4, emoji:'🐻', color:'#4A7FD4', grad:'linear-gradient(135deg,#4A7FD4,#2EC4B6)' },
-  { id:'22222222-2222-2222-2222-222222222003', name:'Tom',   grade:0, emoji:'🦊', color:'#8B5CF6', grad:'linear-gradient(135deg,#8B5CF6,#C084FC)' },
+  { id:'22222222-2222-2222-2222-222222222001', name:'Lia',   grade:6, color:CHILD_AVATAR_COLORS[0] },
+  { id:'22222222-2222-2222-2222-222222222002', name:'Tamar', grade:4, color:CHILD_AVATAR_COLORS[1] },
+  { id:'22222222-2222-2222-2222-222222222003', name:'Tom',   grade:0, color:CHILD_AVATAR_COLORS[2] },
 ]
 
+// Kept as distinct per-subject identity colors (same call as curriculum/page.tsx's
+// SUBJECTS) rather than flattened to one teal — real informational signal, not decoration.
 const SUBJECTS = [
   { slug:'math',    label:'Mathematics', labelHe:'מתמטיקה', icon:Calculator, color:'#4A7FD4', bg:'#EFF6FF' },
   { slug:'english', label:'English',     labelHe:'אנגלית',  icon:BookOpen,   color:'#2EC4B6', bg:'#F0FDFB' },
@@ -35,20 +46,20 @@ const SUBJECTS = [
 ]
 
 const DIFFICULTIES = [
-  { id:'easy',   label:'Easy',   color:'#10B981', bg:'#D1FAE5' },
-  { id:'medium', label:'Medium', color:'#F59E0B', bg:'#FEF3C7' },
-  { id:'hard',   label:'Hard',   color:'#EF4444', bg:'#FEE2E2' },
-  { id:'mixed',  label:'Mixed',  color:'#8B5CF6', bg:'#F5F3FF' },
+  { id:'easy',   label:'Easy',   color:PARENT_COLORS.primary,  bg:PARENT_COLORS.primaryLight },
+  { id:'medium', label:'Medium', color:PARENT_COLORS.amberText,bg:PARENT_COLORS.amberLight },
+  { id:'hard',   label:'Hard',   color:PARENT_COLORS.coralText,bg:PARENT_COLORS.coralLight },
+  { id:'mixed',  label:'Mixed',  color:PARENT_COLORS.accent,   bg:PARENT_COLORS.accentLight },
 ]
 
 const WS_TYPES = [
-  { id:'practice', label:'Practice',  desc:'Hints and examples included',     color:'#4A7FD4' },
-  { id:'quiz',     label:'Quiz',      desc:'Questions only, no hints',         color:'#10B981' },
-  { id:'exam',     label:'Exam',      desc:'Full coverage, exam conditions',   color:'#EF4444' },
+  { id:'practice', label:'Practice',  desc:'Hints and examples included',     color:PARENT_COLORS.primary },
+  { id:'quiz',     label:'Quiz',      desc:'Questions only, no hints',         color:PARENT_COLORS.accent },
+  { id:'exam',     label:'Exam',      desc:'Full coverage, exam conditions',   color:PARENT_COLORS.coralText },
 ]
 
 // ─── Toggle switch ────────────────────────────────────────────
-function Toggle({ value, onChange, color = '#4A7FD4' }: { value: boolean; onChange: () => void; color?: string }) {
+function Toggle({ value, onChange, color = PARENT_COLORS.primary }: { value: boolean; onChange: () => void; color?: string }) {
   return (
     <div onClick={onChange} style={{
       width: 44, height: 24, borderRadius: 12,
@@ -97,6 +108,17 @@ function PageHeader({ dark, onToggleDark, tab, onSwitchTab }: {
       gap: 16,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <EduPlayLogo showName={false} size={32} iconRadius={9} />
+          <div>
+            <div style={{ fontFamily: PARENT_FONTS.heading, fontWeight: 800, fontSize: 15, color: T.text, letterSpacing: '-0.01em' }}>
+              Edu<span style={{ color: PARENT_COLORS.primary }}>Play</span>
+            </div>
+            <div style={{ fontSize: 10, color: T.textMuted, fontWeight: 600 }}>Worksheet Builder</div>
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <button onClick={() => window.location.href = '/dashboard'} style={{
           display: 'flex', alignItems: 'center', gap: 5,
           padding: '7px 14px', borderRadius: 50,
@@ -107,18 +129,7 @@ function PageHeader({ dark, onToggleDark, tab, onSwitchTab }: {
         }}>
           <ArrowLeft size={13} /> Dashboard
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <EduPlayLogo showName={false} size={32} iconRadius={9} />
-          <div>
-            <div style={{ fontWeight: 900, fontSize: 15, color: T.text, letterSpacing: '-0.01em' }}>
-              Edu<span style={{ background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Play</span>
-            </div>
-            <div style={{ fontSize: 10, color: T.textMuted, fontWeight: 600 }}>Worksheet Builder</div>
-          </div>
-        </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ display: 'flex', background: dark ? '#252836' : '#F3F4F6', borderRadius: 10, padding: 3, gap: 2 }}>
+        <div style={{ display: 'flex', background: dark ? '#252836' : PARENT_COLORS.pageBg, borderRadius: 10, padding: 3, gap: 2 }}>
           {([['builder', 'Builder'], ['history', 'History']] as const).map(([id, label]) => (
             <button key={id} onClick={() => onSwitchTab(id)} style={{
               padding: '6px 14px', border: 'none', borderRadius: 7,
@@ -205,14 +216,14 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
   const selSubj = selectedSubject
 
   return (
-    <div style={{ minHeight: '100vh', background: T.bg, fontFamily: '"Nunito", system-ui, sans-serif', color: T.text, transition: 'background 0.2s' }}>
+    <div style={{ minHeight: '100vh', background: T.bg, fontFamily: PARENT_FONTS.body, color: T.text, transition: 'background 0.2s' }}>
       <style>{`
         * { box-sizing: border-box; }
         .card { transition: box-shadow 0.18s ease, transform 0.18s ease !important; }
         .card:hover { box-shadow: 0 8px 24px rgba(0,0,0,${dark ? '0.25' : '0.08'}) !important; transform: translateY(-1px) !important; }
         .sel-option { transition: all 0.15s ease !important; }
         .sel-option:hover { transform: translateY(-1px) !important; }
-        input[type=range] { accent-color: #4A7FD4; width: 100%; }
+        input[type=range] { accent-color: ${PARENT_COLORS.primary}; width: 100%; }
         @media (max-width: 768px) {
           .builder-grid { grid-template-columns: 1fr !important; }
           .sticky-summary { position: static !important; }
@@ -241,7 +252,7 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
             {/* Step 1 — Child */}
             <div className="card" style={{ background: T.card, borderRadius: 20, padding: 20, border: `1px solid ${T.border}`, boxShadow: `0 2px 8px rgba(0,0,0,${dark?'0.15':'0.04'})` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                <StepBadge n={1} color="#4A7FD4" />
+                <StepBadge n={1} color={PARENT_COLORS.primary} />
                 <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>Select Child</div>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
@@ -258,7 +269,9 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
                         background: active ? `${child.color}12` : T.inputBg,
                       }}
                     >
-                      <div style={{ fontSize: 28, marginBottom: 5, lineHeight: 1 }}>{child.emoji}</div>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: child.color, color: 'white', fontWeight: 800, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 5px' }}>
+                        {child.name[0].toUpperCase()}
+                      </div>
                       <div style={{ fontWeight: 800, fontSize: 13, color: active ? child.color : T.text }}>{child.name}</div>
                       <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>
                         Grade {child.grade === 0 ? 'K' : child.grade}
@@ -272,7 +285,7 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
             {/* Step 2 — Subject */}
             <div className="card" style={{ background: T.card, borderRadius: 20, padding: 20, border: `1px solid ${T.border}`, boxShadow: `0 2px 8px rgba(0,0,0,${dark?'0.15':'0.04'})` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                <StepBadge n={2} color="#2EC4B6" />
+                <StepBadge n={2} color={PARENT_COLORS.accent} />
                 <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>Select Subject</div>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
@@ -372,9 +385,9 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
                         </div>
                         <div style={{
                           display: 'flex', alignItems: 'center', gap: 3,
-                          fontSize: 11, fontWeight: 700, color: '#F59E0B', flexShrink: 0,
+                          fontSize: 11, fontWeight: 700, color: PARENT_COLORS.amberText, flexShrink: 0,
                         }}>
-                          <Zap size={10} fill="#F59E0B" color="#F59E0B" />
+                          <Zap size={10} fill={PARENT_COLORS.amberText} color={PARENT_COLORS.amberText} />
                           {topic.xp_reward}
                         </div>
                       </div>
@@ -387,7 +400,7 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
             {/* Step 4 — Options */}
             <div className="card" style={{ background: T.card, borderRadius: 20, padding: 20, border: `1px solid ${T.border}`, boxShadow: `0 2px 8px rgba(0,0,0,${dark?'0.15':'0.04'})` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
-                <StepBadge n={4} color="#8B5CF6" />
+                <StepBadge n={4} color={PARENT_COLORS.amberText} />
                 <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>Options</div>
               </div>
 
@@ -448,7 +461,7 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
                   {/* Question count */}
                   <div>
                     <div style={{ fontSize: 11, fontWeight: 800, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                      Questions: <span style={{ color: '#4A7FD4' }}>{questionCount}</span>
+                      Questions: <span style={{ color: PARENT_COLORS.primary }}>{questionCount}</span>
                     </div>
                     <input type="range" min={10} max={40} step={1} value={questionCount}
                       onChange={e => setQCount(parseInt(e.target.value))} />
@@ -485,9 +498,9 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
 
                   {/* Toggles */}
                   {[
-                    { label:'Answer Key',      desc:'Answers at the end',            val:answerKey,    set:() => setAnswerKey(v => !v),  color:'#4A7FD4' },
-                    { label:'Include Hints',   desc:'Small hint per question',       val:includeHints, set:() => setHints(v => !v),      color:'#F59E0B' },
-                    { label:'Solution Steps',  desc:'Step-by-step explanations',    val:solutionSteps,set:() => setSteps(v => !v),      color:'#10B981' },
+                    { label:'Answer Key',      desc:'Answers at the end',            val:answerKey,    set:() => setAnswerKey(v => !v),  color:PARENT_COLORS.primary },
+                    { label:'Include Hints',   desc:'Small hint per question',       val:includeHints, set:() => setHints(v => !v),      color:PARENT_COLORS.amberText },
+                    { label:'Solution Steps',  desc:'Step-by-step explanations',    val:solutionSteps,set:() => setSteps(v => !v),      color:PARENT_COLORS.accent },
                   ].map(t => (
                     <div key={t.label} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -519,7 +532,7 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {[
-                  { label:'Child',      value:`${selectedChild.emoji} ${selectedChild.name} (Grade ${selectedChild.grade === 0 ? 'K' : selectedChild.grade})` },
+                  { label:'Child',      value:`${selectedChild.name} (Grade ${selectedChild.grade === 0 ? 'K' : selectedChild.grade})` },
                   { label:'Subject',    value:selSubj.label },
                   { label:'Topics',     value:`${selectedTopics.length} of ${topics.length} selected` },
                   { label:'Type',       value:WS_TYPES.find(t => t.id === wsType)?.label || wsType },
@@ -556,13 +569,13 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
                   width: '100%', marginTop: 16, padding: '14px',
                   borderRadius: 50, border: 'none',
                   background: selectedTopics.length === 0
-                    ? (dark ? '#2A2D3E' : '#E5E7EB')
-                    : 'linear-gradient(135deg,#4A7FD4,#2EC4B6)',
+                    ? (dark ? '#2A2D3E' : PARENT_COLORS.borderLight)
+                    : PARENT_COLORS.primary,
                   color: selectedTopics.length === 0 ? T.textMuted : 'white',
                   fontSize: 14, fontWeight: 900,
                   cursor: selectedTopics.length === 0 ? 'not-allowed' : 'pointer',
                   fontFamily: 'inherit',
-                  boxShadow: selectedTopics.length === 0 ? 'none' : '0 6px 20px rgba(74,127,212,0.4)',
+                  boxShadow: selectedTopics.length === 0 ? 'none' : `0 6px 20px ${PARENT_COLORS.primary}40`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   transition: 'all 0.18s ease',
                 }}>
@@ -573,7 +586,7 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
               </button>
 
               {selectedTopics.length === 0 && (
-                <p style={{ textAlign: 'center', fontSize: 12, color: '#EF4444', marginTop: 8, fontWeight: 700 }}>
+                <p style={{ textAlign: 'center', fontSize: 12, color: PARENT_COLORS.danger, marginTop: 8, fontWeight: 700 }}>
                   Select at least one topic to continue
                 </p>
               )}
@@ -618,15 +631,24 @@ function WorksheetHistoryList({ onSwitchTab }: { onSwitchTab: (t: 'builder' | 'h
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: L.bg, fontFamily: '"Nunito", system-ui, sans-serif', color: L.text }}>
-      <header style={{
-        background: L.card, borderBottom: `1px solid ${L.border}`,
-        padding: '0 24px', height: 60,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        position: 'sticky', top: 0, zIndex: 100,
-        boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div style={{ minHeight: '100vh', background: L.bg, fontFamily: PARENT_FONTS.body, color: L.text }}>
+      <ParentHeaderBar
+        center={
+          <div style={{ display: 'flex', background: PARENT_COLORS.pageBg, borderRadius: 10, padding: 3, gap: 2 }}>
+            {([['builder', 'Builder'], ['history', 'History']] as const).map(([id, label]) => (
+              <button key={id} onClick={() => onSwitchTab(id)} style={{
+                padding: '6px 14px', border: 'none', borderRadius: 7,
+                background: id === 'history' ? L.card : 'transparent',
+                boxShadow: id === 'history' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                color: id === 'history' ? L.text : L.textMuted,
+                fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
+              }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        }
+        right={
           <button onClick={() => window.location.href = '/dashboard'} style={{
             display: 'flex', alignItems: 'center', gap: 5,
             padding: '7px 14px', borderRadius: 50,
@@ -636,30 +658,8 @@ function WorksheetHistoryList({ onSwitchTab }: { onSwitchTab: (t: 'builder' | 'h
           }}>
             <ArrowLeft size={13} /> Dashboard
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <EduPlayLogo showName={false} size={32} iconRadius={9} />
-            <div>
-              <div style={{ fontWeight: 900, fontSize: 15, color: L.text, letterSpacing: '-0.01em' }}>
-                Edu<span style={{ background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Play</span>
-              </div>
-              <div style={{ fontSize: 10, color: L.textMuted, fontWeight: 600 }}>Worksheet Builder</div>
-            </div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', background: '#F3F4F6', borderRadius: 10, padding: 3, gap: 2 }}>
-          {([['builder', 'Builder'], ['history', 'History']] as const).map(([id, label]) => (
-            <button key={id} onClick={() => onSwitchTab(id)} style={{
-              padding: '6px 14px', border: 'none', borderRadius: 7,
-              background: id === 'history' ? L.card : 'transparent',
-              boxShadow: id === 'history' ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
-              color: id === 'history' ? L.text : L.textMuted,
-              fontWeight: 800, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
-            }}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </header>
+        }
+      />
 
       <div style={{ maxWidth: 780, margin: '0 auto', padding: '28px 20px' }}>
         <h1 style={{ fontWeight: 900, fontSize: 24, margin: '0 0 5px', letterSpacing: '-0.02em', color: L.text }}>Worksheet History</h1>
@@ -689,11 +689,11 @@ function WorksheetHistoryList({ onSwitchTab }: { onSwitchTab: (t: 'builder' | 'h
                   </div>
                 </div>
                 <button onClick={() => regenerate(g)} style={{
-                  flexShrink: 0, padding: '8px 16px', borderRadius: 50,
-                  border: 'none', background: 'linear-gradient(135deg,#4A7FD4,#2EC4B6)',
+                  flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 50,
+                  border: 'none', background: PARENT_COLORS.primary,
                   color: 'white', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
                 }}>
-                  🔁 Regenerate
+                  <RefreshCw size={12} /> Regenerate
                 </button>
               </div>
             ))}
@@ -713,7 +713,7 @@ export default function WorksheetsPage() {
 
   return (
     <Suspense fallback={
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: '"Nunito",sans-serif', color: '#6B7280' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: PARENT_FONTS.body, color: PARENT_COLORS.textSecondary }}>
         <Loader2 size={24} style={{ animation: 'spin 0.7s linear infinite' }} />
       </div>
     }>
