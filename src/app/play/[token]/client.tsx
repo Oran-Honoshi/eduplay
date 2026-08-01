@@ -126,11 +126,6 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
   }
 
 
-  async function openAssignment(assignmentId: string) {
-    const ok = await sessionPromise
-    if (!ok) { setSessionFailed(true); return }
-    window.location.href = `/assignment?id=${assignmentId}&childId=${child.id}&token=${token}&theme=${child.theme || 'plain'}&lang=${langMode}`
-  }
 
   const THEME_DECOS: any = {
     minecraft:  { pattern: 'repeating-linear-gradient(0deg,rgba(93,158,47,0.06) 0,rgba(93,158,47,0.06) 1px,transparent 1px,transparent 32px),repeating-linear-gradient(90deg,rgba(93,158,47,0.06) 0,rgba(93,158,47,0.06) 1px,transparent 1px,transparent 32px)', corners: ['⛏️','💎','🌲','🧱'] },
@@ -221,7 +216,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
                 <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.7)', marginTop:'2px' }}>{pendingAssignments[0].title}</div>
               )}
             </div>
-            <button onClick={() => openAssignment(pendingAssignments[0].id)}
+            <button onClick={() => withSession(() => { window.location.href = `/assignments?childId=${child.id}&token=${token}&theme=${child.theme || 'plain'}&lang=${langMode}` })}
               style={{ display:'flex', alignItems:'center', gap:'6px', padding:'10px 18px', background:'white', border:'none', borderRadius:'50px', fontWeight:900, fontSize:'13px', color:'#7C5CE0', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
               {langMode === 'he_only' ? 'התחל' : 'Start'} <ChevronRight size={14}/>
             </button>
