@@ -1,5 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react'
+import {
+  Home, BarChart2, Printer, Sparkles, ClipboardList, Notebook, Map, Users, Settings,
+  Bell, Rocket, Check, X, Flame, RefreshCw, Zap, CheckCircle2, Download, ChevronRight,
+  Target, Play, UserPlus, Trash2, Key, GraduationCap, Link2, Copy, ExternalLink, Info,
+} from 'lucide-react'
+import ParentHeaderBar from '@/components/ParentHeaderBar'
+import { PARENT_COLORS, PARENT_FONTS, CHILD_AVATAR_COLORS } from '@/lib/parentTheme'
 
 function ParentsScreen({ familyId, showToast }: any) {
   const [parents, setParents]   = useState<any[]>([])
@@ -63,63 +70,72 @@ function ParentsScreen({ familyId, showToast }: any) {
     showToast('🔑', `${name}'s password updated!`)
   }
 
-  if (loading) return <div style={{ padding:'40px', textAlign:'center', color:'#9AA5B8' }}>Loading...</div>
+  if (loading) return <div style={{ padding:'40px', textAlign:'center', color:PARENT_COLORS.textMuted }}>Loading...</div>
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>👨‍👩‍👧 Parent Profiles</h1>
+        <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
+          <Users size={18} color={PARENT_COLORS.primary} /> Parent Profiles
+        </h1>
         {parents.length < 3 && (
           <button onClick={() => setShowAdd(!showAdd)}
-            style={{ padding:'8px 18px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
-            + Add Parent
+            style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 18px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+            <UserPlus size={14} /> Add Parent
           </button>
         )}
       </div>
-      <p style={{ fontSize:'13px', color:'#5A6A7E', margin:0 }}>
+      <p style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, margin:0 }}>
         Up to 3 parents or guardians can share oversight of this family account. Each has their own password.
       </p>
       <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
         {parents.map((parent, i) => (
-          <div key={parent.id} style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'14px', padding:'18px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
+          <div key={parent.id} style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'14px', padding:'18px' }}>
             <div style={{ display:'flex', alignItems:'center', gap:'14px', marginBottom:'14px' }}>
-              <div style={{ width:'48px', height:'48px', borderRadius:'50%', background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px' }}>
+              <div style={{ width:'48px', height:'48px', borderRadius:'50%', background:PARENT_COLORS.primary, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px' }}>
                 {parent.avatar_emoji || '👤'}
               </div>
               <div style={{ flex:1 }}>
-                <div style={{ fontWeight:800, fontSize:'16px', color:'#1E2D4E' }}>{parent.name}</div>
-                <div style={{ fontSize:'12px', color:'#9AA5B8' }}>{parent.email || 'No email set'} · {parent.role === 'admin' ? '⚙️ Admin' : '👤 Parent'}</div>
+                <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'2px' }}>
+                  <div style={{ fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text }}>{parent.name}</div>
+                  {parent.role === 'admin' ? (
+                    <span style={{ fontSize:'10px', fontWeight:800, padding:'2px 9px', borderRadius:'50px', background:PARENT_COLORS.primary, color:'white' }}>Admin</span>
+                  ) : (
+                    <span style={{ fontSize:'10px', fontWeight:800, padding:'1px 8px', borderRadius:'50px', border:`1.5px solid ${PARENT_COLORS.primary}`, color:PARENT_COLORS.primary }}>Parent</span>
+                  )}
+                </div>
+                <div style={{ fontSize:'12px', color:PARENT_COLORS.textMuted }}>{parent.email || 'No email set'}</div>
               </div>
               {i > 0 && (
                 <button onClick={() => removeParent(parent.id, parent.name)}
-                  style={{ padding:'6px 12px', borderRadius:'50px', border:'1px solid #FEE2E2', background:'#FFF5F5', color:'#DC2626', fontWeight:700, fontSize:'12px', cursor:'pointer' }}>
-                  Remove
+                  style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 12px', borderRadius:'50px', border:`1px solid ${PARENT_COLORS.dangerBorder}`, background:PARENT_COLORS.dangerLight, color:PARENT_COLORS.danger, fontWeight:700, fontSize:'12px', cursor:'pointer' }}>
+                  <Trash2 size={12} /> Remove
                 </button>
               )}
             </div>
             <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
               <input type="password" placeholder="New password" id={`pwd-${parent.id}`}
-                style={{ flex:1, padding:'8px 12px', borderRadius:'8px', border:'1px solid #EEF1F6', fontSize:'13px', outline:'none' }}/>
+                style={{ flex:1, padding:'8px 12px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, fontSize:'13px', outline:'none' }}/>
               <button onClick={() => {
                 const input = document.getElementById(`pwd-${parent.id}`) as HTMLInputElement
                 updatePassword(parent.id, input.value, parent.name)
                 input.value = ''
-              }} style={{ padding:'8px 14px', borderRadius:'8px', border:'none', background:'#4A7FD4', color:'white', fontWeight:700, fontSize:'12px', cursor:'pointer' }}>
-                Update Password
+              }} style={{ display:'flex', alignItems:'center', gap:'5px', padding:'8px 14px', borderRadius:'8px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:700, fontSize:'12px', cursor:'pointer' }}>
+                <Key size={12} /> Update Password
               </button>
             </div>
           </div>
         ))}
       </div>
       {showAdd && (
-        <div style={{ background:'white', border:'2px solid #4A7FD4', borderRadius:'14px', padding:'20px', boxShadow:'0 4px 16px rgba(74,127,212,0.15)' }}>
-          <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', color:'#1E2D4E', margin:'0 0 16px' }}>Add New Parent / Guardian</h3>
+        <div style={{ background:PARENT_COLORS.card, border:`2px solid ${PARENT_COLORS.primary}`, borderRadius:'14px', padding:'20px' }}>
+          <h3 style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, margin:'0 0 16px' }}>Add New Parent / Guardian</h3>
           <div style={{ marginBottom:'14px' }}>
-            <div style={{ fontSize:'12px', fontWeight:700, color:'#5A6A7E', marginBottom:'8px' }}>Avatar</div>
+            <div style={{ fontSize:'12px', fontWeight:700, color:PARENT_COLORS.textSecondary, marginBottom:'8px' }}>Avatar</div>
             <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
               {PARENT_EMOJIS.map(e => (
                 <button key={e} onClick={() => setNewEmoji(e)}
-                  style={{ width:'36px', height:'36px', borderRadius:'8px', border:`2px solid ${newEmoji===e?'#4A7FD4':'#EEF1F6'}`, background:newEmoji===e?'#4A7FD420':'white', fontSize:'18px', cursor:'pointer' }}>
+                  style={{ width:'36px', height:'36px', borderRadius:'8px', border:`2px solid ${newEmoji===e?PARENT_COLORS.primary:PARENT_COLORS.border}`, background:newEmoji===e?PARENT_COLORS.primaryLight:PARENT_COLORS.card, fontSize:'18px', cursor:'pointer' }}>
                   {e}
                 </button>
               ))}
@@ -127,20 +143,20 @@ function ParentsScreen({ familyId, showToast }: any) {
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'16px' }}>
             <input placeholder="Full name *" value={newName} onChange={e => setNewName(e.target.value)}
-              style={{ padding:'10px 14px', borderRadius:'10px', border:'1px solid #EEF1F6', fontSize:'14px', outline:'none' }}/>
+              style={{ padding:'10px 14px', borderRadius:'10px', border:`1px solid ${PARENT_COLORS.border}`, fontSize:'14px', outline:'none' }}/>
             <input placeholder="Email (optional)" value={newEmail} onChange={e => setNewEmail(e.target.value)}
-              style={{ padding:'10px 14px', borderRadius:'10px', border:'1px solid #EEF1F6', fontSize:'14px', outline:'none' }}/>
+              style={{ padding:'10px 14px', borderRadius:'10px', border:`1px solid ${PARENT_COLORS.border}`, fontSize:'14px', outline:'none' }}/>
             <input type="password" placeholder="Password *" value={newPass} onChange={e => setNewPass(e.target.value)}
-              style={{ padding:'10px 14px', borderRadius:'10px', border:'1px solid #EEF1F6', fontSize:'14px', outline:'none' }}/>
+              style={{ padding:'10px 14px', borderRadius:'10px', border:`1px solid ${PARENT_COLORS.border}`, fontSize:'14px', outline:'none' }}/>
           </div>
           <div style={{ display:'flex', gap:'10px' }}>
             <button onClick={() => setShowAdd(false)}
-              style={{ flex:1, padding:'10px', borderRadius:'10px', border:'1px solid #EEF1F6', background:'white', color:'#5A6A7E', fontWeight:700, fontSize:'13px', cursor:'pointer' }}>
+              style={{ flex:1, padding:'10px', borderRadius:'10px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, color:PARENT_COLORS.textSecondary, fontWeight:700, fontSize:'13px', cursor:'pointer' }}>
               Cancel
             </button>
             <button onClick={addParent} disabled={saving || !newName || !newPass}
-              style={{ flex:2, padding:'10px', borderRadius:'10px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer', opacity:saving||!newName||!newPass?0.6:1 }}>
-              {saving ? 'Adding...' : '+ Add Parent'}
+              style={{ flex:2, display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', padding:'10px', borderRadius:'10px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer', opacity:saving||!newName||!newPass?0.6:1 }}>
+              <UserPlus size={14} /> {saving ? 'Adding...' : 'Add Parent'}
             </button>
           </div>
         </div>
@@ -208,7 +224,7 @@ function AssignmentsScreen({ children, showToast }: any) {
     setBusyId(null)
   }
 
-  if (loading) return <div style={{ padding:'40px', textAlign:'center', color:'#9AA5B8' }}>Loading...</div>
+  if (loading) return <div style={{ padding:'40px', textAlign:'center', color:PARENT_COLORS.textMuted }}>Loading...</div>
 
   const STATUS_META: any = {
     correctFirstTry:  '✅',
@@ -218,33 +234,37 @@ function AssignmentsScreen({ children, showToast }: any) {
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
-      <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>📋 Assignment History</h1>
+      <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
+        <ClipboardList size={18} color={PARENT_COLORS.primary} /> Assignment History
+      </h1>
 
       {(children || []).map((child: any, i: number) => {
-        const col  = CHILD_COLORS[i % CHILD_COLORS.length]
+        const avatarColor = CHILD_AVATAR_COLORS[i % CHILD_AVATAR_COLORS.length]
         const list = assignments[child.id] || []
         return (
-          <div key={child.id} style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
+          <div key={child.id} style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'20px' }}>
             <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'14px' }}>
-              <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>{col.emoji}</div>
-              <h2 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'15px', margin:0, color:'#1E2D4E' }}>{child.display_name}</h2>
+              <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:avatarColor, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'15px' }}>
+                {child.display_name?.[0]?.toUpperCase()}
+              </div>
+              <h2 style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'15px', margin:0, color:PARENT_COLORS.text }}>{child.display_name}</h2>
             </div>
 
             {list.length === 0 ? (
-              <div style={{ textAlign:'center', padding:'20px', color:'#9AA5B8', fontSize:'13px' }}>No assignments yet.</div>
+              <div style={{ textAlign:'center', padding:'20px', color:PARENT_COLORS.textMuted, fontSize:'13px' }}>No assignments yet.</div>
             ) : (
               <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
                 {list.map((a: any) => {
                   const pct   = a.totalItems > 0 ? Math.round((a.completedItems / a.totalItems) * 100) : 0
                   const isBusy = busyId === a.id
                   return (
-                    <div key={a.id} style={{ background:'#F8F9FB', border:'1px solid #EEF1F6', borderRadius:'10px', padding:'14px' }}>
+                    <div key={a.id} style={{ background:PARENT_COLORS.pageBg, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'10px', padding:'14px' }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'10px', marginBottom:'8px', flexWrap:'wrap' }}>
                         <div>
-                          <div style={{ fontWeight:800, fontSize:'13px', color:'#1E2D4E' }}>{a.title || 'Untitled assignment'}</div>
-                          <div style={{ fontSize:'11px', color:'#9AA5B8' }}>{new Date(a.created_at).toLocaleDateString()} · {a.completedItems}/{a.totalItems} done ({pct}%)</div>
+                          <div style={{ fontWeight:800, fontSize:'13px', color:PARENT_COLORS.text }}>{a.title || 'Untitled assignment'}</div>
+                          <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted }}>{new Date(a.created_at).toLocaleDateString()} · {a.completedItems}/{a.totalItems} done ({pct}%)</div>
                         </div>
-                        <div style={{ display:'flex', gap:'8px', fontSize:'11px', color:'#5A6A7E' }}>
+                        <div style={{ display:'flex', gap:'8px', fontSize:'11px', color:PARENT_COLORS.textSecondary }}>
                           {(['correctFirstTry', 'correctAfterHint', 'revealedAnswer'] as const).map(k => (
                             a[k] > 0 && <span key={k}>{STATUS_META[k]} {a[k]}</span>
                           ))}
@@ -253,14 +273,14 @@ function AssignmentsScreen({ children, showToast }: any) {
 
                       <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', alignItems:'center' }}>
                         <button disabled={isBusy} onClick={() => reassign(a.id, child.id, child.display_name)}
-                          style={{ padding:'6px 12px', borderRadius:'50px', border:'1px solid #EEF1F6', background:'white', color:'#4A7FD4', fontWeight:700, fontSize:'11px', cursor:'pointer', opacity:isBusy?0.6:1 }}>
-                          🔁 Retry with {child.display_name}
+                          style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 12px', borderRadius:'50px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, color:PARENT_COLORS.primary, fontWeight:700, fontSize:'11px', cursor:'pointer', opacity:isBusy?0.6:1 }}>
+                          <RefreshCw size={11} /> Retry with {child.display_name}
                         </button>
 
                         {pickerFor === a.id ? (
                           <>
                             <select value={pickerChildId} onChange={e => setPickerChildId(e.target.value)}
-                              style={{ padding:'6px 8px', borderRadius:'8px', border:'1px solid #EEF1F6', fontSize:'11px' }}>
+                              style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, fontSize:'11px' }}>
                               <option value="">Choose a child…</option>
                               {(children || []).filter((c: any) => c.id !== child.id).map((c: any) => (
                                 <option key={c.id} value={c.id}>{c.display_name}</option>
@@ -268,19 +288,19 @@ function AssignmentsScreen({ children, showToast }: any) {
                             </select>
                             <button disabled={!pickerChildId || isBusy}
                               onClick={() => reassign(a.id, pickerChildId, (children || []).find((c: any) => c.id === pickerChildId)?.display_name)}
-                              style={{ padding:'6px 12px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:700, fontSize:'11px', cursor:'pointer', opacity:(!pickerChildId||isBusy)?0.6:1 }}>
-                              Confirm
+                              style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 12px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:700, fontSize:'11px', cursor:'pointer', opacity:(!pickerChildId||isBusy)?0.6:1 }}>
+                              <Check size={11} /> Confirm
                             </button>
                             <button onClick={() => { setPickerFor(null); setPickerChildId('') }}
-                              style={{ padding:'6px 10px', borderRadius:'50px', border:'1px solid #EEF1F6', background:'white', color:'#9AA5B8', fontWeight:700, fontSize:'11px', cursor:'pointer' }}>
+                              style={{ padding:'6px 10px', borderRadius:'50px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, color:PARENT_COLORS.textMuted, fontWeight:700, fontSize:'11px', cursor:'pointer' }}>
                               Cancel
                             </button>
                           </>
                         ) : (
                           (children || []).length > 1 && (
                             <button disabled={isBusy} onClick={() => { setPickerFor(a.id); setPickerChildId('') }}
-                              style={{ padding:'6px 12px', borderRadius:'50px', border:'1px solid #EEF1F6', background:'white', color:'#5A6A7E', fontWeight:700, fontSize:'11px', cursor:'pointer', opacity:isBusy?0.6:1 }}>
-                              👤 Assign to a different child
+                              style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 12px', borderRadius:'50px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, color:PARENT_COLORS.textSecondary, fontWeight:700, fontSize:'11px', cursor:'pointer', opacity:isBusy?0.6:1 }}>
+                              <UserPlus size={11} /> Assign to a different child
                             </button>
                           )
                         )}
@@ -302,20 +322,24 @@ function NotebookScreen() {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
-        <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>🗂️ Notebook</h1>
-        <button onClick={() => window.location.href='/notebook'} style={{ padding:'9px 18px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
-          Open Notebook →
+        <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
+          <Notebook size={18} color={PARENT_COLORS.primary} /> Notebook
+        </h1>
+        <button onClick={() => window.location.href='/notebook'} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'9px 18px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+          Open Notebook <ChevronRight size={14} />
         </button>
       </div>
-      <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'40px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', textAlign:'center' }}>
-        <div style={{ fontSize:'48px', marginBottom:'12px' }}>🗂️</div>
-        <div style={{ fontFamily:'"Nunito",sans-serif', fontWeight:800, fontSize:'16px', color:'#1E2D4E', marginBottom:'8px' }}>Your Family's Notebook</div>
-        <div style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px', maxWidth:'420px', margin:'0 auto 16px' }}>
+      <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'40px', textAlign:'center' }}>
+        <div style={{ width:'56px', height:'56px', borderRadius:'16px', background:PARENT_COLORS.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}>
+          <Notebook size={26} color={PARENT_COLORS.primary} />
+        </div>
+        <div style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'8px' }}>Your Family's Notebook</div>
+        <div style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px', maxWidth:'420px', margin:'0 auto 16px' }}>
           Organize notes, reference material, and questions into sections by chapter and subcategory — durable context you can reuse for future question generation.
         </div>
         <div>
-          <button onClick={() => window.location.href='/notebook'} style={{ padding:'12px 28px', borderRadius:'50px', border:'none', background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer', boxShadow:'0 4px 16px rgba(74,127,212,0.3)' }}>
-            🗂️ Open Notebook
+          <button onClick={() => window.location.href='/notebook'} style={{ display:'inline-flex', alignItems:'center', gap:'7px', padding:'12px 28px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>
+            <Notebook size={15} /> Open Notebook
           </button>
         </div>
       </div>
@@ -337,25 +361,29 @@ function QuestionsScreen() {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
-        <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>✨ AI Question Generator</h1>
-        <button onClick={() => window.location.href='/questions'} style={{ padding:'9px 18px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
-          Open Full Generator →
+        <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
+          <Sparkles size={18} color={PARENT_COLORS.primary} /> AI Question Generator
+        </h1>
+        <button onClick={() => window.location.href='/questions'} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'9px 18px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+          Open Full Generator <ChevronRight size={14} />
         </button>
       </div>
-      <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'40px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', textAlign:'center' }}>
-        <div style={{ fontSize:'48px', marginBottom:'12px' }}>🧠</div>
-        <div style={{ fontFamily:'"Nunito",sans-serif', fontWeight:800, fontSize:'16px', color:'#1E2D4E', marginBottom:'8px' }}>Generate Custom Practice Questions</div>
-        <div style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px', maxWidth:'420px', margin:'0 auto 16px' }}>
+      <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'40px', textAlign:'center' }}>
+        <div style={{ width:'56px', height:'56px', borderRadius:'16px', background:PARENT_COLORS.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}>
+          <Sparkles size={26} color={PARENT_COLORS.primary} />
+        </div>
+        <div style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'8px' }}>Generate Custom Practice Questions</div>
+        <div style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px', maxWidth:'420px', margin:'0 auto 16px' }}>
           Use AI to generate new questions by subject, topic and difficulty, review them before they go live, and browse the shared question library.
         </div>
         {!!pendingCount && (
-          <div style={{ display:'inline-flex', alignItems:'center', gap:'6px', background:'#FFF8EC', border:'1px solid #F5A623', color:'#F5A623', borderRadius:'50px', padding:'6px 14px', fontSize:'12px', fontWeight:800, marginBottom:'20px' }}>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:'6px', background:PARENT_COLORS.amberLight, border:`1px solid ${PARENT_COLORS.amber}`, color:PARENT_COLORS.amberText, borderRadius:'50px', padding:'6px 14px', fontSize:'12px', fontWeight:800, marginBottom:'20px' }}>
             ⏳ {pendingCount} question{pendingCount === 1 ? '' : 's'} awaiting review
           </div>
         )}
         <div>
-          <button onClick={() => window.location.href='/questions'} style={{ padding:'12px 28px', borderRadius:'50px', border:'none', background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer', boxShadow:'0 4px 16px rgba(74,127,212,0.3)' }}>
-            ✨ Open Question Generator
+          <button onClick={() => window.location.href='/questions'} style={{ display:'inline-flex', alignItems:'center', gap:'7px', padding:'12px 28px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>
+            <Sparkles size={15} /> Open Question Generator
           </button>
         </div>
       </div>
@@ -370,15 +398,15 @@ const CHILD_COLORS = [
 ]
 
 const TABS = [
-  { key:'overview',   label:'🏠 Overview'    },
-  { key:'progress',   label:'📊 Progress'    },
-  { key:'worksheets', label:'🖨️ Worksheets'  },
-  { key:'questions',  label:'✨ AI Questions' },
-  { key:'assignments', label:'📋 Assignments' },
-  { key:'notebook',   label:'🗂️ Notebook'    },
-  { key:'curriculum', label:'📚 Curriculum'  },
-  { key:'parents',    label:'👨‍👩‍👧 Parents'   },
-  { key:'account',    label:'⚙️ Account'     },
+  { key:'overview',    label:'Overview',    icon:Home },
+  { key:'progress',    label:'Progress',    icon:BarChart2 },
+  { key:'worksheets',  label:'Worksheets',  icon:Printer },
+  { key:'questions',   label:'AI Questions', icon:Sparkles },
+  { key:'assignments', label:'Assignments', icon:ClipboardList },
+  { key:'notebook',    label:'Notebook',    icon:Notebook },
+  { key:'curriculum',  label:'Curriculum',  icon:Map },
+  { key:'parents',     label:'Parents',     icon:Users },
+  { key:'account',     label:'Account',     icon:Settings },
 ]
 
 export default function DashboardClient({ data, error }: { data: any; error?: string }) {
@@ -412,7 +440,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
   const dashStyles = `
     @media (max-width: 767px) {
       .dashboard-sidebar { display: none !important; }
-      .dashboard-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; scrollbar-width: none; }
+      .dashboard-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; scrollbar-width: none; justify-content: flex-start !important; }
       .dashboard-tabs::-webkit-scrollbar { display: none; }
       .stat-grid { grid-template-columns: repeat(2,1fr) !important; }
       .child-grid { grid-template-columns: 1fr !important; }
@@ -428,12 +456,12 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
   `
 
   return (
-    <div style={{ minHeight:'100vh', background:'#F8F9FB', fontFamily:'"Nunito Sans",sans-serif' }}>
+    <div style={{ minHeight:'100vh', background:PARENT_COLORS.pageBg, fontFamily:PARENT_FONTS.body }}>
       <style>{dashStyles}</style>
 
       {/* Toast */}
       {toast && (
-        <div style={{ position:'fixed', bottom:'24px', right:'24px', zIndex:9999, background:'#1E2D4E', color:'white', borderRadius:'12px', padding:'12px 20px', fontSize:'13px', fontWeight:700, boxShadow:'0 8px 32px rgba(0,0,0,0.2)', display:'flex', alignItems:'center', gap:'10px' }}>
+        <div style={{ position:'fixed', bottom:'24px', right:'24px', zIndex:9999, background:PARENT_COLORS.text, color:'white', borderRadius:'12px', padding:'12px 20px', fontSize:'13px', fontWeight:700, boxShadow:'0 8px 32px rgba(0,0,0,0.2)', display:'flex', alignItems:'center', gap:'10px' }}>
           <span style={{ fontSize:'20px' }}>{toast.icon}</span>{toast.text}
         </div>
       )}
@@ -441,58 +469,66 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
       {/* Approval modal */}
       {approvalOpen && (
         <div style={{ position:'fixed', inset:0, zIndex:999, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }} onClick={() => setApprovalOpen(false)}>
-          <div style={{ background:'white', borderRadius:'20px', padding:'28px', maxWidth:'440px', width:'100%' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'16px' }}>
-              <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'18px', margin:0 }}>✅ Approve Completion</h3>
-              <button onClick={() => setApprovalOpen(false)} style={{ border:'none', background:'#F3F4F6', borderRadius:'50%', width:'28px', height:'28px', cursor:'pointer' }}>✕</button>
+          <div style={{ background:PARENT_COLORS.card, borderRadius:'20px', padding:'28px', maxWidth:'440px', width:'100%' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
+              <h3 style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'18px', margin:0, color:PARENT_COLORS.text, display:'flex', alignItems:'center', gap:'8px' }}>
+                <Check size={18} color={PARENT_COLORS.primary} /> Approve Completion
+              </h3>
+              <button onClick={() => setApprovalOpen(false)} style={{ display:'flex', alignItems:'center', justifyContent:'center', border:'none', background:PARENT_COLORS.borderLight, borderRadius:'50%', width:'28px', height:'28px', cursor:'pointer' }}>
+                <X size={14} color={PARENT_COLORS.textSecondary} />
+              </button>
             </div>
             {pendingApprovals[0] ? (
-              <div style={{ background:'#F9FAFB', borderRadius:'12px', padding:'14px', marginBottom:'14px', fontSize:'13px', color:'#4B5563', lineHeight:1.8 }}>
+              <div style={{ background:PARENT_COLORS.pageBg, borderRadius:'12px', padding:'14px', marginBottom:'14px', fontSize:'13px', color:PARENT_COLORS.textSecondary, lineHeight:1.8 }}>
                 <strong>Topic:</strong> {pendingApprovals[0].topic?.title_en}<br/>
                 <strong>Questions:</strong> {pendingApprovals[0].questions_attempted} attempted · {pendingApprovals[0].questions_correct} correct
               </div>
             ) : (
-              <p style={{ color:'#6B7A8D', fontSize:'14px', marginBottom:'16px' }}>No pending approvals right now.</p>
+              <p style={{ color:PARENT_COLORS.textMuted, fontSize:'14px', marginBottom:'16px' }}>No pending approvals right now.</p>
             )}
             <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => { setApprovalOpen(false); showToast('✅','Approved!') }} style={{ flex:1, padding:'12px', background:'#2EC4B6', border:'none', borderRadius:'50px', color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>✅ Approve</button>
-              <button onClick={() => setApprovalOpen(false)} style={{ flex:1, padding:'12px', background:'#F3F4F6', border:'1px solid #E5E7EB', borderRadius:'50px', color:'#4B5563', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>Cancel</button>
+              <button onClick={() => { setApprovalOpen(false); showToast('✅','Approved!') }} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', padding:'12px', background:PARENT_COLORS.primary, border:'none', borderRadius:'50px', color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>
+                <Check size={16} /> Approve
+              </button>
+              <button onClick={() => setApprovalOpen(false)} style={{ flex:1, padding:'12px', background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'50px', color:PARENT_COLORS.textSecondary, fontWeight:800, fontSize:'14px', cursor:'pointer' }}>Cancel</button>
             </div>
           </div>
         </div>
       )}
 
       {/* Header */}
-      <header style={{ background:'white', borderBottom:'1px solid #EEF1F6', padding:'0 16px', height:'58px', display:'flex', alignItems:'center', justifyContent:'space-between', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', position:'sticky', top:0, zIndex:100, gap:'8px' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'18px', color:'#1E2D4E', flexShrink:0 }}>
-          <div style={{ width:'30px', height:'30px', background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'15px' }}>🦔</div>
-          Edu<span style={{ color:'#4A7FD4' }}>Play</span>
-        </div>
-
-        {/* Tabs */}
-        <div className="dashboard-tabs" style={{ display:'flex', gap:'2px', flex:1, justifyContent:'center' }}>
-          {TABS.map(tab => (
-            <button key={tab.key} onClick={() => setScreen(tab.key)}
-              style={{ padding:'6px 12px', borderRadius:'50px', border:'none', fontWeight:700, fontSize:'12px', cursor:'pointer', background:screen===tab.key?'#EBF2FF':'transparent', color:screen===tab.key?'#4A7FD4':'#6B7A8D', whiteSpace:'nowrap', flexShrink:0 }}>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Right */}
-        <div className="header-right" style={{ display:'flex', alignItems:'center', gap:'10px', flexShrink:0 }}>
-          {isDemo && <span style={{ background:'#EBF2FF', color:'#4A7FD4', borderRadius:'50px', padding:'4px 10px', fontSize:'11px', fontWeight:800 }}>🧪 Demo</span>}
-          <span className="days-badge" style={{ background:'#FFF8EC', border:'1px solid #F5A623', color:'#F5A623', borderRadius:'50px', padding:'4px 10px', fontSize:'12px', fontWeight:800 }}>⏳ {daysLeft}d left</span>
-          {pendingApprovals.length > 0 && (
-            <button onClick={() => setApprovalOpen(true)} style={{ position:'relative', width:'34px', height:'34px', background:'#F9FAFB', border:'1px solid #E5E7EB', borderRadius:'50%', cursor:'pointer', fontSize:'15px', flexShrink:0 }}>
-              🔔<span style={{ position:'absolute', top:'4px', right:'4px', width:'9px', height:'9px', background:'#FF6B6B', borderRadius:'50%', border:'2px solid white' }}/>
-            </button>
-          )}
-          <div style={{ width:'34px', height:'34px', background:'linear-gradient(135deg,#4A7FD4,#1E2D4E)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'13px', flexShrink:0 }}>
-            {parentName.split(' ').map((n: string) => n[0]).join('').slice(0,2)}
+      <ParentHeaderBar
+        center={
+          <div className="dashboard-tabs" style={{ display:'flex', gap:'2px', flex:1, minWidth:0, justifyContent:'center' }}>
+            {TABS.map(tab => {
+              const Icon = tab.icon
+              const active = screen === tab.key
+              return (
+                <button key={tab.key} onClick={() => setScreen(tab.key)}
+                  style={{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 12px', borderRadius:'8px', border:'none', fontFamily:PARENT_FONTS.body, fontWeight:700, fontSize:'12px', cursor:'pointer', background:active?PARENT_COLORS.primary:'transparent', color:active?'white':PARENT_COLORS.text, whiteSpace:'nowrap', flexShrink:0 }}>
+                  <Icon size={14} />
+                  {tab.label}
+                </button>
+              )
+            })}
           </div>
-        </div>
-      </header>
+        }
+        right={
+          <div className="header-right" style={{ display:'flex', alignItems:'center', gap:'10px', flexShrink:0 }}>
+            {isDemo && <span style={{ background:PARENT_COLORS.primaryLight, color:PARENT_COLORS.primary, borderRadius:'50px', padding:'4px 10px', fontSize:'11px', fontWeight:800 }}>🧪 Demo</span>}
+            <span className="days-badge" style={{ background:PARENT_COLORS.amberLight, border:`1px solid ${PARENT_COLORS.amber}`, color:PARENT_COLORS.amberText, borderRadius:'50px', padding:'4px 10px', fontSize:'12px', fontWeight:800 }}>{daysLeft} days left</span>
+            {pendingApprovals.length > 0 && (
+              <button onClick={() => setApprovalOpen(true)} style={{ position:'relative', display:'flex', alignItems:'center', justifyContent:'center', width:'34px', height:'34px', background:PARENT_COLORS.pageBg, border:`1px solid ${PARENT_COLORS.borderLight}`, borderRadius:'50%', cursor:'pointer', flexShrink:0 }}>
+                <Bell size={16} color={PARENT_COLORS.textSecondary} />
+                <span style={{ position:'absolute', top:'4px', right:'4px', width:'9px', height:'9px', background:PARENT_COLORS.coral, borderRadius:'50%', border:'2px solid white' }}/>
+              </button>
+            )}
+            <div style={{ width:'34px', height:'34px', background:PARENT_COLORS.primary, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'13px', flexShrink:0 }}>
+              {parentName.split(' ').map((n: string) => n[0]).join('').slice(0,2)}
+            </div>
+          </div>
+        }
+      />
 
       {/* Error banner */}
       {errorBanner === 'lesson_access_denied' && (
@@ -502,34 +538,42 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
         </div>
       )}
 
-      <div style={{ display:'flex', minHeight:'calc(100vh - 58px)' }}>
+      <div style={{ display:'flex', minHeight:'calc(100vh - 64px)' }}>
 
         {/* Sidebar */}
-        <aside className="dashboard-sidebar" style={{ width:'240px', background:'white', borderRight:'1px solid #EEF1F6', padding:'14px 0', flexShrink:0, display:'flex', flexDirection:'column' }}>
-          <div style={{ padding:'0 16px', marginBottom:'8px', fontSize:'10px', fontWeight:800, letterSpacing:'1.5px', textTransform:'uppercase', color:'#9AA5B8' }}>Family</div>
+        <aside className="dashboard-sidebar" style={{ width:'216px', background:PARENT_COLORS.card, borderRight:`1px solid ${PARENT_COLORS.border}`, padding:'14px 0', flexShrink:0, display:'flex', flexDirection:'column' }}>
+          <div style={{ padding:'0 16px', marginBottom:'8px', fontSize:'10px', fontWeight:800, letterSpacing:'1.5px', textTransform:'uppercase', color:PARENT_COLORS.textMuted }}>Family</div>
           {(children || []).map((child: any, i: number) => {
-            const col = CHILD_COLORS[i % CHILD_COLORS.length]
+            const avatarColor = CHILD_AVATAR_COLORS[i % CHILD_AVATAR_COLORS.length]
             return (
               <div key={child.id} style={{ display:'flex', alignItems:'center', gap:'9px', padding:'8px 10px', margin:'0 6px 4px', borderRadius:'8px', cursor:'pointer' }}>
-                <div style={{ width:'30px', height:'30px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'15px', flexShrink:0 }}>{col.emoji}</div>
-                <div>
-                  <div style={{ fontWeight:700, fontSize:'13px', color:'#1E2D4E' }}>{child.display_name}</div>
-                  <div style={{ fontSize:'11px', color:'#9AA5B8' }}>Grade {child.grade === 0 ? 'K' : child.grade} · {child.card_tokens || 0} 🎴 tokens</div>
+                <div style={{ width:'30px', height:'30px', borderRadius:'50%', background:avatarColor, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'13px', flexShrink:0 }}>
+                  {child.display_name?.[0]?.toUpperCase()}
                 </div>
-                {child.streak_current > 0 && <span style={{ fontSize:'12px', fontWeight:800, color:'#FF6B6B', marginLeft:'auto' }}>🔥{child.streak_current}</span>}
+                <div>
+                  <div style={{ fontWeight:700, fontSize:'13px', color:PARENT_COLORS.text }}>{child.display_name}</div>
+                  <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted }}>Grade {child.grade === 0 ? 'K' : child.grade} · {child.card_tokens || 0} tokens</div>
+                </div>
+                {child.streak_current > 0 && (
+                  <span style={{ display:'flex', alignItems:'center', gap:'2px', fontSize:'12px', fontWeight:800, color:PARENT_COLORS.coralText, marginLeft:'auto' }}>
+                    <Flame size={12} />{child.streak_current}
+                  </span>
+                )}
               </div>
             )
           })}
           <div style={{ flex:1 }}/>
-          <div style={{ margin:'10px', background:'linear-gradient(135deg,#1E2D4E,#2C3E6B)', borderRadius:'12px', padding:'14px', color:'white' }}>
-            <h4 style={{ fontFamily:'"Nunito",sans-serif', fontSize:'13px', fontWeight:800, marginBottom:'4px' }}>🚀 Upgrade</h4>
-            <p style={{ fontSize:'11px', opacity:.7, marginBottom:'10px', lineHeight:1.5 }}>Unlimited worksheets & 5 children.</p>
-            <button onClick={() => showToast('🚀','Upgrade coming soon!')} style={{ width:'100%', padding:'8px', borderRadius:'50px', border:'none', background:'linear-gradient(135deg,#F5A623,#FF9F43)', color:'white', fontWeight:800, fontSize:'12px', cursor:'pointer' }}>$20/mo</button>
+          <div style={{ margin:'10px', background:PARENT_COLORS.pageBg, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'14px' }}>
+            <h4 style={{ fontFamily:PARENT_FONTS.heading, fontSize:'13px', fontWeight:800, color:PARENT_COLORS.text, marginBottom:'4px', display:'flex', alignItems:'center', gap:'6px' }}>
+              <Rocket size={14} color={PARENT_COLORS.primary} /> Upgrade
+            </h4>
+            <p style={{ fontSize:'11px', color:PARENT_COLORS.textSecondary, marginBottom:'10px', lineHeight:1.5 }}>Unlimited worksheets & 5 children.</p>
+            <button onClick={() => showToast('🚀','Upgrade coming soon!')} style={{ width:'100%', padding:'8px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'12px', cursor:'pointer' }}>$20/mo</button>
           </div>
         </aside>
 
         {/* Main */}
-        <main className="dashboard-main" style={{ flex:1, padding:'24px', overflowY:'auto', maxHeight:'calc(100vh - 58px)' }}>
+        <main className="dashboard-main" style={{ flex:1, padding:'24px', overflowY:'auto', maxHeight:'calc(100vh - 64px)' }}>
 
           {/* ── OVERVIEW ── */}
           {screen === 'overview' && (
@@ -537,69 +581,79 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
                 <div>
                   <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-                    <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'22px', color:'#1E2D4E', margin:0 }}>Good morning, {parentName.split(' ')[0]} 👋</h1>
+                    <h1 style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'22px', color:PARENT_COLORS.text, margin:0 }}>Good morning, {parentName.split(' ')[0]} 👋</h1>
                     <button onClick={() => window.location.reload()}
-                      style={{ padding:'6px 14px', borderRadius:'50px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'12px', cursor:'pointer', color:'#5A6A7E' }}>
-                      🔄 Refresh
+                      style={{ display:'flex', alignItems:'center', gap:'6px', padding:'6px 14px', borderRadius:'50px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:700, fontSize:'12px', cursor:'pointer', color:PARENT_COLORS.textSecondary }}>
+                      <RefreshCw size={13} /> Refresh
                     </button>
                   </div>
-                  <p style={{ color:'#5A6A7E', margin:'3px 0 0', fontSize:'13px' }}>Here's how your family is doing today</p>
+                  <p style={{ color:PARENT_COLORS.textSecondary, margin:'3px 0 0', fontSize:'13px' }}>Here's how your family is doing today</p>
                 </div>
-                <button onClick={() => window.location.href='/worksheets'} style={{ padding:'8px 16px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>🖨️ Worksheet Builder</button>
+                <button onClick={() => window.location.href='/worksheets'} style={{ display:'flex', alignItems:'center', gap:'7px', padding:'8px 16px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+                  <Printer size={14} /> Worksheet Builder
+                </button>
               </div>
 
               <div className="stat-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'12px' }}>
                 {[
-                  { label:'Total XP',      value:(children||[]).reduce((s: number,c: any) => s+(c.xp_total||0),0).toLocaleString(), color:'#4A7FD4' },
-                  { label:'Active Streaks',value:`${(children||[]).filter((c: any) => c.streak_current>0).length} 🔥`, color:'#FF6B6B' },
-                  { label:'Lessons Done',  value:(progress||[]).filter((p: any) => p.status==='completed').length, color:'#2EC4B6' },
-                  { label:'Downloads',     value:`${family?.trial_dl_used||0} / ∞`, color:'#F5A623' },
+                  { label:'Total XP',       value:(children||[]).reduce((s: number,c: any) => s+(c.xp_total||0),0).toLocaleString(), color:PARENT_COLORS.primary, bg:PARENT_COLORS.primaryLight, icon:Zap },
+                  { label:'Active Streaks', value:`${(children||[]).filter((c: any) => c.streak_current>0).length}`, color:PARENT_COLORS.coralText, bg:PARENT_COLORS.coralLight, icon:Flame },
+                  { label:'Lessons Done',   value:(progress||[]).filter((p: any) => p.status==='completed').length, color:PARENT_COLORS.accent, bg:PARENT_COLORS.accentLight, icon:CheckCircle2 },
+                  { label:'Downloads',      value:`${family?.trial_dl_used||0} / ∞`, color:PARENT_COLORS.amberText, bg:PARENT_COLORS.amberLight, icon:Download },
                 ].map(s => (
-                  <div key={s.label} style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'16px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', position:'relative', overflow:'hidden' }}>
-                    <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', background:s.color }}/>
-                    <div style={{ fontSize:'10px', fontWeight:800, color:'#9AA5B8', textTransform:'uppercase', letterSpacing:'.5px', marginBottom:'4px' }}>{s.label}</div>
-                    <div style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'24px', color:s.color }}>{s.value}</div>
+                  <div key={s.label} style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'16px', display:'flex', flexDirection:'column', gap:'10px' }}>
+                    <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:s.bg, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      <s.icon size={17} color={s.color} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize:'10.5px', fontWeight:800, color:PARENT_COLORS.textMuted, textTransform:'uppercase', letterSpacing:'.5px', marginBottom:'2px' }}>{s.label}</div>
+                      <div style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'18px', color:PARENT_COLORS.text }}>{s.value}</div>
+                    </div>
                   </div>
                 ))}
               </div>
 
               <div className="child-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'14px' }}>
                 {(children||[]).map((child: any, i: number) => {
-                  const col  = CHILD_COLORS[i % CHILD_COLORS.length]
+                  const avatarColor = CHILD_AVATAR_COLORS[i % CHILD_AVATAR_COLORS.length]
                   const cp   = childProgress(child.id)
                   const recs = childRecs(child.id)
                   const highPri = recs.find((r: any) => r.priority==='high')
                   return (
-                    <div key={child.id} onClick={() => setScreen('progress')} style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'20px', padding:'18px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', cursor:'pointer' }}>
+                    <div key={child.id} onClick={() => setScreen('progress')} style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'20px', padding:'18px', cursor:'pointer' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'14px' }}>
-                        <div style={{ width:'48px', height:'48px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'24px', position:'relative' }}>
-                          {col.emoji}
-                          {child.streak_current>0 && <div style={{ position:'absolute', bottom:'-2px', right:'-2px', background:'#FF6B6B', color:'white', fontSize:'9px', fontWeight:800, width:'18px', height:'18px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid white' }}>{child.streak_current}</div>}
+                        <div style={{ width:'48px', height:'48px', borderRadius:'50%', background:avatarColor, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'19px', position:'relative' }}>
+                          {child.display_name?.[0]?.toUpperCase()}
+                          {child.streak_current>0 && <div style={{ position:'absolute', bottom:'-2px', right:'-2px', background:PARENT_COLORS.coral, color:'white', fontSize:'9px', fontWeight:800, width:'18px', height:'18px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid white' }}>{child.streak_current}</div>}
                         </div>
                         <div>
-                          <div style={{ fontFamily:'"Nunito",sans-serif', fontWeight:800, fontSize:'15px' }}>{child.display_name}</div>
-                          <div style={{ fontSize:'11px', color:'#9AA5B8' }}>Grade {child.grade === 0 ? 'K' : child.grade} · {(child.xp_total||0)} XP</div>
+                          <div style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'15px', color:PARENT_COLORS.text }}>{child.display_name}</div>
+                          <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted }}>Grade {child.grade === 0 ? 'K' : child.grade} · {(child.xp_total||0)} XP</div>
                         </div>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:'7px', marginBottom:'12px' }}>
                         {[
-                          { label:'Math',   pct:Math.min(100,Math.round((cp.filter((p: any)=>p.status==='completed'&&p.topic?.subject?.slug==='math').length/7)*100)),   color:'#4A7FD4' },
-                          { label:'Hebrew', pct:Math.min(100,Math.round((cp.filter((p: any)=>p.status==='completed'&&p.topic?.subject?.slug==='hebrew').length/4)*100)), color:'#FF6B6B' },
+                          { label:'Math',   pct:Math.min(100,Math.round((cp.filter((p: any)=>p.status==='completed'&&p.topic?.subject?.slug==='math').length/7)*100)),   color:PARENT_COLORS.primary },
+                          { label:'Hebrew', pct:Math.min(100,Math.round((cp.filter((p: any)=>p.status==='completed'&&p.topic?.subject?.slug==='hebrew').length/4)*100)), color:PARENT_COLORS.coralText },
                         ].map(subj => (
                           <div key={subj.label} style={{ display:'flex', alignItems:'center', gap:'7px' }}>
                             <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:subj.color, flexShrink:0 }}/>
-                            <div style={{ fontSize:'11px', fontWeight:700, color:'#5A6A7E', width:'46px', flexShrink:0 }}>{subj.label}</div>
-                            <div style={{ flex:1, height:'7px', background:'#EEF1F6', borderRadius:'50px', overflow:'hidden' }}>
+                            <div style={{ fontSize:'11px', fontWeight:700, color:PARENT_COLORS.textSecondary, width:'46px', flexShrink:0 }}>{subj.label}</div>
+                            <div style={{ flex:1, height:'7px', background:PARENT_COLORS.borderLight, borderRadius:'50px', overflow:'hidden' }}>
                               <div style={{ height:'100%', width:`${subj.pct}%`, background:subj.color, borderRadius:'50px' }}/>
                             </div>
-                            <div style={{ fontSize:'10px', fontWeight:800, color:'#5A6A7E', width:'28px', textAlign:'right' }}>{subj.pct}%</div>
+                            <div style={{ fontSize:'10px', fontWeight:800, color:PARENT_COLORS.textSecondary, width:'28px', textAlign:'right' }}>{subj.pct}%</div>
                           </div>
                         ))}
                       </div>
-                      <div style={{ background:highPri?'#FFF0F0':'#EAFAF1', border:`1px solid ${highPri?'rgba(255,107,107,.2)':'rgba(39,174,96,.2)'}`, borderRadius:'8px', padding:'8px 10px', fontSize:'11px', color:highPri?'#FF6B6B':'#27AE60', fontWeight:700, display:'flex', gap:'6px' }}>
+                      <div style={{ background:highPri?PARENT_COLORS.coralLight:PARENT_COLORS.primaryLight, borderRadius:'8px', padding:'8px 10px', fontSize:'11px', color:highPri?PARENT_COLORS.coralText:PARENT_COLORS.primary, fontWeight:700, display:'flex', gap:'6px', marginBottom:'10px' }}>
                         <span>{highPri?'⚠️':'🌟'}</span>
                         <span>{highPri?<><strong>Focus: </strong>{highPri.topic?.title_en}</>:'Doing great!'}</span>
                       </div>
+                      <button onClick={e => { e.stopPropagation(); window.location.href=`/lesson?childId=${child.id}` }}
+                        style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', padding:'9px', borderRadius:'50px', border:`1.5px solid ${PARENT_COLORS.primary}`, background:'transparent', color:PARENT_COLORS.primary, fontWeight:800, fontSize:'12px', cursor:'pointer' }}>
+                        Continue Lesson <ChevronRight size={13} />
+                      </button>
                     </div>
                   )
                 })}
@@ -610,33 +664,41 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
           {/* ── PROGRESS ── */}
           {screen === 'progress' && (
             <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
-              <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>📊 Progress Reports</h1>
+              <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
+                <BarChart2 size={18} color={PARENT_COLORS.primary} /> Progress Reports
+              </h1>
               {(children||[]).map((child: any, i: number) => {
-                const col  = CHILD_COLORS[i % CHILD_COLORS.length]
+                const avatarColor = CHILD_AVATAR_COLORS[i % CHILD_AVATAR_COLORS.length]
                 const cp   = childProgress(child.id)
                 const recs = childRecs(child.id)
                 return (
-                  <div key={child.id} style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
+                  <div key={child.id} style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'20px' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'16px', flexWrap:'wrap' }}>
-                      <div style={{ width:'42px', height:'42px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'21px' }}>{col.emoji}</div>
-                      <div style={{ flex:1 }}>
-                        <h2 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'17px', margin:0 }}>{child.display_name}</h2>
-                        <div style={{ fontSize:'12px', color:'#9AA5B8' }}>Grade {child.grade === 0 ? 'K' : child.grade} · {(child.xp_total||0).toLocaleString()} XP · {child.streak_current || 0} day streak 🔥</div>
+                      <div style={{ width:'42px', height:'42px', borderRadius:'50%', background:avatarColor, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'17px' }}>
+                        {child.display_name?.[0]?.toUpperCase()}
                       </div>
-                      <button onClick={() => window.location.href=`/lesson?childId=${child.id}`} style={{ padding:'9px 18px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
-                        ▶ Start Lesson
+                      <div style={{ flex:1 }}>
+                        <h2 style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'17px', margin:0, color:PARENT_COLORS.text }}>{child.display_name}</h2>
+                        <div style={{ display:'flex', alignItems:'center', gap:'4px', fontSize:'12px', color:PARENT_COLORS.textMuted }}>
+                          Grade {child.grade === 0 ? 'K' : child.grade} · {(child.xp_total||0).toLocaleString()} XP · {child.streak_current || 0} day streak <Flame size={12} color={PARENT_COLORS.coralText} />
+                        </div>
+                      </div>
+                      <button onClick={() => window.location.href=`/lesson?childId=${child.id}`} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'9px 18px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+                        <Play size={13} /> Start Lesson
                       </button>
                     </div>
                     {recs.length > 0 && (
-                      <div style={{ background:'linear-gradient(135deg,#FFF0F0,#FFF5F0)', border:'1px solid rgba(255,107,107,.18)', borderRadius:'12px', padding:'14px', marginBottom:'14px' }}>
-                        <div style={{ fontFamily:'"Nunito",sans-serif', fontWeight:800, fontSize:'14px', color:'#FF6B6B', marginBottom:'10px' }}>🎯 Focus Recommendations</div>
+                      <div style={{ background:PARENT_COLORS.coralLight, border:`1px solid ${PARENT_COLORS.coral}30`, borderRadius:'12px', padding:'14px', marginBottom:'14px' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:'6px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'14px', color:PARENT_COLORS.coralText, marginBottom:'10px' }}>
+                          <Target size={14} /> Focus Recommendations
+                        </div>
                         {recs.slice(0,2).map((rec: any) => (
-                          <div key={rec.id} style={{ background:'white', border:'1px solid rgba(255,107,107,.12)', borderRadius:'10px', padding:'12px', marginBottom:'8px', display:'flex', gap:'12px' }}>
+                          <div key={rec.id} style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.coral}20`, borderRadius:'10px', padding:'12px', marginBottom:'8px', display:'flex', gap:'12px' }}>
                             <div style={{ flex:1 }}>
-                              <div style={{ fontWeight:800, fontSize:'13px', color:'#1E2D4E', marginBottom:'2px' }}>{rec.topic?.title_en}</div>
-                              <div style={{ fontSize:'11px', color:'#5A6A7E', lineHeight:1.6 }}>{rec.reason_en}</div>
+                              <div style={{ fontWeight:800, fontSize:'13px', color:PARENT_COLORS.text, marginBottom:'2px' }}>{rec.topic?.title_en}</div>
+                              <div style={{ fontSize:'11px', color:PARENT_COLORS.textSecondary, lineHeight:1.6 }}>{rec.reason_en}</div>
                             </div>
-                            <span style={{ fontSize:'10px', fontWeight:800, padding:'2px 9px', borderRadius:'50px', background:rec.priority==='high'?'#FEECEC':'#FFF8EC', color:rec.priority==='high'?'#FF6B6B':'#F5A623', whiteSpace:'nowrap', alignSelf:'flex-start' }}>{rec.priority}</span>
+                            <span style={{ fontSize:'10px', fontWeight:800, padding:'2px 9px', borderRadius:'50px', background:rec.priority==='high'?PARENT_COLORS.coralLight:PARENT_COLORS.amberLight, color:rec.priority==='high'?PARENT_COLORS.coralText:PARENT_COLORS.amberText, whiteSpace:'nowrap', alignSelf:'flex-start' }}>{rec.priority}</span>
                           </div>
                         ))}
                       </div>
@@ -645,29 +707,30 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                       <div style={{ overflowX:'auto' }}>
                         <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px', minWidth:'400px' }}>
                           <thead>
-                            <tr style={{ borderBottom:'2px solid #EEF1F6' }}>
+                            <tr style={{ borderBottom:`2px solid ${PARENT_COLORS.border}` }}>
                               {['Topic','Status','Progress'].map(h => (
-                                <th key={h} style={{ textAlign:'left', padding:'8px 10px', fontSize:'11px', fontWeight:800, color:'#9AA5B8', textTransform:'uppercase' }}>{h}</th>
+                                <th key={h} style={{ textAlign:'left', padding:'8px 10px', fontSize:'11px', fontWeight:800, color:PARENT_COLORS.textMuted, textTransform:'uppercase' }}>{h}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody>
                             {cp.map((p: any) => {
                               const pct = Math.round((p.steps_completed/(p.steps_total||5))*100)
-                              const statusColors: any = { completed:'#27AE60', in_progress:'#4A7FD4', needs_review:'#FF6B6B', not_started:'#9AA5B8' }
+                              const statusColors: any = { completed:PARENT_COLORS.primary, in_progress:PARENT_COLORS.accent, needs_review:PARENT_COLORS.coralText, not_started:PARENT_COLORS.textMuted }
+                              const statusBg: any     = { completed:PARENT_COLORS.primaryLight, in_progress:PARENT_COLORS.accentLight, needs_review:PARENT_COLORS.coralLight, not_started:PARENT_COLORS.borderLight }
                               const statusLabels: any = { completed:'Done', in_progress:'In Progress', needs_review:'Needs Work', not_started:'Not Started' }
                               return (
-                                <tr key={p.id} style={{ borderBottom:'1px solid #EEF1F6' }}>
-                                  <td style={{ padding:'10px', fontWeight:700, color:'#1E2D4E' }}>{p.topic?.title_en}</td>
+                                <tr key={p.id} style={{ borderBottom:`1px solid ${PARENT_COLORS.border}` }}>
+                                  <td style={{ padding:'10px', fontWeight:700, color:PARENT_COLORS.text }}>{p.topic?.title_en}</td>
                                   <td style={{ padding:'10px' }}>
-                                    <span style={{ background:`${statusColors[p.status]}22`, color:statusColors[p.status], fontSize:'11px', fontWeight:800, padding:'2px 9px', borderRadius:'50px' }}>{statusLabels[p.status]}</span>
+                                    <span style={{ background:statusBg[p.status], color:statusColors[p.status], fontSize:'11px', fontWeight:800, padding:'2px 9px', borderRadius:'50px' }}>{statusLabels[p.status]}</span>
                                   </td>
                                   <td style={{ padding:'10px' }}>
                                     <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-                                      <div style={{ width:'80px', height:'7px', background:'#EEF1F6', borderRadius:'50px', overflow:'hidden' }}>
+                                      <div style={{ width:'80px', height:'7px', background:PARENT_COLORS.borderLight, borderRadius:'50px', overflow:'hidden' }}>
                                         <div style={{ height:'100%', width:`${pct}%`, background:statusColors[p.status], borderRadius:'50px' }}/>
                                       </div>
-                                      <span style={{ fontSize:'11px', fontWeight:800, color:'#5A6A7E' }}>{pct}%</span>
+                                      <span style={{ fontSize:'11px', fontWeight:800, color:PARENT_COLORS.textSecondary }}>{pct}%</span>
                                     </div>
                                   </td>
                                 </tr>
@@ -677,7 +740,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                         </table>
                       </div>
                     ) : (
-                      <div style={{ textAlign:'center', padding:'24px', color:'#9AA5B8', fontSize:'13px' }}>No lessons started yet. Encourage {child.display_name} to begin! 🚀</div>
+                      <div style={{ textAlign:'center', padding:'24px', color:PARENT_COLORS.textMuted, fontSize:'13px' }}>No lessons started yet. Encourage {child.display_name} to begin! 🚀</div>
                     )}
                   </div>
                 )
@@ -688,34 +751,38 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
           {/* ── WORKSHEETS ── */}
           {screen === 'worksheets' && (
             <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
-              <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>🖨️ Worksheets & Exams</h1>
-              <div style={{ background:'#F3F4F6', border:'1px solid #D1D5DB', borderRadius:'12px', padding:'12px 16px', display:'flex', gap:'12px', fontSize:'12px', color:'#4B5563', lineHeight:1.6 }}>
-                <span style={{ fontSize:'20px' }}>📋</span>
+              <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
+                <Printer size={18} color={PARENT_COLORS.primary} /> Worksheets & Exams
+              </h1>
+              <div style={{ background:PARENT_COLORS.accentLight, border:`1px solid ${PARENT_COLORS.accent}30`, borderRadius:'12px', padding:'12px 16px', display:'flex', gap:'12px', fontSize:'12px', color:PARENT_COLORS.text, lineHeight:1.6 }}>
+                <Info size={18} color={PARENT_COLORS.accent} style={{ flexShrink:0 }} />
                 <div><strong>Content notice:</strong> EduPlay worksheets are curriculum-aligned. Parents are encouraged to review all materials.</div>
               </div>
               <div className="child-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'12px' }}>
                 {(children || []).map((child: any, i: number) => {
-                  const col = CHILD_COLORS[i % CHILD_COLORS.length]
+                  const avatarColor = CHILD_AVATAR_COLORS[i % CHILD_AVATAR_COLORS.length]
                   return (
-                    <div key={child.id} style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', textAlign:'center', cursor:'pointer' }}
+                    <div key={child.id} style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'20px', textAlign:'center', cursor:'pointer' }}
                       onClick={() => window.location.href=`/worksheets?childId=${child.id}`}>
-                      <div style={{ width:'52px', height:'52px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'26px', margin:'0 auto 10px' }}>{col.emoji}</div>
-                      <div style={{ fontWeight:800, fontSize:'15px', color:'#1E2D4E', marginBottom:'3px' }}>{child.display_name}</div>
-                      <div style={{ fontSize:'12px', color:'#9AA5B8', marginBottom:'14px' }}>Grade {child.grade === 0 ? 'K' : child.grade}</div>
-                      <button style={{ width:'100%', padding:'9px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'12px', cursor:'pointer' }}>
-                        🖨️ Build Worksheet
+                      <div style={{ width:'52px', height:'52px', borderRadius:'50%', background:avatarColor, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'21px', margin:'0 auto 10px' }}>
+                        {child.display_name?.[0]?.toUpperCase()}
+                      </div>
+                      <div style={{ fontWeight:800, fontSize:'15px', color:PARENT_COLORS.text, marginBottom:'3px' }}>{child.display_name}</div>
+                      <div style={{ fontSize:'12px', color:PARENT_COLORS.textMuted, marginBottom:'14px' }}>Grade {child.grade === 0 ? 'K' : child.grade}</div>
+                      <button style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', width:'100%', padding:'9px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'12px', cursor:'pointer' }}>
+                        <Printer size={13} /> Build Worksheet
                       </button>
                     </div>
                   )
                 })}
               </div>
-              <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
-                <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', color:'#1E2D4E', marginBottom:'8px' }}>📐 Worksheet Builder</h3>
-                <p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Choose subject, topics, difficulty, number of questions and download a print-ready PDF.</p>
+              <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'20px' }}>
+                <h3 style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'8px' }}>Worksheet Builder</h3>
+                <p style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px' }}>Choose subject, topics, difficulty, number of questions and download a print-ready PDF.</p>
                 <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
                   <button onClick={() => window.location.href='/worksheets'}
-                    style={{ padding:'10px 24px', borderRadius:'50px', border:'none', background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer', boxShadow:'0 4px 16px rgba(74,127,212,0.3)' }}>
-                    🚀 Open Full Builder
+                    style={{ display:'flex', alignItems:'center', gap:'7px', padding:'10px 24px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+                    Open Full Builder <ChevronRight size={14} />
                   </button>
                 </div>
               </div>
@@ -741,19 +808,23 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
           {screen === 'curriculum' && (
             <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
-                <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>📚 Curriculum</h1>
-                <button onClick={() => window.location.href='/curriculum'} style={{ padding:'9px 18px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
-                  Open Full Browser →
+                <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
+                  <Map size={18} color={PARENT_COLORS.primary} /> Curriculum
+                </h1>
+                <button onClick={() => window.location.href='/curriculum'} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'9px 18px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+                  Open Full Browser <ChevronRight size={14} />
                 </button>
               </div>
-              <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'40px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)', textAlign:'center' }}>
-                <div style={{ fontSize:'48px', marginBottom:'12px' }}>🗺️</div>
-                <div style={{ fontFamily:'"Nunito",sans-serif', fontWeight:800, fontSize:'16px', color:'#1E2D4E', marginBottom:'8px' }}>Browse the Full Curriculum</div>
-                <div style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'20px', maxWidth:'400px', margin:'0 auto 20px' }}>
+              <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'40px', textAlign:'center' }}>
+                <div style={{ width:'56px', height:'56px', borderRadius:'16px', background:PARENT_COLORS.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}>
+                  <Map size={26} color={PARENT_COLORS.primary} />
+                </div>
+                <div style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'8px' }}>Browse the Full Curriculum</div>
+                <div style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'20px', maxWidth:'400px', margin:'0 auto 20px' }}>
                   All topics per grade and subject — Math, English and Hebrew from Kindergarten to Grade 6.
                 </div>
-                <button onClick={() => window.location.href='/curriculum'} style={{ padding:'12px 28px', borderRadius:'50px', border:'none', background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer', boxShadow:'0 4px 16px rgba(74,127,212,0.3)' }}>
-                  📚 Open Curriculum Browser
+                <button onClick={() => window.location.href='/curriculum'} style={{ display:'inline-flex', alignItems:'center', gap:'7px', padding:'12px 28px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>
+                  <Map size={15} /> Open Curriculum Browser
                 </button>
               </div>
             </div>
@@ -767,12 +838,16 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
           {/* ── ACCOUNT ── */}
           {screen === 'account' && (
             <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
-              <h1 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'20px', color:'#1E2D4E', margin:0 }}>⚙️ Account</h1>
+              <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
+                <Settings size={18} color={PARENT_COLORS.primary} /> Account
+              </h1>
 
               {/* Manage Children */}
-              <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
-                <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', color:'#1E2D4E', marginBottom:'4px' }}>🎓 Manage Children</h3>
-                <p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Manage grade, font size, break settings and PIN for each child.</p>
+              <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'20px' }}>
+                <h3 style={{ display:'flex', alignItems:'center', gap:'7px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'4px' }}>
+                  <GraduationCap size={16} color={PARENT_COLORS.primary} /> Manage Children
+                </h3>
+                <p style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px' }}>Manage grade, font size, break settings and PIN for each child.</p>
 
                 {/* Column headers */}
                 <div className="manage-headers" style={{ display:'grid', gridTemplateColumns:'1fr 110px 110px 110px 120px 80px', gap:'8px', padding:'0 14px', marginBottom:'6px' }}>
@@ -783,7 +858,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                     { label:'Break', tip:'When to show activity breaks' },
                     { label:'PIN', tip:'4-digit login code' },
                   ].map(h => (
-                    <div key={h.label} style={{ fontSize:'10px', fontWeight:800, color:'#9AA5B8', letterSpacing:'0.06em', textTransform:'uppercase' }} title={h.tip}>
+                    <div key={h.label} style={{ fontSize:'10px', fontWeight:800, color:PARENT_COLORS.textMuted, letterSpacing:'0.06em', textTransform:'uppercase' }} title={h.tip}>
                       {h.label}
                     </div>
                   ))}
@@ -791,16 +866,18 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
 
                 <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
                   {(children || []).map((child: any, i: number) => {
-                    const col = CHILD_COLORS[i % CHILD_COLORS.length]
+                    const avatarColor = CHILD_AVATAR_COLORS[i % CHILD_AVATAR_COLORS.length]
                     return (
-                      <div key={child.id} className="manage-row" style={{ display:'grid', gridTemplateColumns:'1fr 110px 110px 110px 120px 80px', gap:'8px', alignItems:'center', padding:'12px 14px', background:'#F8F9FB', borderRadius:'10px', border:'1px solid #EEF1F6' }}>
+                      <div key={child.id} className="manage-row" style={{ display:'grid', gridTemplateColumns:'1fr 110px 110px 110px 120px 80px', gap:'8px', alignItems:'center', padding:'12px 14px', background:PARENT_COLORS.pageBg, borderRadius:'10px', border:`1px solid ${PARENT_COLORS.border}` }}>
 
                         {/* Child */}
                         <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-                          <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', flexShrink:0 }}>{col.emoji}</div>
+                          <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:avatarColor, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'15px', flexShrink:0 }}>
+                            {child.display_name?.[0]?.toUpperCase()}
+                          </div>
                           <div>
-                            <div style={{ fontWeight:800, fontSize:'14px', color:'#1E2D4E' }}>{child.display_name}</div>
-                            <div style={{ fontSize:'11px', color:'#9AA5B8' }}>Grade {child.grade === 0 ? 'K' : child.grade} · {child.card_tokens || 0} 🎴 tokens</div>
+                            <div style={{ fontWeight:800, fontSize:'14px', color:PARENT_COLORS.text }}>{child.display_name}</div>
+                            <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted }}>Grade {child.grade === 0 ? 'K' : child.grade} · {child.card_tokens || 0} tokens</div>
                           </div>
                         </div>
 
@@ -812,7 +889,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                             showToast('🎓', `${child.display_name} moved to Grade ${newGrade === 0 ? 'K' : newGrade}!`)
                             setTimeout(() => window.location.reload(), 1000)
                           }}
-                          style={{ padding:'6px 8px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'12px', color:'#1E2D4E', cursor:'pointer', width:'100%' }}>
+                          style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:700, fontSize:'12px', color:PARENT_COLORS.text, cursor:'pointer', width:'100%' }}>
                           <option value={0}>Kindergarten</option>
                           <option value={1}>Grade 1</option>
                           <option value={2}>Grade 2</option>
@@ -828,7 +905,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                             await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, theme:e.target.value }) })
                             showToast('🎨', `${child.display_name}'s theme updated!`)
                           }}
-                          style={{ padding:'6px 8px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'12px', color:'#1E2D4E', cursor:'pointer', width:'100%' }}>
+                          style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:700, fontSize:'12px', color:PARENT_COLORS.text, cursor:'pointer', width:'100%' }}>
                           <option value="plain">📚 Classic</option>
                           <option value="minecraft">⛏️ Minecraft</option>
                           <option value="princesses">👑 Princesses</option>
@@ -840,7 +917,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                             await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, font_size:e.target.value }) })
                             showToast('🔤', `${child.display_name}'s font size updated!`)
                           }}
-                          style={{ padding:'6px 8px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'12px', color:'#1E2D4E', cursor:'pointer', width:'100%' }}>
+                          style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:700, fontSize:'12px', color:PARENT_COLORS.text, cursor:'pointer', width:'100%' }}>
                           <option value="small">A− Small</option>
                           <option value="medium">A Medium</option>
                           <option value="large">A+ Large</option>
@@ -853,7 +930,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                             await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, relief_trigger:e.target.value }) })
                             showToast('🎉', `${child.display_name}'s break updated!`)
                           }}
-                          style={{ padding:'6px 8px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:700, fontSize:'12px', color:'#1E2D4E', cursor:'pointer', width:'100%' }}>
+                          style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:700, fontSize:'12px', color:PARENT_COLORS.text, cursor:'pointer', width:'100%' }}>
                           <option value="off">Off</option>
                           <option value="lesson">Per Lesson</option>
                           <option value="topic">Per Topic</option>
@@ -869,7 +946,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                               showToast('🔢', `${child.display_name}'s PIN updated!`)
                             }
                           }}
-                          style={{ padding:'6px 8px', borderRadius:'8px', border:'1px solid #EEF1F6', background:'white', fontWeight:800, fontSize:'14px', color:'#1E2D4E', textAlign:'center', letterSpacing:'4px', width:'100%', boxSizing:'border-box' as any }}
+                          style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:800, fontSize:'14px', color:PARENT_COLORS.text, textAlign:'center', letterSpacing:'4px', width:'100%', boxSizing:'border-box' as any }}
                         />
                       </div>
                     )
@@ -878,28 +955,32 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
               </div>
 
               {/* Child links */}
-              <div style={{ background:'white', border:'1px solid #EEF1F6', borderRadius:'12px', padding:'20px', boxShadow:'0 2px 8px rgba(30,45,78,0.07)' }}>
-                <h3 style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', color:'#1E2D4E', marginBottom:'4px' }}>🔗 Child Links</h3>
-                <p style={{ fontSize:'13px', color:'#5A6A7E', marginBottom:'16px' }}>Share these links — each opens a child's personal learning portal.</p>
+              <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'20px' }}>
+                <h3 style={{ display:'flex', alignItems:'center', gap:'7px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'4px' }}>
+                  <Link2 size={16} color={PARENT_COLORS.primary} /> Child Links
+                </h3>
+                <p style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px' }}>Share these links — each opens a child's personal learning portal.</p>
                 <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
                   {(children || []).map((child: any, i: number) => {
-                    const col  = CHILD_COLORS[i % CHILD_COLORS.length]
+                    const avatarColor = CHILD_AVATAR_COLORS[i % CHILD_AVATAR_COLORS.length]
                     const link = `${typeof window !== 'undefined' ? window.location.origin : 'https://eduplay-tau.vercel.app'}/play/${child.access_token}`
                     return (
-                      <div key={child.id} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 14px', background:'#F8F9FB', borderRadius:'10px', border:'1px solid #EEF1F6' }}>
-                        <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:col.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', flexShrink:0 }}>{col.emoji}</div>
+                      <div key={child.id} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 14px', background:PARENT_COLORS.pageBg, borderRadius:'10px', border:`1px solid ${PARENT_COLORS.border}` }}>
+                        <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:avatarColor, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'15px', flexShrink:0 }}>
+                          {child.display_name?.[0]?.toUpperCase()}
+                        </div>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontWeight:800, fontSize:'13px', color:'#1E2D4E', marginBottom:'2px' }}>{child.display_name} — Grade {child.grade === 0 ? 'K' : child.grade}</div>
-                          <div style={{ fontSize:'11px', color:'#9AA5B8', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{link}</div>
+                          <div style={{ fontWeight:800, fontSize:'13px', color:PARENT_COLORS.text, marginBottom:'2px' }}>{child.display_name} — Grade {child.grade === 0 ? 'K' : child.grade}</div>
+                          <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{link}</div>
                         </div>
                         <div style={{ display:'flex', gap:'6px', flexShrink:0 }}>
                           <button onClick={() => { navigator.clipboard.writeText(link); showToast('🔗', `${child.display_name}'s link copied!`) }}
-                            style={{ padding:'6px 12px', borderRadius:'50px', border:'none', background:'#4A7FD4', color:'white', fontWeight:800, fontSize:'11px', cursor:'pointer' }}>
-                            📋 Copy
+                            style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 12px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'11px', cursor:'pointer' }}>
+                            <Copy size={11} /> Copy
                           </button>
                           <button onClick={() => window.open(link, '_blank')}
-                            style={{ padding:'6px 12px', borderRadius:'50px', border:'1px solid #EEF1F6', background:'white', color:'#4B5563', fontWeight:800, fontSize:'11px', cursor:'pointer' }}>
-                            👁️ Open
+                            style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 12px', borderRadius:'50px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, color:PARENT_COLORS.textSecondary, fontWeight:800, fontSize:'11px', cursor:'pointer' }}>
+                            <ExternalLink size={11} /> Open
                           </button>
                         </div>
                       </div>
@@ -909,16 +990,18 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
               </div>
 
               {/* Plan card */}
-              <div style={{ background:'linear-gradient(135deg,#4A7FD4,#2EC4B6)', borderRadius:'12px', padding:'20px', color:'white' }}>
+              <div style={{ background:PARENT_COLORS.primary, borderRadius:'12px', padding:'20px', color:'white' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'12px' }}>
                   <div>
-                    <div style={{ fontFamily:'"Nunito",sans-serif', fontWeight:900, fontSize:'16px', marginBottom:'4px' }}>🚀 EduPlay Family Plan</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:'7px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', marginBottom:'4px' }}>
+                      <Rocket size={16} /> EduPlay Family Plan
+                    </div>
                     <div style={{ fontSize:'13px', opacity:.85 }}>Trial — {family?.trial_days_left ?? daysLeft} days remaining</div>
                   </div>
                   <div style={{ background:'rgba(255,255,255,0.2)', borderRadius:'8px', padding:'6px 12px', fontSize:'12px', fontWeight:800 }}>TRIAL</div>
                 </div>
-                <div style={{ fontSize:'12px', opacity:.8, lineHeight:1.6 }}>
-                  ✅ Unlimited lessons · ✅ All subjects · ✅ 3 children · ✅ Worksheets
+                <div style={{ display:'flex', alignItems:'center', gap:'6px', fontSize:'12px', opacity:.9 }}>
+                  <Check size={13} /> Unlimited lessons &nbsp;·&nbsp; <Check size={13} /> All subjects &nbsp;·&nbsp; <Check size={13} /> 3 children &nbsp;·&nbsp; <Check size={13} /> Worksheets
                 </div>
               </div>
             </div>
@@ -928,17 +1011,21 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
       </div>
 
       {/* Mobile bottom nav */}
-      <nav className="mobile-nav" style={{ display:'none', position:'fixed', bottom:0, left:0, right:0, background:'white', borderTop:'1px solid #EEF1F6', padding:'8px 0 max(8px,env(safe-area-inset-bottom))', zIndex:200, boxShadow:'0 -4px 12px rgba(0,0,0,0.06)' }}>
-        {TABS.map(tab => (
-          <button key={tab.key} onClick={() => setScreen(tab.key)}
-            style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', background:'none', border:'none', cursor:'pointer', padding:'6px 4px' }}>
-            <span style={{ fontSize:'18px' }}>{tab.label.split(' ')[0]}</span>
-            <span style={{ fontSize:'9px', fontWeight:700, color:screen===tab.key?'#4A7FD4':'#9CA3AF' }}>
-              {tab.label.split(' ').slice(1).join(' ')}
-            </span>
-            {screen === tab.key && <div style={{ width:'4px', height:'4px', borderRadius:'50%', background:'#4A7FD4' }}/>}
-          </button>
-        ))}
+      <nav className="mobile-nav" style={{ display:'none', position:'fixed', bottom:0, left:0, right:0, background:PARENT_COLORS.card, borderTop:`1px solid ${PARENT_COLORS.border}`, padding:'8px 0 max(8px,env(safe-area-inset-bottom))', zIndex:200, boxShadow:'0 -4px 12px rgba(0,0,0,0.06)' }}>
+        {TABS.map(tab => {
+          const Icon = tab.icon
+          const active = screen === tab.key
+          return (
+            <button key={tab.key} onClick={() => setScreen(tab.key)}
+              style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', background:'none', border:'none', cursor:'pointer', padding:'6px 4px' }}>
+              <Icon size={18} color={active?PARENT_COLORS.primary:PARENT_COLORS.textMuted} />
+              <span style={{ fontSize:'9px', fontWeight:700, color:active?PARENT_COLORS.primary:PARENT_COLORS.textMuted }}>
+                {tab.label}
+              </span>
+              {active && <div style={{ width:'4px', height:'4px', borderRadius:'50%', background:PARENT_COLORS.primary }}/>}
+            </button>
+          )
+        })}
       </nav>
     </div>
   )
