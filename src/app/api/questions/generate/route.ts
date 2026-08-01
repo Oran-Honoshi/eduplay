@@ -12,8 +12,16 @@ import { insertQuestions, QuestionInput } from '@/lib/insertQuestions'
 //   subject_slug, grade, topic_slug,
 //   q_types: ('multiple_choice'|'word_problem')[],
 //   difficulty: 'easy'|'medium'|'hard',
-//   count, progressive, custom_prompt?
+//   count, progressive, custom_prompt?,
+//   notebook_section_id?
 // }
+//
+// notebook_section_id (checkpoint 6): folds the section's body_text + recipe
+// prompt_text into the system prompt (additive to family-level
+// question_gen_style), attaches up to MAX_NOTEBOOK_FILES of its most-recently
+// uploaded files as extra multimodal blocks, locks subject/grade/topic to the
+// section's linked topic when one is set, and auto-links the resulting
+// question_ids back into notebook_section_questions with added_via:'generated'.
 
 const VALID_DIFFICULTIES = ['easy', 'medium', 'hard']
 const VALID_Q_TYPES = ['multiple_choice', 'word_problem']
@@ -26,6 +34,18 @@ const MAX_COUNT = 20
 // headroom for the rest of the JSON payload (well under Anthropic's own 32MB limit).
 const ALLOWED_REFERENCE_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
 const MAX_REFERENCE_FILE_BYTES = 3 * 1024 * 1024
+
+const NOTEBOOK_FILES_BUCKET = 'notebook-files'
+const MAX_NOTEBOOK_FILES = 5
+
+// Shared block-construction logic for any base64 file (the one-shot
+// reference_file, or a downloaded notebook_files row) attached to the
+// Anthropic message.
+function fileContentBlock(mediaType: string, base64Data: string) {
+  return mediaType === 'application/pdf'
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } }
+    : { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Data } }
+}
 
 // ─── GET /api/questions/generate ───────────────────────────────
 // Recent generation-history rows for the caller's own family, used
@@ -60,13 +80,47 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { subject_slug, grade, topic_slug, difficulty, progressive } = body
+  const { subject_slug: bodySubjectSlug, grade: bodyGrade, topic_slug: bodyTopicSlug, difficulty, progressive } = body
   const q_types: string[] = Array.isArray(body.q_types) ? [...new Set(body.q_types as string[])] : []
   const count = body.count
   const language: string = typeof body.language === 'string' && body.language ? body.language : 'en_only'
   const custom_prompt: string | undefined = typeof body.custom_prompt === 'string' && body.custom_prompt.trim()
     ? body.custom_prompt.trim()
     : undefined
+  const notebook_section_id: string | undefined =
+    typeof body.notebook_section_id === 'string' && body.notebook_section_id ? body.notebook_section_id : undefined
+
+  const familyId = auth.parent.familyId
+  const serviceClient = createServiceRoleClient()
+
+  // ─── notebook_section_id (checkpoint 6): family-scoped lookup up front —
+  // a linked topic on the section locks subject/grade/topic_slug below,
+  // overriding whatever the client sent for those three fields ───
+  let notebookSection: {
+    id: string; title: string; body_text: string | null; topic_id: string | null
+    topic: { id: string; slug: string; grade: number; title_en: string; subject: { slug: string } | null } | null
+  } | null = null
+
+  if (notebook_section_id) {
+    const { data: section } = await serviceClient
+      .from('notebook_sections')
+      .select('id, family_id, title, body_text, topic_id, topic:topics(id, slug, grade, title_en, subject:subjects(slug))')
+      .eq('id', notebook_section_id)
+      .maybeSingle()
+
+    if (!section) {
+      return NextResponse.json({ error: 'notebook_section_id not found' }, { status: 400 })
+    }
+    if (section.family_id !== familyId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    notebookSection = section as any
+  }
+
+  const topicLocked = !!(notebookSection?.topic_id && notebookSection.topic)
+  const subject_slug: string = topicLocked ? notebookSection!.topic!.subject!.slug : bodySubjectSlug
+  const grade: number = topicLocked ? notebookSection!.topic!.grade : bodyGrade
+  const topic_slug: string = topicLocked ? notebookSection!.topic!.slug : bodyTopicSlug
 
   // ─── server-side validation — every field, before any Anthropic call ───
   if (typeof subject_slug !== 'string' || !subject_slug) {
@@ -125,29 +179,78 @@ export async function POST(req: NextRequest) {
     referenceFile = { media_type: rf.media_type, data: rf.data }
   }
 
-  const supabase = createServerClient()
+  // When the section locks the topic, we already have its id/title_en from
+  // the join above — no need for a second round-trip through subjects/topics.
+  let topicRow: { id: string; title_en: string } | null = null
+  if (topicLocked) {
+    topicRow = { id: notebookSection!.topic_id!, title_en: notebookSection!.topic!.title_en }
+  } else {
+    const supabase = createServerClient()
+    const { data: subjectRow } = await supabase.from('subjects').select('id').eq('slug', subject_slug).single()
+    if (!subjectRow) {
+      return NextResponse.json({ error: `Unknown subject_slug: ${subject_slug}` }, { status: 400 })
+    }
 
-  const { data: subjectRow } = await supabase.from('subjects').select('id').eq('slug', subject_slug).single()
-  if (!subjectRow) {
-    return NextResponse.json({ error: `Unknown subject_slug: ${subject_slug}` }, { status: 400 })
+    const { data: fetchedTopicRow } = await supabase
+      .from('topics')
+      .select('id, title_en')
+      .eq('subject_id', subjectRow.id)
+      .eq('grade', grade)
+      .eq('slug', topic_slug)
+      .maybeSingle()
+    if (!fetchedTopicRow) {
+      return NextResponse.json(
+        { error: `Topic not found for subject "${subject_slug}", grade ${grade}, slug "${topic_slug}"` },
+        { status: 400 }
+      )
+    }
+    topicRow = fetchedTopicRow
   }
 
-  const { data: topicRow } = await supabase
-    .from('topics')
-    .select('id, title_en')
-    .eq('subject_id', subjectRow.id)
-    .eq('grade', grade)
-    .eq('slug', topic_slug)
-    .maybeSingle()
-  if (!topicRow) {
-    return NextResponse.json(
-      { error: `Topic not found for subject "${subject_slug}", grade ${grade}, slug "${topic_slug}"` },
-      { status: 400 }
-    )
-  }
+  // ─── notebook recipe + files (checkpoint 6) — fetched once the section is
+  // confirmed to belong to this family ───
+  let recipePromptText: string | null = null
+  const notebookFileBlocks: any[] = []
+  const skippedNotebookFiles: string[] = []
 
-  const familyId = auth.parent.familyId
-  const serviceClient = createServiceRoleClient()
+  if (notebookSection) {
+    const { data: recipe } = await serviceClient
+      .from('notebook_recipes')
+      .select('prompt_text')
+      .eq('section_id', notebookSection.id)
+      .maybeSingle()
+    recipePromptText = recipe?.prompt_text || null
+
+    const { data: files } = await serviceClient
+      .from('notebook_files')
+      .select('id, storage_path, media_type, original_filename')
+      .eq('section_id', notebookSection.id)
+      .order('created_at', { ascending: false })
+
+    const allFiles = files || []
+    const filesToAttach = allFiles.slice(0, MAX_NOTEBOOK_FILES)
+    const filesSkipped = allFiles.slice(MAX_NOTEBOOK_FILES)
+
+    if (filesSkipped.length > 0) {
+      skippedNotebookFiles.push(...filesSkipped.map(f => f.original_filename))
+      console.warn(
+        `[questions/generate] notebook_section_id=${notebookSection.id}: ${allFiles.length} files linked, only the ` +
+        `${MAX_NOTEBOOK_FILES} most recently uploaded are attached. Skipped: ${skippedNotebookFiles.join(', ')}`
+      )
+    }
+
+    for (const f of filesToAttach) {
+      const { data: blob, error: dlErr } = await serviceClient.storage
+        .from(NOTEBOOK_FILES_BUCKET)
+        .download(f.storage_path)
+      if (dlErr || !blob) {
+        console.warn(`[questions/generate] failed to download notebook file ${f.id} (${f.original_filename}): ${dlErr?.message}`)
+        continue
+      }
+      const base64 = Buffer.from(await blob.arrayBuffer()).toString('base64')
+      notebookFileBlocks.push(fileContentBlock(f.media_type, base64))
+    }
+  }
 
   // families has RLS with no anon read policy — service-role client needed;
   // requireParentOnlySession() above is the actual gate.
@@ -187,6 +290,18 @@ export async function POST(req: NextRequest) {
     ? `\nA reference file (a photo or PDF of a worksheet or textbook excerpt) is attached. Model the new questions after its style, content, and difficulty — write new, original questions inspired by it, not copies of what's in it.`
     : ''
 
+  // notebook section context is additive to the family-level styleGuidance
+  // above, not a replacement for it — both can apply to the same request.
+  const notebookGuidance = notebookSection
+    ? `\nContext from the family's notebook section "${notebookSection.title}"${notebookSection.body_text ? `:\n${notebookSection.body_text}` : ''}`
+    : ''
+  const recipeGuidance = recipePromptText
+    ? `\nRecipe instructions for this notebook section: ${recipePromptText}`
+    : ''
+  const notebookFilesInstruction = notebookFileBlocks.length > 0
+    ? `\n${notebookFileBlocks.length} additional reference file(s) from this notebook section are attached — use them the same way as a reference file: as style/content inspiration, not to copy verbatim.`
+    : ''
+
   // language controls whether/how the *_he fields get populated. prompt_en, correct_answer,
   // and each option's value_en are NOT NULL/required regardless of mode, so 'he_only' still needs
   // an English version — it's just derived from Hebrew-primary content rather than the reverse.
@@ -209,7 +324,7 @@ export async function POST(req: NextRequest) {
   const systemPrompt = `You are an expert educational content writer for Israeli K-6 students, generating practice questions for the topic "${topicRow.title_en}" (grade ${grade}, subject ${subject_slug}).
 Generate exactly ${count} questions.
 Allowed question types: ${q_types.join(', ')} — use a mix if more than one is allowed.
-${progressiveInstruction}${styleGuidance}${referenceInstruction}
+${progressiveInstruction}${styleGuidance}${notebookGuidance}${recipeGuidance}${referenceInstruction}${notebookFilesInstruction}
 ${languageInstruction}
 For multiple_choice questions: "options" must be an array of exactly 4 objects, each {"label":"A"|"B"|"C"|"D","value_en":"...","value_he":"..."|null,"isCorrect":true|false}, with exactly one isCorrect:true.
 For word_problem questions: omit "options" (or set it to null); "correct_answer" holds the final answer as a plain string.
@@ -220,15 +335,15 @@ OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects
     ? `Generate the questions now. Additional instructions: ${custom_prompt}`
     : `Generate the questions now.`
 
-  // With a reference file attached, content is a multimodal array (image/document
-  // block + text); otherwise keep the plain string the API already accepted.
-  const messageContent = referenceFile
-    ? [
-        referenceFile.media_type === 'application/pdf'
-          ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: referenceFile.data } }
-          : { type: 'image', source: { type: 'base64', media_type: referenceFile.media_type, data: referenceFile.data } },
-        { type: 'text', text: userPrompt },
-      ]
+  // With any files attached (the one-shot reference_file and/or the section's
+  // notebook_files), content is a multimodal array (image/document blocks +
+  // text); otherwise keep the plain string the API already accepted.
+  const fileBlocks = [
+    ...(referenceFile ? [fileContentBlock(referenceFile.media_type, referenceFile.data)] : []),
+    ...notebookFileBlocks,
+  ]
+  const messageContent = fileBlocks.length > 0
+    ? [...fileBlocks, { type: 'text', text: userPrompt }]
     : userPrompt
 
   let anthropicText: string
@@ -336,10 +451,29 @@ OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects
     )
   }
 
+  // ─── notebook auto-link (checkpoint 6) — every newly-inserted question gets
+  // linked back to the section it was generated from, same upsert/dedupe
+  // pattern as the manual link endpoint (api/notebook/sections/[id]/questions) ───
+  if (notebookSection) {
+    const linkRows = insertedRows.map(r => ({
+      section_id: notebookSection!.id,
+      question_id: r.id,
+      added_via: 'generated',
+    }))
+    const { error: linkError } = await serviceClient
+      .from('notebook_section_questions')
+      .upsert(linkRows, { onConflict: 'section_id,question_id', ignoreDuplicates: true })
+    if (linkError) {
+      failures.push(`Generated questions were saved but failed to auto-link to the notebook section: ${linkError.message}`)
+    }
+  }
+
   return NextResponse.json({
     success: true,
     inserted: insertedRows,
     generation_id: genRow.id,
+    ...(notebookSection ? { notebook_section_id: notebookSection.id } : {}),
+    ...(skippedNotebookFiles.length > 0 ? { skipped_notebook_files: skippedNotebookFiles } : {}),
     ...(failures.length > 0 ? { warnings: failures } : {}),
   })
 }
