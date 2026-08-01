@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const validThemes = ['minecraft', 'princesses', 'adventure', 'space', 'lego', 'sports', 'plain']
+  const validThemes = ['minecraft', 'princesses', 'adventure', 'space', 'sports', 'plain']
   if (!validThemes.includes(theme)) {
     return NextResponse.json({ error: 'Invalid theme' }, { status: 400 })
   }

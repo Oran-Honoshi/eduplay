@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 // @ts-ignore
 import { ComposableMap, Geographies, Geography, Sphere, Graticule } from 'react-simple-maps'
+import { Globe, Waves, Bird, Bone, Check } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
 
@@ -72,24 +74,24 @@ const ID_TO_CONTINENT: Record<string, string> = {
 }
 
 const EXTRA_REGIONS = [
-  { slug: 'ocean',     emoji: '🌊', label: 'Ocean',     color: '#0F766E', active: '#14B8A6' },
-  { slug: 'birds',     emoji: '🦅', label: 'Birds',     color: '#92400E', active: '#F59E0B' },
-  { slug: 'dinosaurs', emoji: '🦕', label: 'Dinosaurs', color: '#374151', active: '#6B7280' },
+  { slug: 'ocean',     icon: Waves, label: 'Ocean',     color: '#0F766E', active: '#14B8A6' },
+  { slug: 'birds',     icon: Bird,  label: 'Birds',     color: '#92400E', active: '#F59E0B' },
+  { slug: 'dinosaurs', icon: Bone,  label: 'Dinosaurs', color: '#374151', active: '#6B7280' },
 ]
 
 export const CONTINENT_CONFIG: Record<string, {
-  color: string; activeColor: string; label: string; emoji: string
+  color: string; activeColor: string; label: string; icon: LucideIcon
 }> = {
-  africa:        { color: '#B45309', activeColor: '#F59E0B', label: 'Africa',     emoji: '🌍' },
-  asia:          { color: '#B91C1C', activeColor: '#EF4444', label: 'Asia',       emoji: '🌏' },
-  north_america: { color: '#1D4ED8', activeColor: '#3B82F6', label: 'N. America', emoji: '🌎' },
-  south_america: { color: '#15803D', activeColor: '#22C55E', label: 'S. America', emoji: '🌎' },
-  europe:        { color: '#6D28D9', activeColor: '#8B5CF6', label: 'Europe',     emoji: '🌍' },
-  oceania:       { color: '#0E7490', activeColor: '#06B6D4', label: 'Oceania',    emoji: '🌏' },
-  antarctica:    { color: '#1E40AF', activeColor: '#60A5FA', label: 'Antarctica', emoji: '🧊' },
-  ocean:         { color: '#0F766E', activeColor: '#14B8A6', label: 'Ocean',      emoji: '🌊' },
-  birds:         { color: '#92400E', activeColor: '#F59E0B', label: 'Birds',      emoji: '🦅' },
-  dinosaurs:     { color: '#374151', activeColor: '#6B7280', label: 'Dinosaurs',  emoji: '🦕' },
+  africa:        { color: '#B45309', activeColor: '#F59E0B', label: 'Africa',     icon: Globe },
+  asia:          { color: '#B91C1C', activeColor: '#EF4444', label: 'Asia',       icon: Globe },
+  north_america: { color: '#1D4ED8', activeColor: '#3B82F6', label: 'N. America', icon: Globe },
+  south_america: { color: '#15803D', activeColor: '#22C55E', label: 'S. America', icon: Globe },
+  europe:        { color: '#6D28D9', activeColor: '#8B5CF6', label: 'Europe',     icon: Globe },
+  oceania:       { color: '#0E7490', activeColor: '#06B6D4', label: 'Oceania',    icon: Globe },
+  antarctica:    { color: '#1E40AF', activeColor: '#60A5FA', label: 'Antarctica', icon: Globe },
+  ocean:         { color: '#0F766E', activeColor: '#14B8A6', label: 'Ocean',      icon: Waves },
+  birds:         { color: '#92400E', activeColor: '#F59E0B', label: 'Birds',      icon: Bird },
+  dinosaurs:     { color: '#374151', activeColor: '#6B7280', label: 'Dinosaurs',  icon: Bone },
 }
 
 interface WorldMapProps {
@@ -147,7 +149,7 @@ export default function WorldMap({ activePhase, completedPhases, onSelect }: Wor
         borderRadius: 20, border: '1px solid #1A3A5C',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 13, fontWeight: 700, fontFamily: '"Nunito",sans-serif' }}>
+        <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: 13, fontWeight: 700, fontFamily: '"Baloo 2",sans-serif' }}>
           Loading map…
         </span>
       </div>
@@ -182,13 +184,13 @@ export default function WorldMap({ activePhase, completedPhases, onSelect }: Wor
             background: `${CONTINENT_CONFIG[display].activeColor}F0`,
             borderRadius: 99, padding: '5px 18px',
             fontSize: 13, fontWeight: 800, color: 'white',
-            whiteSpace: 'nowrap', fontFamily: '"Nunito", sans-serif',
+            whiteSpace: 'nowrap', fontFamily: '"Baloo 2", sans-serif',
             boxShadow: `0 4px 18px ${CONTINENT_CONFIG[display].activeColor}60`,
+            display: 'flex', alignItems: 'center', gap: 6,
           }}>
-            {CONTINENT_CONFIG[display].emoji} {CONTINENT_CONFIG[display].label}
-            {completedPhases.includes(display) && (
-              <span style={{ marginLeft: 6, fontSize: 11 }}>✓</span>
-            )}
+            {(() => { const Icon = CONTINENT_CONFIG[display].icon; return <Icon size={14}/> })()}
+            {CONTINENT_CONFIG[display].label}
+            {completedPhases.includes(display) && <Check size={12}/>}
           </div>
         </div>
       )}
@@ -297,7 +299,7 @@ export default function WorldMap({ activePhase, completedPhases, onSelect }: Wor
                 background: isA || isC ? `${r.active}28` : `${r.color}18`,
                 color: isA || isC ? r.active : 'rgba(255,255,255,0.65)',
                 fontSize: 12, fontWeight: 800,
-                fontFamily: '"Nunito", sans-serif',
+                fontFamily: '"Baloo 2", sans-serif',
                 display: 'flex', alignItems: 'center', gap: 5,
                 cursor: 'pointer',
                 transition: 'all 0.18s ease',
@@ -305,9 +307,9 @@ export default function WorldMap({ activePhase, completedPhases, onSelect }: Wor
                 boxShadow: isC ? `0 0 12px ${r.active}40` : 'none',
               }}
             >
-              <span>{r.emoji}</span>
+              <r.icon size={13}/>
               <span>{r.label}</span>
-              {isC && <span style={{ fontSize: 10, color: '#10B981', fontWeight: 900 }}>✓</span>}
+              {isC && <Check size={11} color="#10B981" strokeWidth={3}/>}
             </button>
           )
         })}
@@ -333,7 +335,7 @@ export default function WorldMap({ activePhase, completedPhases, onSelect }: Wor
             <span style={{
               fontSize: 9, fontWeight: 700,
               color: 'rgba(255,255,255,0.4)',
-              fontFamily: '"Nunito", sans-serif',
+              fontFamily: '"Baloo 2", sans-serif',
             }}>
               {item.label}
             </span>
