@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import {
   Home, BarChart2, Printer, Sparkles, ClipboardList, Notebook, Map, Users, Settings,
-  Bell, Rocket, Check, X, Flame, RefreshCw, Zap, CheckCircle2, Download, ChevronRight,
+  Rocket, Check, Flame, RefreshCw, Zap, CheckCircle2, Download, ChevronRight,
   Target, Play, UserPlus, Trash2, Key, GraduationCap, Link2, Copy, ExternalLink, Info,
 } from 'lucide-react'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
@@ -413,7 +413,6 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
   const { family, children, progress, recommendations, parentName, isDemo } = data
   const [screen, setScreen]         = useState('overview')
   const [toast, setToast]           = useState<{ icon:string; text:string }|null>(null)
-  const [approvalOpen, setApprovalOpen] = useState(false)
   const [errorBanner, setErrorBanner]   = useState(error)
 
   const daysLeft = family
@@ -432,10 +431,6 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
   function childRecs(childId: string) {
     return (recommendations || []).filter((r: any) => r.child_id === childId)
   }
-
-  const pendingApprovals = (progress || []).filter(
-    (p: any) => p.status === 'completed' && !p.parent_approved && p.approval_requested_at
-  )
 
   const dashStyles = `
     @media (max-width: 767px) {
@@ -466,36 +461,6 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
         </div>
       )}
 
-      {/* Approval modal */}
-      {approvalOpen && (
-        <div style={{ position:'fixed', inset:0, zIndex:999, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }} onClick={() => setApprovalOpen(false)}>
-          <div style={{ background:PARENT_COLORS.card, borderRadius:'20px', padding:'28px', maxWidth:'440px', width:'100%' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
-              <h3 style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'18px', margin:0, color:PARENT_COLORS.text, display:'flex', alignItems:'center', gap:'8px' }}>
-                <Check size={18} color={PARENT_COLORS.primary} /> Approve Completion
-              </h3>
-              <button onClick={() => setApprovalOpen(false)} style={{ display:'flex', alignItems:'center', justifyContent:'center', border:'none', background:PARENT_COLORS.borderLight, borderRadius:'50%', width:'28px', height:'28px', cursor:'pointer' }}>
-                <X size={14} color={PARENT_COLORS.textSecondary} />
-              </button>
-            </div>
-            {pendingApprovals[0] ? (
-              <div style={{ background:PARENT_COLORS.pageBg, borderRadius:'12px', padding:'14px', marginBottom:'14px', fontSize:'13px', color:PARENT_COLORS.textSecondary, lineHeight:1.8 }}>
-                <strong>Topic:</strong> {pendingApprovals[0].topic?.title_en}<br/>
-                <strong>Questions:</strong> {pendingApprovals[0].questions_attempted} attempted · {pendingApprovals[0].questions_correct} correct
-              </div>
-            ) : (
-              <p style={{ color:PARENT_COLORS.textMuted, fontSize:'14px', marginBottom:'16px' }}>No pending approvals right now.</p>
-            )}
-            <div style={{ display:'flex', gap:'10px' }}>
-              <button onClick={() => { setApprovalOpen(false); showToast('✅','Approved!') }} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', padding:'12px', background:PARENT_COLORS.primary, border:'none', borderRadius:'50px', color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>
-                <Check size={16} /> Approve
-              </button>
-              <button onClick={() => setApprovalOpen(false)} style={{ flex:1, padding:'12px', background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'50px', color:PARENT_COLORS.textSecondary, fontWeight:800, fontSize:'14px', cursor:'pointer' }}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <ParentHeaderBar
         center={
@@ -517,12 +482,6 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
           <div className="header-right" style={{ display:'flex', alignItems:'center', gap:'10px', flexShrink:0 }}>
             {isDemo && <span style={{ background:PARENT_COLORS.primaryLight, color:PARENT_COLORS.primary, borderRadius:'50px', padding:'4px 10px', fontSize:'11px', fontWeight:800 }}>🧪 Demo</span>}
             <span className="days-badge" style={{ background:PARENT_COLORS.amberLight, border:`1px solid ${PARENT_COLORS.amber}`, color:PARENT_COLORS.amberText, borderRadius:'50px', padding:'4px 10px', fontSize:'12px', fontWeight:800 }}>{daysLeft} days left</span>
-            {pendingApprovals.length > 0 && (
-              <button onClick={() => setApprovalOpen(true)} style={{ position:'relative', display:'flex', alignItems:'center', justifyContent:'center', width:'34px', height:'34px', background:PARENT_COLORS.pageBg, border:`1px solid ${PARENT_COLORS.borderLight}`, borderRadius:'50%', cursor:'pointer', flexShrink:0 }}>
-                <Bell size={16} color={PARENT_COLORS.textSecondary} />
-                <span style={{ position:'absolute', top:'4px', right:'4px', width:'9px', height:'9px', background:PARENT_COLORS.coral, borderRadius:'50%', border:'2px solid white' }}/>
-              </button>
-            )}
             <div style={{ width:'34px', height:'34px', background:PARENT_COLORS.primary, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'13px', flexShrink:0 }}>
               {parentName.split(' ').map((n: string) => n[0]).join('').slice(0,2)}
             </div>
