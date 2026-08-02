@@ -155,9 +155,16 @@ Grade: ${gradeContext[grade] ?? gradeContext[4]}${readingLevelGuidance}
 OUTPUT: JSON only, no markdown. Even if the constraints above are difficult to satisfy, still output ONLY the JSON object — never explain your reasoning, never add commentary or caveats before or after it. Do your best within the constraints and let the content itself reflect any necessary trade-offs.
 {"title_en":"English title","title_he":"Hebrew title","content":"Full text with \\n\\n between paragraphs","word_count":NUMBER,"tags":["tag1","tag2"]}`
 
+  // Only informational passages get the rubric, and only when the parent
+  // hasn't already named a topic — an explicit topic is a deliberate choice
+  // that bypasses topic curation entirely, not something to second-guess.
+  const INTERESTING_TOPIC_RUBRIC = `Choose the topic yourself. It must have a "wait, really?" quality — a fact or story a kid would go tell a friend right after reading it. It should be verifiably true, genuinely surprising, and specific (a particular animal, place, invention, record, or event — not a broad subject area). Examples of the right spirit: a fruit that's naturally blue, a plant that looks like it's growing spaghetti, an artist who paints on river stones. Never generic curriculum filler like "the water cycle," "healthy eating habits," or "how plants grow" — if the topic could headline a hundred other worksheets, pick something else. This description is guidance for YOUR topic choice, not phrasing to put in the passage — do not write "wait, really?" or similar meta-commentary about the fact being surprising into the passage text itself; just tell the passage's content, in its own natural voice, and let the facts create the surprise.`
+
   const baseUserPrompt = topic
     ? `Write a ${difficulty} ${type} passage for grade ${grade} about: ${topic}`
-    : `Write a ${difficulty} ${type} passage for grade ${grade}. Choose an engaging, curriculum-appropriate topic.`
+    : type === 'informational'
+      ? `Write a ${difficulty} informational passage for grade ${grade}. ${INTERESTING_TOPIC_RUBRIC}`
+      : `Write a ${difficulty} ${type} passage for grade ${grade}. Choose an engaging, curriculum-appropriate topic.`
 
   async function callAnthropic(userPrompt: string) {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
