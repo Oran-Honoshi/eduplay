@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import { authorizeChildAccess, requireParentOnlySession } from '@/lib/session'
+import { checkNiqqudDecodability, checkWordListDecodability } from '@/lib/readingDecodability'
+
+const DECODABILITY_THRESHOLD = 64
 
 export async function GET(req: NextRequest) {
   const supabase = createServerClient()
@@ -63,7 +66,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { grade, subject, type, difficulty, topic, language } = body
+  const { grade, subject, type, difficulty, topic, language, reading_track, level_id } = body
 
   if (!grade || !subject || !type || !difficulty) {
     return NextResponse.json({ error: 'grade, subject, type, difficulty required' }, { status: 400 })
@@ -76,6 +79,48 @@ export async function POST(req: NextRequest) {
   const target = wordTargets[grade] ?? { en: 200, he: 170 }
   const isHebrew = subject === 'hebrew' || language === 'he'
   const wordTarget = isHebrew ? target.he : target.en
+
+  const supabase = createServiceRoleClient()
+
+  // Reading-acquisition level guidance is entirely additive: when level_id is
+  // omitted, readingLevelGuidance stays '' and levelForValidation stays null,
+  // so the prompt and response are byte-for-byte the same as before this
+  // feature existed.
+  let readingLevelGuidance = ''
+  let levelForValidation: { track: string; level_number: number; word_list: string[] } | null = null
+  if (level_id) {
+    const { data: level, error: levelError } = await supabase
+      .from('reading_levels').select('*').eq('id', level_id).single()
+    if (levelError || !level) {
+      return NextResponse.json({ error: 'level_id not found' }, { status: 400 })
+    }
+    if (reading_track && reading_track !== level.track) {
+      return NextResponse.json({ error: `level_id belongs to track '${level.track}', not '${reading_track}'` }, { status: 400 })
+    }
+    if (level.track === 'niqqud' && !isHebrew) {
+      return NextResponse.json({ error: 'niqqud reading levels require Hebrew (subject=hebrew or language=he)' }, { status: 400 })
+    }
+    if (level.track === 'phonics' && isHebrew) {
+      return NextResponse.json({ error: 'phonics reading levels require English' }, { status: 400 })
+    }
+    levelForValidation = { track: level.track, level_number: level.level_number, word_list: level.word_list ?? [] }
+
+    const { data: priorLevels } = await supabase
+      .from('reading_levels').select('label_en, label_he')
+      .eq('track', level.track).lte('level_number', level.level_number)
+      .order('level_number')
+    const cumulative = level.track === 'niqqud'
+      ? (priorLevels ?? []).map((l: any) => l.label_he).join(', ')
+      : (priorLevels ?? []).map((l: any) => l.label_en).join(', ')
+
+    const wordListGuidance = (level.word_list ?? []).length > 0
+      ? ` Compose primarily using words from this approved list: ${level.word_list.join(', ')}. A small number of other simple, everyday words may be used only if truly unavoidable for a natural sentence.`
+      : ''
+
+    readingLevelGuidance = level.track === 'niqqud'
+      ? `\nReading level: ${level.label_he} (${level.label_en}). This is a beginning Hebrew reader's booklet. Use ONLY the niqqud marks introduced by this level and every level before it: ${cumulative}. Do not use any niqqud mark outside that set anywhere in the text.${wordListGuidance} At least ${DECODABILITY_THRESHOLD}% of words must be fully decodable using only those marks; a small number of very common, unavoidable sight words may deviate if a natural sentence truly requires them.`
+      : `\nReading level: ${level.label_en}. This is a beginning English reader's booklet. Use ONLY the phonics patterns introduced by this level and every level before it: ${cumulative}. Do not use any phonics pattern outside that set (e.g. no long vowels or blends before they've been introduced).${wordListGuidance} At least ${DECODABILITY_THRESHOLD}% of words must be fully decodable using only those patterns; a small number of very common, unavoidable sight words may deviate if a natural sentence truly requires them.`
+  }
 
   const diffGuidance: Record<string, string> = {
     easy:   'Simple vocabulary, short sentences (8-12 words), one idea per paragraph.',
@@ -106,15 +151,15 @@ ${langInstructions}
 Target: ${wordTarget} words (±15%), ${Math.max(3, Math.min(6, Math.round(wordTarget / 60)))} paragraphs, 4-6 sentences each.
 Type: ${type} — ${typeGuidance[type] ?? typeGuidance.informational}
 Difficulty: ${difficulty} — ${diffGuidance[difficulty] ?? diffGuidance.medium}
-Grade: ${gradeContext[grade] ?? gradeContext[4]}
-OUTPUT: JSON only, no markdown:
+Grade: ${gradeContext[grade] ?? gradeContext[4]}${readingLevelGuidance}
+OUTPUT: JSON only, no markdown. Even if the constraints above are difficult to satisfy, still output ONLY the JSON object — never explain your reasoning, never add commentary or caveats before or after it. Do your best within the constraints and let the content itself reflect any necessary trade-offs.
 {"title_en":"English title","title_he":"Hebrew title","content":"Full text with \\n\\n between paragraphs","word_count":NUMBER,"tags":["tag1","tag2"]}`
 
-  const userPrompt = topic
+  const baseUserPrompt = topic
     ? `Write a ${difficulty} ${type} passage for grade ${grade} about: ${topic}`
     : `Write a ${difficulty} ${type} passage for grade ${grade}. Choose an engaging, curriculum-appropriate topic.`
 
-  try {
+  async function callAnthropic(userPrompt: string) {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -130,17 +175,49 @@ OUTPUT: JSON only, no markdown:
         messages: [{ role: 'user', content: userPrompt }],
       }),
     })
-
     const data = await response.json()
-    if (!response.ok) {
-      return NextResponse.json({ error: data.error?.message || 'Anthropic API request failed' }, { status: 502 })
-    }
+    if (!response.ok) throw new Response(JSON.stringify({ error: data.error?.message || 'Anthropic API request failed' }), { status: 502 })
     const text = data.content?.[0]?.text ?? ''
     let parsed: any
-    try { parsed = JSON.parse(text.replace(/```json\n?|\n?```/g, '').trim()) }
-    catch { return NextResponse.json({ error: 'Parse failed', raw: text }, { status: 500 }) }
+    try {
+      const stripped = text.replace(/```json\n?|\n?```/g, '').trim()
+      // The model sometimes reasons in prose before the JSON object when a
+      // constraint is hard to satisfy (observed live under a deliberately
+      // hard reading-level + topic combination) — extract the {...} block
+      // instead of assuming the whole response is JSON. Falls back to the
+      // full trimmed text if no braces are found, so already-clean
+      // responses parse exactly as before.
+      const jsonMatch = stripped.match(/\{[\s\S]*\}/)
+      parsed = JSON.parse(jsonMatch ? jsonMatch[0] : stripped)
+    }
+    catch { throw new Response(JSON.stringify({ error: 'Parse failed', raw: text }), { status: 500 }) }
+    return parsed
+  }
 
-    const supabase = createServiceRoleClient()
+  function validate(content: string) {
+    if (!levelForValidation) return null
+    return levelForValidation.track === 'niqqud'
+      ? checkNiqqudDecodability(content, levelForValidation.level_number)
+      : checkWordListDecodability(content, levelForValidation.word_list)
+  }
+
+  try {
+    // Reading-acquisition passages (level_id set) get one deterministic
+    // validation + regeneration pass — prompt-only compliance already proved
+    // unreliable (checkpoint 2), so this doesn't trust the model's first
+    // attempt, it verifies it. Passages without a level skip validation
+    // entirely (levelForValidation is null), unchanged from pre-feature behavior.
+    let parsed = await callAnthropic(baseUserPrompt)
+    let decodability = validate(parsed.content)
+    let regenerated = false
+
+    if (decodability && decodability.pct < DECODABILITY_THRESHOLD) {
+      regenerated = true
+      const feedback = `\n\nYour previous attempt was only ${decodability.pct}% decodable at this level (need at least ${DECODABILITY_THRESHOLD}%). These words violated the level's allowed set: ${decodability.violatingWords.slice(0, 15).join(', ')}. Rewrite the passage, replacing every violating word with one from the approved list or another word that only uses the allowed set.`
+      parsed = await callAnthropic(baseUserPrompt + feedback)
+      decodability = validate(parsed.content)
+    }
+
     const { data: subj } = await supabase.from('subjects').select('id').eq('slug', subject).single()
 
     const insertData: any = {
@@ -148,6 +225,7 @@ OUTPUT: JSON only, no markdown:
       title_en: parsed.title_en, title_he: parsed.title_he,
       source: 'ai_generated', paragraph_count: parsed.content.split('\n\n').length,
       approved: false, tags: parsed.tags ?? [],
+      level_id: level_id ?? null,
     }
     if (isHebrew) { insertData.content_he = parsed.content; insertData.word_count_he = parsed.word_count }
     else { insertData.content_en = parsed.content; insertData.word_count_en = parsed.word_count }
@@ -155,8 +233,16 @@ OUTPUT: JSON only, no markdown:
     const { data: saved, error: saveError } = await supabase.from('reading_passages').insert(insertData).select().single()
     if (saveError) return NextResponse.json({ error: saveError.message }, { status: 500 })
 
-    return NextResponse.json({ success: true, passage: saved })
+    return NextResponse.json({
+      success: true,
+      passage: saved,
+      ...(decodability ? { decodability: { ...decodability, regenerated, passed: decodability.pct >= DECODABILITY_THRESHOLD } } : {}),
+    })
   } catch (err: any) {
+    if (err instanceof Response) {
+      const body = await err.json()
+      return NextResponse.json(body, { status: err.status })
+    }
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
