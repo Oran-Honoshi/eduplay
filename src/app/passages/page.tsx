@@ -3,6 +3,14 @@ import { useState, useEffect, useMemo } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 
 // ── Types ──────────────────────────────────────────────────────
+interface ReadingLevel {
+  id: string
+  track: 'niqqud' | 'phonics'
+  level_number: number
+  label_en: string
+  label_he: string | null
+}
+
 interface Passage {
   id: string
   grade: number
@@ -18,6 +26,8 @@ interface Passage {
   paragraph_count: number | null
   approved: boolean
   question_count?: number
+  level_id?: string | null
+  level?: ReadingLevel | null
 }
 
 // ── Constants ──────────────────────────────────────────────────
@@ -40,6 +50,11 @@ const DIFF_COLOR: Record<string, { bg: string; text: string; label: string }> = 
 const SUBJ_COLOR: Record<string, { bg: string; text: string }> = {
   english: { bg: '#DBEAFE', text: '#1E40AF' },
   hebrew:  { bg: '#D1FAE5', text: '#065F46' },
+}
+
+const TRACK_EMOJI: Record<string, string> = { niqqud: '🔤', phonics: '🔡' }
+function levelBadgeLabel(level: ReadingLevel) {
+  return `${TRACK_EMOJI[level.track] ?? '📗'} ${level.track === 'niqqud' ? 'Niqqud' : 'Phonics'} L${level.level_number}`
 }
 
 // ── Passage Card ───────────────────────────────────────────────
@@ -66,6 +81,11 @@ function PassageCard({ p, onOpen }: { p: Passage; onOpen: () => void }) {
           <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: diff.bg, color: diff.text }}>
             {diff.label}
           </span>
+          {p.level && (
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+              {levelBadgeLabel(p.level)}
+            </span>
+          )}
         </div>
         <span className="text-lg shrink-0">{TYPE_EMOJI[p.passage_type] ?? '📄'}</span>
       </div>
@@ -149,6 +169,11 @@ function PassageModal({ p, onClose }: { p: Passage; onClose: () => void }) {
                 {p.difficulty}
               </span>
               <span className="text-xs text-gray-400 capitalize">{TYPE_EMOJI[p.passage_type]} {p.passage_type}</span>
+              {p.level && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                  {levelBadgeLabel(p.level)}
+                </span>
+              )}
             </div>
             <h2 className="text-base font-black text-gray-900">
               {lang === 'he' && p.title_he ? p.title_he : p.title_en}
@@ -212,6 +237,20 @@ function PassageModal({ p, onClose }: { p: Passage; onClose: () => void }) {
   )
 }
 
+// reference_file: same 3MB raw cap /api/passages enforces server-side — checked
+// client-side too so a too-large file fails fast instead of after a wasted round trip.
+const MAX_REFERENCE_FILE_BYTES = 3 * 1024 * 1024
+const ALLOWED_REFERENCE_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve((reader.result as string).split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 // ── Passage Generator Panel ────────────────────────────────────
 function GeneratorPanel({ onGenerated }: { onGenerated: (p: Passage) => void }) {
   const [grade, setGrade] = useState('4')
@@ -221,20 +260,75 @@ function GeneratorPanel({ onGenerated }: { onGenerated: (p: Passage) => void }) 
   const [topic, setTopic] = useState('')
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState<string | null>(null)
+  const [decodabilityResult, setDecodabilityResult] = useState<any>(null)
+  const [questionsResult, setQuestionsResult] = useState<{ count: number; warnings?: string[] } | null>(null)
+
+  // Reading-acquisition level (checkpoint 6) — optional; selecting one locks
+  // the subject to whatever language the level's track requires, matching
+  // /api/passages' own track/subject validation instead of letting the user
+  // hit that 400 by picking an incompatible combination.
+  const [levels, setLevels] = useState<ReadingLevel[]>([])
+  const [levelId, setLevelId] = useState('')
+
+  const [generateQuestions, setGenerateQuestions] = useState(false)
+
+  const [referenceFile, setReferenceFile] = useState<{ name: string; media_type: string; data: string } | null>(null)
+  const [referenceFileError, setReferenceFileError] = useState<string | null>(null)
+
+  useEffect(() => {
+    supabase.from('reading_levels').select('id,track,level_number,label_en,label_he')
+      .eq('is_active', true).order('track').order('level_number')
+      .then(({ data }) => setLevels(data || []))
+  }, [])
+
+  const selectedLevel = levels.find(l => l.id === levelId) ?? null
+
+  const handleLevelChange = (id: string) => {
+    setLevelId(id)
+    const level = levels.find(l => l.id === id)
+    if (level) setSubject(level.track === 'niqqud' ? 'hebrew' : 'english')
+  }
+
+  const handleReferenceFile = async (file: File | null) => {
+    setReferenceFileError(null)
+    if (!file) { setReferenceFile(null); return }
+    if (!ALLOWED_REFERENCE_TYPES.includes(file.type)) {
+      setReferenceFileError('Must be a JPEG/PNG image or a PDF.')
+      return
+    }
+    if (file.size > MAX_REFERENCE_FILE_BYTES) {
+      setReferenceFileError(`File is ${(file.size / 1024 / 1024).toFixed(1)}MB — max is ${MAX_REFERENCE_FILE_BYTES / 1024 / 1024}MB.`)
+      return
+    }
+    const data = await fileToBase64(file)
+    setReferenceFile({ name: file.name, media_type: file.type, data })
+  }
 
   const generate = async () => {
     setGenerating(true)
     setResult(null)
+    setDecodabilityResult(null)
+    setQuestionsResult(null)
     try {
       const res = await fetch('/api/passages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grade: parseInt(grade), subject, type, difficulty, topic: topic || undefined }),
+        body: JSON.stringify({
+          grade: parseInt(grade), subject, type, difficulty, topic: topic || undefined,
+          level_id: levelId || undefined,
+          generate_questions: generateQuestions || undefined,
+          reference_file: referenceFile ? { media_type: referenceFile.media_type, data: referenceFile.data } : undefined,
+        }),
       })
       const data = await res.json()
       if (data.success) {
         setResult('✅ Passage generated and saved for review!')
-        onGenerated(data.passage)
+        if (data.decodability) setDecodabilityResult(data.decodability)
+        if (data.questions) {
+          setQuestionsResult({ count: data.questions.length, warnings: data.question_warnings })
+          if (data.question_warnings?.length) console.warn('[passages] comprehension question warnings:', data.question_warnings)
+        }
+        onGenerated({ ...data.passage, level: selectedLevel, question_count: data.questions?.length ?? 0 })
         setTopic('')
       } else {
         setResult(`❌ Error: ${data.error}`)
@@ -261,9 +355,11 @@ function GeneratorPanel({ onGenerated }: { onGenerated: (p: Passage) => void }) 
           </select>
         </div>
         <div>
-          <label className="text-xs text-gray-400 font-semibold block mb-1">Subject</label>
-          <select value={subject} onChange={e => setSubject(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
+          <label className="text-xs text-gray-400 font-semibold block mb-1">
+            Subject {selectedLevel && <span className="text-purple-400 font-normal">(locked by level)</span>}
+          </label>
+          <select value={subject} onChange={e => setSubject(e.target.value)} disabled={!!selectedLevel}
+            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:bg-gray-50 disabled:text-gray-400">
             <option value="english">English</option>
             <option value="hebrew">Hebrew עברית</option>
           </select>
@@ -287,6 +383,23 @@ function GeneratorPanel({ onGenerated }: { onGenerated: (p: Passage) => void }) 
             <option value="hard">Hard</option>
           </select>
         </div>
+        <div>
+          <label className="text-xs text-gray-400 font-semibold block mb-1">Reading level (optional)</label>
+          <select value={levelId} onChange={e => handleLevelChange(e.target.value)}
+            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
+            <option value="">— None (regular passage) —</option>
+            <optgroup label="Niqqud (Hebrew)">
+              {levels.filter(l => l.track === 'niqqud').map(l => (
+                <option key={l.id} value={l.id}>L{l.level_number} — {l.label_en}{l.label_he ? ` (${l.label_he})` : ''}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Phonics (English)">
+              {levels.filter(l => l.track === 'phonics').map(l => (
+                <option key={l.id} value={l.id}>L{l.level_number} — {l.label_en}</option>
+              ))}
+            </optgroup>
+          </select>
+        </div>
         <div className="flex-1 min-w-40">
           <label className="text-xs text-gray-400 font-semibold block mb-1">Topic (optional)</label>
           <input type="text" value={topic} onChange={e => setTopic(e.target.value)}
@@ -299,11 +412,51 @@ function GeneratorPanel({ onGenerated }: { onGenerated: (p: Passage) => void }) 
           {generating ? '⏳ Generating...' : '✨ Generate'}
         </button>
       </div>
+
+      {/* Row 2 — comprehension questions + reference file */}
+      <div className="flex flex-wrap gap-4 items-center mt-4 pt-4 border-t border-gray-50">
+        <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer">
+          <input type="checkbox" checked={generateQuestions} onChange={e => setGenerateQuestions(e.target.checked)}
+            className="w-4 h-4 rounded accent-emerald-500" />
+          Add comprehension questions
+        </label>
+
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-semibold text-gray-600 px-3 py-1.5 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
+            📎 Reference file
+            <input type="file" accept="image/jpeg,image/png,application/pdf" className="hidden"
+              onChange={e => handleReferenceFile(e.target.files?.[0] ?? null)} />
+          </label>
+          {referenceFile && (
+            <span className="text-xs text-gray-500 flex items-center gap-1">
+              {referenceFile.name}
+              <button onClick={() => handleReferenceFile(null)} className="text-gray-400 hover:text-red-500 font-bold px-1">×</button>
+            </span>
+          )}
+        </div>
+        {referenceFileError && <span className="text-xs text-red-600 font-semibold">{referenceFileError}</span>}
+      </div>
+
       {result && (
-        <p className="mt-3 text-xs font-semibold" style={{ color: result.startsWith('✅') ? '#065F46' : '#991B1B' }}>
-          {result}
-          {result.startsWith('✅') && ' (Marked for review — approve in Supabase to publish)'}
-        </p>
+        <div className="mt-3 space-y-1">
+          <p className="text-xs font-semibold" style={{ color: result.startsWith('✅') ? '#065F46' : '#991B1B' }}>
+            {result}
+            {result.startsWith('✅') && ' (Marked for review — approve in Supabase to publish)'}
+          </p>
+          {decodabilityResult && (
+            <p className="text-xs font-semibold" style={{ color: decodabilityResult.passed ? '#065F46' : '#B45309' }}>
+              {decodabilityResult.passed ? '✅' : '⚠️'} {decodabilityResult.pct}% decodable at this level
+              {decodabilityResult.regenerated ? ' (after 1 retry)' : ''}
+              {!decodabilityResult.passed && ' — this topic may be too advanced for the selected level'}
+            </p>
+          )}
+          {questionsResult && (
+            <p className="text-xs font-semibold text-emerald-700">
+              ✅ {questionsResult.count} comprehension question{questionsResult.count !== 1 ? 's' : ''} added
+              {questionsResult.warnings?.length ? ` (${questionsResult.warnings.length} skipped — see console)` : ''}
+            </p>
+          )}
+        </div>
       )}
     </div>
   )
@@ -329,14 +482,20 @@ export default function PassagesPage() {
       .select('*,passage_questions(id)')
       .order('grade').order('passage_type').order('difficulty')
       .then(({ data }) => {
-        // Join with subject info
-        supabase.from('subjects').select('id,slug').then(({ data: subjects }) => {
+        // Join with subject info + reading levels
+        Promise.all([
+          supabase.from('subjects').select('id,slug'),
+          supabase.from('reading_levels').select('id,track,level_number,label_en,label_he'),
+        ]).then(([{ data: subjects }, { data: levels }]) => {
           const subjectMap: Record<string, string> = {}
           ;(subjects || []).forEach((s: any) => { subjectMap[s.id] = s.slug })
+          const levelMap: Record<string, ReadingLevel> = {}
+          ;(levels || []).forEach((l: any) => { levelMap[l.id] = l })
           const enriched = (data || []).map((p: any) => ({
             ...p,
             subject: subjectMap[p.subject_id] ?? 'unknown',
             question_count: p.passage_questions?.length ?? 0,
+            level: p.level_id ? levelMap[p.level_id] ?? null : null,
           }))
           setPassages(enriched)
           setLoading(false)
@@ -391,8 +550,19 @@ export default function PassagesPage() {
         {/* Generator panel */}
         {showGenerator && (
           <GeneratorPanel onGenerated={p => {
-            setPassages(prev => [{ ...p, subject: filterSubject || 'english', question_count: 0 } as Passage, ...prev])
-            setShowGenerator(false)
+            // Derived from which content field the passage actually has, not the
+            // active filter — caught live in checkpoint 6 testing: generating a
+            // Hebrew passage with no subject filter active showed an "EN" badge
+            // until the next page refresh, because this previously fell back to
+            // filterSubject || 'english' regardless of the passage's real language.
+            setPassages(prev => [{ ...p, subject: p.content_he ? 'hebrew' : 'english', question_count: p.question_count ?? 0 } as Passage, ...prev])
+            // Deliberately NOT auto-closing the panel here (pre-existing behavior
+            // before checkpoint 6): the result banner — including decodability
+            // pass/fail and comprehension-question count — lives inside
+            // GeneratorPanel, so closing immediately on success meant that
+            // information was never actually visible, even for a frame (both
+            // state updates land in the same React batch). The user closes it
+            // themselves via "Generate new" once they've reviewed the result.
           }} />
         )}
 

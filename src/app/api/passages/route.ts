@@ -6,6 +6,39 @@ import { checkNiqqudDecodability, checkWordListDecodability } from '@/lib/readin
 const DECODABILITY_THRESHOLD = 64
 const COMPREHENSION_QUESTION_COUNT = 4
 
+// The model is asked for \n\n paragraph breaks inside a JSON string, but
+// sometimes emits an actual literal newline character instead of the 2-char
+// \n escape sequence — valid-looking text that JSON.parse still rejects
+// ("bad control character in string literal"), caught live during
+// checkpoint 6's UI test (niqqud level 3 + story + reference file combo).
+// Distinct failure mode from the earlier "reasons in prose before JSON"
+// bug — that one added preamble outside the JSON; this one breaks a raw
+// control character inside a string value. Fixed by walking the text and
+// escaping control characters ONLY while inside a quoted string — a blind
+// global replace would also corrupt legitimate whitespace between JSON
+// tokens (e.g. between `{` and `"key"`), which is syntactically different
+// from a \n escape and would break parsing worse than it started.
+function escapeControlCharsInJsonStrings(text: string): string {
+  let result = ''
+  let inString = false
+  let escaped = false
+  for (const ch of text) {
+    if (inString) {
+      if (escaped) { result += ch; escaped = false }
+      else if (ch === '\\') { result += ch; escaped = true }
+      else if (ch === '"') { result += ch; inString = false }
+      else if (ch === '\n') result += '\\n'
+      else if (ch === '\r') result += '\\r'
+      else if (ch === '\t') result += '\\t'
+      else result += ch
+    } else {
+      if (ch === '"') inString = true
+      result += ch
+    }
+  }
+  return result
+}
+
 // reference_file: optional photo/PDF of a worksheet/booklet page used as a style/structure
 // model for passage generation — same mechanism and same limits as /api/questions/generate's
 // reference_file (ported, not reinvented): capped at 3MB raw because Vercel serverless
@@ -260,7 +293,7 @@ OUTPUT: JSON only, no markdown. Even if the constraints above are difficult to s
       // full trimmed text if no braces are found, so already-clean
       // responses parse exactly as before.
       const jsonMatch = stripped.match(/\{[\s\S]*\}/)
-      parsed = JSON.parse(jsonMatch ? jsonMatch[0] : stripped)
+      parsed = JSON.parse(escapeControlCharsInJsonStrings(jsonMatch ? jsonMatch[0] : stripped))
     }
     catch { throw new Response(JSON.stringify({ error: 'Parse failed', raw: text }), { status: 500 }) }
     return parsed
@@ -313,7 +346,7 @@ OUTPUT: JSON only, no markdown — an array of exactly ${COMPREHENSION_QUESTION_
     const stripped = text.replace(/```json\n?|\n?```/g, '').trim()
     const arrayMatch = stripped.match(/\[[\s\S]*\]/)
     try {
-      const parsed = JSON.parse(arrayMatch ? arrayMatch[0] : stripped)
+      const parsed = JSON.parse(escapeControlCharsInJsonStrings(arrayMatch ? arrayMatch[0] : stripped))
       if (!Array.isArray(parsed)) throw new Error('not an array')
       return parsed
     } catch {
