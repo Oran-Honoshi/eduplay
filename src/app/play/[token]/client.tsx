@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { Heart, Star, Flame, Play, BookOpen, Palette, Globe, ChevronRight } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Heart, Star, Flame, Play, BookOpen, Palette, Globe, ChevronRight, ChevronLeft } from 'lucide-react'
 import { THEME_CONFIG, KidNavBar, KidOverlay } from '@/components/theme'
 
 const SUBJECT_COLORS: any = {
@@ -18,7 +18,6 @@ const SUBJECT_ICONS: any = {
 const mobileStyles = `
   @media (max-width: 640px) {
     .portal-stats { grid-template-columns: repeat(2,1fr) !important; }
-    .portal-topics { grid-template-columns: repeat(2,1fr) !important; }
     .portal-actions { grid-template-columns: repeat(2,1fr) !important; }
     .portal-cards-tile { grid-column: span 2 !important; }
     .portal-header-right { gap: 6px !important; }
@@ -70,6 +69,9 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
 
   const [selectedSubject, setSelectedSubject] = useState<string|null>(null)
   const [langMode, setLangMode]               = useState(child.lang_screen || 'bilingual')
+  const isHE = langMode === 'he_only'
+  const [page, setPage]                       = useState(0)
+  const dragStartX                            = useRef<number|null>(null)
   const [progressMap, setProgressMap]         = useState<any>(() => {
     const map: any = {}
     progress.forEach((p: any) => { map[p.topic_id] = p })
@@ -86,6 +88,30 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
   const filteredTopics = selectedSubject
     ? allTopics.filter((t: any) => t.subject?.slug === selectedSubject)
     : allTopics
+
+  function chooseSubject(slug: string | null) {
+    setSelectedSubject(slug)
+    setPage(0)
+  }
+
+  const pageCount = filteredTopics.length
+  const safePage  = pageCount > 0 ? Math.min(page, pageCount - 1) : 0
+  const currentTopic = filteredTopics[safePage]
+
+  function goPrev() { if (safePage > 0) setPage(safePage - 1) }
+  function goNext() { if (safePage < pageCount - 1) setPage(safePage + 1) }
+
+  // Swipe/drag is deliberately gesture-direction-invariant: a physical left-drag
+  // always means "next" and a physical right-drag always means "previous", in
+  // either language — only the chevron icons get mirrored for RTL, not this math.
+  function handleDragStart(clientX: number) { dragStartX.current = clientX }
+  function handleDragEnd(clientX: number) {
+    if (dragStartX.current === null) return
+    const delta = clientX - dragStartX.current
+    dragStartX.current = null
+    if (delta > 40) goPrev()
+    else if (delta < -40) goNext()
+  }
 
   function getStatusIcon(topicId: string) {
     const p = progressMap[topicId]
@@ -135,7 +161,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
   }
   const TD = THEME_DECOS[theme] || THEME_DECOS.plain
   return (
-    <div style={{ minHeight:'100vh', background:T.bg, fontFamily:'"Nunito",sans-serif', overflowX:'hidden', position:'relative' }}>
+    <div style={{ minHeight:'100vh', background:T.bg, fontFamily:'"Nunito",sans-serif', overflowX:'hidden', position:'relative' }} dir={isHE ? 'rtl' : 'ltr'}>
       {TD.pattern !== 'none' && <div style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:0, backgroundImage:TD.pattern }}/>}
       {TD.corners.map((emoji: string, i: number) => (
         <div key={i} style={{ position:'fixed', top:i<2?'70px':'auto', bottom:i>=2?'20px':'auto', left:i%2===0?'12px':'auto', right:i%2===1?'12px':'auto', fontSize:'28px', opacity:0.18, pointerEvents:'none', zIndex:0, userSelect:'none' }}>{emoji}</div>
@@ -260,84 +286,123 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
 
         {/* Subject filter */}
         <div style={{ display:'flex', gap:'8px', marginBottom:'16px', flexWrap:'wrap' }}>
-          <button onClick={() => setSelectedSubject(null)}
+          <button onClick={() => chooseSubject(null)}
             style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 16px', borderRadius:'50px', border:`2px solid ${!selectedSubject?T.accent1:'rgba(0,0,0,0.1)'}`, background:!selectedSubject?`${T.accent1}15`:T.panel, color:!selectedSubject?T.accent1:T.text, fontWeight:800, fontSize:'12px', cursor:'pointer', transition:'all 0.15s' }}>
-            <BookOpen size={14}/> All Subjects
+            <BookOpen size={14}/> {isHE ? 'כל המקצועות' : 'All Subjects'}
           </button>
           {subjects.map((subj: any) => {
             const color = SUBJECT_COLORS[subj.slug] || T.accent1
             const active = selectedSubject === subj.slug
             return (
-              <button key={subj.slug} onClick={() => setSelectedSubject(subj.slug)}
+              <button key={subj.slug} onClick={() => chooseSubject(subj.slug)}
                 style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 16px', borderRadius:'50px', border:`2px solid ${active?color:'rgba(0,0,0,0.1)'}`, background:active?`${color}15`:T.panel, color:active?color:T.text, fontWeight:800, fontSize:'12px', cursor:'pointer', transition:'all 0.15s' }}>
-                {SUBJECT_ICONS[subj.slug]} {subj.label_en}
+                {SUBJECT_ICONS[subj.slug]} {isHE ? (subj.label_he || subj.label_en) : subj.label_en}
               </button>
             )
           })}
         </div>
 
-        {/* Topics grid */}
-        <div className="portal-topics" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(min(160px,44vw),1fr))', gap:'12px', marginBottom:'24px' }}>
-          {filteredTopics.map((topic: any) => {
-            const p          = progressMap[topic.id]
-            const pct        = getProgressPct(topic.id)
-            const statusIcon = getStatusIcon(topic.id)
-            const subjColor  = SUBJECT_COLORS[topic.subject?.slug] || T.accent1
-            const isCompleted  = p?.status === 'completed'
-            const isInProgress = p?.status === 'in_progress'
+        {/* Booklet lesson viewer — one lesson at a time instead of a full grid, so
+            the subject/topic wall doesn't freeze less-confident kids. Arrow row and
+            dot pager deliberately have no manual RTL position-pinning: dir on the
+            root container above already flips their flex order via normal browser
+            bidi, same mechanism the assignment-runner back-button relies on. Only
+            the chevrons get an icon-mirror (scaleX(-1)), matching that precedent —
+            the swipe math below stays direction-invariant regardless of language. */}
+        {pageCount > 0 && currentTopic && (() => {
+          const p           = progressMap[currentTopic.id]
+          const pct         = getProgressPct(currentTopic.id)
+          const statusIcon  = getStatusIcon(currentTopic.id)
+          const subjColor   = SUBJECT_COLORS[currentTopic.subject?.slug] || T.accent1
+          const isCompleted  = p?.status === 'completed'
+          const isInProgress = p?.status === 'in_progress'
+          const statusLabel = isHE
+            ? (isCompleted ? 'הושלם!' : isInProgress ? 'המשך' : 'התחל')
+            : (isCompleted ? 'Done!' : isInProgress ? 'Continue' : 'Start')
 
-            return (
-              <div key={topic.id} onClick={() => startLesson(topic.id)}
-                style={{ background:T.panel, border:`2px solid ${isInProgress?subjColor:isCompleted?'#27AE60':T.border}`, borderRadius:T.radius, padding:'14px', cursor:'pointer', position:'relative', overflow:'hidden', transition:'transform 0.15s,box-shadow 0.15s', boxShadow:isInProgress?`0 4px 16px ${subjColor}25`:isCompleted?'0 4px 16px rgba(39,174,96,0.15)':'0 2px 8px rgba(0,0,0,0.04)' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform='translateY(-3px)'; (e.currentTarget as HTMLElement).style.boxShadow=`0 10px 28px ${subjColor}30` }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform='translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow=isInProgress?`0 4px 16px ${subjColor}25`:'0 2px 8px rgba(0,0,0,0.04)' }}>
+          return (
+            <div style={{ marginBottom:'24px' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'12px' }}>
+                <button onClick={goPrev} disabled={safePage === 0}
+                  aria-label={isHE ? 'הקודם' : 'Previous'}
+                  style={{ width:'36px', height:'36px', flexShrink:0, borderRadius:'50%', background:T.panel, border:`1.5px solid ${T.border}`, boxShadow:T.shadow, display:'flex', alignItems:'center', justifyContent:'center', cursor:safePage===0?'default':'pointer', opacity:safePage===0?0.4:1 }}>
+                  <ChevronLeft size={18} color={T.text} style={isHE ? { transform:'scaleX(-1)' } : undefined}/>
+                </button>
 
-                {/* Top color strip */}
-                <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', background:`linear-gradient(90deg,${subjColor},${subjColor}80)` }}/>
+                <div
+                  onMouseDown={e => handleDragStart(e.clientX)}
+                  onMouseUp={e => handleDragEnd(e.clientX)}
+                  onTouchStart={e => handleDragStart(e.touches[0].clientX)}
+                  onTouchEnd={e => handleDragEnd(e.changedTouches[0].clientX)}
+                  style={{ background:T.panel, border:`2px solid ${isInProgress?subjColor:isCompleted?'#27AE60':T.border}`, borderRadius:T.radius, padding:'20px', width:'100%', maxWidth:'360px', boxShadow:T.shadow, position:'relative', overflow:'hidden', userSelect:'none', touchAction:'pan-y' }}>
 
-                <div style={{ marginTop:'6px' }}>
-                  <div style={{ fontSize:'22px', marginBottom:'8px' }}>{statusIcon}</div>
+                  <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', background:`linear-gradient(90deg,${subjColor},${subjColor}80)` }}/>
 
-                  <div style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:'2px 8px', borderRadius:'50px', background:`${subjColor}15`, marginBottom:'6px' }}>
-                    <span style={{ fontSize:'10px' }}>{SUBJECT_ICONS[topic.subject?.slug]}</span>
-                    <span style={{ fontSize:'10px', fontWeight:800, color:subjColor }}>{topic.subject?.label_en}</span>
-                  </div>
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center' }}>
+                    <div style={{ width:'64px', height:'64px', borderRadius:'50%', background:`${subjColor}15`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'32px', marginBottom:'10px' }}>
+                      {SUBJECT_ICONS[currentTopic.subject?.slug]}
+                    </div>
 
-                  <div style={{ fontWeight:800, fontSize:'13px', color:T.text, lineHeight:1.4, marginBottom:'4px' }}>{topic.title_en}</div>
+                    <div style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:'2px 10px', borderRadius:'50px', background:`${subjColor}15`, marginBottom:'8px' }}>
+                      <span style={{ fontSize:'11px', fontWeight:800, color:subjColor }}>
+                        {isHE ? (currentTopic.subject?.label_he || currentTopic.subject?.label_en) : currentTopic.subject?.label_en}
+                      </span>
+                    </div>
 
-                  {topic.title_he && langMode !== 'en_only' && (
-                    <div style={{ fontSize:'11px', color:T.text, opacity:.55, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', marginBottom:'6px' }}>{topic.title_he}</div>
-                  )}
+                    <div style={{ fontSize:'20px', marginBottom:'6px' }}>{statusIcon}</div>
 
-                  {p && (
-                    <div style={{ marginBottom:'8px' }}>
-                      <div style={{ height:'5px', background:'rgba(0,0,0,0.06)', borderRadius:'50px', overflow:'hidden' }}>
-                        <div style={{ height:'100%', width:`${pct}%`, background:isCompleted?'#27AE60':subjColor, borderRadius:'50px', transition:'width 0.4s ease' }}/>
+                    <div style={{ fontWeight:800, fontSize:'17px', color:T.text, lineHeight:1.4, marginBottom:'4px' }}>{currentTopic.title_en}</div>
+
+                    {currentTopic.title_he && langMode !== 'en_only' && (
+                      <div style={{ fontSize:'13px', color:T.text, opacity:.55, direction:'rtl', fontFamily:'"Times New Roman",serif', marginBottom:'8px' }}>{currentTopic.title_he}</div>
+                    )}
+
+                    {p && (
+                      <div style={{ width:'100%', marginBottom:'10px' }}>
+                        <div style={{ height:'5px', background:'rgba(0,0,0,0.06)', borderRadius:'50px', overflow:'hidden' }}>
+                          <div style={{ height:'100%', width:`${pct}%`, background:isCompleted?'#27AE60':subjColor, borderRadius:'50px', transition:'width 0.4s ease' }}/>
+                        </div>
+                        <div style={{ fontSize:'11px', color:T.text, opacity:.5, marginTop:'3px', fontWeight:600 }}>{pct}% {isHE ? 'הושלם' : 'done'}</div>
                       </div>
-                      <div style={{ fontSize:'10px', color:T.text, opacity:.5, marginTop:'3px', fontWeight:600 }}>{pct}% done</div>
-                    </div>
-                  )}
+                    )}
 
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:'4px' }}>
-                      <Star size={11} fill={T.accent2} color={T.accent2}/>
-                      <span style={{ fontSize:'11px', fontWeight:800, color:T.accent2 }}>+{topic.xp_reward}</span>
+                    <div style={{ display:'flex', alignItems:'center', gap:'4px', marginBottom:'12px' }}>
+                      <Star size={12} fill={T.accent2} color={T.accent2}/>
+                      <span style={{ fontSize:'12px', fontWeight:800, color:T.accent2 }}>+{currentTopic.xp_reward}</span>
                     </div>
-                    <span style={{ fontSize:'11px', fontWeight:800, padding:'3px 10px', borderRadius:'50px', background:isCompleted?'#27AE60':isInProgress?subjColor:`${subjColor}20`, color:isCompleted||isInProgress?'white':subjColor }}>
-                      {isCompleted?'Done!':isInProgress?'Continue':'Start'}
-                    </span>
+
+                    <button onClick={() => startLesson(currentTopic.id)}
+                      style={{ width:'100%', padding:'12px 20px', fontFamily:T.fontHead, fontSize:'14px', background:isCompleted?'#27AE60':subjColor, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', fontWeight:800 }}>
+                      {isHE ? `${statusLabel} שיעור` : `${statusLabel} Lesson`}
+                    </button>
                   </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
 
-        {filteredTopics.length === 0 && (
+                <button onClick={goNext} disabled={safePage >= pageCount - 1}
+                  aria-label={isHE ? 'הבא' : 'Next'}
+                  style={{ width:'36px', height:'36px', flexShrink:0, borderRadius:'50%', background:T.panel, border:`1.5px solid ${T.border}`, boxShadow:T.shadow, display:'flex', alignItems:'center', justifyContent:'center', cursor:safePage>=pageCount-1?'default':'pointer', opacity:safePage>=pageCount-1?0.4:1 }}>
+                  <ChevronRight size={18} color={T.text} style={isHE ? { transform:'scaleX(-1)' } : undefined}/>
+                </button>
+              </div>
+
+              {pageCount > 1 && (
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', marginTop:'14px' }}>
+                  {filteredTopics.map((t: any, i: number) => (
+                    <button key={t.id} onClick={() => setPage(i)}
+                      aria-label={isHE ? `עבור לשיעור ${i+1}` : `Go to lesson ${i+1}`}
+                      style={{ width:i===safePage?'22px':'8px', height:'8px', borderRadius:'50px', border:'none', background:i===safePage?T.accent1:T.border, cursor:'pointer', transition:'width 0.2s ease,background 0.2s ease', padding:0 }}/>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
+        {pageCount === 0 && (
           <div style={{ textAlign:'center', padding:'40px', background:T.panel, borderRadius:T.radius, border:`1.5px solid ${T.border}` }}>
             <div style={{ fontSize:'40px', marginBottom:'12px' }}>📭</div>
-            <div style={{ fontWeight:800, fontSize:'16px', color:T.text, marginBottom:'6px' }}>No topics for this subject yet</div>
-            <div style={{ fontSize:'13px', color:T.text, opacity:.6 }}>Check back soon!</div>
+            <div style={{ fontWeight:800, fontSize:'16px', color:T.text, marginBottom:'6px' }}>{isHE ? 'אין עדיין נושאים למקצוע זה' : 'No topics for this subject yet'}</div>
+            <div style={{ fontSize:'13px', color:T.text, opacity:.6 }}>{isHE ? 'בדוק שוב בקרוב!' : 'Check back soon!'}</div>
           </div>
         )}
 
