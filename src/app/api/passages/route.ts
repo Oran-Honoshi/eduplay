@@ -4,6 +4,7 @@ import { authorizeChildAccess, requireParentOnlySession } from '@/lib/session'
 import { checkNiqqudDecodability, checkWordListDecodability } from '@/lib/readingDecodability'
 
 const DECODABILITY_THRESHOLD = 64
+const COMPREHENSION_QUESTION_COUNT = 4
 
 export async function GET(req: NextRequest) {
   const supabase = createServerClient()
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { grade, subject, type, difficulty, topic, language, reading_track, level_id } = body
+  const { grade, subject, type, difficulty, topic, language, reading_track, level_id, generate_questions } = body
 
   if (!grade || !subject || !type || !difficulty) {
     return NextResponse.json({ error: 'grade, subject, type, difficulty required' }, { status: 400 })
@@ -208,6 +209,97 @@ OUTPUT: JSON only, no markdown. Even if the constraints above are difficult to s
       : checkWordListDecodability(content, levelForValidation.word_list)
   }
 
+  // Comprehension questions are generated from the FINAL passage text (after
+  // any decodability regeneration above), in a separate call with its own
+  // system prompt — reusing the passage-shaped systemPrompt/callAnthropic
+  // would require overloading one JSON contract with two incompatible
+  // shapes. "Unseen passage" framing (per the reading-acquisition project's
+  // pedagogical brief): questions must be answerable from the text itself,
+  // not from outside knowledge, so a student who skipped reading can't guess
+  // right from the options alone.
+  async function generateComprehensionQuestions(title: string, content: string): Promise<any[]> {
+    const langWord = isHebrew ? 'Hebrew' : 'English'
+    const questionSystemPrompt = `You are an expert reading-comprehension question writer for Israeli K-6 students.
+You will be given a passage a student has just finished reading. Write exactly ${COMPREHENSION_QUESTION_COUNT} multiple-choice comprehension questions that test genuine understanding of THIS specific passage — the "unseen passage" pedagogical framing: a student who actually read the passage should be able to answer using only what's stated or implied in the text, and a student who has NOT read it should not be able to guess correctly from general knowledge or the answer choices alone.
+Mix question types across the set: some literal (directly stated in the text), some inferential (requires connecting two parts of the text or reading between the lines). Spread questions across different parts of the passage rather than clustering on one paragraph.
+Write entirely in ${langWord} — the same language as the passage.
+OUTPUT: JSON only, no markdown — an array of exactly ${COMPREHENSION_QUESTION_COUNT} objects, each shaped:
+{"difficulty":"easy"|"medium"|"hard","prompt":"the question text","options":[{"label":"A","value":"..."},{"label":"B","value":"..."},{"label":"C","value":"..."},{"label":"D","value":"..."}],"correct_label":"A"|"B"|"C"|"D","explanation_en":"one sentence, in English, on why the correct answer is right — for a parent reviewing this question, not shown as a translation"}`
+
+    const questionUserPrompt = `Passage title: ${title}\n\nPassage text:\n${content}\n\nGenerate the comprehension questions now.`
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY!,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5',
+        max_tokens: 2000,
+        thinking: { type: 'disabled' },
+        system: questionSystemPrompt,
+        messages: [{ role: 'user', content: questionUserPrompt }],
+      }),
+    })
+    const data = await response.json()
+    if (!response.ok) throw new Response(JSON.stringify({ error: data.error?.message || 'Anthropic API request failed (questions)' }), { status: 502 })
+    const text = data.content?.[0]?.text ?? ''
+    const stripped = text.replace(/```json\n?|\n?```/g, '').trim()
+    const arrayMatch = stripped.match(/\[[\s\S]*\]/)
+    try {
+      const parsed = JSON.parse(arrayMatch ? arrayMatch[0] : stripped)
+      if (!Array.isArray(parsed)) throw new Error('not an array')
+      return parsed
+    } catch {
+      // A failed question batch shouldn't fail the whole request — the passage
+      // itself already saved successfully by the time this runs.
+      return []
+    }
+  }
+
+  const VALID_QUESTION_DIFFICULTIES = ['easy', 'medium', 'hard']
+
+  // Defensive per-question shape check, same spirit as insertQuestions.ts'
+  // validateOptionsShape — reject rather than coerce, so a malformed question
+  // is skipped instead of silently saved wrong.
+  function buildPassageQuestionRow(q: any, passageId: string, sortOrder: number): { row: any } | { error: string } {
+    if (typeof q?.prompt !== 'string' || !q.prompt.trim()) return { error: 'missing prompt' }
+    if (!Array.isArray(q.options) || q.options.length !== 4) return { error: `options must be an array of exactly 4 (got ${Array.isArray(q.options) ? q.options.length : typeof q.options})` }
+    for (const opt of q.options) {
+      if (typeof opt?.label !== 'string' || !opt.label) return { error: 'each option needs a non-empty label' }
+      if (typeof opt?.value !== 'string' || !opt.value.trim()) return { error: 'each option needs a non-empty value' }
+    }
+    const labels = q.options.map((o: any) => o.label)
+    if (new Set(labels).size !== labels.length) return { error: `duplicate option labels: ${labels.join(', ')}` }
+    const correctOption = q.options.find((o: any) => o.label === q.correct_label)
+    if (!correctOption) return { error: `correct_label "${q.correct_label}" does not match any option label` }
+
+    const options = q.options.map((o: any) => ({
+      label: o.label,
+      isCorrect: o.label === q.correct_label,
+      ...(isHebrew ? { value_he: o.value } : { value_en: o.value }),
+    }))
+
+    return {
+      row: {
+        passage_id: passageId,
+        difficulty: VALID_QUESTION_DIFFICULTIES.includes(q.difficulty) ? q.difficulty : difficulty,
+        prompt_en: isHebrew ? null : q.prompt,
+        prompt_he: isHebrew ? q.prompt : null,
+        options,
+        correct_answer: correctOption.value,
+        explanation_en: typeof q.explanation_en === 'string' && q.explanation_en ? q.explanation_en : null,
+        sort_order: sortOrder,
+        // AI-generated, pending parent review — same "nothing auto-approves"
+        // convention as reading_passages/questions, overriding this column's
+        // approved-by-default table default.
+        approved: false,
+      },
+    }
+  }
+
   try {
     // Reading-acquisition passages (level_id set) get one deterministic
     // validation + regeneration pass — prompt-only compliance already proved
@@ -240,10 +332,32 @@ OUTPUT: JSON only, no markdown. Even if the constraints above are difficult to s
     const { data: saved, error: saveError } = await supabase.from('reading_passages').insert(insertData).select().single()
     if (saveError) return NextResponse.json({ error: saveError.message }, { status: 500 })
 
+    // ─── comprehension questions (checkpoint 4) — genuinely new write path,
+    // no existing code has ever inserted into passage_questions. Insert one
+    // at a time so a single malformed question doesn't drop the rest of the
+    // batch, same defensive pattern as insertQuestions.ts / questions/generate ───
+    let insertedQuestions: any[] = []
+    const questionFailures: string[] = []
+    if (generate_questions) {
+      const rawQuestions = await generateComprehensionQuestions(parsed.title_en, parsed.content)
+      for (let i = 0; i < rawQuestions.length; i++) {
+        const built = buildPassageQuestionRow(rawQuestions[i], saved.id, i + 1)
+        if ('error' in built) {
+          questionFailures.push(`question ${i + 1}: ${built.error}`)
+          continue
+        }
+        const { data: insertedQ, error: qError } = await supabase
+          .from('passage_questions').insert(built.row).select().single()
+        if (qError) questionFailures.push(`question ${i + 1}: ${qError.message}`)
+        else insertedQuestions.push(insertedQ)
+      }
+    }
+
     return NextResponse.json({
       success: true,
       passage: saved,
       ...(decodability ? { decodability: { ...decodability, regenerated, passed: decodability.pct >= DECODABILITY_THRESHOLD } } : {}),
+      ...(generate_questions ? { questions: insertedQuestions, ...(questionFailures.length > 0 ? { question_warnings: questionFailures } : {}) } : {}),
     })
   } catch (err: any) {
     if (err instanceof Response) {
