@@ -6,6 +6,20 @@ import { checkNiqqudDecodability, checkWordListDecodability } from '@/lib/readin
 const DECODABILITY_THRESHOLD = 64
 const COMPREHENSION_QUESTION_COUNT = 4
 
+// reference_file: optional photo/PDF of a worksheet/booklet page used as a style/structure
+// model for passage generation — same mechanism and same limits as /api/questions/generate's
+// reference_file (ported, not reinvented): capped at 3MB raw because Vercel serverless
+// functions cap the request body at ~4.5MB total and base64 inflates raw bytes by ~33%,
+// leaving headroom for the rest of the JSON payload (well under Anthropic's own 32MB limit).
+const ALLOWED_REFERENCE_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
+const MAX_REFERENCE_FILE_BYTES = 3 * 1024 * 1024
+
+function fileContentBlock(mediaType: string, base64Data: string) {
+  return mediaType === 'application/pdf'
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Data } }
+    : { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Data } }
+}
+
 export async function GET(req: NextRequest) {
   const supabase = createServerClient()
   const { searchParams } = new URL(req.url)
@@ -71,6 +85,28 @@ export async function POST(req: NextRequest) {
 
   if (!grade || !subject || !type || !difficulty) {
     return NextResponse.json({ error: 'grade, subject, type, difficulty required' }, { status: 400 })
+  }
+
+  let referenceFile: { media_type: string; data: string } | undefined
+  if (body.reference_file !== undefined && body.reference_file !== null) {
+    const rf = body.reference_file
+    if (
+      typeof rf !== 'object' ||
+      typeof rf.media_type !== 'string' || !ALLOWED_REFERENCE_TYPES.includes(rf.media_type) ||
+      typeof rf.data !== 'string' || !rf.data
+    ) {
+      return NextResponse.json(
+        { error: `reference_file must be { media_type: one of ${ALLOWED_REFERENCE_TYPES.join(', ')}, data: base64 string }` },
+        { status: 400 }
+      )
+    }
+    if (Buffer.byteLength(rf.data, 'base64') > MAX_REFERENCE_FILE_BYTES) {
+      return NextResponse.json(
+        { error: `reference_file exceeds the ${MAX_REFERENCE_FILE_BYTES / 1024 / 1024}MB limit` },
+        { status: 400 }
+      )
+    }
+    referenceFile = { media_type: rf.media_type, data: rf.data }
   }
 
   const wordTargets: Record<number, { en: number; he: number }> = {
@@ -147,25 +183,53 @@ export async function POST(req: NextRequest) {
     ? 'Write ENTIRELY in Modern Hebrew (עברית מודרנית). Use standard Israeli spelling. Do NOT include English.'
     : 'Write ENTIRELY in clear English. Do NOT include Hebrew.'
 
+  // When no explicit topic was given, a reference file is itself a topic signal —
+  // the parent uploaded a specific booklet/worksheet, which is a more concrete
+  // intent than "surprise me." Said once here rather than duplicated into
+  // baseUserPrompt below, so there's a single place describing how the
+  // reference may/may not be used.
+  const referenceTopicNote = referenceFile && !topic
+    ? ' It is also the source for your topic and subject matter — write about what it covers, or something in the same spirit.'
+    : ''
+
+  const referenceInstruction = referenceFile
+    ? `\nA reference file (a photo or PDF of a worksheet, booklet page, or textbook excerpt) is attached.${referenceTopicNote} Reuse ONLY its tone, structure, and presentational format (e.g. paragraph rhythm, how ideas are framed, overall organization) — never its exact wording. Do not reuse any specific word, invented term, name, or phrase that appears in the reference file itself; write entirely new sentences of your own, even when directly inspired by its topic, tone, or structure.`
+    : ''
+
   const systemPrompt = `You are an expert educational content writer for Israeli K-6 students.
 ${langInstructions}
 Target: ${wordTarget} words (±15%), ${Math.max(3, Math.min(6, Math.round(wordTarget / 60)))} paragraphs, 4-6 sentences each.
 Type: ${type} — ${typeGuidance[type] ?? typeGuidance.informational}
 Difficulty: ${difficulty} — ${diffGuidance[difficulty] ?? diffGuidance.medium}
-Grade: ${gradeContext[grade] ?? gradeContext[4]}${readingLevelGuidance}
+Grade: ${gradeContext[grade] ?? gradeContext[4]}${readingLevelGuidance}${referenceInstruction}
 OUTPUT: JSON only, no markdown. Even if the constraints above are difficult to satisfy, still output ONLY the JSON object — never explain your reasoning, never add commentary or caveats before or after it. Do your best within the constraints and let the content itself reflect any necessary trade-offs.
 {"title_en":"English title","title_he":"Hebrew title","content":"Full text with \\n\\n between paragraphs","word_count":NUMBER,"tags":["tag1","tag2"]}`
 
-  // Only informational passages get the rubric, and only when the parent
-  // hasn't already named a topic — an explicit topic is a deliberate choice
-  // that bypasses topic curation entirely, not something to second-guess.
+  // Only informational passages get the rubric, and only when neither an explicit
+  // topic NOR a reference file was given — both of those are a deliberate parent
+  // signal for what to write about, and take priority over auto-invention:
+  // explicit topic string > reference file > rubric-driven auto-invented topic.
+  // A reference file is arguably the stronger real-world signal of the two (a
+  // parent uploading an actual booklet page is saying "make something like
+  // THIS"), which is exactly why it needs to outrank the rubric instead of
+  // competing alongside it — two co-equal directives fighting for the model's
+  // attention is what caused checkpoint 5's informational-type reference file
+  // to have no observable effect on generation.
   const INTERESTING_TOPIC_RUBRIC = `Choose the topic yourself. It must have a "wait, really?" quality — a fact or story a kid would go tell a friend right after reading it. It should be verifiably true, genuinely surprising, and specific (a particular animal, place, invention, record, or event — not a broad subject area). Examples of the right spirit: a fruit that's naturally blue, a plant that looks like it's growing spaghetti, an artist who paints on river stones. Never generic curriculum filler like "the water cycle," "healthy eating habits," or "how plants grow" — if the topic could headline a hundred other worksheets, pick something else. This description is guidance for YOUR topic choice, not phrasing to put in the passage — do not write "wait, really?" or similar meta-commentary about the fact being surprising into the passage text itself; just tell the passage's content, in its own natural voice, and let the facts create the surprise.`
 
   const baseUserPrompt = topic
     ? `Write a ${difficulty} ${type} passage for grade ${grade} about: ${topic}`
-    : type === 'informational'
-      ? `Write a ${difficulty} informational passage for grade ${grade}. ${INTERESTING_TOPIC_RUBRIC}`
-      : `Write a ${difficulty} ${type} passage for grade ${grade}. Choose an engaging, curriculum-appropriate topic.`
+    : referenceFile
+      ? `Write a ${difficulty} ${type} passage for grade ${grade}. A reference file is attached — see the system instructions for how to use it.`
+      : type === 'informational'
+        ? `Write a ${difficulty} informational passage for grade ${grade}. ${INTERESTING_TOPIC_RUBRIC}`
+        : `Write a ${difficulty} ${type} passage for grade ${grade}. Choose an engaging, curriculum-appropriate topic.`
+
+  // With a reference file attached, content is a multimodal array (image/document
+  // block + text) — same shape /api/questions/generate sends; otherwise keep the
+  // plain string the API already accepted.
+  const messageContent = (userPrompt: string) =>
+    referenceFile ? [fileContentBlock(referenceFile.media_type, referenceFile.data), { type: 'text', text: userPrompt }] : userPrompt
 
   async function callAnthropic(userPrompt: string) {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -180,7 +244,7 @@ OUTPUT: JSON only, no markdown. Even if the constraints above are difficult to s
         max_tokens: 1500,
         thinking: { type: 'disabled' },
         system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
+        messages: [{ role: 'user', content: messageContent(userPrompt) }],
       }),
     })
     const data = await response.json()
