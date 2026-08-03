@@ -76,9 +76,9 @@ export default async function LessonPage({ searchParams }: Props) {
       // Get recently seen question IDs — use a larger window for bonus (avoid repeating)
       const recentLimit = isBonus ? 100 : 50
       const { data: recentAnswers } = await supabase
-        .from('child_progress').select('question_id')
+        .from('question_attempts').select('question_id')
         .eq('child_id', child.id).eq('topic_id', topic.id)
-        .order('created_at', { ascending: false }).limit(recentLimit)
+        .order('attempted_at', { ascending: false }).limit(recentLimit)
 
       const seenIds = new Set((recentAnswers || []).map((r: any) => r.question_id).filter(Boolean))
 
