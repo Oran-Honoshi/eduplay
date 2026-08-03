@@ -659,10 +659,13 @@ function PendingReviewList({ active }: { active: boolean }) {
                   </p>
                 )}
 
-                {isRevealed && q.hint_en && (
+                {isRevealed && (q.hint_en || q.hint_he) && (
                   <p className="text-xs text-[#9aa6a3] mb-1">
-                    Hint: <FractionText text={q.hint_en} />
-                    {isDistinctHe(q.hint_he, q.hint_en) && <span dir="rtl"> · <FractionText text={q.hint_he} /></span>}
+                    Hint:{' '}
+                    {q.hint_en && <FractionText text={q.hint_en} />}
+                    {(q.hint_en ? isDistinctHe(q.hint_he, q.hint_en) : !!q.hint_he) && (
+                      <span dir="rtl">{q.hint_en ? ' · ' : ''}<FractionText text={q.hint_he} /></span>
+                    )}
                   </p>
                 )}
                 {isRevealed && q.explanation_en && (
@@ -1015,10 +1018,13 @@ function LibraryPanel({ active }: { active: boolean }) {
                         </p>
                       )}
 
-                      {isRevealed && q.hint_en && (
+                      {isRevealed && (q.hint_en || q.hint_he) && (
                         <p className="text-xs text-[#9aa6a3] mb-1">
-                          Hint: <FractionText text={q.hint_en} />
-                          {isDistinctHe(q.hint_he, q.hint_en) && <span dir="rtl"> · <FractionText text={q.hint_he} /></span>}
+                          Hint:{' '}
+                          {q.hint_en && <FractionText text={q.hint_en} />}
+                          {(q.hint_en ? isDistinctHe(q.hint_he, q.hint_en) : !!q.hint_he) && (
+                            <span dir="rtl">{q.hint_en ? ' · ' : ''}<FractionText text={q.hint_he} /></span>
+                          )}
                         </p>
                       )}
                       {isRevealed && q.explanation_en && (

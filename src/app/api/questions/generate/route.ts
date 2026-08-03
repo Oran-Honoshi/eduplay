@@ -302,17 +302,22 @@ export async function POST(req: NextRequest) {
     ? `\n${notebookFileBlocks.length} additional reference file(s) from this notebook section are attached — use them the same way as a reference file: as style/content inspiration, not to copy verbatim.`
     : ''
 
-  // language controls whether/how the *_he fields get populated. prompt_en, correct_answer,
-  // and each option's value_en are NOT NULL/required regardless of mode, so 'he_only' still needs
-  // an English version — it's just derived from Hebrew-primary content rather than the reverse.
+  // language controls whether/how the *_he fields get populated. prompt_en and
+  // correct_answer are NOT NULL at the DB level regardless of mode (each option's
+  // value_en is not DB-constrained, but is kept required in he_only too for
+  // internal consistency with prompt_en) — 'he_only' still needs *something* in
+  // those fields, but it must be a minimal internal stub, never real parallel
+  // English content: this mode means Hebrew-only for the user, not bilingual.
   const languageInstruction = {
     en_only: `Write every field in English only. Leave prompt_he, hint_he, and each option's "value_he" as null — do not translate anything into Hebrew.`,
-    he_only: `Write the primary version in Hebrew first, then add an English translation — every question should end up with both languages filled:
-- prompt_en AND prompt_he: both required, prompt_he written first as the primary version.
-- Each option's value_en AND value_he: both required for every option.
-- If you write a hint at all: hint_en AND hint_he are BOTH required together — never write hint_en alone and leave hint_he null. If you'd rather skip the Hebrew hint, omit hint_en too and leave the question with no hint.
-- explanation_en only — there is no Hebrew explanation field, leave it in English.
-- Exception: if a prompt/option/hint is purely symbolic or numeric with no natural-language words to translate (e.g. "2/3 + 2/3 = ?"), there is nothing to write in Hebrew that differs from the English — leave that field's _he counterpart null rather than repeating the same text.`,
+    he_only: `This question is Hebrew-only for the user — do not write real English content anywhere:
+- prompt_he: the full, natural, primary content. This is what the user reads.
+- prompt_en: required to be a non-empty string (technical constraint only, never shown to the user) — write a short internal gloss, a few words, NOT a full sentence or a real translation. This still has to distinguish the question from the other ${count} in this batch (it's used as a dedup key internally) — don't reuse the same generic gloss like "Which is bigger?" across multiple questions; keep each gloss specific to that question's actual content.
+- Each option's value_he: full, natural Hebrew content.
+- Each option's value_en: required non-empty per option, same rule as prompt_en — a short internal gloss only, never a real translation. Exception: if the option value is purely symbolic or numeric (e.g. "3/4" or "12"), value_en and value_he are identical anyway, so just repeat the same value in both rather than inventing a fake gloss.
+- correct_answer: write this in Hebrew — it is only ever used for answer-key/display purposes, matching whichever content is the correct one.
+- hint_he only: write a Hebrew hint if you'd write one at all. Leave hint_en null always in this mode.
+- explanation_en: leave this null in this mode — there is no Hebrew explanation field, and writing a real English explanation would contradict Hebrew-only.`,
     bilingual: `Every question must read naturally as equally-primary content in both languages, not a translation of one into the other:
 - prompt_en AND prompt_he: both required.
 - Each option's value_en AND value_he: both required for every option.
@@ -329,7 +334,7 @@ ${languageInstruction}
 For multiple_choice questions: "options" must be an array of exactly 4 objects, each {"label":"A"|"B"|"C"|"D","value_en":"...","value_he":"..."|null,"isCorrect":true|false}, with exactly one isCorrect:true.
 For word_problem questions: omit "options" (or set it to null); "correct_answer" holds the final answer as a plain string.
 OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects, each shaped:
-{"q_type":"multiple_choice"|"word_problem","difficulty":"easy"|"medium"|"hard","prompt_en":"...","prompt_he":"..."|null,"options":[...]|null,"correct_answer":"...","hint_en":"...","hint_he":"..."|null,"explanation_en":"..."}`
+{"q_type":"multiple_choice"|"word_problem","difficulty":"easy"|"medium"|"hard","prompt_en":"...","prompt_he":"..."|null,"options":[...]|null,"correct_answer":"...","hint_en":"..."|null,"hint_he":"..."|null,"explanation_en":"..."|null}`
 
   const userPrompt = custom_prompt
     ? `Generate the questions now. Additional instructions: ${custom_prompt}`
