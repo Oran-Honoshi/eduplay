@@ -636,7 +636,7 @@ function PendingReviewList({ active }: { active: boolean }) {
           </div>
 
           <p className="text-sm font-semibold text-[#1f2a28] mb-1"><FractionText text={q.prompt_en} /></p>
-          {isDistinctHe(q.prompt_he, q.prompt_en) && <p className="text-sm text-[#7a8f8b] mb-2" dir="rtl"><FractionText text={q.prompt_he} /></p>}
+          {isDistinctHe(q.prompt_he, q.prompt_en) && <p className="text-sm text-[#7a8f8b] mb-2 text-start" dir="rtl"><FractionText text={q.prompt_he} /></p>}
 
           {(() => {
             const isRevealed = revealed.has(q.id)
@@ -999,7 +999,7 @@ function LibraryPanel({ active }: { active: boolean }) {
                       </p>
 
                       <p className="text-sm font-semibold text-[#1f2a28] mb-1"><FractionText text={q.prompt_en} /></p>
-                      {isDistinctHe(q.prompt_he, q.prompt_en) && <p className="text-sm text-[#7a8f8b] mb-2" dir="rtl"><FractionText text={q.prompt_he} /></p>}
+                      {isDistinctHe(q.prompt_he, q.prompt_en) && <p className="text-sm text-[#7a8f8b] mb-2 text-start" dir="rtl"><FractionText text={q.prompt_he} /></p>}
 
                       {q.options ? (
                         <ul className="text-sm text-[#374151] mb-2 flex flex-col gap-0.5">
