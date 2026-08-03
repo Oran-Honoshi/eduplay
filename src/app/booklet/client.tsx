@@ -321,7 +321,7 @@ function AreaModelViz({ description, problem }: { description: string; problem?:
 
 function PassageViz() {
   return (
-    <div className="p-3 text-sm space-y-2" dir="rtl">
+    <div className="p-3 text-sm space-y-2 text-start" dir="rtl">
       <div className="p-2 rounded-lg border-2 border-blue-200 bg-blue-50 text-blue-900 font-medium text-xs">
         <span className="bg-blue-200 text-blue-800 px-2 py-0.5 rounded ml-1 text-xs">רעיון מרכזי</span>
         הדבורים חשובות מאוד לטבע.
@@ -465,7 +465,7 @@ function TopicCard({ topic, index, lang }: { topic: TopicExplanation; index: num
   const answerLabel = heOnly ? 'תשובה' : 'Answer'
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm" style={{ pageBreakInside: 'avoid' }} dir={dir}>
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm" style={{ pageBreakInside: 'avoid', textAlign: 'start' }} dir={dir}>
       <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
         <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-sm shrink-0">{index}</div>
         <div className="flex-1 min-w-0">
@@ -474,14 +474,14 @@ function TopicCard({ topic, index, lang }: { topic: TopicExplanation; index: num
             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${subj.bg} ${subj.text}`}>{subj.label}</span>
             <span className="text-xs text-gray-400">כיתה {topic.grade}</span>
           </div>
-          {!heOnly && topic.title_he && <div className="text-xs text-gray-500 mt-0.5" dir="rtl">{topic.title_he}</div>}
+          {!heOnly && topic.title_he && <div className="text-xs text-gray-500 mt-0.5 text-start" dir="rtl">{topic.title_he}</div>}
         </div>
       </div>
       <div className="px-6 py-5 space-y-4">
         <div className="bg-gray-50 rounded-xl p-4 space-y-2">
           {en && <p className="text-sm text-gray-700 leading-relaxed" dir="ltr">{topic.summary_en}</p>}
           {en && he && topic.summary_he && <hr className="border-gray-200" />}
-          {he && topic.summary_he && <p className="text-sm text-gray-600 leading-relaxed" dir="rtl">{topic.summary_he}</p>}
+          {he && topic.summary_he && <p className="text-sm text-gray-600 leading-relaxed text-start" dir="rtl">{topic.summary_he}</p>}
         </div>
         {topic.key_points_en?.length > 0 && (
           <div>
@@ -492,7 +492,7 @@ function TopicCard({ topic, index, lang }: { topic: TopicExplanation; index: num
                   <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                   <div className="flex-1">
                     {en && <div className="text-sm text-gray-700" dir="ltr">{kp}</div>}
-                    {he && topic.key_points_he?.[i] && <div className={`${heOnly ? 'text-sm text-gray-700' : 'text-xs text-gray-500'}`} dir="rtl">{topic.key_points_he[i]}</div>}
+                    {he && topic.key_points_he?.[i] && <div className={`${heOnly ? 'text-sm text-gray-700' : 'text-xs text-gray-500'} text-start`} dir="rtl">{topic.key_points_he[i]}</div>}
                   </div>
                 </div>
               ))}
@@ -516,7 +516,7 @@ function TopicCard({ topic, index, lang }: { topic: TopicExplanation; index: num
                     <span className="text-sm font-semibold text-gray-800" dir={heOnly ? 'rtl' : 'ltr'}>{heOnly ? ex.problem_he : ex.problem_en}</span>
                   </div>
                   <div className="px-4 py-3 space-y-3">
-                    {he && ex.problem_he && en && <div className="text-xs text-gray-500" dir="rtl">{ex.problem_he}</div>}
+                    {he && ex.problem_he && en && <div className="text-xs text-gray-500 text-start" dir="rtl">{ex.problem_he}</div>}
                     {ex.visual && <VisualBlock visual={ex.visual} problem={ex.problem_en} />}
                     {/* EN steps */}
                     {en && (
@@ -528,7 +528,7 @@ function TopicCard({ topic, index, lang }: { topic: TopicExplanation; index: num
                     )}
                     {/* HE steps */}
                     {he && ex.solution_steps_he?.length > 0 && (
-                      <div className="space-y-1" dir="rtl">
+                      <div className="space-y-1 text-start" dir="rtl">
                         {ex.solution_steps_he.map((step: string, j: number) => (
                           <div key={j} className={`flex gap-2 ${heOnly ? 'text-sm text-gray-600' : 'text-xs text-gray-500'}`}>
                             <span className="text-emerald-500 font-semibold shrink-0">{j + 1}</span><span>{step}</span>
@@ -772,7 +772,7 @@ export default function BookletClient({ topics: initialTopics }: { topics: Topic
                       <div className="hidden print:flex items-start justify-between mt-6 pt-3" style={{ borderTop: '1px solid #d1fae5' }}>
                         <div className="flex-1 pr-4">
                           <p className="text-xs text-gray-500 italic leading-relaxed">{fact.en}</p>
-                          {fact.he && <p className="text-xs text-gray-400 italic mt-0.5" dir="rtl">{fact.he}</p>}
+                          {fact.he && <p className="text-xs text-gray-400 italic mt-0.5 text-start" dir="rtl">{fact.he}</p>}
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
                           <span className="text-xs font-black text-emerald-600">E</span>
