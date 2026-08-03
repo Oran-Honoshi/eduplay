@@ -171,7 +171,7 @@ function CardModal({ card, onClose }: { card: Card; onClose: ()=>void }) {
           {card.emoji||'🐾'}
           {card.image_url&&!imgErr&&<img src={card.image_url} alt={card.name_en} crossOrigin="anonymous" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain'}} onError={()=>setImgErr(true)}/>}
           <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(0,0,0,0.65) 0%,transparent 55%)'}}/>
-          <div style={{position:'absolute',bottom:14,left:16,right:60}} dir={he?'rtl':'ltr'}>
+          <div style={{position:'absolute',bottom:14,left:16,right:60,textAlign:'start'}} dir={he?'rtl':'ltr'}>
             <div style={{fontSize:24,fontWeight:800,color:'white',marginBottom:3,fontFamily:'"Baloo 2",sans-serif'}}>{name}</div>
             <div style={{fontSize:12,color:'rgba(255,255,255,0.85)',display:'flex',alignItems:'center',gap:4}}><MapPin size={12}/> {location}</div>
           </div>
@@ -188,7 +188,7 @@ function CardModal({ card, onClose }: { card: Card; onClose: ()=>void }) {
           <button onClick={onClose} style={{position:'absolute',top:10,right:10,width:30,height:30,borderRadius:'50%',background:'rgba(0,0,0,0.45)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><X size={15} color="white"/></button>
           <div style={{position:'absolute',bottom:0,left:0,right:0,height:3,background:r.color}}/>
         </div>
-        <div style={{padding:'16px 20px 20px'}} dir={he?'rtl':'ltr'}>
+        <div style={{padding:'16px 20px 20px',textAlign:'start'}} dir={he?'rtl':'ltr'}>
           <span style={{fontSize:11,fontWeight:700,padding:'3px 9px',borderRadius:10,background:r.bg,color:r.text,border:`0.5px solid ${r.color}40`}}>{r.label}</span>
           <div style={{display:'flex',flexDirection:'column',gap:10,margin:'14px 0 16px'}}>
             {facts.map((f: string,i: number)=>(
