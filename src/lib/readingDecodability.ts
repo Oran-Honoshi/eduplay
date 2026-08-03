@@ -50,6 +50,12 @@ const ALWAYS_ALLOWED_HE = new Set([
 
 const HE_PREFIX_LETTERS = new Set(['ו', 'ה', 'ב', 'ל', 'מ', 'ש', 'כ'])
 
+// Matches any Hebrew letter (base block, including final forms ך ם ן ף ץ,
+// all of which fall within this same code-point range) — used to tell an
+// actual Hebrew word apart from a digit/punctuation-only token, which
+// should never be forced to carry a niqqud mark.
+const HEBREW_LETTER = /[א-ת]/
+
 // Strips a single leading clitic letter (ו/ה/ב/ל/מ/ש/כ) plus whatever niqqud
 // is attached to it, so "וְהוּא" ("and he") still matches "הוּא" in the
 // always-allowed set. Only one prefix layer — real Hebrew can stack more
@@ -96,6 +102,15 @@ export function checkNiqqudDecodability(hebrewText: string, levelNumber: number)
     if (stripped && ALWAYS_ALLOWED_HE.has(stripped)) continue
 
     const marks = extractHebrewWordMarks(word)
+    // A Hebrew word with zero niqqud marks isn't "trivially compliant" — it's
+    // unpointed text, which defeats the entire purpose of a niqqud-level
+    // reader. Requires AT LEAST ONE mark on the word, not one per letter:
+    // real pointed text can have consonant clusters with no vowel point on
+    // a given letter, and that alone shouldn't fail the word.
+    if (marks.size === 0 && HEBREW_LETTER.test(word)) {
+      violatingWords.push(word)
+      continue
+    }
     let ok = true
     marks.forEach(m => { if (!allowed.has(m)) ok = false })
     if (!ok) violatingWords.push(word)

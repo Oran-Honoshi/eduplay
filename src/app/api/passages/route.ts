@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
       : ''
 
     readingLevelGuidance = level.track === 'niqqud'
-      ? `\nReading level: ${level.label_he} (${level.label_en}). This is a beginning Hebrew reader's booklet. Use ONLY the niqqud marks introduced by this level and every level before it: ${cumulative}. Do not use any niqqud mark outside that set anywhere in the text.${wordListGuidance} At least ${DECODABILITY_THRESHOLD}% of words must be fully decodable using only those marks; a small number of very common, unavoidable sight words may deviate if a natural sentence truly requires them.`
+      ? `\nReading level: ${level.label_he} (${level.label_en}). This is a beginning Hebrew reader's booklet. Every word must be fully vocalized with niqqud (vowel points) — this is not standard unpointed Hebrew, it is a beginner reader's pointed text (טקסט מנוקד). Use ONLY the niqqud marks introduced by this level and every level before it: ${cumulative}. Do not use any niqqud mark outside that set anywhere in the text. Every word must always be spelled correctly and in full — if a word's only correct spelling requires a niqqud mark outside this level's allowed set, choose a genuinely different real word instead; never truncate, drop letters from, or otherwise alter a word's spelling to force it to comply with the allowed mark set.${wordListGuidance} At least ${DECODABILITY_THRESHOLD}% of words must be fully decodable using only those marks; a small number of very common, unavoidable sight words may deviate if a natural sentence truly requires them.`
       : `\nReading level: ${level.label_en}. This is a beginning English reader's booklet. Use ONLY the phonics patterns introduced by this level and every level before it: ${cumulative}. Do not use any phonics pattern outside that set (e.g. no long vowels or blends before they've been introduced).${wordListGuidance} At least ${DECODABILITY_THRESHOLD}% of words must be fully decodable using only those patterns; a small number of very common, unavoidable sight words may deviate if a natural sentence truly requires them.`
   }
 
@@ -215,7 +215,7 @@ export async function POST(req: NextRequest) {
   }
 
   const langInstructions = isHebrew
-    ? 'Write ENTIRELY in Modern Hebrew (עברית מודרנית). Use standard Israeli spelling. Do NOT include English.'
+    ? 'Write ENTIRELY in Modern Hebrew (עברית מודרנית). Use standard Israeli niqqud conventions. Every word must be fully vocalized with niqqud (vowel points) — this is not standard unpointed Hebrew, it is a beginner reader\'s pointed text (טקסט מנוקד). Do NOT include English.'
     : 'Write ENTIRELY in clear English. Do NOT include Hebrew.'
 
   // When no explicit topic was given, a reference file is itself a topic signal —
