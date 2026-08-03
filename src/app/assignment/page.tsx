@@ -23,7 +23,7 @@ export default async function AssignmentPage({ searchParams }: Props) {
 
   const { data: assignment } = await supabase
     .from('assignments')
-    .select('id, title, child_id')
+    .select('id, title, child_id, topic_id, topic:topics(title_en, title_he)')
     .eq('id', id)
     .maybeSingle()
 

@@ -176,6 +176,20 @@ export default function AssignmentClient({ child, assignment, items: initialItem
         <div style={{ height:'100%', width:`${(currentIndex / totalItems) * 100}%`, background:T.accent1, transition:'width 0.3s ease' }}/>
       </div>
 
+      {/* Topic review link — only present when every question in this assignment came
+          from a single topic (see api/assignments/route.ts); a mixed-topic assignment has
+          no single topic to link to, so assignment.topic is null and this is just absent. */}
+      {assignment.topic && (
+        <div style={{ maxWidth:'640px', margin:'10px auto 0', padding:'0 16px' }}>
+          <a href={`/lesson?topicId=${assignment.topic_id}&childId=${child.id}${token ? `&token=${token}` : ''}`}
+            style={{ display:'inline-flex', alignItems:'center', gap:'6px', fontSize:'12px', fontWeight:700, color:T.accent1, textDecoration:'none' }}>
+            📘 {isHE
+              ? `סקור את ${assignment.topic.title_he || assignment.topic.title_en} קודם`
+              : `Review ${assignment.topic.title_en} first`}
+          </a>
+        </div>
+      )}
+
       <div style={{ maxWidth:'640px', margin:'0 auto', padding:'20px 16px' }}>
         <ThemePanel theme={theme} T={T} style={{ padding:'20px' }}>
           <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>

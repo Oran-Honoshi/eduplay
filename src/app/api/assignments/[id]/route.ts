@@ -13,7 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const { data: assignment } = await supabase
     .from('assignments')
-    .select('id, title, created_at, child_id, family_id')
+    .select('id, title, created_at, child_id, family_id, topic_id, topic:topics(title_en, title_he)')
     .eq('id', params.id)
     .maybeSingle()
 

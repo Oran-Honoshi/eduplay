@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { requireOwnChildSession } from '@/lib/session'
+import { creditTopicProgress } from '@/lib/progressCredit'
 
 // ─── POST /api/assignments/[id]/items/[itemId]/attempt ─────────
 // Grades one answer submission for one assignment item. Child-only (not
@@ -24,7 +25,7 @@ export async function POST(
     .from('assignment_items')
     .select(`
       id, assignment_id, question_id, status,
-      assignment:assignments ( child_id )
+      assignment:assignments ( child_id, topic_id )
     `)
     .eq('id', params.itemId)
     .eq('assignment_id', params.id)
@@ -78,12 +79,42 @@ export async function POST(
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
   if (!updated) return NextResponse.json({ error: 'This question has already been answered' }, { status: 409 })
 
+  // FIXED (2026-08-03): same ordering bug just fixed in api/progress/route.ts — award_xp
+  // unconditionally stamps last_active_at, and update_streak decides extend/reset/same-day
+  // purely by reading that field first, so running award_xp first could silently erase the
+  // "already active today" signal before update_streak ever saw it. award_xp never reads
+  // last_active_at itself, so running update_streak first is a safe reorder, not a
+  // behavior change to XP.
+  await supabase.rpc('update_streak', { p_child_id: childId })
   if (isCorrect) {
     await supabase.rpc('award_xp', { p_child_id: childId, p_amount: 25 })
   }
-  // Matches the lesson path (api/progress/route.ts) — streak is driven purely by
-  // same-day activity on the child, not by correctness, so it updates unconditionally.
-  await supabase.rpc('update_streak', { p_child_id: childId })
+
+  // Credit child_topic_progress for the assignment's topic (if one was derived at
+  // creation — see api/assignments/route.ts) once this item is genuinely resolved, not on
+  // an intermediate wrong-first-attempt. Reuses the exact same upsert the lesson flow
+  // uses (api/progress/route.ts), so an assignment-driven topic completion shows up
+  // consistently in the Progress tab instead of leaving "assignment: done, topic: not
+  // started" — the mismatch this whole fix exists to close. Deliberately does NOT award a
+  // card token on isNewBest here — whether an assignment-driven completion should earn a
+  // card is a separate, already-deferred product decision, not part of this fix's scope.
+  const topicId = (item.assignment as any)?.topic_id
+  const isResolved = updated.status !== 'attempt_1_wrong'
+  if (isResolved && topicId) {
+    const { data: allItems } = await supabase
+      .from('assignment_items')
+      .select('status')
+      .eq('assignment_id', params.id)
+    const items = allItems || []
+    const resolvedCount = items.filter(
+      (it: any) => it.status !== 'not_started' && it.status !== 'attempt_1_wrong'
+    ).length
+    await creditTopicProgress(supabase, {
+      childId, topicId,
+      stepNumber: resolvedCount, totalSteps: items.length,
+      questionAnswered: true, correct: isCorrect,
+    })
+  }
 
   return NextResponse.json({
     correct: isCorrect,

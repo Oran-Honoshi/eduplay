@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   const { data: validQuestions, error: validateError } = await supabase
     .from('questions')
-    .select('id')
+    .select('id, topic_id')
     .in('id', questionIds)
     .eq('approved', true)
     .not('options', 'is', null)
@@ -56,6 +56,15 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  // Derived server-side, never trusted from the client: if every selected question shares
+  // one topic, tag the assignment with it so completing the assignment can also credit
+  // child_topic_progress for that topic (see api/assignments/[id]/items/[itemId]/attempt).
+  // A mixed-topic selection (possible when the Library's topic filter is left on "all
+  // topics") just leaves this null — there's no single topic to credit, and assignment
+  // creation is unaffected either way.
+  const distinctTopicIds = new Set((validQuestions || []).map(q => q.topic_id))
+  const topicId = distinctTopicIds.size === 1 ? [...distinctTopicIds][0] : null
+
   const { data: assignment, error: assignmentError } = await supabase
     .from('assignments')
     .insert({
@@ -63,6 +72,7 @@ export async function POST(req: NextRequest) {
       child_id: childId,
       created_by_parent_id: auth.parent.parentId,
       title: title || null,
+      topic_id: topicId,
     })
     .select()
     .single()
