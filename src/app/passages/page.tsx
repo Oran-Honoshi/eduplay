@@ -462,12 +462,207 @@ function GeneratorPanel({ onGenerated }: { onGenerated: (p: Passage) => void }) 
   )
 }
 
+// ── Pending Review ────────────────────────────────────────────
+// Per-item approve/reject only — deliberately no bulk-approve action here.
+// See the 2026-08-01 bulk-approve incident on the questions queue: a bulk
+// action against a shared/unscoped review queue silently affected real
+// pending content. Until bulk approval gets the same real-review-before-
+// confirm treatment questions' BulkApproveModal has, passages ship without it.
+interface PendingPassageQuestion {
+  id: string
+  prompt_en: string | null
+  prompt_he: string | null
+  options: { label: string; isCorrect: boolean; value_en?: string; value_he?: string }[]
+  correct_answer: string
+  explanation_en: string | null
+  approved: boolean
+}
+
+interface PendingPassage {
+  id: string
+  grade: number
+  subjects: { slug: string } | null
+  passage_type: string
+  difficulty: string
+  title_en: string
+  title_he: string | null
+  content_en: string | null
+  content_he: string | null
+  approved: boolean
+  passage_questions: PendingPassageQuestion[]
+}
+
+// A passage is done needing review once it's approved AND every one of its
+// comprehension questions is too — passage_questions carries its own
+// independent `approved` column (gated separately in lesson/page.tsx), so
+// approving the passage alone doesn't resolve its questions.
+const isResolved = (p: PendingPassage) => p.approved && p.passage_questions.every(q => q.approved)
+
+function PendingPassageQuestionRow({ passageId, q, busy, onAct }: {
+  passageId: string
+  q: PendingPassageQuestion
+  busy: boolean
+  onAct: (passageId: string, questionId: string, action: 'approve' | 'reject') => void
+}) {
+  return (
+    <div className="bg-gray-50 rounded-xl p-3 mt-2">
+      <p className="text-xs font-semibold text-gray-800 mb-1">{q.prompt_en ?? q.prompt_he}</p>
+      {q.prompt_he && q.prompt_en && <p className="text-xs text-gray-400 mb-1" dir="rtl">{q.prompt_he}</p>}
+      <ul className="text-xs text-gray-600 mb-2 flex flex-col gap-0.5">
+        {q.options.map((opt, i) => (
+          <li key={i} className={opt.isCorrect ? 'font-bold text-emerald-700' : ''}>
+            {opt.label}. {opt.value_en ?? opt.value_he}{opt.isCorrect ? ' ✓' : ''}
+          </li>
+        ))}
+      </ul>
+      {q.explanation_en && <p className="text-xs text-gray-400 mb-2">Explanation: {q.explanation_en}</p>}
+      {q.approved ? (
+        <span className="text-xs font-semibold text-emerald-600">✓ Approved</span>
+      ) : (
+        <div className="flex gap-2">
+          <button onClick={() => onAct(passageId, q.id, 'approve')} disabled={busy}
+            className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+            Approve
+          </button>
+          <button onClick={() => onAct(passageId, q.id, 'reject')} disabled={busy}
+            className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 disabled:opacity-50 font-bold text-xs rounded-lg transition-colors">
+            Reject
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PendingReviewList({ active }: { active: boolean }) {
+  const [passages, setPassages] = useState<PendingPassage[]>([])
+  const [loading, setLoading] = useState(true)
+  const [busyPassageId, setBusyPassageId] = useState<string | null>(null)
+  const [busyQuestionId, setBusyQuestionId] = useState<string | null>(null)
+
+  const load = () => {
+    setLoading(true)
+    fetch('/api/passages/pending')
+      .then(r => r.json())
+      .then(data => setPassages(data.passages || []))
+      .finally(() => setLoading(false))
+  }
+
+  // Refetch each time this tab becomes active, matching questions/page.tsx's
+  // PendingReviewList — the tab stays mounted across switches.
+  useEffect(() => { if (active) load() }, [active])
+
+  const actPassage = async (id: string, action: 'approve' | 'reject') => {
+    setBusyPassageId(id)
+    const res = await fetch(`/api/passages/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    })
+    if (res.ok) {
+      setPassages(prev => {
+        if (action === 'reject') return prev.filter(p => p.id !== id)
+        return prev.map(p => p.id === id ? { ...p, approved: true } : p).filter(p => !isResolved(p))
+      })
+    }
+    setBusyPassageId(null)
+  }
+
+  const actQuestion = async (passageId: string, questionId: string, action: 'approve' | 'reject') => {
+    setBusyQuestionId(questionId)
+    const res = await fetch(`/api/passages/questions/${questionId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action }),
+    })
+    if (res.ok) {
+      setPassages(prev => prev.map(p => {
+        if (p.id !== passageId) return p
+        const passage_questions = action === 'reject'
+          ? p.passage_questions.filter(q => q.id !== questionId)
+          : p.passage_questions.map(q => q.id === questionId ? { ...q, approved: true } : q)
+        return { ...p, passage_questions }
+      }).filter(p => !isResolved(p)))
+    }
+    setBusyQuestionId(null)
+  }
+
+  if (loading) return <p className="text-sm text-gray-400">Loading…</p>
+  if (passages.length === 0) {
+    return <p className="text-sm text-gray-400">No pending passages — everything's been reviewed.</p>
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {passages.map(p => {
+        const diff = DIFF_COLOR[p.difficulty] ?? DIFF_COLOR.medium
+        const content = p.content_en ?? p.content_he
+        const isHe = !p.content_en && !!p.content_he
+        return (
+          <div key={p.id} className="bg-white rounded-2xl border border-gray-100 p-5">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                  {GRADE_LABELS[p.grade] ?? `G${p.grade}`}
+                </span>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: SUBJ_COLOR[p.subjects?.slug ?? 'english']?.bg, color: SUBJ_COLOR[p.subjects?.slug ?? 'english']?.text }}>
+                  {p.subjects?.slug === 'hebrew' ? 'עב' : 'EN'}
+                </span>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full capitalize" style={{ background: diff.bg, color: diff.text }}>
+                  {p.difficulty}
+                </span>
+                <span className="text-xs text-gray-400 capitalize">{TYPE_EMOJI[p.passage_type] ?? '📄'} {p.passage_type}</span>
+              </div>
+            </div>
+
+            <h3 className="text-sm font-bold text-gray-900 mb-1">{p.title_en}</h3>
+            {p.title_he && <p className="text-xs text-gray-400 mb-2" dir="rtl">{p.title_he}</p>}
+
+            <div
+              className="text-sm text-gray-700 mb-3 max-h-56 overflow-y-auto bg-gray-50 rounded-xl p-3"
+              dir={isHe ? 'rtl' : 'ltr'}
+            >
+              {(content ?? '').split('\n\n').map((para, i) => <p key={i} className="mb-2">{para}</p>)}
+            </div>
+
+            {p.approved ? (
+              <span className="text-xs font-semibold text-emerald-600">✓ Passage approved</span>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={() => actPassage(p.id, 'approve')} disabled={busyPassageId === p.id}
+                  className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+                  Approve
+                </button>
+                <button onClick={() => actPassage(p.id, 'reject')} disabled={busyPassageId === p.id}
+                  className="px-4 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 disabled:opacity-50 font-bold text-xs rounded-lg transition-colors">
+                  Reject
+                </button>
+              </div>
+            )}
+
+            {p.passage_questions.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-50">
+                <p className="text-xs font-semibold text-gray-500 mb-1">
+                  Comprehension questions ({p.passage_questions.filter(q => !q.approved).length} pending)
+                </p>
+                {p.passage_questions.map(q => (
+                  <PendingPassageQuestionRow key={q.id} passageId={p.id} q={q} busy={busyQuestionId === q.id} onAct={actQuestion} />
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Main Page ──────────────────────────────────────────────────
 export default function PassagesPage() {
+  const [tab, setTab] = useState<'library' | 'generate' | 'pending'>('library')
   const [passages, setPassages] = useState<Passage[]>([])
   const [loading, setLoading] = useState(true)
   const [openPassage, setOpenPassage] = useState<Passage | null>(null)
-  const [showGenerator, setShowGenerator] = useState(false)
 
   // Filters
   const [filterGrade, setFilterGrade] = useState<string>('')
@@ -534,9 +729,17 @@ export default function PassagesPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowGenerator(s => !s)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${showGenerator ? 'bg-emerald-500 text-white border-emerald-500' : 'text-gray-500 border-gray-200 hover:bg-gray-50'}`}>
+            <button onClick={() => setTab('library')}
+              className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'library' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+              Library
+            </button>
+            <button onClick={() => setTab('generate')}
+              className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'generate' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
               ✨ Generate new
+            </button>
+            <button onClick={() => setTab('pending')}
+              className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'pending' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+              Pending Review
             </button>
             <button onClick={() => window.location.href = '/dashboard'}
               className="text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">
@@ -547,8 +750,9 @@ export default function PassagesPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6">
-        {/* Generator panel */}
-        {showGenerator && (
+        {/* Generator tab — kept mounted-on-demand (unlike library/pending) since
+            it has no data to refetch on tab switch, just in-progress form state. */}
+        <div className={tab === 'generate' ? 'mb-6' : 'hidden'}>
           <GeneratorPanel onGenerated={p => {
             // Derived from which content field the passage actually has, not the
             // active filter — caught live in checkpoint 6 testing: generating a
@@ -556,16 +760,14 @@ export default function PassagesPage() {
             // until the next page refresh, because this previously fell back to
             // filterSubject || 'english' regardless of the passage's real language.
             setPassages(prev => [{ ...p, subject: p.content_he ? 'hebrew' : 'english', question_count: p.question_count ?? 0 } as Passage, ...prev])
-            // Deliberately NOT auto-closing the panel here (pre-existing behavior
-            // before checkpoint 6): the result banner — including decodability
-            // pass/fail and comprehension-question count — lives inside
-            // GeneratorPanel, so closing immediately on success meant that
-            // information was never actually visible, even for a frame (both
-            // state updates land in the same React batch). The user closes it
-            // themselves via "Generate new" once they've reviewed the result.
           }} />
-        )}
+        </div>
 
+        <div className={tab === 'pending' ? '' : 'hidden'}>
+          <PendingReviewList active={tab === 'pending'} />
+        </div>
+
+        <div className={tab === 'library' ? '' : 'hidden'}>
         {/* Filters */}
         <div className="flex flex-wrap gap-2 mb-6">
           <input
@@ -633,6 +835,7 @@ export default function PassagesPage() {
             ))}
           </div>
         )}
+        </div>
       </div>
 
       {/* Modal */}
