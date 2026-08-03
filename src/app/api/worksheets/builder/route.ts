@@ -135,45 +135,19 @@ export async function GET(req: NextRequest) {
       } catch {}
     }
 
-    // TODO(product): this auto-save writes straight to `questions` with
-    // approved: true, source: 'worksheet_builder' — a second creation path that
-    // completely bypasses Pending Review. A worksheet-generated question never
-    // enters the approval queue and is immediately eligible to be served to any
-    // child on that topic, with zero human review. Same shared-pool risk as the
-    // AI generator path, minus the review step we just built. Needs a decision:
-    // route this through approved:false + Pending Review too, or explicitly
-    // accept the gap and document why.
-    // ── Auto-save questions back to DB (fire-and-forget) ─────────
-    try {
-      const toSave = finalQuestions
-        .filter((q: any) => q.prompt_en && q.topic_id)
-        .map((q: any) => {
-          const topic = topics.find((t: any) => t.id === q.topic_id)
-          return {
-            topic_slug: topic?.slug, difficulty: q.difficulty || difficulty,
-            q_type: q.q_type || 'multiple_choice', prompt_en: q.prompt_en,
-            prompt_he: q.prompt_he || null, options: q.options || null,
-            correct_answer: q.correct_answer, hint_en: q.hint_en || null,
-            hint_he: q.hint_he || null, explanation_en: q.explanation_en || null,
-            visual_data: q.visual_data || null, approved: true,
-          }
-        })
-        .filter((q: any) => q.topic_slug)
-
-      if (toSave.length > 0) {
-        void (async () => {
-          try {
-            await supabase.from('questions').upsert(
-              toSave.map((q: any) => {
-                const topic = topics.find((t: any) => t.slug === q.topic_slug)
-                return { ...q, topic_id: topic?.id, source: 'worksheet_builder' }
-              }).filter((q: any) => q.topic_id),
-              { onConflict: 'topic_id,prompt_en', ignoreDuplicates: true }
-            )
-          } catch {}
-        })()
-      }
-    } catch {}
+    // REMOVED (2026-08-03): this used to attempt an auto-save of `finalQuestions` back
+    // into `questions` with `approved: true, source: 'worksheet_builder'`. It was flagged
+    // in review as "a second creation path that bypasses Pending Review" — but traced end
+    // to end, `finalQuestions` is always read directly from `questions` in the first place
+    // (either by hand-picked ID, or by topic+difficulty+`approved=true`), so this route
+    // never generates new content at all; there was nothing to save that didn't already
+    // exist. Worse, the write itself had been silently failing on every single call since
+    // it was written: `questions` has no `source` column, so every upsert threw
+    // `PGRST204` and the surrounding `catch {}` swallowed it. Confirmed live — a real
+    // worksheet generation left the topic's question count unchanged before/after. No
+    // replacement needed: the real, working audit trail for "what did I print, and when"
+    // is `worksheet_generations` (see the block above, and `/api/worksheets/history`),
+    // which is unrelated to this dead code and was never affected by its removal.
 
     return new NextResponse(html, {
       headers: { 'Content-Type': 'text/html; charset=utf-8' }
