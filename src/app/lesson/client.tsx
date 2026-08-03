@@ -291,7 +291,7 @@ function getLearnContent(topic: any, T: any, isHE: boolean = false) {
 
 
 // ── PASSAGE READER ────────────────────────────────────────────
-function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic, subjColor, token, theme, FS }: any) {
+function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic, subjColor, token, theme, FS, onXpEarned, onCardEarned }: any) {
   const [phase, setPhase]       = useState<'reading'|'questions'>('reading')
   const [qIndex, setQIndex]     = useState(0)
   const [answered, setAnswered] = useState(false)
@@ -299,28 +299,55 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
   const [feedback, setFeedback] = useState<any>(null)
   const [score, setScore]       = useState(0)
   const [done, setDone]         = useState(false)
+  const [cardEarned, setCardEarned] = useState(false)
 
   const currentQ = questions[qIndex]
   const isRTL    = passage?.is_rtl && isHE
 
-  // TODO(bug): confirmed 2026-07-28 — unlike the main lesson checkAnswer (this file,
-  // ~line 614, fixed same day), this one never had a persistence call to begin with, for
-  // either branch. Right or wrong, a reading-comprehension answer only updates local
-  // `score`/`feedback` state here — no /api/progress POST, so no question_attempts row
-  // and no child_topic_progress update, ever. Passage-quiz performance is completely
-  // invisible server-side today: no history, no XP, nothing feeding progress/parent
-  // views. Not fixed here — flagged for a separate priority call, same as the lesson bug.
-  function checkAnswer(opt: any) {
+  // FIXED (2026-08-03): this used to never persist anything — a reading-comprehension
+  // answer only updated local `score`/`feedback` state, no /api/progress POST, so no
+  // XP/streak/child_topic_progress update ever happened. Now mirrors the main lesson's
+  // checkAnswer (~line 620): fires an unconditional POST with `passageQuestionId` (these
+  // questions live in `passage_questions`, not `questions`, so the API re-derives
+  // correctness from that table instead — see api/progress/route.ts).
+  async function checkAnswer(opt: any) {
     if (answered) return
     setAnswered(true)
     setSelected(opt.label)
     const correct = opt.isCorrect
     if (correct) setScore(s => s + 1)
     setFeedback({ correct, explanation: correct ? '✅ ' + UI.correct : '❌ ' + UI.notQuite })
+    try {
+      await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          childId: child?.id, topicId: topic?.id, passageQuestionId: currentQ.id,
+          answerGiven: opt.label, correct, hintUsed: false,
+          stepNumber: qIndex, totalSteps: questions.length,
+        }),
+      })
+    } catch {}
+    if (correct) onXpEarned?.(25)
   }
 
   function next() {
     if (qIndex + 1 >= questions.length) {
+      // Completion-only call (no passageQuestionId), same shape as the main lesson's
+      // nextStep() — marks the topic complete and returns isNewBest to gate a card token.
+      fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: questions.length, totalSteps: questions.length }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data?.isNewBest) {
+            setCardEarned(true)
+            onCardEarned?.()
+          }
+        })
+        .catch(() => {})
       setDone(true)
     } else {
       setQIndex(i => i + 1)
@@ -331,6 +358,14 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
   }
 
   function goBack() {
+    // Persist partial progress on early exit, same as the main lesson's goBack().
+    if (qIndex > 0 || answered) {
+      fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: qIndex, totalSteps: questions.length }),
+      }).catch(() => {})
+    }
     if (token) window.location.href = `/play/${token}`
     else window.location.href = '/dashboard'
   }
@@ -346,6 +381,11 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
         <div style={{ fontSize:'36px', margin:'12px 0' }}>
           {score === questions.length ? '⭐⭐⭐' : score >= questions.length / 2 ? '⭐⭐' : '⭐'}
         </div>
+        {cardEarned && (
+          <p style={{ fontSize:'14px', color:T.accent2, fontWeight:800, marginBottom:'8px' }}>
+            🎴 {isHE ? 'קיבלת כרטיס חדש!' : 'You earned a new card!'}
+          </p>
+        )}
         <div style={{ display:'flex', gap:'10px', justifyContent:'center', marginTop:'16px' }}>
           <button onClick={goBack} style={{ padding:'10px 20px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'16px', cursor:'pointer' }}>{UI.home}</button>
           <button onClick={() => { setPhase('reading'); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null); setScore(0); setDone(false) }}
@@ -576,6 +616,10 @@ export default function LessonClient({ child, topic, questions, passage, passage
     setTimeout(() => setXpNotif(null), 2500)
   }
 
+  function awardCardToken() {
+    fetch('/api/cards/token', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ childId: child?.id }) }).catch(()=>{})
+  }
+
   function speak(text: string, lang: string) {
     if (typeof window === 'undefined' || !window.speechSynthesis) return
     window.speechSynthesis.cancel()
@@ -668,7 +712,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
             emoji: isBonus && cardEarned ? '🎴' : '🎉',
           })
           if (cardEarned) {
-            fetch('/api/cards/token', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ childId: child?.id }) }).catch(()=>{})
+            awardCardToken()
           }
         })
         .catch(() => {
@@ -883,6 +927,8 @@ export default function LessonClient({ child, topic, questions, passage, passage
               T={T} langMode={langMode} isHE={isHE} UI={UI}
               child={child} topic={topic} subjColor={subjColor}
               token={token} theme={theme} FS={FS}
+              onXpEarned={(amt: number) => { setXp(xpBalance + amt); showXP(`+${amt} XP ⬆`) }}
+              onCardEarned={awardCardToken}
             />
           ) : isReadingTopic && !passage ? (
             <div style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'32px', textAlign:'center', color:T.text2 }}>

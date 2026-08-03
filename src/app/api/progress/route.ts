@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { authorizeChildAccess } from '@/lib/session'
+import { creditTopicProgress } from '@/lib/progressCredit'
 
 // FIXED (2026-07-28): `correct` used to be a client-supplied boolean, trusted verbatim
 // (this route never re-queried `questions`/`options` to verify the claim before writing
@@ -17,7 +18,7 @@ import { authorizeChildAccess } from '@/lib/session'
 export async function POST(req: NextRequest) {
   const supabase = createServiceRoleClient()
   const body = await req.json()
-  const { childId, questionId, topicId, answerGiven, hintUsed, stepNumber, totalSteps } = body
+  const { childId, questionId, passageQuestionId, topicId, answerGiven, hintUsed, stepNumber, totalSteps } = body
   let { correct } = body
 
   if (!childId || !topicId) {
@@ -34,6 +35,10 @@ export async function POST(req: NextRequest) {
 
   try {
     // ── Re-derive correctness server-side ──────────────────────
+    // Passage-quiz answers (passageQuestionId) come from `passage_questions` — a separate
+    // table the reading-passage generator writes to, not the regular `questions` pool.
+    // Re-derive against whichever table the answer actually belongs to; same anti-cheat
+    // principle as the questionId branch (never trust a client-supplied `correct`).
     if (questionId) {
       const { data: question } = await supabase
         .from('questions').select('options').eq('id', questionId).single()
@@ -41,9 +46,20 @@ export async function POST(req: NextRequest) {
         ? question.options.find((o: any) => o.label === answerGiven)
         : null
       correct = !!matchedOption?.isCorrect
+    } else if (passageQuestionId) {
+      const { data: passageQuestion } = await supabase
+        .from('passage_questions').select('options').eq('id', passageQuestionId).single()
+      const matchedOption = Array.isArray(passageQuestion?.options)
+        ? passageQuestion.options.find((o: any) => o.label === answerGiven)
+        : null
+      correct = !!matchedOption?.isCorrect
     }
 
     // ── Record question attempt ────────────────────────────────
+    // `question_attempts.question_id` has a hard NOT-NULL FK to `questions.id`, so a
+    // passage_questions row (separate table, separate id space) can't be inserted here.
+    // Passage-quiz attempts skip this raw audit-log row; XP/streak/progress below still
+    // apply the same as any other answer. Known, deliberate gap — not a silent omission.
     if (questionId) {
       await supabase.from('question_attempts').insert({
         child_id:     childId,
@@ -55,68 +71,27 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // ── Update streak ──────────────────────────────────────────
+    // FIXED (2026-08-03): this used to run after award_xp below. award_xp unconditionally
+    // stamps last_active_at = now() as a side effect, and update_streak decides
+    // extend/reset/same-day purely by reading last_active_at's existing date — so on the
+    // day's first correct answer, award_xp running first silently erased the "was this
+    // already updated today" signal before update_streak ever read it, meaning the streak
+    // could never advance from a correct answer, only from a wrong one (or a step-only
+    // call with no XP). award_xp never reads last_active_at itself, so running
+    // update_streak first has no effect on it — safe reorder, not a behavior change to XP.
+    await supabase.rpc('update_streak', { p_child_id: childId })
+
     // ── Award XP if correct ────────────────────────────────────
     if (correct) {
       await supabase.rpc('award_xp', { p_child_id: childId, p_amount: 25 })
     }
 
-    // ── Update streak ──────────────────────────────────────────
-    await supabase.rpc('update_streak', { p_child_id: childId })
-
-    // ── Upsert topic progress ──────────────────────────────────
-    const { data: existing } = await supabase
-      .from('child_topic_progress')
-      .select('*')
-      .eq('child_id', childId)
-      .eq('topic_id', topicId)
-      .maybeSingle()
-
-    const isCompleted = !!(stepNumber && totalSteps && stepNumber >= totalSteps)
-
-    // `steps_total` doubles as the topic's personal-best step count, gating card-token
-    // awards below — it must only be written AT completion, never on the mid-lesson
-    // attempt calls that precede it. Every call in an attempt (not just the last one)
-    // carries the same `totalSteps`, so writing it on every call would let an attempt
-    // stamp its own totalSteps as the "prior" best before it actually finishes,
-    // making its own completion look like a repeat instead of a genuine new best.
-    let isNewBest = false
-
-    if (existing) {
-      const newAttempts = (existing.questions_attempted || 0) + (questionId ? 1 : 0)
-      const newCorrect  = (existing.questions_correct || 0) + (correct ? 1 : 0)
-      const newSteps    = stepNumber ? Math.max(existing.steps_completed || 0, stepNumber) : existing.steps_completed
-
-      const priorBestSteps = existing.steps_total || 0
-      isNewBest = isCompleted && totalSteps > priorBestSteps
-      // Math.max, not overwrite: without this, replaying the regular (shorter) lesson
-      // after a bonus round would silently drop steps_total back down, making the next
-      // bonus completion look like a fresh personal best and re-award a token for a
-      // topic that was already at its true high-water mark.
-      const newStepsTotal = isCompleted ? Math.max(totalSteps, priorBestSteps) : existing.steps_total
-
-      await supabase.from('child_topic_progress').update({
-        questions_attempted: newAttempts,
-        questions_correct:   newCorrect,
-        steps_completed:     newSteps,
-        steps_total:         newStepsTotal,
-        status:              isCompleted ? 'completed' : 'in_progress',
-        completed_at:        isCompleted ? new Date().toISOString() : existing.completed_at,
-        last_attempted_at:   new Date().toISOString(),
-      }).eq('child_id', childId).eq('topic_id', topicId)
-    } else {
-      isNewBest = isCompleted && totalSteps > 0
-      await supabase.from('child_topic_progress').insert({
-        child_id:            childId,
-        topic_id:            topicId,
-        status:              isCompleted ? 'completed' : 'in_progress',
-        questions_attempted: questionId ? 1 : 0,
-        questions_correct:   correct ? 1 : 0,
-        steps_completed:     stepNumber || 0,
-        steps_total:         isCompleted ? totalSteps : null,
-        last_attempted_at:   new Date().toISOString(),
-        completed_at:        isCompleted ? new Date().toISOString() : null,
-      })
-    }
+    // ── Upsert topic progress (shared with the assignment-completion flow) ──
+    const { isNewBest } = await creditTopicProgress(supabase, {
+      childId, topicId, stepNumber, totalSteps,
+      questionAnswered: !!questionId, correct,
+    })
 
     // ── Save last active topic on child ────────────────────────
     await supabase.from('children').update({
