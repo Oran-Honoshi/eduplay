@@ -4,6 +4,7 @@ import {
   Home, BarChart2, Printer, Sparkles, ClipboardList, Notebook, Map, Users, Settings,
   Rocket, Check, Flame, RefreshCw, Zap, CheckCircle2, Download, ChevronRight,
   Target, Play, UserPlus, Trash2, Key, GraduationCap, Link2, Copy, ExternalLink, Info,
+  BookOpen,
 } from 'lucide-react'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import { PARENT_COLORS, PARENT_FONTS, CHILD_AVATAR_COLORS } from '@/lib/parentTheme'
@@ -415,6 +416,35 @@ function QuestionsScreen() {
   )
 }
 
+function PassagesScreen() {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
+        <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
+          <BookOpen size={18} color={PARENT_COLORS.primary} /> Reading Passages
+        </h1>
+        <button onClick={() => window.location.href='/passages'} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'9px 18px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
+          Open Passage Library <ChevronRight size={14} />
+        </button>
+      </div>
+      <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'40px', textAlign:'center' }}>
+        <div style={{ width:'56px', height:'56px', borderRadius:'16px', background:PARENT_COLORS.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}>
+          <BookOpen size={26} color={PARENT_COLORS.primary} />
+        </div>
+        <div style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'8px' }}>Generate Reading Practice Passages</div>
+        <div style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'20px', maxWidth:'420px', margin:'0 auto 20px' }}>
+          Generate leveled reading passages — Hebrew niqqud tracks, English phonics tracks, story or informational, with optional comprehension questions — and browse the shared passage library.
+        </div>
+        <div>
+          <button onClick={() => window.location.href='/passages'} style={{ display:'inline-flex', alignItems:'center', gap:'7px', padding:'12px 28px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>
+            <BookOpen size={15} /> Open Passage Library
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const CHILD_COLORS = [
   { bg:'linear-gradient(135deg,#FF9F43,#FF6B6B)', emoji:'🐱' },
   { bg:'linear-gradient(135deg,#5EC8F2,#4ECDC4)', emoji:'🐻' },
@@ -426,6 +456,7 @@ const TABS = [
   { key:'progress',    label:'Progress',    icon:BarChart2 },
   { key:'worksheets',  label:'Worksheets',  icon:Printer },
   { key:'questions',   label:'AI Questions', icon:Sparkles },
+  { key:'passages',    label:'Reading',     icon:BookOpen },
   { key:'assignments', label:'Assignments', icon:ClipboardList },
   { key:'notebook',    label:'Notebook',    icon:Notebook },
   { key:'curriculum',  label:'Curriculum',  icon:Map },
@@ -775,6 +806,11 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
           {/* ── AI QUESTIONS ── */}
           {screen === 'questions' && (
             <QuestionsScreen />
+          )}
+
+          {/* ── READING PASSAGES ── */}
+          {screen === 'passages' && (
+            <PassagesScreen />
           )}
 
           {/* ── ASSIGNMENTS ── */}
