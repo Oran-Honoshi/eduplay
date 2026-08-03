@@ -116,8 +116,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { grade, subject, type, difficulty, topic, language, reading_track, level_id, generate_questions } = body
 
-  if (!grade || !subject || !type || !difficulty) {
-    return NextResponse.json({ error: 'grade, subject, type, difficulty required' }, { status: 400 })
+  if (!Number.isInteger(grade) || grade < 0 || !subject || !type || !difficulty) {
+    return NextResponse.json({ error: 'grade (integer >= 0), subject, type, difficulty required' }, { status: 400 })
   }
 
   let referenceFile: { media_type: string; data: string } | undefined
@@ -143,6 +143,7 @@ export async function POST(req: NextRequest) {
   }
 
   const wordTargets: Record<number, { en: number; he: number }> = {
+    0: { en: 40, he: 35 },
     1: { en: 60, he: 55 }, 2: { en: 110, he: 100 }, 3: { en: 160, he: 145 },
     4: { en: 240, he: 200 }, 5: { en: 280, he: 230 }, 6: { en: 350, he: 290 },
   }
@@ -204,6 +205,7 @@ export async function POST(req: NextRequest) {
     poem:          'Short poem with rhythm and imagery.',
   }
   const gradeContext: Record<number, string> = {
+    0: 'Ages 5-6: colors, family, pets, simple everyday objects and routines. Very short, simple sentences.',
     1: 'Ages 6-7: animals, family, simple daily life.',
     2: 'Ages 7-8: nature, friendships, school, simple science.',
     3: 'Ages 8-9: adventure, animals, simple history, community.',

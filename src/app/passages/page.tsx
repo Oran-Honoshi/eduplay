@@ -135,7 +135,7 @@ function PassageModal({ p, onClose }: { p: Passage; onClose: () => void }) {
         @media print { body { padding: 20px; } }
       </style></head><body>
       <h1>${lang === 'he' && p.title_he ? p.title_he : p.title_en}</h1>
-      <div class="meta">Grade ${p.grade} · ${p.passage_type} · ${p.difficulty} · ~${words ?? '?'} words · EduPlay</div>
+      <div class="meta">${p.grade === 0 ? 'Kindergarten' : `Grade ${p.grade}`} · ${p.passage_type} · ${p.difficulty} · ~${words ?? '?'} words · EduPlay</div>
       ${(content ?? '').split('\n\n').map((para: string) => `<p>${para}</p>`).join('')}
       </body></html>
     `)
@@ -162,7 +162,7 @@ function PassageModal({ p, onClose }: { p: Passage; onClose: () => void }) {
                 {p.subject === 'english' ? 'English' : 'עברית'}
               </span>
               <span className="text-xs bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded-full">
-                Grade {p.grade}
+                {p.grade === 0 ? 'Kindergarten' : `Grade ${p.grade}`}
               </span>
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full capitalize"
                 style={{ background: diff.bg, color: diff.text }}>
@@ -351,7 +351,7 @@ function GeneratorPanel({ onGenerated }: { onGenerated: (p: Passage) => void }) 
           <label className="text-xs text-gray-400 font-semibold block mb-1">Grade</label>
           <select value={grade} onChange={e => setGrade(e.target.value)}
             className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
-            {[1,2,3,4,5,6].map(g => <option key={g} value={g}>Grade {g}</option>)}
+            {[0,1,2,3,4,5,6].map(g => <option key={g} value={g}>{g === 0 ? 'KG' : `Grade ${g}`}</option>)}
           </select>
         </div>
         <div>
