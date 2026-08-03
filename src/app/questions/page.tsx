@@ -647,7 +647,7 @@ function PendingReviewList({ active }: { active: boolean }) {
                     {q.options.map((opt, i) => (
                       <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-[#0F766E]' : ''}>
                         {opt.label}. <FractionText text={opt.value_en} />
-                        {isDistinctHe(opt.value_he, opt.value_en) && <span className="text-[#9aa6a3]" dir="rtl"> · <FractionText text={opt.value_he} /></span>}
+                        {isDistinctHe(opt.value_he, opt.value_en) && <span className="text-[#9aa6a3]"> · <bdi dir="rtl"><FractionText text={opt.value_he} /></bdi></span>}
                         {isRevealed && opt.isCorrect ? ' ✓' : ''}
                       </li>
                     ))}
@@ -664,7 +664,7 @@ function PendingReviewList({ active }: { active: boolean }) {
                     Hint:{' '}
                     {q.hint_en && <FractionText text={q.hint_en} />}
                     {(q.hint_en ? isDistinctHe(q.hint_he, q.hint_en) : !!q.hint_he) && (
-                      <span dir="rtl">{q.hint_en ? ' · ' : ''}<FractionText text={q.hint_he} /></span>
+                      <>{q.hint_en ? ' · ' : ''}<bdi dir="rtl"><FractionText text={q.hint_he} /></bdi></>
                     )}
                   </p>
                 )}
@@ -1006,7 +1006,7 @@ function LibraryPanel({ active }: { active: boolean }) {
                           {q.options.map((opt, i) => (
                             <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-[#0F766E]' : ''}>
                               {opt.label}. <FractionText text={opt.value_en} />
-                              {isDistinctHe(opt.value_he, opt.value_en) && <span className="text-[#9aa6a3]" dir="rtl"> · <FractionText text={opt.value_he} /></span>}
+                              {isDistinctHe(opt.value_he, opt.value_en) && <span className="text-[#9aa6a3]"> · <bdi dir="rtl"><FractionText text={opt.value_he} /></bdi></span>}
                               {isRevealed && opt.isCorrect ? ' ✓' : ''}
                             </li>
                           ))}
@@ -1023,7 +1023,7 @@ function LibraryPanel({ active }: { active: boolean }) {
                           Hint:{' '}
                           {q.hint_en && <FractionText text={q.hint_en} />}
                           {(q.hint_en ? isDistinctHe(q.hint_he, q.hint_en) : !!q.hint_he) && (
-                            <span dir="rtl">{q.hint_en ? ' · ' : ''}<FractionText text={q.hint_he} /></span>
+                            <>{q.hint_en ? ' · ' : ''}<bdi dir="rtl"><FractionText text={q.hint_he} /></bdi></>
                           )}
                         </p>
                       )}
