@@ -91,7 +91,7 @@ function PassageCard({ p, onOpen }: { p: Passage; onOpen: () => void }) {
       </div>
 
       {/* Title */}
-      <h3 className="text-sm font-bold text-gray-900 leading-snug mb-1">
+      <h3 className="text-sm font-bold text-gray-900 leading-snug mb-1 text-start" dir={isHe ? 'rtl' : 'ltr'}>
         {isHe ? (p.title_he ?? p.title_en) : p.title_en}
       </h3>
       {p.title_he && !isHe && (
@@ -175,7 +175,7 @@ function PassageModal({ p, onClose }: { p: Passage; onClose: () => void }) {
                 </span>
               )}
             </div>
-            <h2 className="text-base font-black text-gray-900">
+            <h2 className="text-base font-black text-gray-900 text-start" dir={lang === 'he' ? 'rtl' : 'ltr'}>
               {lang === 'he' && p.title_he ? p.title_he : p.title_en}
             </h2>
             {p.title_he && lang === 'en' && (
@@ -209,7 +209,7 @@ function PassageModal({ p, onClose }: { p: Passage; onClose: () => void }) {
             <div
               className="prose prose-sm max-w-none"
               dir={lang === 'he' ? 'rtl' : 'ltr'}
-              style={{ fontFamily: lang === 'he' ? 'Arial, sans-serif' : 'Georgia, serif', lineHeight: 1.85, fontSize: '15px' }}
+              style={{ fontFamily: lang === 'he' ? 'Arial, sans-serif' : 'Georgia, serif', lineHeight: 1.85, fontSize: '15px', textAlign: 'start' }}
             >
               {content.split('\n\n').map((para: string, i: number) => (
                 <p key={i} className="mb-4 text-gray-800">{para}</p>
