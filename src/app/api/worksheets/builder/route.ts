@@ -3,7 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase'
 import { authorizeChildAccess } from '@/lib/session'
 import { renderMathVisualSVG } from '@/lib/mathVisual'
 import { fractionsToHTML } from '@/lib/fractionText'
-import { isDistinctHe } from '@/lib/text'
+import { isDistinctHe, translateDifficulty, translateOptionLabel } from '@/lib/text'
 
 export async function GET(req: NextRequest) {
   const supabase = createServiceRoleClient()
@@ -376,8 +376,9 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
     if (q.options) {
       answerHTML = `<div class="options-grid">${q.options.map((opt: any) => {
         const displayVal = isHebrew && opt.value_he ? opt.value_he : opt.value_en
+        const displayLabel = isHebrew ? translateOptionLabel(opt.label) : opt.label
         return `<div class="option">
-          <span class="opt-label">${opt.label}.</span>
+          <span class="opt-label">${displayLabel}.</span>
           <span class="opt-value">${fractionsToHTML(displayVal)}</span>
         </div>`
       }).join('')}</div>`
@@ -400,7 +401,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
           <div class="q-header">
             <div class="q-number">Q${i + 1}</div>
             ${topicBadge}
-            <span class="diff-badge diff-${q.difficulty}">${q.difficulty}</span>
+            <span class="diff-badge diff-${q.difficulty}">${isHebrew ? translateDifficulty(q.difficulty) : q.difficulty}</span>
           </div>
           <div class="q-body">
             ${enText}${heText}${visualHTML}${answerHTML}${hintHTML}
@@ -557,7 +558,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
   <div class="badges">
     <span class="badge badge-blue">${isHebrew ? subjectLabelHe : subjectLabel}</span>
     <span class="badge badge-blue">${isHebrew ? 'כיתה' : 'Grade'} ${child.grade === 0 ? 'K' : child.grade}</span>
-    <span class="badge badge-${difficulty === 'easy' ? 'green' : difficulty === 'hard' ? 'red' : difficulty === 'mixed' ? 'purple' : 'orange'}">${isHebrew ? (difficulty === 'easy' ? 'קל' : difficulty === 'medium' ? 'בינוני' : difficulty === 'hard' ? 'קשה' : 'מעורב') : diffLabel}</span>
+    <span class="badge badge-${difficulty === 'easy' ? 'green' : difficulty === 'hard' ? 'red' : difficulty === 'mixed' ? 'purple' : 'orange'}">${isHebrew ? translateDifficulty(difficulty) : diffLabel}</span>
     <span class="badge badge-purple">${questions.length} ${isHebrew ? 'שאלות' : 'Questions'}</span>
     ${includeKey ? `<span class="badge badge-green">${isHebrew ? 'כולל תשובות' : 'Answer Key Included'}</span>` : ''}
   </div>
