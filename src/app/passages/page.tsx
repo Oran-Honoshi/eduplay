@@ -252,7 +252,10 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 // ── Passage Generator Panel ────────────────────────────────────
-function GeneratorPanel({ onGenerated }: { onGenerated: (p: Passage) => void }) {
+function GeneratorPanel({ onGenerated, onViewExisting }: {
+  onGenerated: (p: Passage) => void
+  onViewExisting: (filter: { grade: string; subject: string; type: string; difficulty: string }) => void
+}) {
   const [grade, setGrade] = useState('4')
   const [subject, setSubject] = useState('english')
   const [type, setType] = useState('story')
@@ -262,6 +265,7 @@ function GeneratorPanel({ onGenerated }: { onGenerated: (p: Passage) => void }) 
   const [result, setResult] = useState<string | null>(null)
   const [decodabilityResult, setDecodabilityResult] = useState<any>(null)
   const [questionsResult, setQuestionsResult] = useState<{ count: number; warnings?: string[] } | null>(null)
+  const [existingCount, setExistingCount] = useState<number | null>(null)
 
   // Reading-acquisition level (checkpoint 6) — optional; selecting one locks
   // the subject to whatever language the level's track requires, matching
@@ -288,6 +292,23 @@ function GeneratorPanel({ onGenerated }: { onGenerated: (p: Passage) => void }) 
     const level = levels.find(l => l.id === id)
     if (level) setSubject(level.track === 'niqqud' ? 'hebrew' : 'english')
   }
+
+  // "Check before generating" discovery signal — debounced count of already-
+  // approved passages matching the current filters, mirroring the same
+  // pattern added to the question generator. Informational only, never
+  // disables Generate.
+  useEffect(() => {
+    setExistingCount(null)
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams({ grade, subject, type, difficulty })
+      if (levelId) params.set('level_id', levelId)
+      fetch(`/api/passages/count?${params}`)
+        .then(r => r.json())
+        .then(data => setExistingCount(data.count ?? 0))
+        .catch(() => setExistingCount(null))
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [grade, subject, type, difficulty, levelId])
 
   const handleReferenceFile = async (file: File | null) => {
     setReferenceFileError(null)
@@ -412,6 +433,19 @@ function GeneratorPanel({ onGenerated }: { onGenerated: (p: Passage) => void }) 
           {generating ? '⏳ Generating...' : '✨ Generate'}
         </button>
       </div>
+
+      {!!existingCount && (
+        <div className="mt-4 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center justify-between gap-4">
+          <div className="text-sm text-emerald-800">
+            <strong>{existingCount}</strong> similar passage{existingCount === 1 ? '' : 's'} already
+            exist{existingCount === 1 ? 's' : ''} in the Library for this grade, subject, type, and difficulty.
+          </div>
+          <button onClick={() => onViewExisting({ grade, subject, type, difficulty })}
+            className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg px-3 py-1.5">
+            View them 📚
+          </button>
+        </div>
+      )}
 
       {/* Row 2 — comprehension questions + reference file */}
       <div className="flex flex-wrap gap-4 items-center mt-4 pt-4 border-t border-gray-50">
@@ -677,6 +711,7 @@ export default function PassagesPage() {
     supabase
       .from('reading_passages')
       .select('*,passage_questions(id)')
+      .eq('approved', true)
       .order('grade').order('passage_type').order('difficulty')
       .then(({ data }) => {
         // Join with subject info + reading levels
@@ -701,6 +736,10 @@ export default function PassagesPage() {
   }, [])
 
   const filtered = useMemo(() => passages.filter(p => {
+    // The Library tab is approved-only content — a freshly-generated passage
+    // (onGenerated below prepends it straight into `passages` state, always
+    // approved:false) must never show up here, even before the next fetch.
+    if (!p.approved) return false
     if (filterGrade && String(p.grade) !== filterGrade) return false
     if (filterSubject && p.subject !== filterSubject) return false
     if (filterType && p.passage_type !== filterType) return false
@@ -762,6 +801,13 @@ export default function PassagesPage() {
             // until the next page refresh, because this previously fell back to
             // filterSubject || 'english' regardless of the passage's real language.
             setPassages(prev => [{ ...p, subject: p.content_he ? 'hebrew' : 'english', question_count: p.question_count ?? 0 } as Passage, ...prev])
+          }}
+          onViewExisting={filter => {
+            setFilterGrade(filter.grade)
+            setFilterSubject(filter.subject)
+            setFilterType(filter.type)
+            setFilterDiff(filter.difficulty)
+            setTab('library')
           }} />
         </div>
 

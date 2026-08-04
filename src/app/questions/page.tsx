@@ -138,7 +138,11 @@ function StyleControl() {
 }
 
 // ── Generator Panel ───────────────────────────────────────────
-function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onGenerated: () => void }) {
+function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
+  prefill: Prefill | null
+  onGenerated: () => void
+  onViewExisting: (filter: { subjectSlug: string; grade: number; topicSlug: string; difficulty: string }) => void
+}) {
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [topics, setTopics] = useState<Topic[]>([])
   const [subjectSlug, setSubjectSlug] = useState('')
@@ -155,6 +159,7 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
   const [fileError, setFileError] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState<string | null>(null)
+  const [existingCount, setExistingCount] = useState<number | null>(null)
 
   // Load subjects once, default to the first one
   useEffect(() => {
@@ -178,6 +183,24 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
     if (languageTouched.current) return
     setLanguage(subjectSlug === 'hebrew' ? 'he_only' : 'en_only')
   }, [subjectSlug])
+
+  // "Check before generating" discovery signal — debounced count of already-
+  // approved questions matching the current filters, so a parent can reuse
+  // the Library instead of paying for a fresh generation. Informational only:
+  // never disables Generate. Cleared immediately on filter change so a stale
+  // count never lingers into the new combo while the debounced fetch is in flight.
+  useEffect(() => {
+    setExistingCount(null)
+    if (!subjectSlug || !topicSlug || !difficulty) return
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams({ subject_slug: subjectSlug, grade: String(grade), topic_slug: topicSlug, difficulty })
+      fetch(`/api/questions/count?${params}`)
+        .then(r => r.json())
+        .then(data => setExistingCount(data.count ?? 0))
+        .catch(() => setExistingCount(null))
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [subjectSlug, grade, topicSlug, difficulty])
 
   // Apply a "make more like this" prefill — state only, never auto-submits.
   // The user still has to review the fields and click Generate themselves.
@@ -377,6 +400,19 @@ function GeneratorPanel({ prefill, onGenerated }: { prefill: Prefill | null; onG
         )}
         {fileError && <p className="text-xs text-[#DC2626] mt-1">{fileError}</p>}
       </div>
+
+      {!!existingCount && (
+        <div className="mb-4 bg-[#E4F3F1] border border-[#0F766E33] rounded-2xl p-4 flex items-center justify-between gap-4">
+          <div className="text-sm text-[#0B5C56]">
+            <strong>{existingCount}</strong> similar question{existingCount === 1 ? '' : 's'} already
+            exist{existingCount === 1 ? 's' : ''} in the Library for this topic and difficulty.
+          </div>
+          <button onClick={() => onViewExisting({ subjectSlug, grade, topicSlug, difficulty })}
+            className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0B5C56] rounded-lg px-3 py-1.5">
+            View them <BookOpen size={12} />
+          </button>
+        </div>
+      )}
 
       <button onClick={generate} disabled={generating || !topicSlug || qTypes.length === 0}
         className={`px-5 py-2 text-white font-bold text-sm rounded-xl transition-colors inline-flex items-center gap-2 ${
@@ -705,7 +741,9 @@ function PendingReviewList({ active }: { active: boolean }) {
 // Browse approved questions by subject/grade/topic, select specific ones,
 // and build a worksheet from exactly that selection via the builder's
 // existing (previously unused) questionIds param.
-function LibraryPanel({ active }: { active: boolean }) {
+interface LibraryFilter { subjectSlug: string; grade: number; topicSlug: string; difficulty: string }
+
+function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilter: LibraryFilter | null }) {
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [subjectSlug, setSubjectSlug] = useState('')
   const [grade, setGrade] = useState(1)
@@ -733,6 +771,12 @@ function LibraryPanel({ active }: { active: boolean }) {
   const [notebookSectionId, setNotebookSectionId] = useState('')
   const [newSectionTitle, setNewSectionTitle] = useState('')
   const [addingToNotebook, setAddingToNotebook] = useState(false)
+
+  // Desired topic slug from an incoming initialFilter (e.g. "View them" from
+  // the generator's discovery banner), applied once the topics-for-this-
+  // subject-and-grade fetch below resolves — read by that effect, not state,
+  // since it shouldn't itself trigger a render.
+  const pendingTopicSlug = useRef<string | null>(null)
 
   // Replaces raw setAssignResult everywhere: cancels any pending auto-dismiss
   // timer before applying the new value (so an old timer can't clear a result
@@ -792,14 +836,30 @@ function LibraryPanel({ active }: { active: boolean }) {
       .then(data => setNotebookSections(data.sections || []))
   }, [active])
 
+  // Apply an incoming filter (e.g. "View them" from the generator's discovery
+  // banner) — sets subject/grade/difficulty directly, and stashes the desired
+  // topic slug for the topics-fetch effect below to apply once that subject+
+  // grade's topic list has actually loaded (setting topicSlug here directly
+  // would just get clobbered by that effect's own reset-on-subject/grade-change).
+  useEffect(() => {
+    if (!initialFilter) return
+    setSubjectSlug(initialFilter.subjectSlug)
+    setGrade(initialFilter.grade)
+    setDifficulty(initialFilter.difficulty)
+    pendingTopicSlug.current = initialFilter.topicSlug
+  }, [initialFilter])
+
   // Fetch topics whenever subject/grade changes
   useEffect(() => {
     if (!subjectSlug) { setTopics([]); return }
     fetch(`/api/topics?subject=${subjectSlug}&grade=${grade}`)
       .then(r => r.json())
       .then(data => {
-        setTopics(data.topics || [])
-        setTopicSlug('')
+        const loaded = data.topics || []
+        setTopics(loaded)
+        const pending = pendingTopicSlug.current
+        pendingTopicSlug.current = null
+        setTopicSlug(pending && loaded.some((t: Topic) => t.slug === pending) ? pending : '')
       })
   }, [subjectSlug, grade])
 
@@ -1137,6 +1197,7 @@ export default function QuestionsPage() {
   const [tab, setTab] = useState<'generate' | 'pending' | 'library'>('generate')
   const [history, setHistory] = useState<GenerationRow[]>([])
   const [prefill, setPrefill] = useState<Prefill | null>(null)
+  const [libraryFilter, setLibraryFilter] = useState<LibraryFilter | null>(null)
 
   const loadHistory = useCallback(() => {
     fetch('/api/questions/generate')
@@ -1182,7 +1243,8 @@ export default function QuestionsPage() {
             in-progress form state — only the inactive ones are visually hidden. */}
         <div className={`flex flex-col gap-6 ${tab === 'generate' ? '' : 'hidden'}`}>
           <StyleControl />
-          <GeneratorPanel prefill={prefill} onGenerated={loadHistory} />
+          <GeneratorPanel prefill={prefill} onGenerated={loadHistory}
+            onViewExisting={filter => { setLibraryFilter({ ...filter }); setTab('library') }} />
           <HistoryList
             rows={history}
             onReuse={row => setPrefill({
@@ -1202,7 +1264,7 @@ export default function QuestionsPage() {
           <PendingReviewList active={tab === 'pending'} />
         </div>
         <div className={tab === 'library' ? '' : 'hidden'}>
-          <LibraryPanel active={tab === 'library'} />
+          <LibraryPanel active={tab === 'library'} initialFilter={libraryFilter} />
         </div>
       </div>
     </div>
