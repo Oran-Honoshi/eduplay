@@ -165,10 +165,13 @@ function inferVisualData(prompt: string): any | null {
   if (!prompt) return null
   const p = prompt.toLowerCase()
 
-  // Helper to extract first number after a keyword
-  function num(keyword: string): string {
+  // Helper to extract first number after a keyword.
+  // Returns null (not a placeholder) when the regex can't confidently find
+  // the value — callers must bail rather than render a guessed/placeholder
+  // dimension, since a wrong or blank visual is worse than no visual.
+  function num(keyword: string): string | null {
     const m = prompt.match(new RegExp(keyword + '\\s*(?:of|=|is|:)?\\s*(\\d+)', 'i'))
-    return m ? m[1] + ' cm' : '?'
+    return m ? m[1] + ' cm' : null
   }
   // Extract dimensions from "X by Y" / "X × Y"
   function byDims(): [string, string] | null {
@@ -176,18 +179,22 @@ function inferVisualData(prompt: string): any | null {
     return m ? [m[1] + ' cm', m[2] + ' cm'] : null
   }
   // First number in prompt
-  function firstNum(): string {
+  function firstNum(): string | null {
     const m = prompt.match(/\b(\d+)\b/)
-    return m ? m[1] + ' cm' : '?'
+    return m ? m[1] + ' cm' : null
   }
 
   // ── 2D shapes ────────────────────────────────────────────────
   if (/\brectangle\b/i.test(p) && /\b(area|perimeter|length|width)\b/i.test(p)) {
     const dims = byDims()
-    return { type: 'rectangle', w: dims?.[0] || num('length'), h: dims?.[1] || num('width') }
+    const w = dims?.[0] || num('length')
+    const h = dims?.[1] || num('width')
+    if (!w || !h) return null
+    return { type: 'rectangle', w, h }
   }
   if (/\bsquare\b/i.test(p) && /\b(area|perimeter|side)\b/i.test(p)) {
-    const s = num('side') !== '?' ? num('side') : firstNum()
+    const s = num('side') || firstNum()
+    if (!s) return null
     return { type: 'square', w: s, h: s }
   }
   if (/\btriangle\b/i.test(p)) {
@@ -195,23 +202,41 @@ function inferVisualData(prompt: string): any | null {
       : /isosceles/i.test(p) ? 'isosceles'
       : /equilateral/i.test(p) ? 'equilateral'
       : 'scalene'
-    return { type: 'triangle', kind, sides: [num('base'), num('height'), '?'] }
+    const base = num('base'), height = num('height')
+    if (!base || !height) return null
+    // Third side stays a literal '?' — that's the deliberately-unknown
+    // quantity being solved for, not a failed extraction of a stated value.
+    return { type: 'triangle', kind, sides: [base, height, '?'] }
   }
   if (/\bcircle\b/i.test(p) && /\b(area|circumference|radius|diameter)\b/i.test(p)) {
-    if (/radius/i.test(p)) return { type: 'circle', r: num('radius') }
-    if (/diameter/i.test(p)) return { type: 'circle', d: num('diameter') }
-    return { type: 'circle', r: firstNum() }
+    if (/radius/i.test(p)) {
+      const r = num('radius')
+      return r ? { type: 'circle', r } : null
+    }
+    if (/diameter/i.test(p)) {
+      const d = num('diameter')
+      return d ? { type: 'circle', d } : null
+    }
+    const r = firstNum()
+    return r ? { type: 'circle', r } : null
   }
   if (/\bparallelogram\b/i.test(p)) {
-    return { type: 'parallelogram', base: num('base'), h: num('height') }
+    const base = num('base'), h = num('height')
+    if (!base || !h) return null
+    return { type: 'parallelogram', base, h }
   }
   if (/\btrapezoid\b|\btrapezium\b/i.test(p)) {
-    return { type: 'trapezoid', a: num('top'), b: num('base'), h: num('height') }
+    const a = num('top'), b = num('base'), h = num('height')
+    if (!a || !b || !h) return null
+    return { type: 'trapezoid', a, b, h }
   }
   if (/\bangle\b|\bdegree\b|acute|obtuse|reflex/i.test(p) && !/triangle|rectangle/i.test(p)) {
     const degM = prompt.match(/(\d+)\s*°/i) || prompt.match(/angle\s*(?:of|=|is)?\s*(\d+)/i)
-    const deg  = degM ? parseInt(degM[1]) : /acute/i.test(p) ? 45 : /obtuse/i.test(p) ? 120 : 90
-    return { type: 'angle', degrees: deg }
+    // Only render when an explicit degree is stated — guessing 45/90/120
+    // from "acute"/"obtuse" adjectives shows a specific value that may not
+    // be the real one.
+    if (!degM) return null
+    return { type: 'angle', degrees: parseInt(degM[1]) }
   }
   if (/\bnumber[\s-]?line\b/i.test(p)) {
     const maxM = prompt.match(/to\s*(\d+)/i)
@@ -222,34 +247,67 @@ function inferVisualData(prompt: string): any | null {
   }
   if (/area\s*model|grid\s*model|\barray\b/i.test(p)) {
     const dims = byDims()
-    return { type: 'grid', cols: dims ? parseInt(dims[0]) : 4, rows: dims ? parseInt(dims[1]) : 4 }
+    if (!dims) return null
+    return { type: 'grid', cols: parseInt(dims[0]), rows: parseInt(dims[1]) }
   }
 
   // ── 3D shapes ────────────────────────────────────────────────
   if (/\bcylinder\b/i.test(p)) {
-    return { type: 'cylinder', r: num('radius'), h: num('height') }
+    const r = num('radius'), h = num('height')
+    if (!r || !h) return null
+    return { type: 'cylinder', r, h }
   }
   if (/\bcone\b/i.test(p)) {
-    return { type: 'cone', r: num('radius'), h: num('height') }
+    const r = num('radius'), h = num('height')
+    if (!r || !h) return null
+    return { type: 'cone', r, h }
   }
   if (/\bsphere\b/i.test(p)) {
-    return { type: 'sphere', r: num('radius') }
+    const r = num('radius')
+    if (!r) return null
+    return { type: 'sphere', r }
   }
   if (/\bpyramid\b/i.test(p)) {
-    return { type: 'pyramid', base: num('base'), h: num('height') }
+    const base = num('base'), h = num('height')
+    if (!base || !h) return null
+    return { type: 'pyramid', base, h }
   }
   if (/\bcuboid\b|rectangular\s*prism|rectangular\s*box/i.test(p)) {
-    return { type: 'cuboid', l: num('length'), w: num('width'), h: num('height') }
+    const l = num('length'), w = num('width'), h = num('height')
+    if (!l || !w || !h) return null
+    return { type: 'cuboid', l, w, h }
   }
   if (/\bcube\b/i.test(p) && /\b(volume|surface|side|edge)\b/i.test(p)) {
-    return { type: 'cube', side: num('side') !== '?' ? num('side') : num('edge') }
+    const side = num('side') || num('edge')
+    if (!side) return null
+    return { type: 'cube', side }
   }
 
   // ── Fractions ────────────────────────────────────────────────
+  const fracMatches = [...prompt.matchAll(/(\d+)\s*\/\s*(\d+)/g)]
+  const compareCue = /\b(bigger|smaller|greater|less|more|compare|closest|between|order)\b/i.test(p)
+
+  // Two fractions + comparison language → the new side-by-side comparison
+  // visual. This catches prompts like "Which is bigger, 3/4 or 2/3?" even
+  // without the word "fraction" appearing.
+  if (fracMatches.length >= 2 && compareCue) {
+    if (fracMatches.length === 2) {
+      return {
+        type: 'fraction_compare',
+        a: { n: parseInt(fracMatches[0][1]), d: parseInt(fracMatches[0][2]) },
+        b: { n: parseInt(fracMatches[1][1]), d: parseInt(fracMatches[1][2]) },
+      }
+    }
+    // 3+ fractions (ordering) needs its own row-of-N layout — not built yet.
+    return null
+  }
+
   if (/fraction|shaded|equal\s*parts|slice|cut\s*into|divided\s*into/i.test(p)) {
-    const fracM = prompt.match(/(\d+)\s*\/\s*(\d+)/)
-    if (fracM) return { type: 'fraction', n: parseInt(fracM[1]), d: parseInt(fracM[2]) }
-    return { type: 'fraction_pie', n: 1, d: 4 }
+    if (fracMatches.length >= 1) {
+      return { type: 'fraction', n: parseInt(fracMatches[0][1]), d: parseInt(fracMatches[0][2]) }
+    }
+    // Couldn't confidently extract a fraction — no visual beats a wrong guess.
+    return null
   }
 
   return null

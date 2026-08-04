@@ -86,6 +86,29 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
       return svg(`${slices}<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${stroke}" stroke-width="2"/>${label(W / 2, cy + r + 24, `${filled}/${total}`, 14, 'bold', lbl)}`)
     }
 
+    // ── FRACTION COMPARE ─────────────────────────────────────
+    // Two fractions side by side, each partitioned by its own denominator.
+    // Deliberately fully unfilled — no cell shaded on either side — so the
+    // visual shows partition granularity as a reasoning aid without giving
+    // away which fraction is larger.
+    case 'fraction_compare': {
+      const a = data.a, b = data.b
+      if (!a?.d || !b?.d) return ''
+      const halfW = W / 2
+      function bar(offsetX: number, width: number, total: number, fracLabel: string): string {
+        const bw = Math.min(28, (width - 30) / total)
+        const bh = 32
+        const startX = offsetX + (width - total * bw) / 2
+        const y = H / 2 - bh / 2
+        const boxes = Array.from({ length: total }, (_, i) =>
+          `<rect x="${startX + i * bw}" y="${y}" width="${bw - 2}" height="${bh}" fill="${emptyBox}" stroke="${stroke}" stroke-width="1.5" rx="3"/>`
+        ).join('')
+        return `${boxes}${label(offsetX + width / 2, y + bh + 22, fracLabel, 14, 'bold', lbl)}`
+      }
+      const divider = `<line x1="${halfW}" y1="20" x2="${halfW}" y2="${H - 20}" stroke="${stroke}" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>`
+      return svg(`${bar(0, halfW, a.d, `${a.n}/${a.d}`)}${divider}${bar(halfW, halfW, b.d, `${b.n}/${b.d}`)}`)
+    }
+
     // ── TRIANGLE ─────────────────────────────────────────────
     case 'triangle': {
       const pad = 30
@@ -451,6 +474,7 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
 //
 // FRACTION BAR:    { type:'fraction',         n:3, d:4 }
 // FRACTION PIE:    { type:'fraction_pie',     n:1, d:8 }
+// FRACTION COMPARE:{ type:'fraction_compare', a:{n:3,d:4}, b:{n:2,d:3} }  // both bars fully unfilled, partition-only
 // TRIANGLE:        { type:'triangle',         kind:'right'|'isosceles'|'equilateral'|'scalene',
 //                    sides:['5cm','7cm','9cm'], angles:[45,60,75],
 //                    highlight:'base'|'hypotenuse'|'height'|'area',
