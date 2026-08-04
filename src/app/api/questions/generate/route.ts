@@ -395,6 +395,15 @@ export async function POST(req: NextRequest) {
 - Exception: if a prompt/option/hint is purely symbolic or numeric with no natural-language words to translate (e.g. "2/3 + 2/3 = ?"), there is nothing to write in Hebrew that differs from the English — leave that field's _he counterpart null rather than repeating the same text.`,
   }[language]
 
+  // Hebrew phrasing rules, not just field-population rules above — irrelevant
+  // (and would waste tokens) when no Hebrew text is written at all, so gated
+  // the same way as languageInstruction itself.
+  const hebrewPhrasingGuidance = language !== 'en_only'
+    ? `\nHebrew grammar and terminology:
+- Comparison/equality phrasing must agree with the noun being compared in BOTH number and gender — this applies everywhere the concept appears: the question itself, the answer, and any explanation. A plural subject (e.g. two or more שברים, כמויות, מספרים) always takes a plural adjective — masculine plural nouns (e.g. מספרים, שברים, ערכים) take שווים, feminine plural nouns (e.g. כמויות, צלעות, זוויות, תוצאות) take שוות. Never use the singular שווה for a plural subject (e.g. "האם הכמויות שוות?" is correct; "האם הכמויות שווה?" is wrong — wrong even though the standalone word "שווה" is spelled correctly, because the noun it modifies is plural). Reserve שווה for a genuinely singular subject (e.g. "האם הערך שווה ל-5?").
+- For reducing a fraction to its lowest terms, use "צמצמו" (צמצום שברים is the standard curriculum term for this) — never "פשטו" for this. Reserve "פשטו" for algebraic simplification (simplifying an expression), which is a different operation.`
+    : ''
+
   const systemPrompt = `You are an expert educational content writer for Israeli K-6 students, generating practice questions for the topic "${topicRow.title_en}" (grade ${grade}, subject ${subject_slug}).
 Generate exactly ${count} questions.
 Allowed question types: ${q_types.join(', ')} — use a mix if more than one is allowed. Every question's "q_type" must be one of these — never emit any other type.
@@ -402,6 +411,7 @@ ${progressiveInstruction}
 The selected difficulty always takes priority over anything in the user's custom instructions that implies a different difficulty (e.g. "make it harder," "she's advanced," a request for content usually taught at a later grade). Treat custom instructions as guidance for scenario, theme, and framing only — never let them override the actual difficulty level or complexity of the underlying content. If a custom instruction and the selected difficulty genuinely conflict, honor the selected difficulty.
 ${styleGuidance}${notebookGuidance}${recipeGuidance}${referenceInstruction}${notebookFilesInstruction}
 ${languageInstruction}
+${hebrewPhrasingGuidance}
 For multiple_choice questions: "options" must be an array of exactly 4 objects, each {"label":"A"|"B"|"C"|"D","value_en":"...","value_he":"..."|null,"isCorrect":true|false}, with exactly one isCorrect:true. If two options would be mathematically equivalent (e.g. an improper fraction and its mixed-number form, or an unreduced and a reduced fraction), pick exactly ONE canonical representation for the correct answer and never include another option equal to it — every distractor must be a genuinely different value, not just a different way of writing the same one.
 For word_problem questions: omit "options" (or set it to null); "correct_answer" holds the final answer as a plain string.
 OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects, each shaped:
