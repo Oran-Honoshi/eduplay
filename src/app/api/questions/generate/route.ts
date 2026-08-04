@@ -328,10 +328,12 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt = `You are an expert educational content writer for Israeli K-6 students, generating practice questions for the topic "${topicRow.title_en}" (grade ${grade}, subject ${subject_slug}).
 Generate exactly ${count} questions.
-Allowed question types: ${q_types.join(', ')} — use a mix if more than one is allowed.
-${progressiveInstruction}${styleGuidance}${notebookGuidance}${recipeGuidance}${referenceInstruction}${notebookFilesInstruction}
+Allowed question types: ${q_types.join(', ')} — use a mix if more than one is allowed. Every question's "q_type" must be one of these — never emit any other type.
+${progressiveInstruction}
+The selected difficulty always takes priority over anything in the user's custom instructions that implies a different difficulty (e.g. "make it harder," "she's advanced," a request for content usually taught at a later grade). Treat custom instructions as guidance for scenario, theme, and framing only — never let them override the actual difficulty level or complexity of the underlying content. If a custom instruction and the selected difficulty genuinely conflict, honor the selected difficulty.
+${styleGuidance}${notebookGuidance}${recipeGuidance}${referenceInstruction}${notebookFilesInstruction}
 ${languageInstruction}
-For multiple_choice questions: "options" must be an array of exactly 4 objects, each {"label":"A"|"B"|"C"|"D","value_en":"...","value_he":"..."|null,"isCorrect":true|false}, with exactly one isCorrect:true.
+For multiple_choice questions: "options" must be an array of exactly 4 objects, each {"label":"A"|"B"|"C"|"D","value_en":"...","value_he":"..."|null,"isCorrect":true|false}, with exactly one isCorrect:true. If two options would be mathematically equivalent (e.g. an improper fraction and its mixed-number form, or an unreduced and a reduced fraction), pick exactly ONE canonical representation for the correct answer and never include another option equal to it — every distractor must be a genuinely different value, not just a different way of writing the same one.
 For word_problem questions: omit "options" (or set it to null); "correct_answer" holds the final answer as a plain string.
 OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects, each shaped:
 {"q_type":"multiple_choice"|"word_problem","difficulty":"easy"|"medium"|"hard","prompt_en":"...","prompt_he":"..."|null,"options":[...]|null,"correct_answer":"...","hint_en":"..."|null,"hint_he":"..."|null,"explanation_en":"..."|null}`
@@ -410,7 +412,18 @@ OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects
 
   for (let i = 0; i < parsedQuestions.length; i++) {
     const q = parsedQuestions[i]
-    const qType = VALID_Q_TYPES.includes(q.q_type) ? q.q_type : q_types[0]
+
+    // Deterministic gate, not just a prompt instruction: the system prompt asks
+    // for only the requested q_types, but the model can and does ignore that
+    // (confirmed live — a multiple_choice-only request still returned
+    // word_problem rows). Coercing an unrequested type into q_types[0] would
+    // silently mislabel a question (e.g. a word_problem's shape forced into
+    // multiple_choice), so an unrequested type is discarded outright instead.
+    if (!q_types.includes(q.q_type)) {
+      failures.push(`question ${i + 1}: q_type "${q.q_type}" was not in the requested types (${q_types.join(', ')}) — discarded`)
+      continue
+    }
+    const qType = q.q_type
     const qDifficulty = VALID_DIFFICULTIES.includes(q.difficulty) ? q.difficulty : difficulty
 
     const options = Array.isArray(q.options)
