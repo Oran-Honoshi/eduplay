@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Home, ClipboardList, Trophy } from 'lucide-react'
+import { Home, ClipboardList, Trophy, LogOut } from 'lucide-react'
 
 // ── Theme config (single source of truth across all screens) ──
 export const THEME_CONFIG: Record<string, any> = {
@@ -430,6 +430,21 @@ export function KidNavBar({
           </Link>
         )
       })}
+      {/* Not a "screen" like the three above (no active state, never
+          preventDefault) — the only exit from kid mode back to the parent
+          login. Previously there was none: /dashboard bounces a pure child
+          session straight back into /play/[token], and lesson/assignments'
+          own "back" buttons rely on exactly that bounce to get a child home,
+          so this links directly to /login instead of touching that. */}
+      <Link href="/login"
+        style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+          textDecoration: 'none', color: T.text, opacity: 0.4, fontFamily: T.fontHead,
+          fontSize: '9px', fontWeight: 800, padding: '4px 14px', flex: 1, cursor: 'pointer',
+        }}>
+        <LogOut size={20} strokeWidth={2}/>
+        <span>Parent Login</span>
+      </Link>
     </nav>
   )
 }
