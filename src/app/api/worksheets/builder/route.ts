@@ -416,8 +416,19 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
     const topicBadge = topics.length > 1
       ? `<span class="topic-badge">${isHebrew && q.topicTitleHe ? q.topicTitleHe : q.topicTitle}</span>` : ''
     const enText = !isHebrew && q.prompt_en ? `<div class="q-text-en">${fractionsToHTML(q.prompt_en)}</div>` : ''
+    // .q-text-he sets direction:rtl for real Hebrew narrative text — correct
+    // there, but a prompt_he that's ENTIRELY a bare equation (no Hebrew
+    // characters at all, e.g. "3.5 + 2.4 = ___") has no strong-directional
+    // character for the bidi algorithm to anchor on, so it falls back to
+    // the block's RTL base direction and the whole sequence of number/
+    // operator groups gets reordered right-to-left as a unit — reads as
+    // "___ = 2.4 + 3.5". Confirmed live. An inline style (max CSS
+    // specificity, beats the class's direction:rtl) flips just this case
+    // to direction:ltr — same mechanism already proven for .ws-equation
+    // above, which has no competing class-level direction to override.
+    const hePromptIsBareEquation = !!extractBareEquation(q.prompt_he)
     const heText = !isEnglish && q.prompt_he && (!isBilingual || isDistinctHe(q.prompt_he, q.prompt_en))
-      ? `<div class="q-text-he">${fractionsToHTML(q.prompt_he)}</div>` : ''
+      ? `<div class="q-text-he"${hePromptIsBareEquation ? ' style="direction:ltr;text-align:left"' : ''}>${fractionsToHTML(q.prompt_he)}</div>` : ''
 
     // Same field the student actually sees drives the work-column equation
     // too — prompt_en is often just an internal gloss in he_only mode (see
