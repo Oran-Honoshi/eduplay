@@ -261,6 +261,7 @@ function GeneratorPanel({ onGenerated, onViewExisting }: {
   const [type, setType] = useState('story')
   const [difficulty, setDifficulty] = useState('medium')
   const [topic, setTopic] = useState('')
+  const [customPrompt, setCustomPrompt] = useState('')
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState<string | null>(null)
   const [decodabilityResult, setDecodabilityResult] = useState<any>(null)
@@ -336,6 +337,7 @@ function GeneratorPanel({ onGenerated, onViewExisting }: {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           grade: parseInt(grade), subject, type, difficulty, topic: topic || undefined,
+          custom_prompt: customPrompt || undefined,
           level_id: levelId || undefined,
           generate_questions: generateQuestions || undefined,
           reference_file: referenceFile ? { media_type: referenceFile.media_type, data: referenceFile.data } : undefined,
@@ -432,6 +434,14 @@ function GeneratorPanel({ onGenerated, onViewExisting }: {
           className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-sm rounded-xl transition-colors whitespace-nowrap">
           {generating ? '⏳ Generating...' : '✨ Generate'}
         </button>
+      </div>
+
+      <div className="mt-3">
+        <label className="text-xs text-gray-400 font-semibold block mb-1">Custom instructions (optional)</label>
+        <textarea value={customPrompt} onChange={e => setCustomPrompt(e.target.value)}
+          rows={2} placeholder="e.g. focus on a specific character trait, keep sentences short..." dir="auto"
+          className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
+        />
       </div>
 
       {!!existingCount && (

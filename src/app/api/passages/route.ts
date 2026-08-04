@@ -120,6 +120,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'grade (integer >= 0), subject, type, difficulty required' }, { status: 400 })
   }
 
+  // Free-form instructions, additive to topic (not exclusive) — same
+  // non-exclusive relationship as /api/questions/generate's custom_prompt.
+  const custom_prompt: string | undefined = typeof body.custom_prompt === 'string' && body.custom_prompt.trim()
+    ? body.custom_prompt.trim()
+    : undefined
+
   let referenceFile: { media_type: string; data: string } | undefined
   if (body.reference_file !== undefined && body.reference_file !== null) {
     const rf = body.reference_file
@@ -252,13 +258,15 @@ OUTPUT: JSON only, no markdown. Even if the constraints above are difficult to s
   // to have no observable effect on generation.
   const INTERESTING_TOPIC_RUBRIC = `Choose the topic yourself. It must have a "wait, really?" quality — a fact or story a kid would go tell a friend right after reading it. It should be verifiably true, genuinely surprising, and specific (a particular animal, place, invention, record, or event — not a broad subject area). Examples of the right spirit: a fruit that's naturally blue, a plant that looks like it's growing spaghetti, an artist who paints on river stones. Never generic curriculum filler like "the water cycle," "healthy eating habits," or "how plants grow" — if the topic could headline a hundred other worksheets, pick something else. This description is guidance for YOUR topic choice, not phrasing to put in the passage — do not write "wait, really?" or similar meta-commentary about the fact being surprising into the passage text itself; just tell the passage's content, in its own natural voice, and let the facts create the surprise.`
 
-  const baseUserPrompt = topic
-    ? `Write a ${difficulty} ${type} passage for grade ${grade} about: ${topic}`
-    : referenceFile
-      ? `Write a ${difficulty} ${type} passage for grade ${grade}. A reference file is attached — see the system instructions for how to use it.`
-      : type === 'informational'
-        ? `Write a ${difficulty} informational passage for grade ${grade}. ${INTERESTING_TOPIC_RUBRIC}`
-        : `Write a ${difficulty} ${type} passage for grade ${grade}. Choose an engaging, curriculum-appropriate topic.`
+  const baseUserPrompt = (
+    topic
+      ? `Write a ${difficulty} ${type} passage for grade ${grade} about: ${topic}`
+      : referenceFile
+        ? `Write a ${difficulty} ${type} passage for grade ${grade}. A reference file is attached — see the system instructions for how to use it.`
+        : type === 'informational'
+          ? `Write a ${difficulty} informational passage for grade ${grade}. ${INTERESTING_TOPIC_RUBRIC}`
+          : `Write a ${difficulty} ${type} passage for grade ${grade}. Choose an engaging, curriculum-appropriate topic.`
+  ) + (custom_prompt ? `\nAdditional instructions: ${custom_prompt}` : '')
 
   // With a reference file attached, content is a multimodal array (image/document
   // block + text) — same shape /api/questions/generate sends; otherwise keep the
@@ -424,6 +432,7 @@ OUTPUT: JSON only, no markdown — an array of exactly ${COMPREHENSION_QUESTION_
       source: 'ai_generated', paragraph_count: parsed.content.split('\n\n').length,
       approved: false, tags: parsed.tags ?? [],
       level_id: level_id ?? null,
+      custom_prompt: custom_prompt ?? null,
     }
     if (isHebrew) { insertData.content_he = parsed.content; insertData.word_count_he = parsed.word_count }
     else { insertData.content_en = parsed.content; insertData.word_count_en = parsed.word_count }
