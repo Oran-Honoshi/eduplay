@@ -563,16 +563,21 @@ function PendingReviewList({ active }: { active: boolean }) {
   // the component stays mounted across tab switches instead of being torn down.
   useEffect(() => { if (active) load() }, [active, load])
 
-  const act = async (id: string, action: 'approve' | 'reject') => {
+  const act = async (id: string, action: 'approve' | 'reject', reason?: string) => {
     setBusyId(id)
     const res = await fetch(`/api/questions/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ action, ...(reason !== undefined ? { reason } : {}) }),
     })
     if (res.ok) setQuestions(prev => prev.filter(q => q.id !== id))
     setBusyId(null)
   }
+
+  // Reason is optional — a cancelled prompt (null) still rejects with no
+  // reason, only an actual Cancel-then-rethink isn't offered here; simplest
+  // v1 per the reject-reason-not-required decision.
+  const reject = (id: string) => act(id, 'reject', window.prompt('Reason for rejecting (optional):') || undefined)
 
   // Undo re-PATCHes the same IDs back to approved:false via the API's new
   // 'unapprove' action, then reloads from the server (rather than splicing
@@ -685,7 +690,7 @@ function PendingReviewList({ active }: { active: boolean }) {
               className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
               <Check size={12} /> Approve
             </button>
-            <button onClick={() => act(q.id, 'reject')} disabled={busyId === q.id || reviewOpen}
+            <button onClick={() => reject(q.id)} disabled={busyId === q.id || reviewOpen}
               className="flex items-center gap-1.5 px-4 py-1.5 bg-[#FFF5F5] hover:bg-[#FFE5E5] text-[#DC2626] disabled:opacity-50 font-bold text-xs rounded-lg transition-colors">
               <X size={12} /> Reject
             </button>

@@ -3,7 +3,9 @@ import { createServiceRoleClient } from '@/lib/supabase'
 import { requireParentOnlySession } from '@/lib/session'
 
 // ─── GET /api/questions/pending ────────────────────────────────
-// Lists unapproved (approved:false) questions for review, newest first.
+// Lists unapproved (approved:false), not-yet-rejected (rejected_at:null)
+// questions for review, newest first. A rejected question stays in the
+// table (rejected_reason may hold why) but must not resurface here.
 // Deliberately NOT scoped to the caller's family — questions/topics are a
 // shared curriculum bank across all families (see supabase.ts), so review
 // is shared too. Accepted tradeoff, not an oversight.
@@ -37,6 +39,7 @@ export async function GET() {
       topics ( title_en, grade, subjects ( label_en, slug ) )
     `)
     .eq('approved', false)
+    .is('rejected_at', null)
     .order('created_at', { ascending: false })
     .limit(50)
 

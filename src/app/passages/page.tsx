@@ -502,7 +502,7 @@ function PendingPassageQuestionRow({ passageId, q, busy, onAct }: {
   passageId: string
   q: PendingPassageQuestion
   busy: boolean
-  onAct: (passageId: string, questionId: string, action: 'approve' | 'reject') => void
+  onAct: (passageId: string, questionId: string, action: 'approve' | 'reject', reason?: string) => void
 }) {
   return (
     <div className="bg-gray-50 rounded-xl p-3 mt-2">
@@ -524,7 +524,7 @@ function PendingPassageQuestionRow({ passageId, q, busy, onAct }: {
             className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
             Approve
           </button>
-          <button onClick={() => onAct(passageId, q.id, 'reject')} disabled={busy}
+          <button onClick={() => onAct(passageId, q.id, 'reject', window.prompt('Reason for rejecting (optional):') || undefined)} disabled={busy}
             className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 disabled:opacity-50 font-bold text-xs rounded-lg transition-colors">
             Reject
           </button>
@@ -552,12 +552,12 @@ function PendingReviewList({ active }: { active: boolean }) {
   // PendingReviewList — the tab stays mounted across switches.
   useEffect(() => { if (active) load() }, [active])
 
-  const actPassage = async (id: string, action: 'approve' | 'reject') => {
+  const actPassage = async (id: string, action: 'approve' | 'reject', reason?: string) => {
     setBusyPassageId(id)
     const res = await fetch(`/api/passages/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ action, ...(reason !== undefined ? { reason } : {}) }),
     })
     if (res.ok) {
       setPassages(prev => {
@@ -568,12 +568,14 @@ function PendingReviewList({ active }: { active: boolean }) {
     setBusyPassageId(null)
   }
 
-  const actQuestion = async (passageId: string, questionId: string, action: 'approve' | 'reject') => {
+  const rejectPassage = (id: string) => actPassage(id, 'reject', window.prompt('Reason for rejecting (optional):') || undefined)
+
+  const actQuestion = async (passageId: string, questionId: string, action: 'approve' | 'reject', reason?: string) => {
     setBusyQuestionId(questionId)
     const res = await fetch(`/api/passages/questions/${questionId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ action, ...(reason !== undefined ? { reason } : {}) }),
     })
     if (res.ok) {
       setPassages(prev => prev.map(p => {
@@ -633,7 +635,7 @@ function PendingReviewList({ active }: { active: boolean }) {
                   className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
                   Approve
                 </button>
-                <button onClick={() => actPassage(p.id, 'reject')} disabled={busyPassageId === p.id}
+                <button onClick={() => rejectPassage(p.id)} disabled={busyPassageId === p.id}
                   className="px-4 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 disabled:opacity-50 font-bold text-xs rounded-lg transition-colors">
                   Reject
                 </button>

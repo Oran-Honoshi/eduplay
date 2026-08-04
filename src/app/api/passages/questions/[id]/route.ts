@@ -8,6 +8,10 @@ import { requireParentOnlySession } from '@/lib/session'
 // its own independent `approved` column — a passage being approved does
 // not make its comprehension questions visible; lesson/page.tsx gates them
 // with their own .eq('approved', true) filter.
+// Body: { action: 'approve' | 'reject' | 'unapprove', reason?: string }
+//
+// reject used to hard-delete. It now soft-rejects instead (rejected_at/
+// rejected_reason, row stays) so an optional reason survives for review.
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireParentOnlySession()
@@ -18,9 +22,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     )
   }
 
-  const { action } = await req.json()
+  const { action, reason } = await req.json()
   if (action !== 'approve' && action !== 'reject' && action !== 'unapprove') {
     return NextResponse.json({ error: 'action must be "approve", "reject", or "unapprove"' }, { status: 400 })
+  }
+  if (reason !== undefined && typeof reason !== 'string') {
+    return NextResponse.json({ error: 'reason must be a string' }, { status: 400 })
   }
 
   const supabase = createServiceRoleClient()
@@ -31,7 +38,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ success: true })
   }
 
-  const { error } = await supabase.from('passage_questions').delete().eq('id', params.id)
+  const { error } = await supabase
+    .from('passage_questions')
+    .update({ approved: false, rejected_at: new Date().toISOString(), rejected_reason: reason?.trim() || null })
+    .eq('id', params.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }
