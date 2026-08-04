@@ -1,6 +1,8 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
+import { apiErrorText } from '@/lib/apiError'
+import ApiErrorText from '@/components/ApiErrorText'
 
 // ── Types ──────────────────────────────────────────────────────
 interface ReadingLevel {
@@ -354,7 +356,7 @@ function GeneratorPanel({ onGenerated, onViewExisting }: {
         onGenerated({ ...data.passage, level: selectedLevel, question_count: data.questions?.length ?? 0 })
         setTopic('')
       } else {
-        setResult(`❌ Error: ${data.error}`)
+        setResult(`❌ ${apiErrorText(res.status, data.error, 'Error generating passage')}`)
       }
     } catch (e: any) {
       setResult(`❌ ${e.message}`)
@@ -484,7 +486,7 @@ function GeneratorPanel({ onGenerated, onViewExisting }: {
       {result && (
         <div className="mt-3 space-y-1">
           <p className="text-xs font-semibold" style={{ color: result.startsWith('✅') ? '#065F46' : '#991B1B' }}>
-            {result}
+            <ApiErrorText text={result} />
             {result.startsWith('✅') && ' (Marked for review — approve in Supabase to publish)'}
           </p>
           {decodabilityResult && (

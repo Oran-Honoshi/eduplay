@@ -5,6 +5,8 @@ import { ArrowLeft, Plus, FileText, Trash2, Unlink, Save, BookOpen, Notebook as 
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import { PARENT_COLORS } from '@/lib/parentTheme'
 import { ParentModal, ParentModalFooter } from '@/components/ParentModal'
+import { apiErrorText } from '@/lib/apiError'
+import ApiErrorText from '@/components/ApiErrorText'
 
 const supabase = createBrowserClient()
 
@@ -127,7 +129,7 @@ function FileGallery({ sectionId, files, onChanged }: { sectionId: string; files
     const res = await fetch(`/api/notebook/sections/${sectionId}/files`, { method: 'POST', body: formData })
     const data = await res.json()
     setUploading(false)
-    if (!res.ok) { setUploadError(data.error || 'Upload failed'); return }
+    if (!res.ok) { setUploadError(apiErrorText(res.status, data.error, 'Upload failed')); return }
     onChanged()
   }
 
@@ -137,7 +139,7 @@ function FileGallery({ sectionId, files, onChanged }: { sectionId: string; files
     setDeletingId(null)
     if (!res.ok) {
       const data = await res.json()
-      setUploadError(data.error || 'Failed to delete file')
+      setUploadError(apiErrorText(res.status, data.error, 'Failed to delete file'))
       return
     }
     onChanged()
@@ -152,7 +154,7 @@ function FileGallery({ sectionId, files, onChanged }: { sectionId: string; files
           <input type="file" accept={ALLOWED_FILE_TYPES.join(',')} onChange={handleFileChange} disabled={uploading} className="hidden" />
         </label>
       </div>
-      {uploadError && <div className="text-xs text-[#DC2626] font-semibold">{uploadError}</div>}
+      {uploadError && <div className="text-xs text-[#DC2626] font-semibold"><ApiErrorText text={uploadError} /></div>}
       {files.length === 0 && <div className="text-xs text-[#9aa6a3]">No files uploaded yet.</div>}
       <div className="grid grid-cols-3 gap-3">
         {files.map(f => (
@@ -210,7 +212,7 @@ function RecipeEditor({ sectionId }: { sectionId: string }) {
     })
     const data = await res.json()
     setSaving(false)
-    if (!res.ok) { setError(data.error || 'Failed to save recipe'); return }
+    if (!res.ok) { setError(apiErrorText(res.status, data.error, 'Failed to save recipe')); return }
     setPromptText(data.recipe?.prompt_text || '')
     setSavedAt(data.recipe?.updated_at || null)
   }
@@ -228,7 +230,7 @@ function RecipeEditor({ sectionId }: { sectionId: string }) {
           placeholder="e.g. Focus on two-digit subtraction with borrowing. Use word problems about snacks and toys."
           className="border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 text-sm" />
       )}
-      {error && <div className="text-xs text-[#DC2626] font-semibold">{error}</div>}
+      {error && <div className="text-xs text-[#DC2626] font-semibold"><ApiErrorText text={error} /></div>}
       <div className="flex items-center gap-3">
         <button onClick={save} disabled={saving || loading}
           className="flex items-center gap-1.5 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 rounded-lg px-3 py-1.5">
@@ -251,7 +253,7 @@ function LinkedQuestionsList({ sectionId, links, onChanged }: { sectionId: strin
     setUnlinkingId(null)
     if (!res.ok) {
       const data = await res.json()
-      setError(data.error || 'Failed to unlink question')
+      setError(apiErrorText(res.status, data.error, 'Failed to unlink question'))
       return
     }
     onChanged()
@@ -261,7 +263,7 @@ function LinkedQuestionsList({ sectionId, links, onChanged }: { sectionId: strin
     <div className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-4 flex flex-col gap-3">
       <h3 className="text-sm font-black text-[#1f2a28]">Linked Questions</h3>
       <p className="text-xs text-[#9aa6a3]">Add questions from the Library tab's "Add to Notebook Section" action.</p>
-      {error && <div className="text-xs text-[#DC2626] font-semibold">{error}</div>}
+      {error && <div className="text-xs text-[#DC2626] font-semibold"><ApiErrorText text={error} /></div>}
       {links.length === 0 && <div className="text-xs text-[#9aa6a3]">No questions linked yet.</div>}
       <div className="flex flex-col gap-2">
         {links.map(link => (
@@ -312,7 +314,19 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
     setLoading(true)
     fetch(`/api/notebook/sections/${params.id}`)
       .then(async r => {
+        // A true 404 (section doesn't exist) and a cross-family-ownership 403
+        // (section belongs to a different family) are both folded into
+        // "not found" — the API returns the identical body/status for an
+        // ownership mismatch as for a session-expiry 403, so they can't be
+        // told apart here; "not found" is the safer default (never confirms
+        // a section exists to someone who doesn't own it). A 401 is
+        // unambiguous, though, so that gets the real session-expired message.
         if (r.status === 404 || r.status === 403) { setNotFound(true); return null }
+        if (r.status === 401) {
+          const data = await r.json()
+          setError(apiErrorText(r.status, data.error, data.error))
+          return null
+        }
         return r.json()
       })
       .then(data => {
@@ -373,7 +387,7 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
     })
     const data = await res.json()
     setSaving(false)
-    if (!res.ok) { setSaveError(data.error || 'Failed to save'); return }
+    if (!res.ok) { setSaveError(apiErrorText(res.status, data.error, 'Failed to save')); return }
     load()
   }
 
@@ -384,7 +398,7 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
     setDeleting(false)
     setConfirmingDelete(false)
     const data = await res.json()
-    setSaveError(data.error || 'Failed to delete')
+    setSaveError(apiErrorText(res.status, data.error, 'Failed to delete'))
   }
 
   if (notFound) {
@@ -412,7 +426,7 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
           <NotebookIcon size={18} color={PARENT_COLORS.primary} /> Notebook Section
         </h1>
         {loading && <div className="text-sm text-[#9aa6a3]">Loading…</div>}
-        {error && <div className="text-sm text-[#DC2626] font-semibold">{error}</div>}
+        {error && <div className="text-sm text-[#DC2626] font-semibold"><ApiErrorText text={error} /></div>}
 
         {section && (
           <>
@@ -472,7 +486,7 @@ export default function NotebookSectionPage({ params }: { params: { id: string }
                 </select>
               </div>
 
-              {saveError && <div className="text-xs text-[#DC2626] font-semibold">{saveError}</div>}
+              {saveError && <div className="text-xs text-[#DC2626] font-semibold"><ApiErrorText text={saveError} /></div>}
 
               <div className="flex gap-2">
                 <button onClick={save} disabled={saving}

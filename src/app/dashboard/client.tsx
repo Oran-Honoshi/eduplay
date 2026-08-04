@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Home, BarChart2, Printer, Sparkles, ClipboardList, Notebook, Map, Users, Settings,
   Rocket, Check, Flame, RefreshCw, Zap, CheckCircle2, Download, ChevronRight,
@@ -9,6 +9,24 @@ import {
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import { PARENT_COLORS, PARENT_FONTS, CHILD_AVATAR_COLORS } from '@/lib/parentTheme'
 import { ParentModal, ParentModalFooter } from '@/components/ParentModal'
+import { apiErrorText, isSessionExpiredStatus } from '@/lib/apiError'
+
+// Shared error-toast helper for requireParentOnlySession()-gated calls, used
+// by every screen in this file (each only has its own local `showToast`
+// closure, not shared state) — a 401/403 gets the friendly session-expired
+// copy + a real Log in link, anything else falls back to the raw API error text.
+function showApiErrorToast(
+  showToast: (icon: string, text: string, link?: string) => void,
+  status: number,
+  rawError: string | undefined,
+  fallback: string
+) {
+  showToast(
+    isSessionExpiredStatus(status) ? '🔒' : '❌',
+    apiErrorText(status, rawError, fallback),
+    isSessionExpiredStatus(status) ? '/login' : undefined
+  )
+}
 
 function ParentsScreen({ familyId, showToast }: any) {
   const [parents, setParents]   = useState<any[]>([])
@@ -51,7 +69,7 @@ function ParentsScreen({ familyId, showToast }: any) {
         setShowAdd(false)
         loadParents()
       } else {
-        showToast('❌', data.error || 'Error adding parent')
+        showApiErrorToast(showToast, res.status, data.error, 'Error adding parent')
       }
     } catch {}
     setSaving(false)
@@ -241,7 +259,7 @@ function AssignmentsScreen({ children, showToast }: any) {
         setPickerChildId('')
         loadAssignments()
       } else {
-        showToast('❌', data.error || 'Could not reassign')
+        showApiErrorToast(showToast, res.status, data.error, 'Could not reassign')
       }
     } catch {
       showToast('❌', 'Could not reassign')
@@ -467,16 +485,21 @@ const TABS = [
 export default function DashboardClient({ data, error }: { data: any; error?: string }) {
   const { family, children, progress, recommendations, parentName, isDemo } = data
   const [screen, setScreen]         = useState('overview')
-  const [toast, setToast]           = useState<{ icon:string; text:string }|null>(null)
+  const [toast, setToast]           = useState<{ icon:string; text:string; link?: string }|null>(null)
   const [errorBanner, setErrorBanner]   = useState(error)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const daysLeft = family
     ? Math.max(0, Math.ceil((new Date(family.trial_ends_at).getTime() - Date.now()) / 86400000))
     : 7
 
-  function showToast(icon: string, text: string) {
-    setToast({ icon, text })
-    setTimeout(() => setToast(null), 3000)
+  // link toasts (session-expired) skip auto-dismiss — a parent needs time to
+  // actually click through to /login before the toast would otherwise vanish.
+  function showToast(icon: string, text: string, link?: string) {
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    toastTimer.current = null
+    setToast({ icon, text, link })
+    if (!link) toastTimer.current = setTimeout(() => setToast(null), 3000)
   }
 
   function childProgress(childId: string) {
@@ -513,6 +536,9 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
       {toast && (
         <div style={{ position:'fixed', bottom:'24px', right:'24px', zIndex:9999, background:PARENT_COLORS.text, color:'white', borderRadius:'12px', padding:'12px 20px', fontSize:'13px', fontWeight:700, boxShadow:'0 8px 32px rgba(0,0,0,0.2)', display:'flex', alignItems:'center', gap:'10px' }}>
           <span style={{ fontSize:'20px' }}>{toast.icon}</span>{toast.text}
+          {toast.link && (
+            <a href={toast.link} style={{ color:'white', textDecoration:'underline', fontWeight:800 }}>Log in</a>
+          )}
         </div>
       )}
 
@@ -904,7 +930,12 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                         <select defaultValue={child.grade}
                           onChange={async (e) => {
                             const newGrade = parseInt(e.target.value)
-                            await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, grade:newGrade }) })
+                            const res = await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, grade:newGrade }) })
+                            if (!res.ok) {
+                              const data = await res.json().catch(() => ({}))
+                              showApiErrorToast(showToast, res.status, data.error, 'Could not update grade')
+                              return
+                            }
                             showToast('🎓', `${child.display_name} moved to Grade ${newGrade === 0 ? 'K' : newGrade}!`)
                             setTimeout(() => window.location.reload(), 1000)
                           }}
@@ -921,7 +952,12 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                         {/* Theme */}
                         <select defaultValue={child.theme || 'plain'}
                           onChange={async (e) => {
-                            await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, theme:e.target.value }) })
+                            const res = await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, theme:e.target.value }) })
+                            if (!res.ok) {
+                              const data = await res.json().catch(() => ({}))
+                              showApiErrorToast(showToast, res.status, data.error, 'Could not update theme')
+                              return
+                            }
                             showToast('🎨', `${child.display_name}'s theme updated!`)
                           }}
                           style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:700, fontSize:'12px', color:PARENT_COLORS.text, cursor:'pointer', width:'100%' }}>
@@ -933,7 +969,12 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                         {/* Font size */}
                         <select defaultValue={child.font_size || 'medium'}
                           onChange={async (e) => {
-                            await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, font_size:e.target.value }) })
+                            const res = await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, font_size:e.target.value }) })
+                            if (!res.ok) {
+                              const data = await res.json().catch(() => ({}))
+                              showApiErrorToast(showToast, res.status, data.error, 'Could not update font size')
+                              return
+                            }
                             showToast('🔤', `${child.display_name}'s font size updated!`)
                           }}
                           style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:700, fontSize:'12px', color:PARENT_COLORS.text, cursor:'pointer', width:'100%' }}>
@@ -946,7 +987,12 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                         {/* Break */}
                         <select defaultValue={child.relief_trigger || 'topic'}
                           onChange={async (e) => {
-                            await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, relief_trigger:e.target.value }) })
+                            const res = await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, relief_trigger:e.target.value }) })
+                            if (!res.ok) {
+                              const data = await res.json().catch(() => ({}))
+                              showApiErrorToast(showToast, res.status, data.error, 'Could not update break setting')
+                              return
+                            }
                             showToast('🎉', `${child.display_name}'s break updated!`)
                           }}
                           style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:700, fontSize:'12px', color:PARENT_COLORS.text, cursor:'pointer', width:'100%' }}>
@@ -961,7 +1007,12 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                           onBlur={async (e) => {
                             const newPin = e.target.value.trim()
                             if (newPin.length === 4 && /^\d{4}$/.test(newPin)) {
-                              await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, pin_code:newPin }) })
+                              const res = await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, pin_code:newPin }) })
+                              if (!res.ok) {
+                                const data = await res.json().catch(() => ({}))
+                                showApiErrorToast(showToast, res.status, data.error, 'Could not update PIN')
+                                return
+                              }
                               showToast('🔢', `${child.display_name}'s PIN updated!`)
                             }
                           }}

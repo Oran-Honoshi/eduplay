@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import { PARENT_COLORS } from '@/lib/parentTheme'
+import { apiErrorText, SESSION_EXPIRED_MESSAGE } from '@/lib/apiError'
+import ApiErrorText from '@/components/ApiErrorText'
 
 // ── Types ──────────────────────────────────────────────────────
 interface Subject {
@@ -288,7 +290,7 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
         setReferenceFile(null)
         onGenerated()
       } else {
-        setResult(`❌ Error: ${data.error}`)
+        setResult(`❌ ${apiErrorText(res.status, data.error, 'Error generating questions')}`)
       }
     } catch (e: any) {
       setResult(`❌ ${e.message}`)
@@ -426,7 +428,7 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
 
       {result && (
         <p className="mt-3 text-xs font-semibold" style={{ color: result.startsWith('✅') ? PARENT_COLORS.primary : PARENT_COLORS.danger }}>
-          {result}
+          <ApiErrorText text={result} />
         </p>
       )}
     </div>
@@ -786,7 +788,9 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
     if (assignResultTimer.current) clearTimeout(assignResultTimer.current)
     assignResultTimer.current = null
     setAssignResult(result)
-    if (result) {
+    // A session-expired message carries a Log in link (ApiErrorText below) —
+    // don't auto-dismiss it out from under the parent before they can click it.
+    if (result && !result.message.includes(SESSION_EXPIRED_MESSAGE)) {
       assignResultTimer.current = setTimeout(() => setAssignResult(null), 4500)
     }
   }
@@ -930,7 +934,7 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
         })
         setSelected(new Set())
       } else {
-        showAssignResult({ ok: false, message: data.error || 'Could not create assignment' })
+        showAssignResult({ ok: false, message: apiErrorText(res.status, data.error, 'Could not create assignment') })
       }
     } catch {
       showAssignResult({ ok: false, message: 'Could not reach the server' })
@@ -953,7 +957,7 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
         })
         const createData = await createRes.json()
         if (!createRes.ok) {
-          showAssignResult({ ok: false, message: createData.error || 'Could not create section' })
+          showAssignResult({ ok: false, message: apiErrorText(createRes.status, createData.error, 'Could not create section') })
           setAddingToNotebook(false)
           return
         }
@@ -977,7 +981,7 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
         setShowNotebookPicker(false)
         setNewSectionTitle('')
       } else {
-        showAssignResult({ ok: false, message: data.error || 'Could not add to notebook section' })
+        showAssignResult({ ok: false, message: apiErrorText(res.status, data.error, 'Could not add to notebook section') })
       }
     } catch {
       showAssignResult({ ok: false, message: 'Could not reach the server' })
@@ -1185,7 +1189,7 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
 
       {assignResult && (
         <div className={`sticky bottom-4 rounded-xl border p-3 text-xs font-semibold ${assignResult.ok ? 'bg-[#E4F3F1] border-[#0F766E33] text-[#0F766E]' : 'bg-[#FFF5F5] border-[#FEE2E2] text-[#DC2626]'}`}>
-          {assignResult.message}
+          <ApiErrorText text={assignResult.message} />
         </div>
       )}
     </div>

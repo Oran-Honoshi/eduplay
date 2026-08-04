@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { Plus, ArrowLeft, Notebook as NotebookIcon } from 'lucide-react'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import { PARENT_COLORS } from '@/lib/parentTheme'
+import { apiErrorText } from '@/lib/apiError'
+import ApiErrorText from '@/components/ApiErrorText'
 
 interface Section {
   id: string
@@ -48,7 +50,7 @@ function NewSectionForm({ onCreated }: { onCreated: (id: string) => void }) {
     })
     const data = await res.json()
     setSaving(false)
-    if (!res.ok) { setError(data.error || 'Failed to create section'); return }
+    if (!res.ok) { setError(apiErrorText(res.status, data.error, 'Failed to create section')); return }
     reset()
     setOpen(false)
     onCreated(data.section.id)
@@ -78,7 +80,7 @@ function NewSectionForm({ onCreated }: { onCreated: (id: string) => void }) {
         className="border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 text-sm" />
       <textarea value={bodyText} onChange={e => setBodyText(e.target.value)} placeholder="Notes..." rows={4}
         className="border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 text-sm" />
-      {error && <div className="text-xs text-[#DC2626] font-semibold">{error}</div>}
+      {error && <div className="text-xs text-[#DC2626] font-semibold"><ApiErrorText text={error} /></div>}
       <div className="flex gap-2">
         <button onClick={submit} disabled={saving}
           className="text-sm font-bold text-white bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 rounded-xl px-4 py-2">
@@ -102,9 +104,9 @@ export default function NotebookPage() {
   const load = useCallback(() => {
     setLoading(true)
     fetch('/api/notebook/sections')
-      .then(r => r.json())
-      .then(data => {
-        if (data.error) { setError(data.error); setSections([]) }
+      .then(async r => {
+        const data = await r.json()
+        if (data.error) { setError(apiErrorText(r.status, data.error, data.error)); setSections([]) }
         else { setError(null); setSections(data.sections || []) }
       })
       .finally(() => setLoading(false))
@@ -131,7 +133,7 @@ export default function NotebookPage() {
 
         <NewSectionForm onCreated={id => { window.location.href = `/notebook/${id}` }} />
 
-        {error && <div className="text-sm text-[#DC2626] font-semibold">{error}</div>}
+        {error && <div className="text-sm text-[#DC2626] font-semibold"><ApiErrorText text={error} /></div>}
         {loading && <div className="text-sm text-[#9aa6a3]">Loading…</div>}
         {!loading && !error && sections.length === 0 && (
           <div className="text-sm text-[#9aa6a3]">No sections yet — create your first one above.</div>
