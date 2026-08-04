@@ -313,6 +313,30 @@ function inferVisualData(prompt: string): any | null {
   return null
 }
 
+// Extracts a bare equation to print in the work column — deliberately NOT a
+// prose-to-equation converter. A word_problem prompt like "Sarah has 3/4 of
+// a pizza and eats 1/6 more" would need real interpretation (which
+// operation? which number is subtracted from which?) to turn into an
+// equation, and a wrong derived equation placed in front of a student is
+// strictly worse than the blank lines it would replace — same "suppress
+// instead of guess" principle as inferVisualData above. This only fires
+// when the prompt is ALREADY a bare equation (after trimming a small fixed
+// set of boilerplate instruction prefixes): nothing is being synthesized,
+// so it can't misrepresent the problem or leak anything not already shown.
+function extractBareEquation(prompt: string | null | undefined): string | null {
+  if (!prompt) return null
+  const stripped = prompt
+    .trim()
+    .replace(/^(calculate|evaluate|solve|compute)\s*:\s*/i, '')
+    .replace(/^(חשבו|פתרו|חשב|פתור)\s*:?\s*/, '')
+    .trim()
+  if (!stripped) return null
+  // Only digits, arithmetic/comparison symbols, and whitespace — zero other
+  // letters in either script. One real word anywhere means this is
+  // narrative prose, not a bare equation.
+  return /^[\d\s+\-×x÷/.,()=?_]+$/.test(stripped) ? stripped : null
+}
+
 function renderLegacyVisual(q: any): string {
   if (!q.visual_data) return ''
   const needsVis = ['fill_blank'].includes(q.q_type) ||
@@ -395,6 +419,14 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
     const heText = !isEnglish && q.prompt_he && (!isBilingual || isDistinctHe(q.prompt_he, q.prompt_en))
       ? `<div class="q-text-he">${fractionsToHTML(q.prompt_he)}</div>` : ''
 
+    // Same field the student actually sees drives the work-column equation
+    // too — prompt_en is often just an internal gloss in he_only mode (see
+    // languageInstruction in questions/generate/route.ts), not real content.
+    const workEquation = extractBareEquation(isHebrew ? q.prompt_he : q.prompt_en)
+    const workEquationHTML = workEquation
+      ? `<div class="ws-equation" dir="ltr">${fractionsToHTML(workEquation)}</div>` : ''
+    const workLineCount = workEquation ? 4 : 6
+
     return `
       <div class="question">
         <div class="q-left">
@@ -409,8 +441,9 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
         </div>
         <div class="q-workspace">
           <div class="workspace-label">${isHebrew ? 'עבודה' : 'Working'}</div>
+          ${workEquationHTML}
           <div class="workspace-lines">
-            ${Array.from({ length: 6 }, () => '<div class="ws-line"></div>').join('')}
+            ${Array.from({ length: workLineCount }, () => '<div class="ws-line"></div>').join('')}
           </div>
         </div>
       </div>`
@@ -486,6 +519,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
     .q-left { display: table-cell; width: auto; padding: 12px 14px; vertical-align: top; border-inline-end: 1px dashed #DEE2E6; }
     .q-workspace { display: table-cell; width: 180px; padding: 8px 10px; background: #FAFBFF; vertical-align: top; }
     .workspace-label { font-size: 9px; font-weight: 800; color: #C0C8D8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .ws-equation { font-size: 13px; font-weight: 700; color: #4A5568; margin-bottom: 8px; }
     .ws-line { height: 22px; border-bottom: 1px solid #E8ECF4; }
 
     .q-header { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
