@@ -70,6 +70,75 @@ export async function GET() {
   return NextResponse.json({ generations: data || [] })
 }
 
+// Deterministic gate, not just a prompt instruction: the system prompt already
+// asks the model to "never include another option equal to" the correct
+// answer, but that's the same prompt-only compliance already proved
+// unreliable for q_type above — confirmed live on fraction-addition
+// questions, where a sum like 5/4 gets offered as both "5/4" and "1 1/4"
+// among the four options. Canonicalize every option to a comparable number
+// (mixed numbers, simple fractions, decimals/integers, an optional unit
+// suffix) and discard the whole question if any two options resolve to the
+// same value — this covers correct-vs-distractor AND distractor-vs-distractor
+// duplicates alike, not just the pairing the prompt text calls out.
+//
+// Only a recognized unit token differentiates two otherwise-equal numbers —
+// confirmed live that leaving trailing text unrestricted is an exploitable
+// gap: when pushed to violate the duplicate-values instruction, the model
+// wrote one option as "13/24 (unreduced as 26/48)", and unrestricted
+// trailing text would have parsed that as a different "unit" than a plain
+// "13/24" option, letting the exact same value dodge the gate.
+const KNOWN_UNIT = /^(\$|cm|mm|m|km|kg|g|mg|l|ml|%|°|in|ft|s|sec|min|hr|h)$/
+
+function parseCanonicalValue(raw: unknown): { value: number; unit: string } | null {
+  if (typeof raw !== 'string') return null
+  // Strip parenthetical asides — explanatory text, not part of the value.
+  const s = raw.replace(/\([^)]*\)/g, '').trim()
+  if (!s) return null
+
+  let value: number
+  let trailing: string
+
+  // mixed number: "1 3/4" or "1 3/4 cm"
+  let m = s.match(/^(-?\d+)\s+(\d+)\/(\d+)\s*(.*)$/)
+  if (m) {
+    const whole = parseInt(m[1], 10), num = parseInt(m[2], 10), den = parseInt(m[3], 10)
+    if (den === 0) return null
+    const sign = whole < 0 ? -1 : 1
+    value = whole + sign * (num / den)
+    trailing = m[4]
+  } else if ((m = s.match(/^(-?\d+)\/(\d+)\s*(.*)$/))) {
+    // simple fraction: "3/4" or "3/4 cm"
+    const num = parseInt(m[1], 10), den = parseInt(m[2], 10)
+    if (den === 0) return null
+    value = num / den
+    trailing = m[3]
+  } else if ((m = s.match(/^(\$)?\s*(-?\d+(?:\.\d+)?)\s*(.*)$/))) {
+    // plain integer/decimal, optional leading $ or trailing unit/%
+    value = parseFloat(m[2])
+    trailing = (m[1] || '') + m[3]
+  } else {
+    return null // not a recognized numeric shape — never treated as equal to anything
+  }
+
+  const t = trailing.trim().toLowerCase()
+  const unit = KNOWN_UNIT.test(t) ? t : ''
+  return { value, unit }
+}
+
+function optionsHaveDuplicateValue(opts: any[]): boolean {
+  const parsed = opts
+    .map(o => parseCanonicalValue(o?.value_en))
+    .filter((v): v is { value: number; unit: string } => v !== null)
+  for (let a = 0; a < parsed.length; a++) {
+    for (let b = a + 1; b < parsed.length; b++) {
+      if (parsed[a].unit === parsed[b].unit && Math.abs(parsed[a].value - parsed[b].value) < 1e-9) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
 export async function POST(req: NextRequest) {
   const auth = await requireParentOnlySession()
   if (!auth.ok) {
@@ -429,6 +498,11 @@ OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects
     const options = Array.isArray(q.options)
       ? q.options.map((o: any) => ({ ...o, value_he: dedupeHe(o.value_he, o.value_en) ?? null }))
       : q.options
+
+    if (qType === 'multiple_choice' && Array.isArray(options) && optionsHaveDuplicateValue(options)) {
+      failures.push(`question ${i + 1}: two multiple_choice options are mathematically equal — discarded`)
+      continue
+    }
 
     // TODO: the system prompt above never asks for or forwards a visual_data
     // field, so AI-generated questions can never carry a diagram (fraction bar,
