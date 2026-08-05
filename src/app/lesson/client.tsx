@@ -647,7 +647,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
     const correct = opt.isCorrect
     setFeedback({
       correct,
-      explanation: correct ? (currentQ.explanation_en || 'Correct! Well done!') : (currentQ.hint_en || 'Not quite — try the hint!'),
+      explanation: correct ? (currentQ.explanation_en || 'Correct! Well done!') : (currentQ.hint_en || currentQ.explanation_en || 'Not quite — try the hint!'),
       explanation_he: correct ? (currentQ.explanation_he || currentQ.explanation_en || '') : (currentQ.hint_he || currentQ.hint_en || ''),
     })
     setPip(correct ? '🎉 Excellent! You nailed it!' : "💡 Don't give up!")
