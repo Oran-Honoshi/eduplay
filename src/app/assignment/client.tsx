@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
+import HebrewMathText from '@/components/HebrewMathText'
 import { ThemeDecorations, CelebrationModal, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG } from '@/components/theme'
 import { getFontSize } from '@/lib/fontSize'
 import { isDistinctHe } from '@/lib/text'
@@ -192,9 +193,14 @@ export default function AssignmentClient({ child, assignment, items: initialItem
 
       <div style={{ maxWidth:'640px', margin:'0 auto', padding:'20px 16px' }}>
         <ThemePanel theme={theme} T={T} style={{ padding:'20px' }}>
-          <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>
-            <FractionText text={isHE && currentQ?.prompt_he ? currentQ.prompt_he : currentQ?.prompt_en} />
-          </p>
+          {isHE && currentQ?.prompt_he ? (
+            <HebrewMathText text={currentQ.prompt_he}
+              style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:'rtl', textAlign:'right' }} />
+          ) : (
+            <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:'ltr', textAlign:'left' }}>
+              <FractionText text={currentQ?.prompt_en} />
+            </p>
+          )}
           {langMode === 'bilingual' && !isHE && isDistinctHe(currentQ?.prompt_he, currentQ?.prompt_en) && (
             <p style={{ fontSize:`${FS?.question || 13}px`, color:T.accent1, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 12px', lineHeight:1.6 }}>
               <FractionText text={currentQ?.prompt_he} />

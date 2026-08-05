@@ -3,7 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase'
 import { authorizeChildAccess } from '@/lib/session'
 import { renderMathVisualSVG } from '@/lib/mathVisual'
 import { fractionsToHTML } from '@/lib/fractionText'
-import { isDistinctHe, translateDifficulty, translateOptionLabel } from '@/lib/text'
+import { isDistinctHe, translateDifficulty, translateOptionLabel, extractBareEquation, segmentHebrewMath } from '@/lib/text'
 
 export async function GET(req: NextRequest) {
   const supabase = createServiceRoleClient()
@@ -323,20 +323,6 @@ function inferVisualData(prompt: string): any | null {
 // when the prompt is ALREADY a bare equation (after trimming a small fixed
 // set of boilerplate instruction prefixes): nothing is being synthesized,
 // so it can't misrepresent the problem or leak anything not already shown.
-function extractBareEquation(prompt: string | null | undefined): string | null {
-  if (!prompt) return null
-  const stripped = prompt
-    .trim()
-    .replace(/^(calculate|evaluate|solve|compute)\s*:\s*/i, '')
-    .replace(/^(חשבו|פתרו|חשב|פתור)\s*:?\s*/, '')
-    .trim()
-  if (!stripped) return null
-  // Only digits, arithmetic/comparison symbols, and whitespace — zero other
-  // letters in either script. One real word anywhere means this is
-  // narrative prose, not a bare equation.
-  return /^[\d\s+\-×x÷/.,()=?_]+$/.test(stripped) ? stripped : null
-}
-
 function renderLegacyVisual(q: any): string {
   if (!q.visual_data) return ''
   const needsVis = ['fill_blank'].includes(q.q_type) ||
@@ -378,6 +364,25 @@ function noQuestionsHTML(child: any) {
       <button onclick="window.close()" style="margin-top:20px;padding:10px 24px;background:#4A7FD4;color:white;border:none;border-radius:50px;font-size:14px;font-weight:800;cursor:pointer;">Close</button>
     </div>
   </body></html>`
+}
+
+// Renders a real prompt_he string as one or more .q-text-he lines, isolating
+// any embedded math onto its own forced-LTR line (see segmentHebrewMath in
+// lib/text.ts for the detection logic, including why a whole-string bare
+// equation like "3.5 + 2.4 = ___" doesn't need separate handling here — it
+// naturally comes back as a single math-only segment). Pure narrative with
+// no isolatable expression renders as the single plain .q-text-he block
+// this replaced, unchanged.
+function renderHeTextLines(promptHe: string): string {
+  const segments = segmentHebrewMath(promptHe)
+  if (segments.length === 0) {
+    return `<div class="q-text-he">${fractionsToHTML(promptHe)}</div>`
+  }
+  return segments.map(seg =>
+    seg.type === 'math'
+      ? `<div class="q-text-he" style="direction:ltr;text-align:left">${fractionsToHTML(seg.content)}</div>`
+      : `<div class="q-text-he">${fractionsToHTML(seg.content)}</div>`
+  ).join('')
 }
 
 function generateHTML({ child, topics, questions, difficulty, langMode, includeKey, wsType, includeHints, solutionSteps, date, subject }: any) {
@@ -426,9 +431,17 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
     // specificity, beats the class's direction:rtl) flips just this case
     // to direction:ltr — same mechanism already proven for .ws-equation
     // above, which has no competing class-level direction to override.
-    const hePromptIsBareEquation = !!extractBareEquation(q.prompt_he)
+    //
+    // A prompt_he MIXING narrative Hebrew with an embedded equation (e.g.
+    // "פתרו: 3.5 + 2.4 = ___") has the identical problem on just the
+    // embedded substring, not the whole line — confirmed occurring in real
+    // content 2026-08-05 (e.g. "5 x 3/10 = ___ בצורה פשוטה ביותר"), not
+    // just theoretical. segmentHebrewMath splits it into alternating text/
+    // math runs, rendered as separate lines below rather than one line —
+    // sidesteps inline bidi isolation entirely (no character-level
+    // tokenizer needed) since block-level lines don't bidi-interact.
     const heText = !isEnglish && q.prompt_he && (!isBilingual || isDistinctHe(q.prompt_he, q.prompt_en))
-      ? `<div class="q-text-he"${hePromptIsBareEquation ? ' style="direction:ltr;text-align:left"' : ''}>${fractionsToHTML(q.prompt_he)}</div>` : ''
+      ? renderHeTextLines(q.prompt_he) : ''
 
     // 55 known rows (confirmed live) have prompt_en set but prompt_he null —
     // in he_only mode that used to render neither enText (gated on

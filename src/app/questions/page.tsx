@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import FractionText from '@/components/FractionText'
+import HebrewMathText from '@/components/HebrewMathText'
 import { isDistinctHe, translateDifficulty, translateOptionLabel } from '@/lib/text'
 import {
   Sparkles, BookOpen, Eye, EyeOff, Paperclip, X, Check, UserPlus, FileText,
@@ -679,7 +680,9 @@ function PendingReviewList({ active }: { active: boolean }) {
           </div>
 
           <p className="text-sm font-semibold text-[#1f2a28] mb-1"><FractionText text={q.prompt_en} /></p>
-          {isDistinctHe(q.prompt_he, q.prompt_en) && <p className="text-sm text-[#7a8f8b] mb-2 text-start" dir="rtl"><FractionText text={q.prompt_he} /></p>}
+          {isDistinctHe(q.prompt_he, q.prompt_en) && (
+            <HebrewMathText text={q.prompt_he} className="text-sm text-[#7a8f8b] mb-2" style={{ direction:'rtl', textAlign:'right' }} />
+          )}
 
           {(() => {
             const isRevealed = revealed.has(q.id)
@@ -1068,7 +1071,9 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
                       </p>
 
                       <p className="text-sm font-semibold text-[#1f2a28] mb-1"><FractionText text={q.prompt_en} /></p>
-                      {isDistinctHe(q.prompt_he, q.prompt_en) && <p className="text-sm text-[#7a8f8b] mb-2 text-start" dir="rtl"><FractionText text={q.prompt_he} /></p>}
+                      {isDistinctHe(q.prompt_he, q.prompt_en) && (
+            <HebrewMathText text={q.prompt_he} className="text-sm text-[#7a8f8b] mb-2" style={{ direction:'rtl', textAlign:'right' }} />
+          )}
 
                       {q.options ? (
                         <ul className="text-sm text-[#374151] mb-2 flex flex-col gap-0.5">

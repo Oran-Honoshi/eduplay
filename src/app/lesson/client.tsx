@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
+import HebrewMathText from '@/components/HebrewMathText'
 import { ThemeDecorations, CelebrationModal, KidOverlay, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG as SHARED_THEMES } from '@/components/theme'
 import { FONT_SIZES } from '@/lib/fontSize'
 import { isDistinctHe } from '@/lib/text'
@@ -456,10 +457,20 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
       <div style={{ background:T.panel2, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
         <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent4, marginBottom:'10px' }}>❓ {UI.practice}</div>
 
-        {/* Primary prompt — Hebrew when isHE */}
-        <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>
-          <FractionText text={isHE && currentQ.prompt_he ? currentQ.prompt_he : currentQ.prompt_en} />
-        </p>
+        {/* Primary prompt — Hebrew when isHE. A Hebrew prompt with an embedded
+            math expression (e.g. "5 x 3/10 = ___ בצורה פשוטה ביותר") renders
+            as separate RTL-text/LTR-math lines via HebrewMathText rather than
+            one line, so the equation doesn't get UAX#9-reversed inside the
+            surrounding RTL run — same fix as the worksheet builder's, shared
+            via lib/text.ts. */}
+        {isHE && currentQ.prompt_he ? (
+          <HebrewMathText text={currentQ.prompt_he}
+            style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:'rtl', textAlign:'right' }} />
+        ) : (
+          <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:'ltr', textAlign:'left' }}>
+            <FractionText text={currentQ.prompt_en} />
+          </p>
+        )}
         {langMode === 'bilingual' && !isHE && isDistinctHe(currentQ?.prompt_he, currentQ?.prompt_en) && (
           <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 10px', lineHeight:1.6 }}><FractionText text={currentQ.prompt_he} /></p>
         )}
@@ -966,10 +977,16 @@ export default function LessonClient({ child, topic, questions, passage, passage
                 <ThemePanel theme={theme} T={T} bg={T.panel2} style={{ padding:'16px' }}>
                   <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent4, marginBottom:'10px' }}>⚔️ {UI.practice}</div>
                   <div style={{ marginBottom:'10px' }}>
-                    {/* Primary prompt — Hebrew when isHE */}
-                    <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 6px', direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>
-                      <FractionText text={isHE && currentQ.prompt_he ? currentQ.prompt_he : currentQ.prompt_en} />
-                    </p>
+                    {/* Primary prompt — Hebrew when isHE. Same embedded-math
+                        two-line handling as the practice-mode block above. */}
+                    {isHE && currentQ.prompt_he ? (
+                      <HebrewMathText text={currentQ.prompt_he}
+                        style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 6px', direction:'rtl', textAlign:'right' }} />
+                    ) : (
+                      <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 6px', direction:'ltr', textAlign:'left' }}>
+                        <FractionText text={currentQ.prompt_en} />
+                      </p>
+                    )}
                     {/* Secondary prompt in bilingual mode */}
                     {langMode === 'bilingual' && !isHE && isDistinctHe(currentQ.prompt_he, currentQ.prompt_en) && (
                       <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 6px', lineHeight:1.6 }}><FractionText text={currentQ.prompt_he} /></p>
