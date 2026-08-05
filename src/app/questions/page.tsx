@@ -690,7 +690,7 @@ function PendingReviewList({ active }: { active: boolean }) {
                     {q.options.map((opt, i) => (
                       <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-[#0F766E]' : ''}>
                         {opt.label}. <FractionText text={opt.value_en} />
-                        {isDistinctHe(opt.value_he, opt.value_en) && <span className="text-[#9aa6a3]"> · <bdi dir="rtl">{translateOptionLabel(opt.label)}. <FractionText text={opt.value_he} /></bdi></span>}
+                        {isDistinctHe(q.prompt_he, q.prompt_en) && <span className="text-[#9aa6a3]"> · <bdi dir="rtl">{translateOptionLabel(opt.label)}. <FractionText text={opt.value_he || opt.value_en} /></bdi></span>}
                         {isRevealed && opt.isCorrect ? ' ✓' : ''}
                       </li>
                     ))}
@@ -1075,7 +1075,7 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
                           {q.options.map((opt, i) => (
                             <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-[#0F766E]' : ''}>
                               {opt.label}. <FractionText text={opt.value_en} />
-                              {isDistinctHe(opt.value_he, opt.value_en) && <span className="text-[#9aa6a3]"> · <bdi dir="rtl">{translateOptionLabel(opt.label)}. <FractionText text={opt.value_he} /></bdi></span>}
+                              {isDistinctHe(q.prompt_he, q.prompt_en) && <span className="text-[#9aa6a3]"> · <bdi dir="rtl">{translateOptionLabel(opt.label)}. <FractionText text={opt.value_he || opt.value_en} /></bdi></span>}
                               {isRevealed && opt.isCorrect ? ' ✓' : ''}
                             </li>
                           ))}
