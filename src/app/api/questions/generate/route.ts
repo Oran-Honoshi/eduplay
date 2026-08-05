@@ -91,8 +91,14 @@ const KNOWN_UNIT = /^(\$|cm|mm|m|km|kg|g|mg|l|ml|%|°|in|ft|s|sec|min|hr|h)$/
 
 function parseCanonicalValue(raw: unknown): { value: number; unit: string } | null {
   if (typeof raw !== 'string') return null
-  // Strip parenthetical asides — explanatory text, not part of the value.
-  const s = raw.replace(/\([^)]*\)/g, '').trim()
+  // Strip parenthetical asides — explanatory text, not part of the value —
+  // but ONLY when preceded by whitespace. A real aside always has a space
+  // before it ("13/24 (unreduced as 26/48)"); a factored algebraic
+  // expression never does ("6(3x + 4)"). Confirmed live 2026-08-05 that
+  // stripping unconditionally collapses "6(3x + 4)" and "6(12x + 18)" to
+  // the same "6" — two genuinely different expressions treated as an
+  // equal-value duplicate.
+  const s = raw.replace(/\s+\([^)]*\)/g, '').trim()
   if (!s) return null
 
   let value: number
@@ -120,7 +126,23 @@ function parseCanonicalValue(raw: unknown): { value: number; unit: string } | nu
     return null // not a recognized numeric shape — never treated as equal to anything
   }
 
+  // The ENTIRE string must be consumed by the number plus, at most, a
+  // recognized unit — any other leftover content means this isn't a clean
+  // canonical value at all, and the option must not be trusted as
+  // comparable to anything. Confirmed live 2026-08-05 (retroactive sweep
+  // of the approved pool) that silently keeping the value with unit=''
+  // whenever the trailing text wasn't a known unit is exactly what caused
+  // real false-negative matches: two options that only coincidentally
+  // share a LEADING number, but differ in everything after it, were
+  // treated as equal — colon notation (ratios "1:200"/"1:2000", clock
+  // times "8:00"/"8:30"), compound units ("3 m 5 cm"/"3 m 50 cm"),
+  // spelled-out units ("5 grams"/"5 kilograms"), algebra with different
+  // constants ("3x + 4"/"3x + 12"), scientific notation ("10^2"/"10^3"),
+  // "N and M" pairs ("34 and 43"/"34 and 37"), and unevaluated arithmetic
+  // ("5 x (8 - 10)"/"5 + 8 - 10") all silently collapsed to "just the
+  // leading number, no unit" and got flagged as duplicates of each other.
   const t = trailing.trim().toLowerCase()
+  if (t !== '' && !KNOWN_UNIT.test(t)) return null
   const unit = KNOWN_UNIT.test(t) ? t : ''
   return { value, unit }
 }
