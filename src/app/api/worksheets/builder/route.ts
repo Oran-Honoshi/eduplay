@@ -430,6 +430,28 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
     const heText = !isEnglish && q.prompt_he && (!isBilingual || isDistinctHe(q.prompt_he, q.prompt_en))
       ? `<div class="q-text-he"${hePromptIsBareEquation ? ' style="direction:ltr;text-align:left"' : ''}>${fractionsToHTML(q.prompt_he)}</div>` : ''
 
+    // 55 known rows (confirmed live) have prompt_en set but prompt_he null —
+    // in he_only mode that used to render neither enText (gated on
+    // !isHebrew) nor heText (gated on q.prompt_he), so the question printed
+    // with only its badge/options/hint and no prompt text at all. Fall back
+    // to the other language's prompt rather than nothing — same
+    // "honest partial info beats silence" principle the answer-key section
+    // below already applies (`isHebrew && q.prompt_he ? q.prompt_he :
+    // q.prompt_en`); this closes an inconsistency against that existing
+    // convention rather than introducing a new one. A prompt_en fallback
+    // needs the same bare-equation LTR override as heText above: the page
+    // is dir="rtl" in he_only mode, so a bare equation with no strong-
+    // directional character would suffer the identical UAX#9 reversal bug
+    // already fixed for prompt_he, just via a different field. The en_only
+    // side is symmetric future-proofing — 0 rows need it today (confirmed
+    // live: 0 rows have prompt_en null with prompt_he present).
+    const enPromptIsBareEquation = !!extractBareEquation(q.prompt_en)
+    const fallbackText = isHebrew && !q.prompt_he && q.prompt_en
+      ? `<div class="q-text-en"${enPromptIsBareEquation ? ' style="direction:ltr;text-align:left"' : ''}>${fractionsToHTML(q.prompt_en)}</div>`
+      : isEnglish && !q.prompt_en && q.prompt_he
+      ? `<div class="q-text-he">${fractionsToHTML(q.prompt_he)}</div>`
+      : ''
+
     // Same field the student actually sees drives the work-column equation
     // too — prompt_en is often just an internal gloss in he_only mode (see
     // languageInstruction in questions/generate/route.ts), not real content.
@@ -447,7 +469,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
             <span class="diff-badge diff-${q.difficulty}">${isHebrew ? translateDifficulty(q.difficulty) : q.difficulty}</span>
           </div>
           <div class="q-body">
-            ${enText}${heText}${visualHTML}${answerHTML}${hintHTML}
+            ${enText}${heText}${fallbackText}${visualHTML}${answerHTML}${hintHTML}
           </div>
         </div>
         <div class="q-workspace">
