@@ -511,10 +511,21 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
   }
 
   const dashStyles = `
+    /* Unconditional (not viewport-width-gated): the tab strip scrolls inside
+       its own flex-allotted space whenever the logo + tabs + right cluster
+       don't all fit — this covers browser zoom too, which shrinks available
+       CSS-pixel width the same way a narrow window does but doesn't
+       necessarily land below the 767px mobile cutover below. Without this,
+       there was a dead zone above 767px (e.g. a normal desktop window zoomed
+       to 125-175%) where the 10 non-shrinking tab buttons had nowhere to go
+       but overflow past the logo on the left and push under the right
+       cluster, since only the mobile breakpoint used to give this container
+       overflow handling. */
+    .dashboard-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; scrollbar-width: none; justify-content: flex-start !important; }
+    .dashboard-tabs::-webkit-scrollbar { display: none; }
+
     @media (max-width: 767px) {
       .dashboard-sidebar { display: none !important; }
-      .dashboard-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; scrollbar-width: none; justify-content: flex-start !important; }
-      .dashboard-tabs::-webkit-scrollbar { display: none; }
       .stat-grid { grid-template-columns: repeat(2,1fr) !important; }
       .child-grid { grid-template-columns: 1fr !important; }
       .worksheet-grid { grid-template-columns: 1fr !important; }
