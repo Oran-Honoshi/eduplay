@@ -8,8 +8,8 @@ export async function GET(req: NextRequest) {
   const grade   = searchParams.get('grade')
   const subject = searchParams.get('subject')
 
-  if (!grade || !subject) {
-    return NextResponse.json({ error: 'grade and subject required' }, { status: 400 })
+  if (!subject) {
+    return NextResponse.json({ error: 'subject required' }, { status: 400 })
   }
 
   try {
@@ -23,12 +23,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ topics: [] })
     }
 
-    const { data: topics, error } = await supabase
+    // `grade` is optional: omitting it returns every grade for the subject
+    // (used by the worksheet builder's cross-grade topic picker), ordering by
+    // grade first so callers that want the full list can group by grade
+    // without a client-side sort. Existing single-grade callers (curriculum
+    // explorer) are unaffected — they always pass grade explicitly.
+    let query = supabase
       .from('topics')
       .select('*')
       .eq('subject_id', subjectData.id)
-      .eq('grade', parseInt(grade))
-      .order('sort_order')
+    if (grade) query = query.eq('grade', parseInt(grade))
+    const { data: topics, error } = await query.order('grade').order('sort_order')
 
     if (error) throw error
 

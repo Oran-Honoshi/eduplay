@@ -3,11 +3,12 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   ArrowLeft, FileText, BookOpen, Calculator, Globe2,
-  ChevronRight, Check, Loader2, Sun, Moon,
-  ToggleLeft, ToggleRight, Sliders, Users, Zap, RefreshCw,
+  ChevronRight, Loader2, Sun, Moon,
+  ToggleLeft, ToggleRight, Sliders, Users, RefreshCw,
 } from 'lucide-react'
 import EduPlayLogo from '@/components/EduPlayLogo'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
+import TopicMultiSelect from '@/components/TopicMultiSelect'
 import { PARENT_COLORS, PARENT_FONTS, CHILD_AVATAR_COLORS } from '@/lib/parentTheme'
 
 // ─── Tokens ───────────────────────────────────────────────────
@@ -181,22 +182,32 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
 
   const T = dark ? D : L
 
-  useEffect(() => { loadTopics() }, [selectedChild, selectedSubject])
+  // Topics are fetched once per subject, across ALL grades — the picker
+  // browses/searches the full cross-grade list, unlike the old checklist
+  // which was hard-scoped to the selected child's own grade. Grade filtering
+  // now only drives the *default* selection, not what's fetchable at all.
+  useEffect(() => { loadTopics() }, [selectedSubject])
+
+  // Switching the child clears the current selection rather than carrying it
+  // over: a cross-grade topic pick is a judgment call about a specific
+  // child, and silently keeping it for a different child (different grade,
+  // different needs) could produce a nonsensical worksheet. Matches the
+  // pre-redesign reset-on-switch behavior, now scoped to the new child's
+  // own grade as the default instead of "everything for this grade".
+  useEffect(() => {
+    if (topics.length) setSel(topics.filter((t: any) => t.grade === selectedChild.grade).map((x: any) => x.id))
+  }, [selectedChild])
 
   async function loadTopics() {
-    setLT(true); setSel([])
+    setLT(true)
     try {
-      const res  = await fetch(`/api/topics?grade=${selectedChild.grade}&subject=${selectedSubject.slug}`)
+      const res  = await fetch(`/api/topics?subject=${selectedSubject.slug}`)
       const data = await res.json()
       const t    = data.topics || []
       setTopics(t)
-      setSel(t.map((x: any) => x.id))
-    } catch { setTopics([]) }
+      setSel(t.filter((x: any) => x.grade === selectedChild.grade).map((x: any) => x.id))
+    } catch { setTopics([]); setSel([]) }
     setLT(false)
-  }
-
-  function toggleTopic(id: string) {
-    setSel(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
   }
 
   async function generate() {
@@ -320,27 +331,16 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
 
             {/* Step 3 — Topics */}
             <div className="card" style={{ background: T.card, borderRadius: 20, padding: 20, border: `1px solid ${T.border}`, boxShadow: `0 2px 8px rgba(0,0,0,${dark?'0.15':'0.04'})` }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <StepBadge n={3} color={selSubj.color} />
-                  <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>
-                    Select Topics
-                    {!loadingTopics && topics.length > 0 && (
-                      <span style={{ fontSize: 12, color: T.textMuted, fontWeight: 600, marginLeft: 6 }}>
-                        ({selectedTopics.length}/{topics.length} selected)
-                      </span>
-                    )}
-                  </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <StepBadge n={3} color={selSubj.color} />
+                <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>
+                  Select Topics
+                  {!loadingTopics && topics.length > 0 && (
+                    <span style={{ fontSize: 12, color: T.textMuted, fontWeight: 600, marginLeft: 6 }}>
+                      ({selectedTopics.length}/{topics.length} selected · all grades)
+                    </span>
+                  )}
                 </div>
-                <button onClick={() => setSel(selectedTopics.length === topics.length ? [] : topics.map(t => t.id))}
-                  style={{
-                    padding: '5px 12px', borderRadius: 50,
-                    border: `1px solid ${T.border}`, background: T.inputBg,
-                    fontSize: 11, fontWeight: 700, cursor: 'pointer',
-                    color: T.textSec, fontFamily: 'inherit',
-                  }}>
-                  {selectedTopics.length === topics.length ? 'Deselect All' : 'Select All'}
-                </button>
               </div>
 
               {loadingTopics ? (
@@ -350,50 +350,16 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
                 </div>
               ) : topics.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: 24, color: T.textMuted, fontSize: 13 }}>
-                  No topics found for {selectedChild.name} in {selSubj.label} yet.
+                  No topics found for {selSubj.label} yet.
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {topics.map(topic => {
-                    const on = selectedTopics.includes(topic.id)
-                    return (
-                      <div key={topic.id} onClick={() => toggleTopic(topic.id)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 12,
-                          padding: '10px 12px',
-                          border: `1.5px solid ${on ? selSubj.color : T.border}`,
-                          borderRadius: 12, cursor: 'pointer',
-                          background: on ? `${selSubj.color}08` : T.inputBg,
-                          transition: 'all 0.12s ease',
-                        }}
-                      >
-                        {/* Checkbox */}
-                        <div style={{
-                          width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-                          border: `2px solid ${on ? selSubj.color : T.border}`,
-                          background: on ? selSubj.color : 'transparent',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          transition: 'all 0.12s',
-                        }}>
-                          {on && <Check size={11} color="white" strokeWidth={3} />}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>{topic.title_en}</div>
-                          {topic.title_he && (
-                            <div style={{ fontSize: 11, color: T.textMuted, direction: 'rtl', textAlign: 'right' }}>{topic.title_he}</div>
-                          )}
-                        </div>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: 3,
-                          fontSize: 11, fontWeight: 700, color: PARENT_COLORS.amberText, flexShrink: 0,
-                        }}>
-                          <Zap size={10} fill={PARENT_COLORS.amberText} color={PARENT_COLORS.amberText} />
-                          {topic.xp_reward}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                <TopicMultiSelect
+                  topics={topics}
+                  selectedIds={selectedTopics}
+                  onChange={setSel}
+                  accentColor={selSubj.color}
+                  theme={{ card: T.card, border: T.border, text: T.text, textMuted: T.textMuted, inputBg: T.inputBg }}
+                />
               )}
             </div>
 
