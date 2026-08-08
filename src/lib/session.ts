@@ -147,19 +147,38 @@ export async function requireParentOnlySession(): Promise<
 // childId: a child session must be that exact child; a parent session must have
 // that child in their family (via requireFamilyMatch). No session at all is 401;
 // a session that doesn't own this child is 403.
+//
+// FIXED 2026-08-08: this used to check `if (child) { ... } else if (parent) { ... }`
+// — a present child cookie fully short-circuited the parent branch, even when it
+// belonged to a DIFFERENT child than the one being requested and a valid,
+// family-matching parent session was also present. That contradicted this
+// function's own "either session" doc comment above (an OR of both credentials)
+// with an actual sequential-precedence implementation. Concretely reachable via
+// the dashboard's per-child "Open" preview link (mints a child session for
+// whichever child was previewed, 90-day TTL, never cleared) followed by using
+// the worksheet builder — still logged in as parent — to generate for a
+// *different* child: the stale child cookie for the previewed kid blocked
+// legitimate parent access to a sibling with a real 403. No logout button
+// exists anywhere in the product to clear a stale cookie once set (confirmed
+// zero UI callers of /api/session/logout), so this wasn't a rare edge case —
+// once triggered, every authorizeChildAccess-gated route for any *other* child
+// stayed broken until the child cookie's TTL expired. Now: a matching child
+// session still short-circuits (no DB call needed), but a mismatched or absent
+// child session falls through to the parent check instead of failing — status
+// is only 403 once neither credential establishes ownership.
 export async function authorizeChildAccess(
   childId: string
 ): Promise<{ ok: true } | { ok: false; status: 401 | 403 }> {
   const { child, parent } = await getSession()
 
-  if (child) {
-    return child.childId === childId ? { ok: true } : { ok: false, status: 403 }
-  }
+  if (!child && !parent) return { ok: false, status: 401 }
+
+  if (child && child.childId === childId) return { ok: true }
 
   if (parent) {
     const matches = await requireFamilyMatch(childId, parent.familyId)
-    return matches ? { ok: true } : { ok: false, status: 403 }
+    if (matches) return { ok: true }
   }
 
-  return { ok: false, status: 401 }
+  return { ok: false, status: 403 }
 }

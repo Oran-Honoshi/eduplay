@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { isBcryptHash } from '@/lib/passwordHash.mjs'
-import { createChildSession, createParentSession } from '@/lib/session'
+import { createChildSession, createParentSession, clearChildSession } from '@/lib/session'
 
 const FAMILY_ID = '11111111-1111-1111-1111-111111111111'
 
@@ -75,6 +75,16 @@ if (password) {
       await supabase.from('family_parents').update({ password: newHash }).eq('id', parent.id)
     })
     if (ok) {
+      // Clears any stale child-session cookie from a prior PIN login on this
+      // browser (shared-device families alternate child PIN / parent password
+      // logins) — otherwise it can outlive this new parent login by up to 90
+      // days and shadow it in authorizeChildAccess for any child that isn't
+      // the one the stale cookie belongs to. See the fix note on
+      // authorizeChildAccess itself (2026-08-08) for the matching precedence
+      // bug this closes half of; the other half (already-logged-in parent
+      // previewing a child link mid-session) has no login call to hook here,
+      // which is what that precedence fix covers.
+      clearChildSession()
       await createParentSession(parent.id, FAMILY_ID)
       return NextResponse.json({
         success: true,
@@ -98,6 +108,8 @@ if (password) {
       await supabase.from('families').update({ parent_password: newHash }).eq('id', FAMILY_ID)
     })
     if (ok) {
+      // See the individual-parent-password branch above for why this is here.
+      clearChildSession()
       await createParentSession(null, FAMILY_ID)
       return NextResponse.json({
         success: true,
