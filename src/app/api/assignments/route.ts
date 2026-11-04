@@ -117,13 +117,35 @@ export async function GET(req: NextRequest) {
   const supabase = createServiceRoleClient()
   const { data, error } = await supabase
     .from('assignments')
-    .select('id, title, created_at, assignment_items(status)')
+    .select('id, title, created_at, topic_id, created_by_parent_id, assignment_items(status, question_id)')
     .eq('child_id', childId)
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const assignments = (data || []).map((a: any) => {
+  // Kids used to see "Untitled assignment" for anything a parent didn't name.
+  // Resolve a readable label from the assignment's topic (or its first
+  // question's topic) and the name of the parent who sent it.
+  const rows = data || []
+  const firstQ = rows.map((a: any) => a.topic_id ? null : a.assignment_items?.[0]?.question_id).filter(Boolean)
+  const { data: qTopics } = firstQ.length
+    ? await supabase.from('questions').select('id, topic_id').in('id', firstQ)
+    : { data: [] as any[] }
+  const qTopicById = new Map((qTopics || []).map((q: any) => [q.id, q.topic_id]))
+  const topicIds = Array.from(new Set(rows.map((a: any) => a.topic_id || qTopicById.get(a.assignment_items?.[0]?.question_id)).filter(Boolean)))
+  const { data: topics } = topicIds.length
+    ? await supabase.from('topics').select('id, title_en, title_he, subjects(label_en, label_he)').in('id', topicIds)
+    : { data: [] as any[] }
+  const topicById = new Map((topics || []).map((t: any) => [t.id, t]))
+  const parentIds = Array.from(new Set(rows.map((a: any) => a.created_by_parent_id).filter(Boolean)))
+  const { data: parents } = parentIds.length
+    ? await supabase.from('family_parents').select('id, name').in('id', parentIds)
+    : { data: [] as any[] }
+  const parentById = new Map((parents || []).map((p: any) => [p.id, p.name]))
+
+  const assignments = rows.map((a: any) => {
+    const topic: any = topicById.get(a.topic_id || qTopicById.get(a.assignment_items?.[0]?.question_id))
+    const subject = Array.isArray(topic?.subjects) ? topic.subjects[0] : topic?.subjects
     const items = a.assignment_items || []
     const total = items.length
     const completed = items.filter(
@@ -132,6 +154,11 @@ export async function GET(req: NextRequest) {
     return {
       id: a.id,
       title: a.title,
+      topicTitleEn: topic?.title_en || null,
+      topicTitleHe: topic?.title_he || null,
+      subjectEn: subject?.label_en || null,
+      subjectHe: subject?.label_he || null,
+      fromParent: a.created_by_parent_id ? parentById.get(a.created_by_parent_id) || null : null,
       created_at: a.created_at,
       totalItems: total,
       completedItems: completed,

@@ -6,7 +6,7 @@ import FractionText from '@/components/FractionText'
 import HebrewMathText from '@/components/HebrewMathText'
 import { ThemeDecorations, CelebrationModal, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG } from '@/components/theme'
 import { getFontSize } from '@/lib/fontSize'
-import { isDistinctHe } from '@/lib/text'
+import { isDistinctHe, translateOptionLabel } from '@/lib/text'
 
 interface AssignmentItem {
   id: string
@@ -243,18 +243,18 @@ export default function AssignmentClient({ child, assignment, items: initialItem
                     width: '100%',
                   }}
                 >
-                  <span style={{ width:'22px', height:'22px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', flexShrink:0 }}>{opt.label}</span>
+                  <span style={{ width:'22px', height:'22px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', flexShrink:0 }}>{isHE ? translateOptionLabel(opt.label) : opt.label}</span>
                   <FractionText text={displayVal} />
                 </AnimatedBtn>
               )
             })}
           </div>
 
-          {showHint && (currentQ?.hint_en || currentQ?.hint_he) && (
+          {showHint && (currentQ?.hint_en || currentQ?.hint_he || isHE) && (
             <div style={{ background:`${T.accent2}15`, border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'10px 12px', marginBottom:'12px', direction:isHE?'rtl':'ltr' }}>
               <div style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2, marginBottom:'4px' }}>💡 {isHE ? 'רמז' : 'Hint'}</div>
               <p style={{ fontSize:'14px', color:T.text2, margin:0 }}>
-                <FractionText text={isHE ? (currentQ?.hint_he || currentQ?.hint_en) : currentQ?.hint_en} />
+                <FractionText text={isHE ? (currentQ?.hint_he || 'קראו את השאלה שוב לאט, ובדקו כל תשובה אחת-אחת.') : currentQ?.hint_en} />
               </p>
               <p style={{ fontSize:'12px', color:T.text2, margin:'6px 0 0', fontStyle:'italic' }}>
                 {isHE ? 'נסה שוב!' : 'Give it another try!'}
@@ -271,7 +271,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
                     ? (isHE ? 'נכון בפעם הראשונה!' : 'Correct — first try!')
                     : (isHE ? 'נכון!' : 'Correct!')}
                 </div>
-                {currentQ?.explanation_en && (
+                {currentQ?.explanation_en && !isHE && (
                   <div style={{ fontSize:'13px', color:T.text2, lineHeight:1.6 }}><FractionText text={currentQ.explanation_en} /></div>
                 )}
               </div>
@@ -285,7 +285,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
                 <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:'#E03030', marginBottom:'3px' }}>
                   {isHE ? 'התשובה הנכונה' : 'The correct answer'}: {correctOption?.label}. {isHE ? (correctOption?.value_he || correctOption?.value_en) : correctOption?.value_en}
                 </div>
-                {currentQ?.explanation_en && (
+                {currentQ?.explanation_en && !isHE && (
                   <div style={{ fontSize:'13px', color:T.text2, lineHeight:1.6 }}><FractionText text={currentQ.explanation_en} /></div>
                 )}
               </div>

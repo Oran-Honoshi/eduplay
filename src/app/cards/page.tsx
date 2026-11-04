@@ -2,11 +2,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Check, X, ChevronRight, Gift, Target, BookOpen, CreditCard, Globe, MapPin, PartyPopper, Zap, Trophy } from 'lucide-react'
 import WorldMapComponent from '@/components/WorldMap'
-import { KidNavBar } from '@/components/theme'
+import { KidNavBar, THEME_CONFIG } from '@/components/theme'
+import { readKidLang, type KidLang } from '@/lib/kidPrefs'
 
 interface Phase {
   id: string; slug: string; name_en: string; name_he: string
-  description_en: string; sort_order: number
+  description_en: string; description_he?: string; sort_order: number
   color: string; emoji: string
 }
 interface Card {
@@ -52,14 +53,14 @@ function getCardImg(card: Card, w=400) {
 
 
 // ── In-progress topic step bar ───────────────────────────────
-function InProgressBar({ topic }: { topic: InProgressTopic | null }) {
+function InProgressBar({ topic, he }: { topic: InProgressTopic | null; he: boolean }) {
   if (!topic) {
     return (
       <div style={{background:'white',borderRadius:14,padding:'16px',border:'1px solid rgba(15,118,110,.14)',display:'flex',alignItems:'center',gap:12}}>
         <div style={{width:36,height:36,borderRadius:10,background:'#F7F5F0',display:'flex',alignItems:'center',justifyContent:'center'}}><Target size={18} color="#9aa6a3"/></div>
         <div>
-          <div style={{fontWeight:800,fontSize:14,color:'#111827',fontFamily:'"Baloo 2",sans-serif'}}>No lesson in progress</div>
-          <div style={{fontSize:11,color:'#9CA3AF'}}>Start a lesson to see your step progress here!</div>
+          <div style={{fontWeight:800,fontSize:14,color:'#111827',fontFamily:'"Baloo 2",sans-serif'}}>{he ? 'אין שיעור פתוח כרגע' : 'No lesson in progress'}</div>
+          <div style={{fontSize:11,color:'#9CA3AF'}}>{he ? 'התחילו שיעור כדי לראות כאן את ההתקדמות!' : 'Start a lesson to see your step progress here!'}</div>
         </div>
       </div>
     )
@@ -71,8 +72,8 @@ function InProgressBar({ topic }: { topic: InProgressTopic | null }) {
         <div style={{display:'flex',alignItems:'center',gap:10}}>
           <div style={{width:36,height:36,borderRadius:10,background:'linear-gradient(135deg,#E0A927,#B7862F)',display:'flex',alignItems:'center',justifyContent:'center'}}><BookOpen size={18} color="white"/></div>
           <div>
-            <div style={{fontWeight:800,fontSize:15,color:'#111827',fontFamily:'"Baloo 2",sans-serif'}}>{topic.topic?.title_en}</div>
-            <div style={{fontSize:11,color:'#9CA3AF'}}>{topic.steps_completed}/{topic.steps_total || 5} steps done</div>
+            <div style={{fontWeight:800,fontSize:15,color:'#111827',fontFamily:'"Baloo 2",sans-serif'}}>{he ? (topic.topic?.title_he || topic.topic?.title_en) : topic.topic?.title_en}</div>
+            <div style={{fontSize:11,color:'#9CA3AF'}}>{topic.steps_completed}/{topic.steps_total || 5} {he ? 'שלבים' : 'steps done'}</div>
           </div>
         </div>
         <div style={{fontSize:13,fontWeight:800,color:'#B7862F'}}>{pct}%</div>
@@ -85,8 +86,8 @@ function InProgressBar({ topic }: { topic: InProgressTopic | null }) {
 }
 
 // ── Animal Card ───────────────────────────────────────────────
-function AnimalCard({ card, owned, canCollect, onCollect, onOpen }: {
-  card: Card; owned: boolean; canCollect: boolean
+function AnimalCard({ card, owned, canCollect, onCollect, onOpen, he }: {
+  card: Card; owned: boolean; canCollect: boolean; he: boolean
   onCollect: ()=>void; onOpen: ()=>void
 }) {
   const r = RARITY[card.rarity]??RARITY.common
@@ -127,24 +128,24 @@ function AnimalCard({ card, owned, canCollect, onCollect, onOpen }: {
       </div>
       <div style={{padding:'10px 11px 11px'}}>
         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:4}}>
-          <div style={{fontWeight:700,fontSize:13,color:'#111827',lineHeight:1.2,fontFamily:'"Baloo 2",sans-serif'}}>{card.name_en}</div>
+          <div style={{fontWeight:700,fontSize:13,color:'#111827',lineHeight:1.2,fontFamily:'"Baloo 2",sans-serif'}}>{he ? (card.name_he || card.name_en) : card.name_en}</div>
           <span style={{fontSize:9,fontWeight:700,padding:'2px 6px',borderRadius:10,background:r.bg,color:r.text,border:`0.5px solid ${r.color}40`,marginLeft:4,flexShrink:0}}>{r.label}</span>
         </div>
-        <div style={{fontSize:11,color:'#6B7280',marginBottom:7,display:'flex',alignItems:'center',gap:3}}><MapPin size={10}/> {owned?card.location_en:'???'}</div>
+        <div style={{fontSize:11,color:'#6B7280',marginBottom:7,display:'flex',alignItems:'center',gap:3}}><MapPin size={10}/> {owned?(he?(card.location_he||card.location_en):card.location_en):'???'}</div>
         <div style={{fontSize:12,color:'#374151',lineHeight:1.5,marginBottom:9,minHeight:36}}>
-          {owned?card.fact_en:'Collect this card to discover this animal!'}
+          {owned?(he?(card.fact_he||card.fact_en):card.fact_en):(he?'אספו את הכרטיס כדי לגלות את החיה!':'Collect this card to discover this animal!')}
         </div>
         {!owned&&canCollect&&(
           <button onClick={e=>{e.stopPropagation();onCollect()}}
             style={{width:'100%',padding:8,borderRadius:8,border:'none',cursor:'pointer',
               background:'linear-gradient(135deg,#E0A927,#B7862F)',color:'white',fontWeight:700,fontSize:12,
               display:'flex',alignItems:'center',justifyContent:'center',gap:5}}>
-            <Gift size={12}/> Collect Card (<CreditCard size={11}/> 1)
+            <Gift size={12}/> {he ? 'אספו כרטיס' : 'Collect Card'} (<CreditCard size={11}/> 1)
           </button>
         )}
         {!owned&&!canCollect&&(
           <div style={{width:'100%',padding:7,borderRadius:8,background:'#F9FAFB',color:'#9CA3AF',fontWeight:600,fontSize:11,textAlign:'center',display:'flex',alignItems:'center',justifyContent:'center',gap:4}}>
-            Complete lessons to earn <CreditCard size={12}/>
+            {he ? 'סיימו שיעורים כדי להרוויח' : 'Complete lessons to earn'} <CreditCard size={12}/>
           </div>
         )}
       </div>
@@ -153,10 +154,10 @@ function AnimalCard({ card, owned, canCollect, onCollect, onOpen }: {
 }
 
 // ── Card Detail Modal ─────────────────────────────────────────
-function CardModal({ card, onClose }: { card: Card; onClose: ()=>void }) {
+function CardModal({ card, onClose, initialHe = false }: { card: Card; onClose: ()=>void; initialHe?: boolean }) {
   const r = RARITY[card.rarity]??RARITY.common
   const [imgErr,setImgErr] = useState(false)
-  const [lang,setLang] = useState<'en'|'he'>('en')
+  const [lang,setLang] = useState<'en'|'he'>(initialHe ? 'he' : 'en')
   const he = lang === 'he'
   const name     = he ? (card.name_he     || card.name_en)     : card.name_en
   const location = he ? (card.location_he || card.location_en) : card.location_en
@@ -231,6 +232,12 @@ export default function CardsPage() {
 
   const childId = typeof window!=='undefined'?new URLSearchParams(window.location.search).get('childId')||'':''
   const token   = typeof window!=='undefined'?new URLSearchParams(window.location.search).get('token')||'':''
+  const urlTheme = typeof window!=='undefined'?new URLSearchParams(window.location.search).get('theme')||'':''
+  // Language + theme follow the child from Home (they used to reset to
+  // English and a fixed light look here).
+  const [lang,setLang] = useState<KidLang>('bilingual')
+  useEffect(()=>{ setLang(readKidLang(childId)) },[childId])
+  const he = lang === 'he_only'
 
   const showToast = useCallback((msg:string)=>{ setToast(msg); setTimeout(()=>setToast(null),3500) },[])
 
@@ -262,14 +269,14 @@ export default function CardsPage() {
     if(data.success){
       setOwnedIds(prev=>new Set([...prev,card.id]))
       setChild(prev=>prev?{...prev,card_tokens:data.newTokens}:prev)
-      showToast(`${card.name_en} added to your collection!`)
+      showToast(he ? `${card.name_he || card.name_en} נוסף/ה לאוסף שלך!` : `${card.name_en} added to your collection!`)
     } else { showToast(data.error||'Could not collect card') }
     setCollecting(false)
   }
 
   if(loading) return (
     <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'"Nunito",sans-serif',background:'#F7F5F0'}}>
-      <div style={{textAlign:'center',color:'#6B7280'}}><div style={{marginBottom:12,display:'flex',justifyContent:'center'}}><Globe size={40}/></div><div style={{fontWeight:700,fontFamily:'"Baloo 2",sans-serif'}}>Loading collection...</div></div>
+      <div style={{textAlign:'center',color:'#6B7280'}}><div style={{marginBottom:12,display:'flex',justifyContent:'center'}}><Globe size={40}/></div><div style={{fontWeight:700,fontFamily:'"Baloo 2",sans-serif'}}>{he ? 'טוען את האוסף...' : 'Loading collection...'}</div></div>
     </div>
   )
 
@@ -278,32 +285,34 @@ export default function CardsPage() {
   const phaseOwned   = phaseCards.filter(c=>ownedIds.has(c.id)).length
   const phaseComplete= phaseCards.length>0&&phaseCards.every(c=>ownedIds.has(c.id))
   const canCollect   = (child?.card_tokens??0)>0
+  const themeKey = urlTheme || child?.theme || 'plain'
+  const T = THEME_CONFIG[themeKey] || THEME_CONFIG.plain
   const completedRegions = phases.filter(p=>{const pc=cards.filter(c=>c.phase_id===p.id);return pc.length>0&&pc.every(c=>ownedIds.has(c.id))}).length
 
   return (
-    <div style={{minHeight:'100vh',background:'#F7F5F0',fontFamily:'"Nunito",sans-serif'}}>
+    <div dir={he?'rtl':'ltr'} style={{minHeight:'100vh',background:T.bg,fontFamily:'"Nunito",sans-serif'}}>
       {toast&&<div style={{position:'fixed',bottom:84,right:20,zIndex:300,padding:'12px 18px',borderRadius:14,background:'#F0FDF4',border:'1px solid #86EFAC',color:'#166534',fontWeight:700,fontSize:13,boxShadow:'0 8px 24px rgba(0,0,0,0.1)',display:'flex',alignItems:'center',gap:6}}><PartyPopper size={15}/> {toast}</div>}
-      {openCard&&<CardModal card={openCard} onClose={()=>setOpenCard(null)}/>}
+      {openCard&&<CardModal card={openCard} onClose={()=>setOpenCard(null)} initialHe={he}/>}
 
       {/* Header */}
-      <header style={{background:'white',borderBottom:'1px solid rgba(15,118,110,.14)',padding:'0 20px',height:58,display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:100,boxShadow:'0 2px 12px rgba(0,0,0,0.04)'}}>
+      <header style={{background:T.panel,borderBottom:`2px solid ${T.border}`,padding:'0 20px',height:58,display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:100,boxShadow:'0 2px 12px rgba(0,0,0,0.04)'}}>
         <div style={{display:'flex',alignItems:'center',gap:12}}>
           <div>
-            <div style={{fontWeight:800,fontSize:17,color:'#111827',letterSpacing:'-0.02em',fontFamily:'"Baloo 2",sans-serif'}}>Animal Collection</div>
-            <div style={{fontSize:11,color:'#9aa6a3',fontWeight:600}}>{ownedIds.size}/{cards.length} cards · {completedRegions} region{completedRegions!==1?'s':''} complete</div>
+            <div style={{fontWeight:800,fontSize:17,color:T.text,letterSpacing:'-0.02em',fontFamily:T.fontHead}}>{he ? 'אוסף החיות' : 'Animal Collection'}</div>
+            <div style={{fontSize:11,color:'#9aa6a3',fontWeight:600}}>{he ? `${ownedIds.size}/${cards.length} כרטיסים · ${completedRegions} אזורים הושלמו` : `${ownedIds.size}/${cards.length} cards · ${completedRegions} region${completedRegions!==1?'s':''} complete`}</div>
           </div>
         </div>
         {/* Token bank pill */}
         <div style={{display:'flex',alignItems:'center',gap:6,padding:'6px 16px',borderRadius:50,background:'#FFF3D6',border:'1.5px solid #E0A92750'}}>
           <CreditCard size={16} color="#B7862F"/>
           <span style={{fontWeight:900,fontSize:20,color:'#B7862F'}}>{child?.card_tokens??0}</span>
-          <span style={{fontSize:11,fontWeight:700,color:'#B7862F'}}>cards</span>
+          <span style={{fontSize:11,fontWeight:700,color:'#B7862F'}}>{he ? 'כרטיסים' : 'cards'}</span>
         </div>
       </header>
 
       <div style={{padding:'16px 20px 84px',maxWidth:900,margin:'0 auto',display:'flex',flexDirection:'column',gap:16}}>
         {/* Real in-progress-topic step progress */}
-        <InProgressBar topic={inProgress}/>
+        <InProgressBar topic={inProgress} he={he}/>
 
         {/* World map — real geographic map */}
         <WorldMapComponent
@@ -328,7 +337,7 @@ export default function CardsPage() {
                   background:activePhase===phase.slug?`${phase.color}15`:'white',
                   color:activePhase===phase.slug?phase.color:'#374151',fontWeight:700,fontSize:12,cursor:'pointer',flexShrink:0}}>
                 <span style={{fontSize:15}}>{phase.emoji}</span>
-                {phase.name_en}
+                {he ? (phase.name_he || phase.name_en) : phase.name_en}
                 <span style={{fontSize:11,fontWeight:600,color:done?'#10B981':activePhase===phase.slug?phase.color:'#9CA3AF',display:'inline-flex',alignItems:'center'}}>
                   {done?<Check size={11}/>:`${po}/${pc.length}`}
                 </span>
@@ -342,14 +351,14 @@ export default function CardsPage() {
           <div style={{display:'flex',alignItems:'center',gap:14,background:`${currentPhase.color}10`,borderRadius:14,padding:'14px 18px',border:`1px solid ${currentPhase.color}25`}}>
             <div style={{fontSize:36}}>{currentPhase.emoji}</div>
             <div>
-              <div style={{fontWeight:800,fontSize:18,color:'#111827',marginBottom:2,fontFamily:'"Baloo 2",sans-serif'}}>{currentPhase.name_en}</div>
-              <div style={{fontSize:13,color:'#6B7280'}}>{currentPhase.description_en}</div>
+              <div style={{fontWeight:800,fontSize:18,color:'#111827',marginBottom:2,fontFamily:'"Baloo 2",sans-serif'}}>{he ? (currentPhase.name_he || currentPhase.name_en) : currentPhase.name_en}</div>
+              <div style={{fontSize:13,color:'#6B7280'}}>{he ? (currentPhase.description_he || currentPhase.description_en) : currentPhase.description_en}</div>
             </div>
             <div style={{marginLeft:'auto',textAlign:'right',flexShrink:0}}>
               <div style={{fontWeight:800,fontSize:20,color:currentPhase.color}}>
                 {phaseOwned}<span style={{fontSize:14,color:'#9CA3AF'}}>/{phaseCards.length}</span>
               </div>
-              <div style={{fontSize:11,color:'#9CA3AF',fontWeight:600}}>collected</div>
+              <div style={{fontSize:11,color:'#9CA3AF',fontWeight:600}}>{he ? 'נאספו' : 'collected'}</div>
             </div>
           </div>
         )}
@@ -361,7 +370,7 @@ export default function CardsPage() {
               owned={ownedIds.has(card.id)}
               canCollect={canCollect&&!ownedIds.has(card.id)}
               onCollect={()=>collectCard(card)}
-              onOpen={()=>setOpenCard(card)}/>
+              onOpen={()=>setOpenCard(card)} he={he}/>
           ))}
         </div>
 
@@ -369,19 +378,19 @@ export default function CardsPage() {
         {currentPhase&&phaseComplete&&(
           <div style={{textAlign:'center',padding:20,background:'linear-gradient(135deg,#ECFDF5,#D1FAE5)',borderRadius:16,border:'1px solid #6EE7B7'}}>
             <div style={{marginBottom:6,display:'flex',justifyContent:'center'}}><Trophy size={32} color="#065F46"/></div>
-            <div style={{fontWeight:800,fontSize:16,color:'#065F46',marginBottom:4,fontFamily:'"Baloo 2",sans-serif'}}>{currentPhase.name_en} complete!</div>
-            <div style={{fontSize:13,color:'#047857',marginBottom:12}}>All {phaseCards.length} animals collected — this region stays lit on the map forever!</div>
+            <div style={{fontWeight:800,fontSize:16,color:'#065F46',marginBottom:4,fontFamily:'"Baloo 2",sans-serif'}}>{he ? `${currentPhase.name_he || currentPhase.name_en} הושלם!` : `${currentPhase.name_en} complete!`}</div>
+            <div style={{fontSize:13,color:'#047857',marginBottom:12}}>{he ? `כל ${phaseCards.length} החיות נאספו — האזור הזה יישאר מואר במפה לתמיד!` : `All ${phaseCards.length} animals collected — this region stays lit on the map forever!`}</div>
             {phases.find(p=>p.sort_order===currentPhase.sort_order+1)&&(
               <button onClick={()=>{const next=phases.find(p=>p.sort_order===currentPhase.sort_order+1);if(next)setActive(next.slug)}}
                 style={{padding:'9px 20px',borderRadius:50,background:'#10B981',border:'none',color:'white',fontWeight:700,fontSize:13,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:6}}>
-                Next region <ChevronRight size={14}/>
+                {he ? 'לאזור הבא' : 'Next region'} <ChevronRight size={14}/>
               </button>
             )}
           </div>
         )}
       </div>
 
-      <KidNavBar theme={child?.theme || 'plain'} active="rewards" childId={childId} token={token}/>
+      <KidNavBar theme={themeKey} active="rewards" childId={childId} token={token} lang={lang}/>
     </div>
   )
 }
