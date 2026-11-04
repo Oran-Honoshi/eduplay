@@ -112,7 +112,7 @@ function AssignmentCard({ a, T, isHE, onOpen, kind }: {
         </div>
         {(a.subjectEn || a.fromParent) && (
           <div style={{ fontSize:'11px', color:T.text2, marginBottom:'6px' }}>
-            {[isHE ? (a.subjectHe || a.subjectEn) : a.subjectEn, a.fromParent ? (isHE ? `מ${a.fromParent}` : `from ${a.fromParent}`) : null].filter(Boolean).join(' · ')}
+            {[isHE ? (a.subjectHe || a.subjectEn) : a.subjectEn, a.fromParent ? (isHE ? `מאת ${a.fromParent}` : `from ${a.fromParent}`) : null].filter(Boolean).join(' · ')}
           </div>
         )}
         {kind === 'pending' ? (
