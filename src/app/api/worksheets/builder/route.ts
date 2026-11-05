@@ -477,7 +477,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
       <div class="question">
         <div class="q-left">
           <div class="q-header">
-            <div class="q-number">Q${i + 1}</div>
+            <div class="q-number">${isHebrew ? "" : "Q"}${i + 1}</div>
             ${topicBadge}
             <span class="diff-badge diff-${q.difficulty}">${isHebrew ? translateDifficulty(q.difficulty) : q.difficulty}</span>
           </div>
@@ -500,7 +500,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
       <div class="answer-key-title">✅ ${isHebrew ? 'תשובות' : 'Answer Key'} — ${typeEmoji} ${typeLabel}</div>
       <div class="key-grid">
         ${questions.map((q: any, i: number) => {
-          return `<div class="key-item"><div class="key-q">Q${i + 1}</div><div class="key-a">${fractionsToHTML(q.correct_answer)}</div></div>`
+          return `<div class="key-item"><div class="key-q">${isHebrew ? "" : "Q"}${i + 1}</div><div class="key-a">${fractionsToHTML(q.correct_answer)}</div></div>`
         }).join('')}
       </div>
     </div>` : ''

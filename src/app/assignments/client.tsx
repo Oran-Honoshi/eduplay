@@ -2,10 +2,16 @@
 import { useState, useEffect } from 'react'
 import { ClipboardList } from 'lucide-react'
 import { THEME_CONFIG, KidNavBar, ThemeDecorations } from '@/components/theme'
+import { readKidLang, type KidLang } from '@/lib/kidPrefs'
 
 interface AssignmentSummary {
   id: string
   title: string | null
+  topicTitleEn?: string | null
+  topicTitleHe?: string | null
+  subjectEn?: string | null
+  subjectHe?: string | null
+  fromParent?: string | null
   created_at: string
   totalItems: number
   completedItems: number
@@ -17,7 +23,8 @@ interface AssignmentSummary {
 export default function AssignmentsClient({ child, token }: { child: any, token: string }) {
   const theme = child.theme || 'plain'
   const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
-  const langMode = child.lang_screen || 'bilingual'
+  const [langMode, setLangMode] = useState<KidLang>((child.lang_screen || 'bilingual') as KidLang)
+  useEffect(() => { setLangMode(readKidLang(child.id, child.lang_screen)) }, [child.id, child.lang_screen])
   const isHE = langMode === 'he_only'
 
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([])
@@ -88,7 +95,7 @@ export default function AssignmentsClient({ child, token }: { child: any, token:
         )}
       </div>
 
-      <KidNavBar theme={theme} active="assignments" childId={child.id} token={token}/>
+      <KidNavBar theme={theme} active="assignments" childId={child.id} token={token} lang={langMode}/>
     </div>
   )
 }
@@ -100,7 +107,14 @@ function AssignmentCard({ a, T, isHE, onOpen, kind }: {
   return (
     <div onClick={onOpen} style={{ background:T.panel, border:`2px solid ${kind === 'pending' ? T.accent1 : T.border}`, borderRadius:T.radius, padding:'14px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:'12px' }}>
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontWeight:800, fontSize:'14px', color:T.text, marginBottom:'4px' }}>{a.title || (isHE ? 'מטלה ללא שם' : 'Untitled assignment')}</div>
+        <div style={{ fontWeight:800, fontSize:'14px', color:T.text, marginBottom:'2px' }}>
+          {a.title || (isHE ? (a.topicTitleHe || a.topicTitleEn) : a.topicTitleEn) || (isHE ? 'משימה' : 'Practice')}
+        </div>
+        {(a.subjectEn || a.fromParent) && (
+          <div style={{ fontSize:'11px', color:T.text2, marginBottom:'6px' }}>
+            {[isHE ? (a.subjectHe || a.subjectEn) : a.subjectEn, a.fromParent ? (isHE ? `מאת ${a.fromParent}` : `from ${a.fromParent}`) : null].filter(Boolean).join(' · ')}
+          </div>
+        )}
         {kind === 'pending' ? (
           <div style={{ height:'6px', background:'rgba(0,0,0,0.08)', borderRadius:'50px', overflow:'hidden', marginBottom:'4px' }}>
             <div style={{ height:'100%', width:`${pct}%`, background:T.accent1, borderRadius:'50px' }}/>

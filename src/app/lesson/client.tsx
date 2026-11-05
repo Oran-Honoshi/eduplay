@@ -5,7 +5,8 @@ import FractionText from '@/components/FractionText'
 import HebrewMathText from '@/components/HebrewMathText'
 import { ThemeDecorations, CelebrationModal, KidOverlay, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG as SHARED_THEMES } from '@/components/theme'
 import { FONT_SIZES } from '@/lib/fontSize'
-import { isDistinctHe } from '@/lib/text'
+import { isDistinctHe, translateOptionLabel } from '@/lib/text'
+import { saveKidLang, type KidLang } from '@/lib/kidPrefs'
 
 
 function Fraction({ n, d, size = 20 }: { n: any; d: any; size?: number }) {
@@ -26,6 +27,12 @@ const PIP_LINES: any = {
   princesses: 'You are doing amazingly! Keep shining! ✨',
   plain:      'Great work! Keep going! 🌟',
   sports:     'Great hustle! Keep pushing! 🔥',
+}
+const PIP_LINES_HE: any = {
+  minecraft:  'ממשיכים! כל תשובה מחזקת אותך! 💪',
+  princesses: 'את/ה מדהים/ה! ממשיכים לזרוח! ✨',
+  plain:      'עבודה יפה! ממשיכים! 🌟',
+  sports:     'מאמץ אדיר! ממשיכים לדחוף! 🔥',
 }
 
 
@@ -484,7 +491,7 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
               return (
                 <button className="answer-btn" key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
                   style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'10px 14px', cursor:answered?'default':'pointer', fontSize:'16px', fontWeight:700, display:'flex', alignItems:'center', gap:'10px', color:T.text, textAlign:isRTL?'right':'left', direction:isRTL?'rtl':'ltr', fontFamily:isRTL?'"Times New Roman",serif':'"Nunito",sans-serif' }}>
-                  <span style={{ width:'22px', height:'22px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'"Noto Serif Hebrew","Times New Roman",serif', fontSize:'14px', flexShrink:0 }}>{opt.label}</span>
+                  <span style={{ width:'22px', height:'22px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'"Noto Serif Hebrew","Times New Roman",serif', fontSize:'14px', flexShrink:0 }}>{isHE ? translateOptionLabel(opt.label) : opt.label}</span>
                   <FractionText text={displayVal} />
                 </button>
               )
@@ -536,10 +543,12 @@ export default function LessonClient({ child, topic, questions, passage, passage
   const isBonus   = urlParams?.get('bonus') === 'true'
 
   const T   = SHARED_THEMES[theme] || SHARED_THEMES.plain
-  const pipLine = PIP_LINES[theme] || PIP_LINES.plain
   const subjSlug  = topic?.subject?.slug || 'math'
   const subjColor = SUBJECT_COLORS[subjSlug] || T.accent1
   const isHE      = langMode === 'he_only'
+  const pipLine = (isHE ? PIP_LINES_HE : PIP_LINES)[theme] || (isHE ? PIP_LINES_HE : PIP_LINES).plain
+  // Remember the language the child is using so Home / Rewards / Assignments open in it too.
+  useEffect(() => { if (child?.id) saveKidLang(langMode as KidLang, child.id) }, [langMode, child?.id])
 
   const progressMap: any = {}
   progress.forEach((p: any) => { progressMap[p.topic_id] = p })
@@ -588,7 +597,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
     learnThis:   isHE ? 'למד זאת'                     : 'LEARN THIS',
     practice:    isHE ? 'שאלת תרגול'                   : 'PRACTICE QUESTION',
     hint:        isHE ? 'רמז'                          : 'HINT',
-    correct:     isHE ? '!כל הכבוד'                   : 'CORRECT!',
+    correct:     isHE ? 'כל הכבוד!'                   : 'CORRECT!',
     notQuite:    isHE ? 'לא בדיוק!'                    : 'NOT QUITE!',
     next:        isHE ? 'הבא ▶'                        : 'NEXT ▶',
     back:        isHE ? '◀ חזור'                       : '◀ BACK',
@@ -659,9 +668,9 @@ export default function LessonClient({ child, topic, questions, passage, passage
     setFeedback({
       correct,
       explanation: correct ? (currentQ.explanation_en || 'Correct! Well done!') : (currentQ.hint_en || currentQ.explanation_en || 'Not quite — try the hint!'),
-      explanation_he: correct ? (currentQ.explanation_he || currentQ.explanation_en || '') : (currentQ.hint_he || currentQ.hint_en || ''),
+      explanation_he: correct ? (currentQ.explanation_he || 'כל הכבוד! תשובה נכונה.') : (currentQ.hint_he || 'לא נורא! התשובה הנכונה מסומנת בירוק — קראו אותה ונסו להבין למה.'),
     })
-    setPip(correct ? '🎉 Excellent! You nailed it!' : "💡 Don't give up!")
+    setPip(correct ? (isHE ? '🎉 מצוין! הצלחת!' : '🎉 Excellent! You nailed it!') : (isHE ? '💡 לא מוותרים!' : "💡 Don't give up!"))
     // FIXED (2026-07-28): the /api/progress POST used to be nested inside the
     // `if (correct)` block below, so a wrong answer never reached the server at all — no
     // question_attempts row, no child_topic_progress update. Confirmed live against the DB
@@ -1016,7 +1025,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                         return (
                           <button className="answer-btn" key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
                             style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'11px 12px', cursor:answered?'default':'pointer', fontFamily:isRTLAnswer?'"Times New Roman",serif':'Georgia,serif', fontSize:`${FS?.question || 14}px`, fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>
-                            <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'12px', flexShrink:0 }}>{opt.label}</span>
+                            <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'12px', flexShrink:0 }}>{isHE ? translateOptionLabel(opt.label) : opt.label}</span>
                             <FractionText text={displayVal} />
                           </button>
                         )
@@ -1024,10 +1033,10 @@ export default function LessonClient({ child, topic, questions, passage, passage
                     </div>
                   )}
 
-                  {hintVisible && (currentQ.hint_en || currentQ.hint_he) && (
+                  {hintVisible && (currentQ.hint_en || currentQ.hint_he || isHE) && (
                     <div style={{ background:'rgba(255,215,0,0.07)', border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'10px 12px', marginBottom:'10px', direction:isHE?'rtl':'ltr' }}>
                       <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent2, marginBottom:'4px' }}>💡 {UI.hint}</div>
-                      <p style={{ fontSize:'16px', color:T.text2, margin:0 }}><FractionText text={isHE ? (currentQ.hint_he || currentQ.hint_en) : currentQ.hint_en} /></p>
+                      <p style={{ fontSize:'16px', color:T.text2, margin:0 }}><FractionText text={isHE ? (currentQ.hint_he || 'קראו את השאלה שוב לאט, ובדקו כל תשובה אחת-אחת.') : currentQ.hint_en} /></p>
                     </div>
                   )}
 
@@ -1066,7 +1075,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
           <ThemePanel theme={theme} T={T} borderColor={T.accent2} style={{ padding:'14px', textAlign:'center' }}>
             <span style={{ fontSize:'56px', display:'block' }}>{T.mascot}</span>
             <div style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2, margin:'6px 0 3px' }}>{UI.pipSays}</div>
-            <div style={{ background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, padding:'8px', fontSize:'14px', color:T.text2, lineHeight:1.5, textAlign:'left' }}>{pipText}</div>
+            <div style={{ background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, padding:'8px', fontSize:'14px', color:T.text2, lineHeight:1.5, textAlign:'start' }} dir={isHE ? 'rtl' : 'ltr'}>{pipText}</div>
           </ThemePanel>
 
           {/* Subject switcher */}

@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Heart, Star, Flame, Play, BookOpen, Palette, Globe, ChevronRight, ChevronLeft } from 'lucide-react'
 import { THEME_CONFIG, KidNavBar, KidOverlay } from '@/components/theme'
+import { readKidLang, saveKidLang, kidLabel, type KidLang } from '@/lib/kidPrefs'
 
 const SUBJECT_COLORS: any = {
   math:    '#4A7FD4',
@@ -68,9 +69,18 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
   }
 
   const [selectedSubject, setSelectedSubject] = useState<string|null>(null)
-  const [langMode, setLangMode]               = useState(child.lang_screen || 'bilingual')
+  const [langMode, setLangModeState]          = useState<KidLang>((child.lang_screen || 'bilingual') as KidLang)
+  // Read the device-saved choice after mount (not in the initializer) so the
+  // server-rendered HTML and the first client render match.
+  useEffect(() => { setLangModeState(readKidLang(child.id, child.lang_screen)) }, [child.id, child.lang_screen])
+  function setLangMode(l: string) { setLangModeState(l as KidLang); saveKidLang(l as KidLang, child.id) }
   const isHE = langMode === 'he_only'
-  const [page, setPage]                       = useState(0)
+  // Open the booklet on the topic the child was last working on — this used to
+  // be a separate "continue where you left off" banner competing with the card.
+  const [page, setPage]                       = useState(() => {
+    const i = lastTopic ? allTopics.findIndex((t: any) => t.id === lastTopic.id) : -1
+    return i >= 0 ? i : 0
+  })
   const dragStartX                            = useRef<number|null>(null)
   const [progressMap, setProgressMap]         = useState<any>(() => {
     const map: any = {}
@@ -249,41 +259,6 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
           </div>
         )}
 
-        {/* Resume banner */}
-        {lastTopic && (
-          <div style={{ background:`linear-gradient(135deg,${T.accent1},${T.accent2})`, borderRadius:T.radius, padding:'16px 20px', marginBottom:'20px', display:'flex', alignItems:'center', gap:'14px', boxShadow:`0 8px 24px ${T.accent1}30`, position:'relative', overflow:'hidden' }}>
-            <div style={{ position:'absolute', top:'-20px', right:'-20px', width:'120px', height:'120px', borderRadius:'50%', background:'rgba(255,255,255,0.07)', pointerEvents:'none' }}/>
-            <div style={{ width:'42px', height:'42px', borderRadius:T.radius, background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <Play size={20} fill="white" color="white"/>
-            </div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:'10px', fontWeight:800, color:'rgba(255,255,255,0.8)', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:'3px' }}>CONTINUE WHERE YOU LEFT OFF</div>
-              <div style={{ fontWeight:900, fontSize:'15px', color:'white', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{lastTopic.title_en}</div>
-              <div style={{ fontSize:'12px', color:'rgba(255,255,255,0.7)', marginTop:'2px' }}>{lastTopic.subject?.label_en}</div>
-            </div>
-            <button onClick={() => startLesson(lastTopic.id)}
-              style={{ display:'flex', alignItems:'center', gap:'6px', padding:'10px 18px', background:'white', border:'none', borderRadius:'50px', fontWeight:900, fontSize:'13px', color:T.accent1, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
-              Continue <ChevronRight size={14}/>
-            </button>
-          </div>
-        )}
-
-        {/* Stats */}
-        <div className="portal-stats" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'10px', marginBottom:'20px' }}>
-          {[
-            { label:'Completed',  value:completedDisplay,         icon:'✅', color:'#27AE60' },
-            { label:'In Progress',value:inProgressDisplay,        icon:'▶️', color:T.accent1  },
-            { label:'Total XP',   value:xpDisplay.toLocaleString(),icon:'⭐', color:T.accent2 },
-            { label:'Streak',     value:`${child.streak_current||0}d`, icon:'🔥', color:'#FF6B6B' },
-          ].map(stat => (
-            <div key={stat.label} style={{ background:T.panel, border:`1.5px solid ${T.border}`, borderRadius:T.radius, padding:'14px 10px', textAlign:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
-              <div style={{ fontSize:'20px', marginBottom:'4px' }}>{stat.icon}</div>
-              <div style={{ fontWeight:900, fontSize:'16px', color:stat.color }}>{stat.value}</div>
-              <div style={{ fontSize:'10px', color:T.text, opacity:.6, marginTop:'2px', fontWeight:600 }}>{stat.label}</div>
-            </div>
-          ))}
-        </div>
-
         {/* Subject filter */}
         <div style={{ display:'flex', gap:'8px', marginBottom:'16px', flexWrap:'wrap' }}>
           <button onClick={() => chooseSubject(null)}
@@ -351,9 +326,9 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
 
                     <div style={{ fontSize:'20px', marginBottom:'6px' }}>{statusIcon}</div>
 
-                    <div style={{ fontWeight:800, fontSize:'17px', color:T.text, lineHeight:1.4, marginBottom:'4px' }}>{currentTopic.title_en}</div>
+                    <div style={{ fontWeight:800, fontSize:'17px', color:T.text, lineHeight:1.4, marginBottom:'4px' }}>{isHE ? (currentTopic.title_he || currentTopic.title_en) : currentTopic.title_en}</div>
 
-                    {currentTopic.title_he && langMode !== 'en_only' && (
+                    {currentTopic.title_he && langMode === 'bilingual' && (
                       <div style={{ fontSize:'13px', color:T.text, opacity:.55, direction:'rtl', fontFamily:'"Times New Roman",serif', marginBottom:'8px' }}>{currentTopic.title_he}</div>
                     )}
 
@@ -406,11 +381,27 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
           </div>
         )}
 
+        {/* Stats — below the lesson card so "what do I do now" is the first thing a child sees */}
+        <div className="portal-stats" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'10px', marginTop:'16px', marginBottom:'8px' }}>
+          {[
+            { label:isHE?'הושלמו':'Completed',  value:completedDisplay,         icon:'✅', color:'#27AE60' },
+            { label:isHE?'בתהליך':'In Progress',value:inProgressDisplay,        icon:'▶️', color:T.accent1  },
+            { label:isHE?'נקודות':'Total XP',   value:xpDisplay.toLocaleString(),icon:'⭐', color:T.accent2 },
+            { label:isHE?'ימים ברצף':'Streak',     value:`${child.streak_current||0}d`, icon:'🔥', color:'#FF6B6B' },
+          ].map(stat => (
+            <div key={stat.label} style={{ background:T.panel, border:`1.5px solid ${T.border}`, borderRadius:T.radius, padding:'14px 10px', textAlign:'center', boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
+              <div style={{ fontSize:'20px', marginBottom:'4px' }}>{stat.icon}</div>
+              <div style={{ fontWeight:900, fontSize:'16px', color:stat.color }}>{stat.value}</div>
+              <div style={{ fontSize:'10px', color:T.text, opacity:.6, marginTop:'2px', fontWeight:600 }}>{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
         {/* Bottom actions */}
-        <div className="portal-actions" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px', marginTop:'8px' }}>
-          <button onClick={() => withSession(() => { window.location.href=`/theme?childId=${child.id}&name=${child.display_name}&current=${theme}&returnTo=/play/${token}` })}
+        <div className="portal-actions" style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'10px', marginTop:'8px' }}>
+          <button onClick={() => withSession(() => { window.location.href=`/theme?childId=${child.id}&name=${child.display_name}&current=${theme}&returnTo=/play/${token}&lang=${langMode}` })}
             style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'12px', background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, fontWeight:800, fontSize:'13px', cursor:'pointer', color:T.text }}>
-            <Palette size={16}/> Theme
+            <Palette size={16}/> {kidLabel('theme', langMode)}
           </button>
 
           {/* Lang toggle — visible only here on mobile */}
@@ -427,23 +418,13 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
             ))}
           </div>
 
-          <button onClick={() => withSession(() => { window.location.href=`/cards?childId=${child.id}&token=${token}` })}
-            className="portal-cards-tile"
-            style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', padding:'12px', background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, fontWeight:800, fontSize:'13px', cursor:'pointer', color:T.text, position:'relative' }}>
-            🎴 My Cards
-            {child.card_tokens > 0 && (
-              <span style={{ position:'absolute', top:'-7px', right:'-7px', background:'#FF6B6B', color:'white', fontSize:'10px', fontWeight:900, borderRadius:'50px', minWidth:'18px', height:'18px', display:'flex', alignItems:'center', justifyContent:'center', padding:'0 4px', boxShadow:'0 2px 4px rgba(0,0,0,0.2)' }}>
-                {child.card_tokens}
-              </span>
-            )}
-          </button>
         </div>
       </div>
 
       {sessionFailed && (
         <KidOverlay position="top-banner">
           <div style={{ background:'#C0392B', color:'white', padding:'12px 16px', textAlign:'center', fontWeight:800, fontSize:'13px', boxShadow:'0 2px 8px rgba(0,0,0,0.2)' }}>
-            ⚠️ We couldn't start your session. Please close this tab and open your play link again.
+            ⚠️ {isHE ? 'לא הצלחנו להתחבר. סגרו את הלשונית ופתחו שוב את הקישור.' : "We couldn't start your session. Please close this tab and open your play link again."}
           </div>
         </KidOverlay>
       )}
@@ -454,7 +435,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
         </div>
       )}
 
-      <KidNavBar theme={theme} active="home" childId={child.id} token={token}/>
+      <KidNavBar theme={theme} active="home" childId={child.id} token={token} lang={langMode}/>
     </div>
   )
 }

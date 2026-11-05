@@ -1,7 +1,8 @@
 'use client'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Home, ClipboardList, Trophy, LogOut } from 'lucide-react'
+import { kidLabel, type KidLang } from '@/lib/kidPrefs'
 
 // ── Theme config (single source of truth across all screens) ──
 export const THEME_CONFIG: Record<string, any> = {
@@ -393,58 +394,107 @@ export function ThemePanel({
 // (that's its own checkpoint) — the link is wired now so nothing here needs
 // to change once that page lands.
 export function KidNavBar({
-  theme, active, childId, token
+  theme, active, childId, token, lang = 'bilingual'
 }: {
-  theme: string, active: 'home' | 'assignments' | 'rewards', childId: string, token?: string
+  theme: string, active: 'home' | 'assignments' | 'rewards', childId: string, token?: string, lang?: KidLang
 }) {
   const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
-  const tokenQS = token ? `&token=${token}` : ''
+  // Carry the theme and language to every kid page so a child never "falls
+  // out" of their look or their language when switching tabs.
+  const qs = `${token ? `&token=${token}` : ''}&theme=${theme}&lang=${lang}`
+  const [gate, setGate] = useState<{ a: number, b: number } | null>(null)
+  const [answer, setAnswer] = useState('')
+  const [gateError, setGateError] = useState(false)
+  const isHE = lang === 'he_only'
 
-  const items: Array<{ key: 'home' | 'assignments' | 'rewards', label: string, Icon: any, href: string }> = [
-    { key: 'home',        label: 'Home',        Icon: Home,          href: token ? `/play/${token}` : '/dashboard' },
-    { key: 'assignments', label: 'Assignments', Icon: ClipboardList, href: `/assignments?childId=${childId}${tokenQS}` },
-    { key: 'rewards',     label: 'Rewards',      Icon: Trophy,        href: `/cards?childId=${childId}${tokenQS}` },
+  const items: Array<{ key: 'home' | 'assignments' | 'rewards', Icon: any, href: string }> = [
+    { key: 'home',        Icon: Home,          href: token ? `/play/${token}?lang=${lang}` : '/dashboard' },
+    { key: 'assignments', Icon: ClipboardList, href: `/assignments?childId=${childId}${qs}` },
+    { key: 'rewards',     Icon: Trophy,        href: `/cards?childId=${childId}${qs}` },
   ]
 
+  function openGate() {
+    setGate({ a: 6 + Math.floor(Math.random() * 4), b: 6 + Math.floor(Math.random() * 4) })
+    setAnswer(''); setGateError(false)
+  }
+  function submitGate() {
+    if (!gate) return
+    if (answer.trim() === '') { setGateError(true); return }
+    if (Number(answer) === gate.a * gate.b) window.location.href = '/login'
+    else { setGateError(true); setAnswer('') }
+  }
+
+  const linkStyle = (isActive: boolean): React.CSSProperties => ({
+    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+    textDecoration: 'none', color: isActive ? T.accent1 : T.text,
+    opacity: isActive ? 1 : 0.6, fontFamily: T.fontHead,
+    fontSize: '11px', fontWeight: 800, padding: '6px 14px', flex: 1, minHeight: 48,
+    cursor: isActive ? 'default' : 'pointer', background: 'none', border: 'none',
+  })
+
   return (
-    <nav style={{
-      position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200,
-      background: T.panel, borderTop: `2px solid ${T.border}`,
-      display: 'flex', justifyContent: 'space-around',
-      padding: '8px 0', boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
-    }}>
-      {items.map(({ key, label, Icon, href }) => {
-        const isActive = key === active
-        return (
-          <Link key={key} href={href}
-            onClick={e => { if (isActive) e.preventDefault() }}
-            style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
-              textDecoration: 'none', color: isActive ? T.accent1 : T.text,
-              opacity: isActive ? 1 : 0.55, fontFamily: T.fontHead,
-              fontSize: '9px', fontWeight: 800, padding: '4px 14px', flex: 1,
-              cursor: isActive ? 'default' : 'pointer',
-            }}>
-            <Icon size={20} strokeWidth={isActive ? 2.5 : 2}/>
-            <span>{label}</span>
-          </Link>
-        )
-      })}
-      {/* Not a "screen" like the three above (no active state, never
-          preventDefault) — the only exit from kid mode back to the parent
-          login. Previously there was none: /dashboard bounces a pure child
-          session straight back into /play/[token], and lesson/assignments'
-          own "back" buttons rely on exactly that bounce to get a child home,
-          so this links directly to /login instead of touching that. */}
-      <Link href="/login"
-        style={{
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
-          textDecoration: 'none', color: T.text, opacity: 0.4, fontFamily: T.fontHead,
-          fontSize: '9px', fontWeight: 800, padding: '4px 14px', flex: 1, cursor: 'pointer',
+    <>
+      <nav dir={isHE ? 'rtl' : 'ltr'} style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200,
+        background: T.panel, borderTop: `2px solid ${T.border}`,
+        display: 'flex', justifyContent: 'space-around',
+        padding: '6px 0', boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
+      }}>
+        {items.map(({ key, Icon, href }) => {
+          const isActive = key === active
+          return (
+            <Link key={key} href={href}
+              onClick={e => { if (isActive) e.preventDefault() }}
+              style={linkStyle(isActive)}>
+              <Icon size={22} strokeWidth={isActive ? 2.5 : 2}/>
+              <span>{kidLabel(key, lang)}</span>
+            </Link>
+          )
+        })}
+        {/* The only exit from kid mode back to the parent login. It sits
+            behind a quick grown-ups question so a young child doesn't land on
+            the parent password screen by accident. */}
+        <button onClick={openGate} aria-label={isHE ? 'כניסת הורים' : 'Parent login'}
+          style={{ ...linkStyle(false), opacity: 0.35, flex: 0.6 }}>
+          <LogOut size={18} strokeWidth={2}/>
+          <span style={{ fontSize: '9px' }}>{kidLabel('parent', lang)}</span>
+        </button>
+      </nav>
+
+      {gate && (
+        <div onClick={() => setGate(null)} style={{
+          position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
         }}>
-        <LogOut size={20} strokeWidth={2}/>
-        <span>Parent Login</span>
-      </Link>
-    </nav>
+          <div onClick={e => e.stopPropagation()} dir={isHE ? 'rtl' : 'ltr'} style={{
+            background: '#fff', borderRadius: 16, padding: '22px 22px 18px', width: 'min(320px, 100%)',
+            fontFamily: '"Manrope", system-ui, sans-serif', textAlign: 'center', color: '#1f2a28',
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#7a8f8b', marginBottom: 6 }}>
+              {isHE ? 'להורים בלבד' : 'For grown-ups'}
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }} dir="ltr">
+              {gate.a} × {gate.b} = ?
+            </div>
+            <input autoFocus inputMode="numeric" value={answer}
+              onChange={e => { setAnswer(e.target.value.replace(/\D/g, '')); setGateError(false) }}
+              onKeyDown={e => { if (e.key === 'Enter') submitGate() }}
+              style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', fontSize: 18, textAlign: 'center',
+                borderRadius: 10, border: `1.5px solid ${gateError ? '#DC2626' : 'rgba(15,118,110,.3)'}` }}/>
+            {gateError && (
+              <div style={{ color: '#DC2626', fontSize: 13, marginTop: 6 }}>{isHE ? 'נסו שוב' : 'Try again'}</div>
+            )}
+            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+              <button onClick={() => setGate(null)} style={{ flex: 1, padding: '10px', borderRadius: 10, border: '1px solid #e5e7eb', background: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+                {isHE ? 'ביטול' : 'Cancel'}
+              </button>
+              <button onClick={submitGate} style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: '#0F766E', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+                {isHE ? 'המשך' : 'Continue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
