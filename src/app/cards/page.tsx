@@ -218,6 +218,98 @@ function CardModal({ card, onClose, initialHe = false }: { card: Card; onClose: 
   )
 }
 // ── Main ──────────────────────────────────────────────────────
+// ── Card reveal celebration ───────────────────────────────────
+// Collecting a card used to show only a small toast. Now the card appears
+// face-down, flips over with confetti, and — if it was the last animal in its
+// region — a second "region complete" moment follows.
+const RARITY_HE: Record<string, string> = { common:'רגיל', rare:'נדיר', epic:'נדיר מאוד', legendary:'אגדי' }
+const CONFETTI_COLORS = ['#F4A340','#0F766E','#E05BA0','#4A7FD4','#F4D35E','#9BE23D']
+
+function CardReveal({ card, region, he, onClose }: {
+  card: Card; region: { name: string; emoji: string } | null; he: boolean; onClose: ()=>void
+}) {
+  const r = RARITY[card.rarity] ?? RARITY.common
+  const [flipped, setFlipped] = useState(false)
+  const [stage, setStage] = useState<'card'|'region'>('card')
+  const [imgErr, setImgErr] = useState(false)
+  useEffect(() => { const t = setTimeout(() => setFlipped(true), 500); return () => clearTimeout(t) }, [])
+  const name = he ? (card.name_he || card.name_en) : card.name_en
+  const location = he ? (card.location_he || card.location_en) : card.location_en
+  const fact = he ? (card.fact_he || card.fact_en) : card.fact_en
+
+  function next() {
+    if (stage === 'card' && region) setStage('region')
+    else onClose()
+  }
+
+  return (
+    <div role="dialog" aria-modal="true" dir={he ? 'rtl' : 'ltr'}
+      style={{ position:'fixed', inset:0, zIndex:500, background:'rgba(10,15,30,0.82)', display:'flex', alignItems:'center', justifyContent:'center', padding:20, overflow:'hidden', fontFamily:'"Nunito",sans-serif' }}>
+      <style>{`
+        @keyframes cr-fall { 0%{transform:translateY(-10vh) rotate(0)} 100%{transform:translateY(110vh) rotate(720deg)} }
+        @keyframes cr-pop { 0%{transform:scale(.6);opacity:0} 70%{transform:scale(1.06);opacity:1} 100%{transform:scale(1)} }
+        @keyframes cr-glow { 0%,100%{box-shadow:0 0 0 0 ${r.color}66} 50%{box-shadow:0 0 40px 10px ${r.color}88} }
+        @media (prefers-reduced-motion: reduce) { .cr-anim { animation:none !important; transition:none !important } }
+      `}</style>
+      {flipped && Array.from({ length: 36 }).map((_, i) => (
+        <span key={i} className="cr-anim" aria-hidden style={{
+          position:'absolute', top:0, left:`${(i * 97) % 100}%`, width:8, height:14, borderRadius:2,
+          background: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+          animation:`cr-fall ${2.2 + (i % 5) * 0.35}s linear ${(i % 7) * 0.12}s both`,
+        }}/>
+      ))}
+
+      {stage === 'card' ? (
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:18, maxWidth:340, width:'100%' }}>
+          <div style={{ color:'#fff', fontWeight:900, fontSize:22, textAlign:'center', minHeight:30 }}>
+            {flipped ? (he ? 'חיה חדשה באוסף!' : 'New animal in your collection!') : (he ? 'מה יש בכרטיס?…' : "What's on the card?…")}
+          </div>
+          <div style={{ perspective:1000, width:260, height:340 }}>
+            <div className="cr-anim" style={{ position:'relative', width:'100%', height:'100%', transformStyle:'preserve-3d', transition:'transform .8s cubic-bezier(.3,1.4,.5,1)', transform: flipped ? 'rotateY(180deg)' : 'none' }}>
+              {/* back */}
+              <div style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', borderRadius:20, background:'linear-gradient(135deg,#0F766E,#7C6BAE)', border:'4px solid #F4D35E', display:'flex', alignItems:'center', justifyContent:'center', fontSize:96, color:'#F4D35E', fontWeight:900 }}>?</div>
+              {/* front */}
+              <div className="cr-anim" style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', transform:'rotateY(180deg)', borderRadius:20, background:'#fff', border:`4px solid ${r.color}`, overflow:'hidden', display:'flex', flexDirection:'column', animation: flipped ? 'cr-glow 2s ease-in-out 1s infinite' : 'none' }}>
+                <div style={{ position:'relative', height:190, background:`linear-gradient(135deg, ${r.color}40, ${r.color}15)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:90 }}>
+                  {card.emoji || '🐾'}
+                  {card.image_url && !imgErr && <img src={card.image_url} alt={name} onError={() => setImgErr(true)} style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'cover' }}/>}
+                </div>
+                <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:6 }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+                    <div style={{ fontWeight:900, fontSize:20, color:'#111827', fontFamily:'"Baloo 2",sans-serif' }}>{name}</div>
+                    <span style={{ fontSize:11, fontWeight:800, padding:'3px 8px', borderRadius:10, background:r.bg, color:r.text }}>{he ? RARITY_HE[card.rarity] || r.label : r.label}</span>
+                  </div>
+                  <div style={{ fontSize:12, color:'#6B7280', display:'flex', alignItems:'center', gap:4 }}><MapPin size={12}/> {location}</div>
+                  <div style={{ fontSize:13, color:'#374151', lineHeight:1.5 }}>{fact}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button onClick={next} disabled={!flipped}
+            style={{ minHeight:52, minWidth:200, padding:'12px 28px', borderRadius:999, border:'none', background:'#F4D35E', color:'#3b2a00', fontWeight:900, fontSize:18, cursor:'pointer', opacity: flipped ? 1 : 0, transition:'opacity .4s .6s' }}>
+            {he ? 'יש!' : 'Yay!'}
+          </button>
+        </div>
+      ) : (
+        <div className="cr-anim" style={{ background:'#fff', borderRadius:24, padding:'30px 26px', maxWidth:360, width:'100%', textAlign:'center', animation:'cr-pop .5s ease both' }}>
+          <div style={{ fontSize:64 }}>{region?.emoji || '🌍'}</div>
+          <div style={{ display:'flex', justifyContent:'center', margin:'6px 0' }}><Trophy size={40} color="#E0A927"/></div>
+          <div style={{ fontWeight:900, fontSize:22, color:'#065F46', fontFamily:'"Baloo 2",sans-serif' }}>
+            {he ? `השלמת את ${region?.name}!` : `${region?.name} complete!`}
+          </div>
+          <div style={{ fontSize:14, color:'#374151', margin:'8px 0 18px', lineHeight:1.5 }}>
+            {he ? 'אספת את כל החיות באזור. הוא יישאר מואר במפה לתמיד!' : 'You collected every animal here. It stays lit on your map forever!'}
+          </div>
+          <button onClick={onClose} style={{ minHeight:52, padding:'12px 30px', borderRadius:999, border:'none', background:'#10B981', color:'#fff', fontWeight:900, fontSize:17, cursor:'pointer' }}>
+            {he ? 'לראות במפה' : 'See it on the map'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
 export default function CardsPage() {
   const [phases,setPhases]     = useState<Phase[]>([])
   const [cards,setCards]       = useState<Card[]>([])
@@ -229,6 +321,7 @@ export default function CardsPage() {
   const [openCard,setOpenCard] = useState<Card|null>(null)
   const [toast,setToast]       = useState<string|null>(null)
   const [collecting,setCollecting] = useState(false)
+  const [reveal,setReveal] = useState<{ card: Card; region: { name: string; emoji: string } | null }|null>(null)
 
   const childId = typeof window!=='undefined'?new URLSearchParams(window.location.search).get('childId')||'':''
   const token   = typeof window!=='undefined'?new URLSearchParams(window.location.search).get('token')||'':''
@@ -257,6 +350,14 @@ export default function CardsPage() {
         .sort((a: any, b: any) => new Date(b.last_attempted_at).getTime() - new Date(a.last_attempted_at).getTime())
       setInProgress(inProgressTopics[0] || null)
       if(cardsData.phases?.[0]) setActive(cardsData.phases[0].slug)
+      // Design/QA preview: ?preview=reveal (or reveal-region) replays the unlock
+      // celebration on a card the child already owns. Nothing is spent or saved.
+      const pv = new URLSearchParams(window.location.search).get('preview')
+      if (pv === 'reveal' || pv === 'reveal-region') {
+        const owned = (cardsData.cards||[]).find((c: Card) => (cardsData.ownedIds||[]).includes(c.id))
+        const ph = owned && (cardsData.phases||[]).find((p: Phase) => p.id === owned.phase_id)
+        if (owned) setReveal({ card: owned, region: pv === 'reveal-region' && ph ? { name: readKidLang(childId) === 'he_only' ? (ph.name_he||ph.name_en) : ph.name_en, emoji: ph.emoji } : null })
+      }
       setLoading(false)
     })
   },[childId])
@@ -267,10 +368,15 @@ export default function CardsPage() {
     const res  = await fetch('/api/cards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({childId,cardId:card.id,useToken:true})})
     const data = await res.json()
     if(data.success){
-      setOwnedIds(prev=>new Set([...prev,card.id]))
+      const nowOwned = new Set([...ownedIds, card.id])
+      setOwnedIds(nowOwned)
       setChild(prev=>prev?{...prev,card_tokens:data.newTokens}:prev)
       announceTokensChanged()
-      showToast(he ? `${card.name_he || card.name_en} נוסף/ה לאוסף שלך!` : `${card.name_en} added to your collection!`)
+      // Was this the last animal in its region? Then the reveal ends with a region-complete moment.
+      const phase = phases.find(p=>p.id===card.phase_id)
+      const regionCards = cards.filter(c=>c.phase_id===card.phase_id)
+      const regionDone = !!phase && regionCards.length>0 && regionCards.every(c=>nowOwned.has(c.id))
+      setReveal({ card, region: regionDone && phase ? { name: he ? (phase.name_he||phase.name_en) : phase.name_en, emoji: phase.emoji } : null })
     } else { showToast(data.error||'Could not collect card') }
     setCollecting(false)
   }
@@ -293,6 +399,7 @@ export default function CardsPage() {
   return (
     <div dir={he?'rtl':'ltr'} style={{minHeight:'100vh',background:T.bg,fontFamily:'"Nunito",sans-serif'}}>
       {toast&&<div style={{position:'fixed',bottom:84,right:20,zIndex:300,padding:'12px 18px',borderRadius:14,background:'#F0FDF4',border:'1px solid #86EFAC',color:'#166534',fontWeight:700,fontSize:13,boxShadow:'0 8px 24px rgba(0,0,0,0.1)',display:'flex',alignItems:'center',gap:6}}><PartyPopper size={15}/> {toast}</div>}
+      {reveal&&<CardReveal card={reveal.card} region={reveal.region} he={he} onClose={()=>setReveal(null)}/>}
       {openCard&&<CardModal card={openCard} onClose={()=>setOpenCard(null)} initialHe={he}/>}
 
       {/* Header */}
