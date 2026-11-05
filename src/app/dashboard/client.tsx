@@ -4,7 +4,7 @@ import {
   Home, BarChart2, Printer, Sparkles, ClipboardList, Notebook, Map, Users, Settings,
   Rocket, Check, Flame, RefreshCw, Zap, CheckCircle2, Download, ChevronRight,
   Target, Play, UserPlus, Trash2, Key, GraduationCap, Link2, Copy, ExternalLink, Info,
-  BookOpen,
+  BookOpen, FileText,
 } from 'lucide-react'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import { PARENT_COLORS, PARENT_FONTS, CHILD_AVATAR_COLORS } from '@/lib/parentTheme'
@@ -361,130 +361,117 @@ function AssignmentsScreen({ children, showToast }: any) {
 }
 
 // ── Notebook teaser ──────────────────────────────────────────────
-function NotebookScreen() {
+// ── Create / Library hubs ─────────────────────────────────────
+// One place to make things and one place to find them, replacing the five
+// teaser tabs (Worksheets, AI Questions, Reading, Notebook, Curriculum).
+type HubItem = { icon: any, title: string, desc: string, href: string, tone?: 'primary' | 'accent' | 'amber' }
+
+function HubGrid({ items }: { items: HubItem[] }) {
+  const tones: any = {
+    primary: [PARENT_COLORS.primaryLight, PARENT_COLORS.primary],
+    accent:  [PARENT_COLORS.accentLight,  PARENT_COLORS.accent],
+    amber:   [PARENT_COLORS.amberLight,   PARENT_COLORS.amberText],
+  }
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
-        <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
-          <Notebook size={18} color={PARENT_COLORS.primary} /> Notebook
-        </h1>
-        <button onClick={() => window.location.href='/notebook'} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'9px 18px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
-          Open Notebook <ChevronRight size={14} />
-        </button>
-      </div>
-      <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'40px', textAlign:'center' }}>
-        <div style={{ width:'56px', height:'56px', borderRadius:'16px', background:PARENT_COLORS.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}>
-          <Notebook size={26} color={PARENT_COLORS.primary} />
-        </div>
-        <div style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'8px' }}>Your Family's Notebook</div>
-        <div style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px', maxWidth:'420px', margin:'0 auto 16px' }}>
-          Organize notes, reference material, and questions into sections by chapter and subcategory — durable context you can reuse for future question generation.
-        </div>
-        <div>
-          <button onClick={() => window.location.href='/notebook'} style={{ display:'inline-flex', alignItems:'center', gap:'7px', padding:'12px 28px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>
-            <Notebook size={15} /> Open Notebook
-          </button>
-        </div>
-      </div>
+    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:'12px' }}>
+      {items.map(it => {
+        const [bg, fg] = tones[it.tone || 'primary']
+        const Icon = it.icon
+        return (
+          <a key={it.title} href={it.href} style={{ textDecoration:'none', background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'14px', padding:'18px', display:'flex', flexDirection:'column', gap:'10px' }}>
+            <div style={{ width:'40px', height:'40px', borderRadius:'12px', background:bg, display:'flex', alignItems:'center', justifyContent:'center' }}><Icon size={20} color={fg}/></div>
+            <div style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'15px', color:PARENT_COLORS.text }}>{it.title}</div>
+            <div style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, lineHeight:1.5 }}>{it.desc}</div>
+            <div style={{ marginTop:'auto', display:'flex', alignItems:'center', gap:'4px', fontSize:'13px', fontWeight:700, color:PARENT_COLORS.primary }}>Open <ChevronRight size={14}/></div>
+          </a>
+        )
+      })}
     </div>
   )
 }
 
-// ── AI Question Generator teaser ────────────────────────────────
-function QuestionsScreen() {
-  const [pendingCount, setPendingCount] = useState<number | null>(null)
-
-  useEffect(() => {
-    fetch('/api/questions/pending')
-      .then(res => res.json())
-      .then(data => setPendingCount((data.questions || []).length))
-      .catch(() => {})
-  }, [])
-
+function SectionTitle({ icon: Icon, title, subtitle }: { icon: any, title: string, subtitle: string }) {
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
-        <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
-          <Sparkles size={18} color={PARENT_COLORS.primary} /> AI Question Generator
-        </h1>
-        <button onClick={() => window.location.href='/questions'} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'9px 18px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
-          Open Full Generator <ChevronRight size={14} />
-        </button>
-      </div>
-      <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'40px', textAlign:'center' }}>
-        <div style={{ width:'56px', height:'56px', borderRadius:'16px', background:PARENT_COLORS.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}>
-          <Sparkles size={26} color={PARENT_COLORS.primary} />
-        </div>
-        <div style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'8px' }}>Generate Custom Practice Questions</div>
-        <div style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px', maxWidth:'420px', margin:'0 auto 16px' }}>
-          Use AI to generate new questions by subject, topic and difficulty, review them before they go live, and browse the shared question library.
-        </div>
-        {!!pendingCount && (
-          <div style={{ display:'inline-flex', alignItems:'center', gap:'6px', background:PARENT_COLORS.amberLight, border:`1px solid ${PARENT_COLORS.amber}`, color:PARENT_COLORS.amberText, borderRadius:'50px', padding:'6px 14px', fontSize:'12px', fontWeight:800, marginBottom:'20px' }}>
-            ⏳ {pendingCount} question{pendingCount === 1 ? '' : 's'} awaiting review
-          </div>
-        )}
-        <div>
-          <button onClick={() => window.location.href='/questions'} style={{ display:'inline-flex', alignItems:'center', gap:'7px', padding:'12px 28px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>
-            <Sparkles size={15} /> Open Question Generator
-          </button>
-        </div>
-      </div>
+    <div>
+      <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'22px', color:PARENT_COLORS.text, margin:0 }}>
+        <Icon size={20} color={PARENT_COLORS.primary}/> {title}
+      </h1>
+      <p style={{ margin:'6px 0 0', fontSize:'14px', color:PARENT_COLORS.textSecondary }}>{subtitle}</p>
     </div>
   )
 }
 
-function PassagesScreen() {
+function CreateHub({ children }: any) {
+  const [prompt, setPrompt] = useState('')
+  const [err, setErr] = useState(false)
+  function go() {
+    if (!prompt.trim()) { setErr(true); return }
+    window.location.href = `/questions?prompt=${encodeURIComponent(prompt.trim())}`
+  }
+  const names = (children || []).map((c: any) => c.display_name).filter(Boolean)
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
-        <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
-          <BookOpen size={18} color={PARENT_COLORS.primary} /> Reading Passages
-        </h1>
-        <button onClick={() => window.location.href='/passages'} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'9px 18px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
-          Open Passage Library <ChevronRight size={14} />
-        </button>
-      </div>
-      <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'40px', textAlign:'center' }}>
-        <div style={{ width:'56px', height:'56px', borderRadius:'16px', background:PARENT_COLORS.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}>
-          <BookOpen size={26} color={PARENT_COLORS.primary} />
-        </div>
-        <div style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'8px' }}>Generate Reading Practice Passages</div>
-        <div style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'20px', maxWidth:'420px', margin:'0 auto 20px' }}>
-          Generate leveled reading passages — Hebrew niqqud tracks, English phonics tracks, story or informational, with optional comprehension questions — and browse the shared passage library.
-        </div>
-        <div>
-          <button onClick={() => window.location.href='/passages'} style={{ display:'inline-flex', alignItems:'center', gap:'7px', padding:'12px 28px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>
-            <BookOpen size={15} /> Open Passage Library
+    <div style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
+      <SectionTitle icon={Sparkles} title="Create" subtitle="Make practice for your child — printable, playable in the app, or both." />
+      <div style={{ background:`linear-gradient(135deg, ${PARENT_COLORS.headerGradTeal}, ${PARENT_COLORS.headerGradLavender})`, borderRadius:'16px', padding:'20px' }}>
+        <label htmlFor="create-prompt" style={{ display:'block', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'8px' }}>What would you like to make?</label>
+        <textarea id="create-prompt" value={prompt} onChange={e => { setPrompt(e.target.value); setErr(false) }} rows={3}
+          placeholder={`e.g. "English vocabulary practice for ${names[0] || 'my daughter'} from this word list, 15 questions, fill-in and multiple choice"`}
+          style={{ width:'100%', boxSizing:'border-box', borderRadius:'12px', border:`1.5px solid ${err ? PARENT_COLORS.danger : PARENT_COLORS.border}`, padding:'12px 14px', fontSize:'14px', fontFamily:PARENT_FONTS.body, resize:'vertical', background:'#fff' }}/>
+        {err && <div style={{ color:PARENT_COLORS.danger, fontSize:'13px', marginTop:'6px' }}>Describe what you need first.</div>}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap', marginTop:'10px' }}>
+          <span style={{ fontSize:'12px', color:PARENT_COLORS.textSecondary }}>You can attach a photo, screenshot or PDF on the next step.</span>
+          <button onClick={go} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'10px 22px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'#fff', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>
+            Continue <ChevronRight size={15}/>
           </button>
         </div>
       </div>
+      <div style={{ fontSize:'12px', fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:PARENT_COLORS.textMuted }}>Or pick a tool</div>
+      <HubGrid items={[
+        { icon:Printer,  title:'Worksheet or exam', desc:'Printable practice by topic and difficulty, with an answer key, in Hebrew, English or both.', href:'/worksheets' },
+        { icon:Sparkles, title:'New questions with AI', desc:'Describe what you need or upload a page; review the questions before they go live.', href:'/questions', tone:'accent' },
+        { icon:BookOpen, title:'Reading passage', desc:'A short story at the right reading level, with comprehension questions.', href:'/passages', tone:'amber' },
+        { icon:FileText, title:'Explanation booklet', desc:'Printable topic explanations with worked examples and pictures.', href:'/booklet' },
+      ]}/>
     </div>
   )
 }
 
-const CHILD_COLORS = [
-  { bg:'linear-gradient(135deg,#FF9F43,#FF6B6B)', emoji:'🐱' },
-  { bg:'linear-gradient(135deg,#5EC8F2,#4ECDC4)', emoji:'🐻' },
-  { bg:'linear-gradient(135deg,#9B59B6,#C39BD3)', emoji:'🦊' },
-]
+function LibraryHub() {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
+      <SectionTitle icon={BookOpen} title="Library" subtitle="Everything that's ready to use: the curriculum, saved questions, passages and past worksheets." />
+      <HubGrid items={[
+        { icon:Map,      title:'Curriculum', desc:'All topics by grade and subject, K–6 in Math, English and Hebrew.', href:'/curriculum' },
+        { icon:Sparkles, title:'Question library', desc:'Approved questions by topic; the review queue for new ones.', href:'/questions?tab=library', tone:'accent' },
+        { icon:BookOpen, title:'Reading passages', desc:'Stories with comprehension questions, by level.', href:'/passages', tone:'amber' },
+        { icon:Printer,  title:'Past worksheets', desc:'Worksheets and exams you already generated; print again anytime.', href:'/worksheets?view=history' },
+        { icon:Notebook, title:'Notebook', desc:'Your saved sections: files, linked questions and generation recipes.', href:'/notebook' },
+      ]}/>
+    </div>
+  )
+}
 
+// Approved structure (Nov 2026): four parent sections instead of ten tabs.
 const TABS = [
-  { key:'overview',    label:'Overview',    icon:Home },
-  { key:'progress',    label:'Progress',    icon:BarChart2 },
-  { key:'worksheets',  label:'Worksheets',  icon:Printer },
-  { key:'questions',   label:'AI Questions', icon:Sparkles },
-  { key:'passages',    label:'Reading',     icon:BookOpen },
-  { key:'assignments', label:'Assignments', icon:ClipboardList },
-  { key:'notebook',    label:'Notebook',    icon:Notebook },
-  { key:'curriculum',  label:'Curriculum',  icon:Map },
-  { key:'parents',     label:'Parents',     icon:Users },
-  { key:'account',     label:'Account',     icon:Settings },
+  { key:'home',    label:'Home',    icon:Home },
+  { key:'create',  label:'Create',  icon:Sparkles },
+  { key:'library', label:'Library', icon:BookOpen },
+  { key:'family',  label:'Family',  icon:Users },
 ]
+// Old tab keys (bookmarks, ?tab= links) → the section that now holds them.
+const LEGACY_TAB: Record<string, string> = {
+  overview:'home', progress:'home', assignments:'home',
+  worksheets:'create', questions:'create', passages:'library',
+  notebook:'library', curriculum:'library', parents:'family', account:'family',
+}
 
 export default function DashboardClient({ data, error }: { data: any; error?: string }) {
   const { family, children, progress, recommendations, parentName, isDemo } = data
-  const [screen, setScreen]         = useState('overview')
+  const [screen, setScreen]         = useState('home')
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab')
+    if (t) setScreen(TABS.some(x => x.key === t) ? t : (LEGACY_TAB[t] || 'home'))
+  }, [])
   const [toast, setToast]           = useState<{ icon:string; text:string; link?: string }|null>(null)
   const [errorBanner, setErrorBanner]   = useState(error)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -627,7 +614,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
         <main className="dashboard-main" style={{ flex:1, padding:'24px', overflowY:'auto', maxHeight:'calc(100vh - 64px)' }}>
 
           {/* ── OVERVIEW ── */}
-          {screen === 'overview' && (
+          {screen === 'home' && (
             <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
                 <div>
@@ -671,7 +658,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                   const recs = childRecs(child.id)
                   const highPri = recs.find((r: any) => r.priority==='high')
                   return (
-                    <div key={child.id} onClick={() => setScreen('progress')} style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'20px', padding:'18px', cursor:'pointer' }}>
+                    <div key={child.id} onClick={() => document.getElementById('progress-section')?.scrollIntoView({ behavior:'smooth' })} style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'20px', padding:'18px', cursor:'pointer' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'14px' }}>
                         <div style={{ width:'48px', height:'48px', borderRadius:'50%', background:avatarColor, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'19px', position:'relative' }}>
                           {child.display_name?.[0]?.toUpperCase()}
@@ -713,8 +700,8 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
           )}
 
           {/* ── PROGRESS ── */}
-          {screen === 'progress' && (
-            <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+          {screen === 'home' && (
+            <div id="progress-section" style={{ display:'flex', flexDirection:'column', gap:'18px', marginTop:'28px' }}>
               <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
                 <BarChart2 size={18} color={PARENT_COLORS.primary} /> Progress Reports
               </h1>
@@ -799,101 +786,25 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
             </div>
           )}
 
-          {/* ── WORKSHEETS ── */}
-          {screen === 'worksheets' && (
-            <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
-              <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
-                <Printer size={18} color={PARENT_COLORS.primary} /> Worksheets & Exams
-              </h1>
-              <div style={{ background:PARENT_COLORS.accentLight, border:`1px solid ${PARENT_COLORS.accent}30`, borderRadius:'12px', padding:'12px 16px', display:'flex', gap:'12px', fontSize:'12px', color:PARENT_COLORS.text, lineHeight:1.6 }}>
-                <Info size={18} color={PARENT_COLORS.accent} style={{ flexShrink:0 }} />
-                <div><strong>Content notice:</strong> EduPlay worksheets are curriculum-aligned. Parents are encouraged to review all materials.</div>
-              </div>
-              <div className="child-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'12px' }}>
-                {(children || []).map((child: any, i: number) => {
-                  const avatarColor = CHILD_AVATAR_COLORS[i % CHILD_AVATAR_COLORS.length]
-                  return (
-                    <div key={child.id} style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'20px', textAlign:'center', cursor:'pointer' }}
-                      onClick={() => window.location.href=`/worksheets?childId=${child.id}`}>
-                      <div style={{ width:'52px', height:'52px', borderRadius:'50%', background:avatarColor, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'21px', margin:'0 auto 10px' }}>
-                        {child.display_name?.[0]?.toUpperCase()}
-                      </div>
-                      <div style={{ fontWeight:800, fontSize:'15px', color:PARENT_COLORS.text, marginBottom:'3px' }}>{child.display_name}</div>
-                      <div style={{ fontSize:'12px', color:PARENT_COLORS.textMuted, marginBottom:'14px' }}>Grade {child.grade === 0 ? 'K' : child.grade}</div>
-                      <button style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', width:'100%', padding:'9px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'12px', cursor:'pointer' }}>
-                        <Printer size={13} /> Build Worksheet
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-              <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'20px' }}>
-                <h3 style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'8px' }}>Worksheet Builder</h3>
-                <p style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px' }}>Choose subject, topics, difficulty, number of questions and download a print-ready PDF.</p>
-                <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
-                  <button onClick={() => window.location.href='/worksheets'}
-                    style={{ display:'flex', alignItems:'center', gap:'7px', padding:'10px 24px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
-                    Open Full Builder <ChevronRight size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
+          {/* ── ASSIGNMENTS (part of Home) ── */}
+          {screen === 'home' && (
+            <div style={{ marginTop:'28px' }}><AssignmentsScreen children={children} showToast={showToast} /></div>
           )}
 
-          {/* ── AI QUESTIONS ── */}
-          {screen === 'questions' && (
-            <QuestionsScreen />
-          )}
+          {/* ── CREATE ── */}
+          {screen === 'create' && <CreateHub children={children} />}
 
-          {/* ── READING PASSAGES ── */}
-          {screen === 'passages' && (
-            <PassagesScreen />
-          )}
-
-          {/* ── ASSIGNMENTS ── */}
-          {screen === 'assignments' && (
-            <AssignmentsScreen children={children} showToast={showToast} />
-          )}
-
-          {/* ── NOTEBOOK ── */}
-          {screen === 'notebook' && (
-            <NotebookScreen />
-          )}
-
-          {/* ── CURRICULUM ── */}
-          {screen === 'curriculum' && (
-            <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
-                <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
-                  <Map size={18} color={PARENT_COLORS.primary} /> Curriculum
-                </h1>
-                <button onClick={() => window.location.href='/curriculum'} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'9px 18px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
-                  Open Full Browser <ChevronRight size={14} />
-                </button>
-              </div>
-              <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'40px', textAlign:'center' }}>
-                <div style={{ width:'56px', height:'56px', borderRadius:'16px', background:PARENT_COLORS.primaryLight, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px' }}>
-                  <Map size={26} color={PARENT_COLORS.primary} />
-                </div>
-                <div style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'8px' }}>Browse the Full Curriculum</div>
-                <div style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'20px', maxWidth:'400px', margin:'0 auto 20px' }}>
-                  All topics per grade and subject — Math, English and Hebrew from Kindergarten to Grade 6.
-                </div>
-                <button onClick={() => window.location.href='/curriculum'} style={{ display:'inline-flex', alignItems:'center', gap:'7px', padding:'12px 28px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>
-                  <Map size={15} /> Open Curriculum Browser
-                </button>
-              </div>
-            </div>
-          )}
+          {/* ── LIBRARY ── */}
+          {screen === 'library' && <LibraryHub />}
 
           {/* ── PARENTS ── */}
-          {screen === 'parents' && (
+          {screen === 'family' && (
             <ParentsScreen familyId={family?.id} showToast={showToast} />
           )}
 
           {/* ── ACCOUNT ── */}
-          {screen === 'account' && (
-            <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
+          {screen === 'family' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:'18px', marginTop:'28px' }}>
               <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
                 <Settings size={18} color={PARENT_COLORS.primary} /> Account
               </h1>

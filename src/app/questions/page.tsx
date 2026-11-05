@@ -148,6 +148,7 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
 }) {
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [topics, setTopics] = useState<Topic[]>([])
+  const [topicsLoading, setTopicsLoading] = useState(false)
   const [subjectSlug, setSubjectSlug] = useState('')
   const [grade, setGrade] = useState(1)
   const [topicSlug, setTopicSlug] = useState('')
@@ -158,6 +159,11 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
   const [language, setLanguage] = useState<'en_only' | 'he_only' | 'bilingual'>('en_only')
   const languageTouched = useRef(false)
   const [customPrompt, setCustomPrompt] = useState('')
+  // Prefill from the parent dashboard's Create box (/questions?prompt=...).
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get('prompt')
+    if (p) setCustomPrompt(p)
+  }, [])
   const [referenceFile, setReferenceFile] = useState<{ media_type: string; data: string; name: string; size: number } | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
@@ -175,9 +181,11 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
   // Fetch topics whenever subject/grade changes (from either user input or a prefill)
   useEffect(() => {
     if (!subjectSlug) { setTopics([]); return }
+    setTopicsLoading(true)
     fetch(`/api/topics?subject=${subjectSlug}&grade=${grade}`)
       .then(r => r.json())
       .then(data => setTopics(data.topics || []))
+      .finally(() => setTopicsLoading(false))
   }, [subjectSlug, grade])
 
   // Default output language to Hebrew for the Hebrew subject, English otherwise —
@@ -332,7 +340,7 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
           <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Topic</label>
           <select value={topicSlug} onChange={e => setTopicSlug(e.target.value)} disabled={topics.length === 0}
             className="w-full px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33] disabled:bg-[#F7F5F0] disabled:text-[#9aa6a3]">
-            <option value="">{topics.length === 0 ? 'No topics for this grade' : 'Select a topic...'}</option>
+            <option value="">{topicsLoading ? 'Loading topics…' : topics.length === 0 ? 'No topics for this grade' : 'Select a topic...'}</option>
             {topics.map(t => <option key={t.slug} value={t.slug}>{t.title_en}</option>)}
           </select>
         </div>
@@ -1204,6 +1212,11 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
 // ── Main Page ─────────────────────────────────────────────────
 export default function QuestionsPage() {
   const [tab, setTab] = useState<'generate' | 'pending' | 'library'>('generate')
+  // Deep links from the dashboard Library section (/questions?tab=library).
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab')
+    if (t === 'library' || t === 'pending') setTab(t)
+  }, [])
   const [history, setHistory] = useState<GenerationRow[]>([])
   const [prefill, setPrefill] = useState<Prefill | null>(null)
   const [libraryFilter, setLibraryFilter] = useState<LibraryFilter | null>(null)
