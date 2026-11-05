@@ -29,14 +29,20 @@ function FractionGlyph({ whole, n, d }: FractionToken) {
   )
 }
 
+// Text with no Hebrew letters (numbers, equations, "3/4 > 3/8", "-3, -1, 0, 1",
+// a lone ">") must always read left-to-right. Inside a Hebrew (RTL) layout the
+// browser would otherwise reorder it — swapping fractions, mirroring < and >,
+// and moving the minus sign to the end ("3-"). That can make a child pick the
+// wrong answer, so such text is isolated as LTR. Mixed Hebrew + math text keeps
+// its paragraph direction (HebrewMathText handles prompts with equations).
+const HEBREW = /[\u0590-\u05FF]/
+
 export default function FractionText({ text }: FractionTextProps) {
   if (!text) return null
   const segments = tokenizeFractionText(text)
-  return (
-    <>
-      {segments.map((seg, i) =>
-        typeof seg === 'string' ? <React.Fragment key={i}>{seg}</React.Fragment> : <FractionGlyph key={i} {...seg} />
-      )}
-    </>
+  const content = segments.map((seg, i) =>
+    typeof seg === 'string' ? <React.Fragment key={i}>{seg}</React.Fragment> : <FractionGlyph key={i} {...seg} />
   )
+  if (!HEBREW.test(text)) return <bdi dir="ltr" style={{ unicodeBidi: 'isolate' }}>{content}</bdi>
+  return <>{content}</>
 }
