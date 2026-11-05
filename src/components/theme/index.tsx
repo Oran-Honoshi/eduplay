@@ -507,8 +507,10 @@ export function KidNavBar({
 // tap away. Sits just above the kid nav bar, or near the bottom edge on screens
 // without one (lesson, assignment runner).
 export function CollectionButton({
-  childId, token, theme, lang = 'bilingual', aboveNav = true,
-}: { childId: string, token?: string, theme: string, lang?: KidLang, aboveNav?: boolean }) {
+  childId, token, theme, lang = 'bilingual', aboveNav = true, compact = false,
+}: { childId: string, token?: string, theme: string, lang?: KidLang, aboveNav?: boolean, compact?: boolean }) {
+  // compact: smaller and lower, for busy screens like the lesson player
+  const size = compact ? 46 : 58
   const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
   const [tokens, setTokens] = useState<number | null>(null)
   const [bump, setBump] = useState(false)
@@ -538,8 +540,8 @@ export function CollectionButton({
   return (
     <Link href={href} aria-label={isHE ? 'האוסף שלי' : 'My collection'}
       style={{
-        position: 'fixed', zIndex: 210, insetInlineEnd: 16, bottom: aboveNav ? 82 : 18,
-        width: 58, height: 58, borderRadius: theme === 'minecraft' ? 6 : 999,
+        position: 'fixed', zIndex: 210, insetInlineEnd: compact ? 10 : 16, bottom: aboveNav ? 82 : (compact ? 10 : 18),
+        width: size, height: size, borderRadius: theme === 'minecraft' ? 6 : 999,
         background: hasTokens ? '#E0A927' : T.panel, color: hasTokens ? '#fff' : T.text,
         border: `2px solid ${hasTokens ? '#B7862F' : T.border}`,
         boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
@@ -548,7 +550,7 @@ export function CollectionButton({
         animation: hasTokens ? 'collectionPulse 2.2s ease-in-out infinite' : 'none',
       }}>
       <style>{`@keyframes collectionPulse{0%,100%{box-shadow:0 6px 18px rgba(0,0,0,.18)}50%{box-shadow:0 0 0 8px rgba(224,169,39,.25),0 6px 18px rgba(0,0,0,.18)}}@media (prefers-reduced-motion: reduce){a[aria-label]{animation:none!important}}`}</style>
-      <MapIcon size={26} strokeWidth={2.2}/>
+      <MapIcon size={compact ? 21 : 26} strokeWidth={2.2}/>
       {tokens !== null && (
         <span style={{
           position: 'absolute', top: -6, insetInlineEnd: -6, minWidth: 22, height: 22, padding: '0 6px',

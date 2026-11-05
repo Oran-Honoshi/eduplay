@@ -323,6 +323,7 @@ export default function CardsPage() {
             return pc.length > 0 && pc.every(c => ownedIds.has(c.id))
           }).map(p => p.slug)}
           onSelect={setActive}
+          he={he}
         />
 
         {/* Region tabs */}

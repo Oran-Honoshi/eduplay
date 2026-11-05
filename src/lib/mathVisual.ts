@@ -1,3 +1,4 @@
+import { renderKidVisual } from './kidVisuals'
 // ─────────────────────────────────────────────────────────────
 //  mathVisual — converts visual_data JSON into an inline SVG string
 //  Shared by MathVisual.tsx (client, wraps the string in JSX) and
@@ -464,7 +465,8 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
     }
 
     default:
-      return ''
+      // Kid-friendly step visuals (objects, groups, share, base_ten, clock, …)
+      return renderKidVisual(data, { W, H, stroke, hl, lbl, fill, dark })
   }
 }
 
