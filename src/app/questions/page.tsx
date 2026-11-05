@@ -158,6 +158,11 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
   const [language, setLanguage] = useState<'en_only' | 'he_only' | 'bilingual'>('en_only')
   const languageTouched = useRef(false)
   const [customPrompt, setCustomPrompt] = useState('')
+  // Prefill from the parent dashboard's Create box (/questions?prompt=...).
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get('prompt')
+    if (p) setCustomPrompt(p)
+  }, [])
   const [referenceFile, setReferenceFile] = useState<{ media_type: string; data: string; name: string; size: number } | null>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
@@ -1204,6 +1209,11 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
 // ── Main Page ─────────────────────────────────────────────────
 export default function QuestionsPage() {
   const [tab, setTab] = useState<'generate' | 'pending' | 'library'>('generate')
+  // Deep links from the dashboard Library section (/questions?tab=library).
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab')
+    if (t === 'library' || t === 'pending') setTab(t)
+  }, [])
   const [history, setHistory] = useState<GenerationRow[]>([])
   const [prefill, setPrefill] = useState<Prefill | null>(null)
   const [libraryFilter, setLibraryFilter] = useState<LibraryFilter | null>(null)

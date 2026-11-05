@@ -672,6 +672,10 @@ function WorksheetHistoryList({ onSwitchTab }: { onSwitchTab: (t: 'builder' | 'h
 
 export default function WorksheetsPage() {
   const [tab, setTab] = useState<'builder' | 'history'>('builder')
+  // Deep link from the dashboard Library section (/worksheets?view=history).
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('view') === 'history') setTab('history')
+  }, [])
 
   if (tab === 'history') {
     return <WorksheetHistoryList onSwitchTab={setTab} />
