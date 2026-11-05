@@ -408,7 +408,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
         const displayLabel = isHebrew ? translateOptionLabel(opt.label) : opt.label
         return `<div class="option">
           <span class="opt-label">${displayLabel}.</span>
-          <span class="opt-value">${fractionsToHTML(displayVal)}</span>
+          <span class="opt-value">${/[\u0590-\u05FF]/.test(String(displayVal ?? '')) ? fractionsToHTML(displayVal) : `<bdi dir="ltr">${fractionsToHTML(displayVal)}</bdi>`}</span>
         </div>`
       }).join('')}</div>`
     } else {
