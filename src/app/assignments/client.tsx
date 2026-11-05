@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { ClipboardList } from 'lucide-react'
-import { THEME_CONFIG, KidNavBar, ThemeDecorations } from '@/components/theme'
+import { THEME_CONFIG, KidNavBar, ThemeDecorations, CollectionButton } from '@/components/theme'
 import { readKidLang, type KidLang } from '@/lib/kidPrefs'
 
 interface AssignmentSummary {
@@ -95,6 +95,7 @@ export default function AssignmentsClient({ child, token }: { child: any, token:
         )}
       </div>
 
+      <CollectionButton childId={child.id} token={token} theme={theme} lang={langMode}/>
       <KidNavBar theme={theme} active="assignments" childId={child.id} token={token} lang={langMode}/>
     </div>
   )

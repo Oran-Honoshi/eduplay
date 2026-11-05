@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Check, X, ChevronRight, Gift, Target, BookOpen, CreditCard, Globe, MapPin, PartyPopper, Zap, Trophy } from 'lucide-react'
 import WorldMapComponent from '@/components/WorldMap'
 import { KidNavBar, THEME_CONFIG } from '@/components/theme'
-import { readKidLang, type KidLang } from '@/lib/kidPrefs'
+import { readKidLang, announceTokensChanged, type KidLang } from '@/lib/kidPrefs'
 
 interface Phase {
   id: string; slug: string; name_en: string; name_he: string
@@ -269,6 +269,7 @@ export default function CardsPage() {
     if(data.success){
       setOwnedIds(prev=>new Set([...prev,card.id]))
       setChild(prev=>prev?{...prev,card_tokens:data.newTokens}:prev)
+      announceTokensChanged()
       showToast(he ? `${card.name_he || card.name_en} נוסף/ה לאוסף שלך!` : `${card.name_en} added to your collection!`)
     } else { showToast(data.error||'Could not collect card') }
     setCollecting(false)

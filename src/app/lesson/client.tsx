@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
 import HebrewMathText from '@/components/HebrewMathText'
-import { ThemeDecorations, CelebrationModal, KidOverlay, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG as SHARED_THEMES } from '@/components/theme'
+import { ThemeDecorations, CelebrationModal, KidOverlay, AnimatedBtn, Sparkles, ThemePanel, CollectionButton, THEME_CONFIG as SHARED_THEMES } from '@/components/theme'
 import { FONT_SIZES } from '@/lib/fontSize'
 import { isDistinctHe, translateOptionLabel } from '@/lib/text'
-import { saveKidLang, type KidLang } from '@/lib/kidPrefs'
+import { saveKidLang, announceTokensChanged, type KidLang } from '@/lib/kidPrefs'
 
 
 function Fraction({ n, d, size = 20 }: { n: any; d: any; size?: number }) {
@@ -637,7 +637,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
   }
 
   function awardCardToken() {
-    fetch('/api/cards/token', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ childId: child?.id }) }).catch(()=>{})
+    fetch('/api/cards/token', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ childId: child?.id }) }).then(() => announceTokensChanged()).catch(()=>{})
   }
 
   function speak(text: string, lang: string) {
@@ -725,9 +725,10 @@ export default function LessonClient({ child, topic, questions, passage, passage
         .then(r => r.json())
         .then(data => {
           const cardEarned = !!data?.isNewBest
+          announceTokensChanged()
           setCompletionInfo({
             message: isHE
-              ? (isBonus ? (cardEarned ? '!תרגיל בונוס הושלם! קרטיס נוסף שלך 🎴' : '!תרגיל בונוס הושלם! כל הכבוד 🎓') : 'כל הכבוד! סיימת את השיעור! 🎓')
+              ? (isBonus ? (cardEarned ? 'תרגיל הבונוס הושלם! קיבלת כרטיס נוסף! 🎴' : 'תרגיל הבונוס הושלם! כל הכבוד! 🎓') : 'כל הכבוד! סיימת את השיעור! 🎓')
               : (isBonus ? (cardEarned ? 'Bonus complete! Extra card earned! 🎴' : 'Bonus complete! Great practice! 🎓') : 'Lesson complete! Amazing work! 🎓'),
             emoji: isBonus && cardEarned ? '🎴' : '🎉',
           })
@@ -862,6 +863,8 @@ export default function LessonClient({ child, topic, questions, passage, passage
           </button>
         </div>
       </header>
+
+      {child?.id && <CollectionButton childId={child.id} token={token} theme={theme} lang={langMode as KidLang} aboveNav={false}/>}
 
       {/* ── Passage slide-in panel ─────────────────────────────── */}
       {passage && !isReadingTopic && passageOpen && (

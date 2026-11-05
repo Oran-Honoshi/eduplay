@@ -1,8 +1,8 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Home, ClipboardList, Trophy, LogOut } from 'lucide-react'
-import { kidLabel, type KidLang } from '@/lib/kidPrefs'
+import { Home, Trophy, LogOut, Dumbbell, Map as MapIcon } from 'lucide-react'
+import { kidLabel, type KidLang, TOKENS_CHANGED_EVENT } from '@/lib/kidPrefs'
 
 // ── Theme config (single source of truth across all screens) ──
 export const THEME_CONFIG: Record<string, any> = {
@@ -396,7 +396,8 @@ export function ThemePanel({
 export function KidNavBar({
   theme, active, childId, token, lang = 'bilingual'
 }: {
-  theme: string, active: 'home' | 'assignments' | 'rewards', childId: string, token?: string, lang?: KidLang
+  // 'assignments' is a sub-page of Today (parent tasks), so it highlights Today.
+  theme: string, active: 'home' | 'practice' | 'assignments' | 'rewards', childId: string, token?: string, lang?: KidLang
 }) {
   const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
   // Carry the theme and language to every kid page so a child never "falls
@@ -407,10 +408,10 @@ export function KidNavBar({
   const [gateError, setGateError] = useState(false)
   const isHE = lang === 'he_only'
 
-  const items: Array<{ key: 'home' | 'assignments' | 'rewards', Icon: any, href: string }> = [
-    { key: 'home',        Icon: Home,          href: token ? `/play/${token}?lang=${lang}` : '/dashboard' },
-    { key: 'assignments', Icon: ClipboardList, href: `/assignments?childId=${childId}${qs}` },
-    { key: 'rewards',     Icon: Trophy,        href: `/cards?childId=${childId}${qs}` },
+  const items: Array<{ key: 'home' | 'practice' | 'rewards', Icon: any, href: string }> = [
+    { key: 'home',     Icon: Home,     href: token ? `/play/${token}?lang=${lang}` : '/dashboard' },
+    { key: 'practice', Icon: Dumbbell, href: `/practice?childId=${childId}${qs}` },
+    { key: 'rewards',  Icon: MapIcon,  href: `/cards?childId=${childId}${qs}` },
   ]
 
   function openGate() {
@@ -441,7 +442,7 @@ export function KidNavBar({
         padding: '6px 0', boxShadow: '0 -2px 12px rgba(0,0,0,0.08)',
       }}>
         {items.map(({ key, Icon, href }) => {
-          const isActive = key === active
+          const isActive = key === active || (key === 'home' && active === 'assignments')
           return (
             <Link key={key} href={href}
               onClick={e => { if (isActive) e.preventDefault() }}
@@ -496,5 +497,66 @@ export function KidNavBar({
         </div>
       )}
     </>
+  )
+}
+
+
+// ── Always-on collection button ───────────────────────────────
+// A floating map/cards button with the child's unspent card tokens, shown on
+// every kid screen (including inside a lesson) so the collection is always one
+// tap away. Sits just above the kid nav bar, or near the bottom edge on screens
+// without one (lesson, assignment runner).
+export function CollectionButton({
+  childId, token, theme, lang = 'bilingual', aboveNav = true,
+}: { childId: string, token?: string, theme: string, lang?: KidLang, aboveNav?: boolean }) {
+  const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
+  const [tokens, setTokens] = useState<number | null>(null)
+  const [bump, setBump] = useState(false)
+  const isHE = lang === 'he_only'
+
+  useEffect(() => {
+    if (!childId) return
+    let last: number | null = null
+    const load = () => fetch(`/api/children?childId=${childId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const n = d?.child?.card_tokens
+        if (typeof n !== 'number') return
+        if (last !== null && n > last) { setBump(true); setTimeout(() => setBump(false), 900) }
+        last = n; setTokens(n)
+      })
+      .catch(() => {})
+    load()
+    const onFocus = () => { if (document.visibilityState === 'visible') load() }
+    window.addEventListener(TOKENS_CHANGED_EVENT, load)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => { window.removeEventListener(TOKENS_CHANGED_EVENT, load); document.removeEventListener('visibilitychange', onFocus) }
+  }, [childId])
+
+  const href = `/cards?childId=${childId}${token ? `&token=${token}` : ''}&theme=${theme}&lang=${lang}`
+  const hasTokens = (tokens ?? 0) > 0
+  return (
+    <Link href={href} aria-label={isHE ? 'האוסף שלי' : 'My collection'}
+      style={{
+        position: 'fixed', zIndex: 210, insetInlineEnd: 16, bottom: aboveNav ? 82 : 18,
+        width: 58, height: 58, borderRadius: theme === 'minecraft' ? 6 : 999,
+        background: hasTokens ? '#E0A927' : T.panel, color: hasTokens ? '#fff' : T.text,
+        border: `2px solid ${hasTokens ? '#B7862F' : T.border}`,
+        boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none',
+        transform: bump ? 'scale(1.18)' : 'scale(1)', transition: 'transform .25s cubic-bezier(.2,.9,.3,1.4)',
+        animation: hasTokens ? 'collectionPulse 2.2s ease-in-out infinite' : 'none',
+      }}>
+      <style>{`@keyframes collectionPulse{0%,100%{box-shadow:0 6px 18px rgba(0,0,0,.18)}50%{box-shadow:0 0 0 8px rgba(224,169,39,.25),0 6px 18px rgba(0,0,0,.18)}}@media (prefers-reduced-motion: reduce){a[aria-label]{animation:none!important}}`}</style>
+      <MapIcon size={26} strokeWidth={2.2}/>
+      {tokens !== null && (
+        <span style={{
+          position: 'absolute', top: -6, insetInlineEnd: -6, minWidth: 22, height: 22, padding: '0 6px',
+          borderRadius: 999, background: hasTokens ? '#DC2626' : T.border, color: '#fff',
+          fontSize: 12, fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: '"Nunito", sans-serif',
+        }}>{tokens}</span>
+      )}
+    </Link>
   )
 }

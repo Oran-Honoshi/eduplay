@@ -39,13 +39,21 @@ export function saveKidLang(lang: KidLang, childId?: string) {
 
 // Labels shared by the kid chrome (nav bar, home buttons, rewards page).
 export const KID_LABELS = {
-  home:        { en: 'Home',         he: 'בית' },
+  home:        { en: 'Today',        he: 'היום' },
+  practice:    { en: 'Practice',     he: 'תרגול' },
+  rewards:     { en: 'Collection',   he: 'האוסף' },
   assignments: { en: 'Assignments',  he: 'משימות' },
-  rewards:     { en: 'Rewards',      he: 'פרסים' },
   parent:      { en: 'Parent',       he: 'הורה' },
   theme:       { en: 'Theme',        he: 'עיצוב' },
 } as const
 
 export function kidLabel(key: keyof typeof KID_LABELS, lang: KidLang) {
   return lang === 'he_only' ? KID_LABELS[key].he : KID_LABELS[key].en
+}
+
+// Fired after anything that can change a child's card tokens (lesson finished,
+// card collected) so the always-on collection button refreshes its count.
+export const TOKENS_CHANGED_EVENT = 'eduplay:tokens-changed'
+export function announceTokensChanged() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(TOKENS_CHANGED_EVENT))
 }
