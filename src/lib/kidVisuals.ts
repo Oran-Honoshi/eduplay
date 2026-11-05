@@ -55,6 +55,12 @@ function icon(kind: string, cx: number, cy: number, r: number): string {
       return `<rect x="${cx - r}" y="${cy - r * 0.3}" width="${r * 2}" height="${r * 0.7}" rx="${r * 0.2}" fill="#E8724C"/><rect x="${cx - r * 0.55}" y="${cy - r * 0.75}" width="${r * 1.1}" height="${r * 0.5}" rx="${r * 0.15}" fill="#E8724C"/><circle cx="${cx - r * 0.55}" cy="${cy + r * 0.45}" r="${r * 0.25}" fill="#1E2D4E"/><circle cx="${cx + r * 0.55}" cy="${cy + r * 0.45}" r="${r * 0.25}" fill="#1E2D4E"/>`
     case 'pencil':
       return `<rect x="${cx - r}" y="${cy - r * 0.25}" width="${r * 1.5}" height="${r * 0.5}" fill="#F4C430"/><polygon points="${cx + r * 0.5},${cy - r * 0.25} ${cx + r},${cy} ${cx + r * 0.5},${cy + r * 0.25}" fill="#D9A066"/>`
+    case 'eye':
+      return `<ellipse cx="${cx}" cy="${cy}" rx="${r * 1.1}" ry="${r * 0.6}" fill="#fff" stroke="#1E2D4E" stroke-width="1.5"/><circle cx="${cx}" cy="${cy}" r="${r * 0.4}" fill="#4A7FD4"/><circle cx="${cx}" cy="${cy}" r="${r * 0.18}" fill="#1E2D4E"/>`
+    case 'ear':
+      return `<path d="M${cx - r * 0.3} ${cy + r} C${cx - r * 1.1} ${cy + r * 0.4} ${cx - r * 0.9} ${cy - r} ${cx} ${cy - r} C${cx + r * 0.9} ${cy - r} ${cx + r * 0.9} ${cy} ${cx + r * 0.3} ${cy + r * 0.3} C${cx} ${cy + r * 0.55} ${cx + r * 0.1} ${cy + r} ${cx - r * 0.3} ${cy + r} Z" fill="#F2C29B" stroke="#8B5A2B" stroke-width="1.2"/>`
+    case 'book':
+      return `<rect x="${cx - r}" y="${cy - r * 0.75}" width="${r}" height="${r * 1.5}" fill="#4A7FD4" stroke="#1E3A8A" stroke-width="1"/><rect x="${cx}" y="${cy - r * 0.75}" width="${r}" height="${r * 1.5}" fill="#2EC4B6" stroke="#0F766E" stroke-width="1"/>`
     case 'apple':
     default:
       return `<circle cx="${cx}" cy="${cy + r * 0.08}" r="${r}" fill="#E53935" stroke="#B71C1C" stroke-width="1"/><line x1="${cx}" y1="${cy - r * 0.85}" x2="${cx + r * 0.15}" y2="${cy - r * 1.25}" stroke="#5C3A1E" stroke-width="2"/><ellipse cx="${cx + r * 0.45}" cy="${cy - r * 1.05}" rx="${r * 0.32}" ry="${r * 0.16}" fill="#43A047"/>`
