@@ -563,7 +563,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
   const [xpBalance, setXp]        = useState(child?.xp_balance || 0)
   const [xpNotif, setXpNotif]     = useState<string|null>(null)
   const [completed, setCompleted] = useState(false)
-  const [completionInfo, setCompletionInfo] = useState<{ message: string; emoji: string } | null>(null)
+  const [completionInfo, setCompletionInfo] = useState<{ message: string; emoji: string; card?: boolean } | null>(null)
 
   const [celebration, setCelebration] = useState<{ message: string; emoji: string } | null>(null)
   const [sparkleActive, setSparkleActive] = useState(false)
@@ -731,6 +731,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
               ? (isBonus ? (cardEarned ? 'תרגיל הבונוס הושלם! קיבלת כרטיס נוסף! 🎴' : 'תרגיל הבונוס הושלם! כל הכבוד! 🎓') : 'כל הכבוד! סיימת את השיעור! 🎓')
               : (isBonus ? (cardEarned ? 'Bonus complete! Extra card earned! 🎴' : 'Bonus complete! Great practice! 🎓') : 'Lesson complete! Amazing work! 🎓'),
             emoji: isBonus && cardEarned ? '🎴' : '🎉',
+            card: cardEarned,
           })
           if (cardEarned) {
             awardCardToken()
@@ -785,6 +786,14 @@ export default function LessonClient({ child, topic, questions, passage, passage
             <div style={{ fontSize:'44px', letterSpacing:'6px', margin:'12px 0' }}>⭐⭐⭐</div>
             <p style={{ fontSize:'16px', color:T.text2, marginBottom:'8px' }}>{UI.mastered} <strong style={{ color:T.accent2 }}>{isHE ? topic?.title_he || topic?.title_en : topic?.title_en}</strong>!</p>
             <p style={{ fontSize:'14px', color:T.text2, marginBottom:'20px' }}>{UI.xpEarned}</p>
+
+            {/* A card was earned — send the child straight to collect it (the reveal happens there) */}
+            {completionInfo?.card && (
+              <button onClick={() => { window.location.href = `/cards?childId=${child?.id}${token ? `&token=${token}` : ''}&theme=${theme}&lang=${langMode}` }}
+                style={{ width:'100%', minHeight:52, marginBottom:'14px', padding:'12px', background:'#E0A927', border:'3px solid #B7862F', borderRadius:T.radius, color:'#fff', fontFamily:T.fontHead, fontSize:'15px', fontWeight:900, cursor:'pointer' }}>
+                🎴 {isHE ? 'בואו נגלה את הכרטיס החדש!' : 'Open your new card!'}
+              </button>
+            )}
 
             {/* Bonus exercise option */}
             <div style={{ background:`${T.accent2}15`, border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'14px 16px', marginBottom:'16px' }}>
