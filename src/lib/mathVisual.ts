@@ -48,7 +48,7 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
   const axisTick = dark ? '#aaa' : '#6B7280'
 
   function svg(inner: string): string {
-    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" direction="ltr" style="direction:ltr">${inner}</svg>`
   }
 
   function label(x: number, y: number, text: any, size: number, weight: string, col: string): string {

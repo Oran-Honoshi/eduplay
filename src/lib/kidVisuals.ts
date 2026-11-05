@@ -75,7 +75,7 @@ function cross(cx: number, cy: number, r: number) {
 export function renderKidVisual(data: any, c: KidVisualCtx): string {
   const { W, H, stroke, hl, lbl, dark } = c
   const svg = (inner: string, w = W, h = H) =>
-    `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`
+    `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg" direction="ltr" style="direction:ltr">${inner}</svg>`
   const text = (x: number, y: number, t: any, size = 13, weight = 'bold', col = lbl) =>
     `<text x="${x}" y="${y}" text-anchor="middle" font-size="${size}" font-weight="${weight}" font-family="Nunito,Arial,sans-serif" fill="${col}">${esc(t)}</text>`
 
