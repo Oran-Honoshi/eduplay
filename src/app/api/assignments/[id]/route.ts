@@ -31,7 +31,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     .from('assignment_items')
     .select(`
       id, sort_order, status, attempt_1_answer, attempt_1_correct, attempt_2_answer, attempt_2_correct, answered_at,
-      question:questions ( id, topic_id, difficulty, q_type, prompt_en, prompt_he, options, hint_en, hint_he, explanation_en, visual_data )
+      question:questions ( id, topic_id, difficulty, q_type, prompt_en, prompt_he, options, hint_en, hint_he, explanation_en, explanation_he, visual_data )
     `)
     .eq('assignment_id', params.id)
     .order('sort_order')

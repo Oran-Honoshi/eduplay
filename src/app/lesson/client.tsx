@@ -668,7 +668,8 @@ export default function LessonClient({ child, topic, questions, passage, passage
     setFeedback({
       correct,
       explanation: correct ? (currentQ.explanation_en || 'Correct! Well done!') : (currentQ.hint_en || currentQ.explanation_en || 'Not quite — try the hint!'),
-      explanation_he: correct ? (currentQ.explanation_he || 'כל הכבוד! תשובה נכונה.') : (currentQ.hint_he || 'לא נורא! התשובה הנכונה מסומנת בירוק — קראו אותה ונסו להבין למה.'),
+      // After a wrong answer the right one is shown, so explain it when a Hebrew explanation exists.
+      explanation_he: correct ? (currentQ.explanation_he || 'כל הכבוד! תשובה נכונה.') : (currentQ.explanation_he || currentQ.hint_he || 'לא נורא! התשובה הנכונה מסומנת בירוק — קראו אותה ונסו להבין למה.'),
     })
     setPip(correct ? (isHE ? '🎉 מצוין! הצלחת!' : '🎉 Excellent! You nailed it!') : (isHE ? '💡 לא מוותרים!' : "💡 Don't give up!"))
     // FIXED (2026-07-28): the /api/progress POST used to be nested inside the

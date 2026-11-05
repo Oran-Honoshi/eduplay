@@ -22,6 +22,7 @@ interface AssignmentItem {
     hint_en: string | null
     hint_he: string | null
     explanation_en: string | null
+    explanation_he?: string | null
     visual_data: any
   }
 }
@@ -272,8 +273,8 @@ export default function AssignmentClient({ child, assignment, items: initialItem
                     ? (isHE ? 'נכון בפעם הראשונה!' : 'Correct — first try!')
                     : (isHE ? 'נכון!' : 'Correct!')}
                 </div>
-                {currentQ?.explanation_en && !isHE && (
-                  <div style={{ fontSize:'13px', color:T.text2, lineHeight:1.6 }}><FractionText text={currentQ.explanation_en} /></div>
+                {(isHE ? currentQ?.explanation_he : currentQ?.explanation_en) && (
+                  <div style={{ fontSize:'13px', color:T.text2, lineHeight:1.6 }}><FractionText text={(isHE ? currentQ?.explanation_he : currentQ?.explanation_en) || ''} /></div>
                 )}
               </div>
             </div>
@@ -286,8 +287,8 @@ export default function AssignmentClient({ child, assignment, items: initialItem
                 <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:'#E03030', marginBottom:'3px' }}>
                   {isHE ? 'התשובה הנכונה' : 'The correct answer'}: {correctOption?.label}. {isHE ? (correctOption?.value_he || correctOption?.value_en) : correctOption?.value_en}
                 </div>
-                {currentQ?.explanation_en && !isHE && (
-                  <div style={{ fontSize:'13px', color:T.text2, lineHeight:1.6 }}><FractionText text={currentQ.explanation_en} /></div>
+                {(isHE ? currentQ?.explanation_he : currentQ?.explanation_en) && (
+                  <div style={{ fontSize:'13px', color:T.text2, lineHeight:1.6 }}><FractionText text={(isHE ? currentQ?.explanation_he : currentQ?.explanation_en) || ''} /></div>
                 )}
               </div>
             </div>
