@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { Heart, Star, Flame, Play, BookOpen, Palette, Globe, ChevronRight, ChevronLeft } from 'lucide-react'
-import { THEME_CONFIG, KidNavBar, KidOverlay } from '@/components/theme'
+import { THEME_CONFIG, KidNavBar, KidOverlay, CollectionButton } from '@/components/theme'
 import { readKidLang, saveKidLang, kidLabel, type KidLang } from '@/lib/kidPrefs'
 
 const SUBJECT_COLORS: any = {
@@ -435,6 +435,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
         </div>
       )}
 
+      <CollectionButton childId={child.id} token={token} theme={theme} lang={langMode}/>
       <KidNavBar theme={theme} active="home" childId={child.id} token={token} lang={langMode}/>
     </div>
   )

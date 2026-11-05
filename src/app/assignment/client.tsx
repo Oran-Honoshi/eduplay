@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
 import HebrewMathText from '@/components/HebrewMathText'
-import { ThemeDecorations, CelebrationModal, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG } from '@/components/theme'
+import { ThemeDecorations, CelebrationModal, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG, CollectionButton } from '@/components/theme'
 import { getFontSize } from '@/lib/fontSize'
 import { isDistinctHe, translateOptionLabel } from '@/lib/text'
 
@@ -160,6 +160,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
       <CelebrationModal celebration={celebration} T={T} theme={theme}/>
 
       {/* Header */}
+      <CollectionButton childId={child.id} token={token} theme={theme} lang={langMode as any} aboveNav={false}/>
       <header style={{ background:T.panel, borderBottom:`2px solid ${T.border}`, padding:'0 16px', height:'56px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100 }}>
         <button onClick={goHome} style={{ display:'flex', alignItems:'center', gap:'6px', background:'none', border:'none', color:T.text2, fontWeight:700, fontSize:'13px', cursor:'pointer', padding:'8px' }}>
           <ArrowLeft size={16} style={isHE ? { transform:'scaleX(-1)' } : undefined}/> {isHE ? 'חזרה' : 'Back'}
