@@ -8,6 +8,7 @@ import { FONT_SIZES } from '@/lib/fontSize'
 import { isDistinctHe, translateOptionLabel } from '@/lib/text'
 import { saveKidLang, announceTokensChanged, type KidLang } from '@/lib/kidPrefs'
 import { answersMatch } from '@/lib/answerMatch'
+import { Pip, type PipPose } from '@/components/Pip'
 
 
 function Fraction({ n, d, size = 20 }: { n: any; d: any; size?: number }) {
@@ -612,7 +613,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
     step:        isHE ? 'שלב'                          : 'STEP',
     home:        isHE ? 'בית'                          : 'HOME',
     again:       isHE ? 'שוב'                          : 'AGAIN',
-    complete:    isHE ? '!השיעור הושלם'                : 'LESSON COMPLETE! 🎉',
+    complete:    isHE ? 'השיעור הושלם!'                : 'LESSON COMPLETE! 🎉',
     mastered:    isHE ? 'שלטת ב'                       : 'You mastered',
     xpEarned:   isHE ? '!צברת 100 XP'                 : '+100 XP earned!',
     inProgress:  isHE ? 'בתהליך'                       : 'In progress',
@@ -781,11 +782,14 @@ export default function LessonClient({ child, topic, questions, passage, passage
           <div className="completion-modal" style={{ background:T.panel, border:`4px solid ${T.accent2}`, borderRadius:T.radius, padding:'36px', textAlign:'center', maxWidth:'420px', width:'100%', boxShadow:T.shadow }}>
             {completionInfo ? (
               <>
-                <div style={{ fontSize:56, marginBottom:12 }}>{completionInfo.emoji}</div>
+                <Pip theme={theme} he={isHE} size={140} bounce pose="celebrate" style={{ margin:'0 auto 8px' }} />
                 <h2 style={{ fontFamily:T.fontHead, fontSize:'16px', color:T.accent2, marginBottom:'10px' }}>{completionInfo.message}</h2>
               </>
             ) : (
-              <h2 style={{ fontFamily:T.fontHead, fontSize:'16px', color:T.accent2, marginBottom:'10px' }}>{UI.complete}</h2>
+              <>
+                <Pip theme={theme} he={isHE} size={140} bounce pose="celebrate" style={{ margin:'0 auto 8px' }} />
+                <h2 style={{ fontFamily:T.fontHead, fontSize:'16px', color:T.accent2, marginBottom:'10px' }}>{UI.complete}</h2>
+              </>
             )}
             <div style={{ fontSize:'44px', letterSpacing:'6px', margin:'12px 0' }}>⭐⭐⭐</div>
             <p style={{ fontSize:'16px', color:T.text2, marginBottom:'8px' }}>{UI.mastered} <strong style={{ color:T.accent2 }}>{isHE ? topic?.title_he || topic?.title_en : topic?.title_en}</strong>!</p>
@@ -1078,7 +1082,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
 
                   {feedback && (
                     <div style={{ border:`2px solid ${feedback.correct?T.accent3:'#E03030'}`, background:feedback.correct?'rgba(0,200,83,0.1)':'rgba(224,48,48,0.1)', borderRadius:T.radius, padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:'10px', marginBottom:'10px' }}>
-                      <span style={{ fontSize:'24px' }}>{feedback.correct?'🎉':'💔'}</span>
+                      <Pip theme={theme} he={isHE} size={56} bounce pose={feedback.correct ? 'thumbs' : 'think'} style={{ flexShrink:0 }} />
                       <div>
                         <div style={{ fontFamily:T.fontHead, fontSize:'16px', color:feedback.correct?T.accent3:'#E03030', marginBottom:'3px' }}>{feedback.correct?UI.correct:UI.notQuite}</div>
                         <div style={{ fontSize:'14px', color:T.text2, lineHeight:1.6, direction:isHE?'rtl':'ltr' }}><FractionText text={isHE ? (feedback.explanation_he || feedback.explanation) : feedback.explanation} /></div>
@@ -1109,7 +1113,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
 
           {/* Mascot */}
           <ThemePanel theme={theme} T={T} borderColor={T.accent2} style={{ padding:'14px', textAlign:'center' }}>
-            <span style={{ fontSize:'56px', display:'block' }}>{T.mascot}</span>
+            <Pip theme={theme} he={isHE} size={120} bounce pose={(completed ? 'celebrate' : feedback ? (feedback.correct ? 'thumbs' : 'think') : hintVisible ? 'think' : 'wave') as PipPose} style={{ margin:'0 auto' }} />
             <div style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2, margin:'6px 0 3px' }}>{UI.pipSays}</div>
             <div style={{ background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, padding:'8px', fontSize:'14px', color:T.text2, lineHeight:1.5, textAlign:'start' }} dir={isHE ? 'rtl' : 'ltr'}>{pipText}</div>
           </ThemePanel>

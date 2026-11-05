@@ -1,4 +1,5 @@
 'use client'
+import { Pip } from '@/components/Pip'
 import { useEffect, useRef, useState } from 'react'
 import { Heart, Star, Flame, Play, BookOpen, Palette, Globe, ChevronRight, ChevronLeft } from 'lucide-react'
 import { THEME_CONFIG, KidNavBar, KidOverlay, CollectionButton } from '@/components/theme'
@@ -182,12 +183,12 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
       {/* Header */}
       <header style={{ background:T.panel, borderBottom:`2px solid ${T.border}`, padding:'0 16px', height:'56px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-          <div style={{ width:'34px', height:'34px', background:`linear-gradient(135deg,${T.accent1},${T.accent2})`, borderRadius:T.radius==='0px'?'4px':T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px' }}>
-            {T.mascot}
+          <div style={{ width:'44px', height:'44px', background:'transparent', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Pip theme={theme} pose="wave" size={44} he={isHE} />
           </div>
           <div>
             <div style={{ fontFamily:T.fontHead, fontSize:'10px', fontWeight:900, color:T.accent1, letterSpacing:T.fontHead.includes('Press')?'0':'normal' }}>EduPlay</div>
-            <div style={{ fontSize:'11px', color:T.text, opacity:.7 }}>Hi {child.display_name}! 👋</div>
+            <div style={{ fontSize:'11px', color:T.text, opacity:.7 }} dir={isHE ? 'rtl' : 'ltr'}>{isHE ? `היי ${child.display_name}!` : `Hi ${child.display_name}!`}</div>
           </div>
         </div>
 
