@@ -98,9 +98,18 @@ interface WorldMapProps {
   activePhase: string | null
   completedPhases: string[]
   onSelect: (slug: string) => void
+  he?: boolean
 }
 
-export default function WorldMap({ activePhase, completedPhases, onSelect }: WorldMapProps) {
+// Hebrew names for the map's own labels (region pills, hover label, legend).
+const HE_LABEL: Record<string, string> = {
+  'Africa':'אפריקה', 'Asia':'אסיה', 'N. America':'צפון אמריקה', 'S. America':'דרום אמריקה',
+  'Europe':'אירופה', 'Oceania':'אוקיאניה', 'Antarctica':'אנטארקטיקה', 'Ocean':'אוקיינוס',
+  'Birds':'ציפורים', 'Dinosaurs':'דינוזאורים', 'Completed':'הושלם', 'Locked':'נעול',
+}
+
+export default function WorldMap({ activePhase, completedPhases, onSelect, he = false }: WorldMapProps) {
+  const L = (t: string) => (he ? HE_LABEL[t] || t : t)
   const [hovered, setHovered] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
@@ -189,7 +198,7 @@ export default function WorldMap({ activePhase, completedPhases, onSelect }: Wor
             display: 'flex', alignItems: 'center', gap: 6,
           }}>
             {(() => { const Icon = CONTINENT_CONFIG[display].icon; return <Icon size={14}/> })()}
-            {CONTINENT_CONFIG[display].label}
+            {L(CONTINENT_CONFIG[display].label)}
             {completedPhases.includes(display) && <Check size={12}/>}
           </div>
         </div>
@@ -308,7 +317,7 @@ export default function WorldMap({ activePhase, completedPhases, onSelect }: Wor
               }}
             >
               <r.icon size={13}/>
-              <span>{r.label}</span>
+              <span>{L(r.label)}</span>
               {isC && <Check size={11} color="#10B981" strokeWidth={3}/>}
             </button>
           )
@@ -337,7 +346,7 @@ export default function WorldMap({ activePhase, completedPhases, onSelect }: Wor
               color: 'rgba(255,255,255,0.4)',
               fontFamily: '"Baloo 2", sans-serif',
             }}>
-              {item.label}
+              {L(item.label)}
             </span>
           </div>
         ))}

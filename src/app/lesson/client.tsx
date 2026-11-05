@@ -873,7 +873,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
         </div>
       </header>
 
-      {child?.id && <CollectionButton childId={child.id} token={token} theme={theme} lang={langMode as KidLang} aboveNav={false}/>}
+      {child?.id && <CollectionButton childId={child.id} token={token} theme={theme} lang={langMode as KidLang} aboveNav={false} compact/>}
 
       {/* ── Passage slide-in panel ─────────────────────────────── */}
       {passage && !isReadingTopic && passageOpen && (
