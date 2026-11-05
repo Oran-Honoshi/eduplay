@@ -6,6 +6,7 @@ import FractionText from '@/components/FractionText'
 import HebrewMathText from '@/components/HebrewMathText'
 import { ThemeDecorations, CelebrationModal, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG, CollectionButton } from '@/components/theme'
 import { getFontSize } from '@/lib/fontSize'
+import { Pip } from '@/components/Pip'
 import { isDistinctHe, translateOptionLabel } from '@/lib/text'
 
 interface AssignmentItem {
@@ -265,7 +266,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
 
           {showCorrectFeedback && (
             <div style={{ border:`2px solid ${T.accent3}`, background:'rgba(0,200,83,0.1)', borderRadius:T.radius, padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:'10px', marginBottom:'14px' }}>
-              <span style={{ fontSize:'22px' }}>🎉</span>
+              <Pip theme={theme} he={isHE} size={52} pose="thumbs" bounce style={{ flexShrink:0 }} />
               <div>
                 <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent3, marginBottom:'3px' }}>
                   {status === 'correct_first_try'

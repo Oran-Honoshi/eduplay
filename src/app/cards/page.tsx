@@ -1,4 +1,5 @@
 'use client'
+import { Pip } from '@/components/Pip'
 import { useState, useEffect, useCallback } from 'react'
 import { Check, X, ChevronRight, Gift, Target, BookOpen, CreditCard, Globe, MapPin, PartyPopper, Zap, Trophy } from 'lucide-react'
 import WorldMapComponent from '@/components/WorldMap'
@@ -225,8 +226,8 @@ function CardModal({ card, onClose, initialHe = false }: { card: Card; onClose: 
 const RARITY_HE: Record<string, string> = { common:'רגיל', rare:'נדיר', epic:'נדיר מאוד', legendary:'אגדי' }
 const CONFETTI_COLORS = ['#F4A340','#0F766E','#E05BA0','#4A7FD4','#F4D35E','#9BE23D']
 
-function CardReveal({ card, region, he, onClose }: {
-  card: Card; region: { name: string; emoji: string } | null; he: boolean; onClose: ()=>void
+function CardReveal({ card, region, he, theme, onClose }: {
+  card: Card; region: { name: string; emoji: string } | null; he: boolean; theme: string; onClose: ()=>void
 }) {
   const r = RARITY[card.rarity] ?? RARITY.common
   const [flipped, setFlipped] = useState(false)
@@ -292,8 +293,10 @@ function CardReveal({ card, region, he, onClose }: {
         </div>
       ) : (
         <div className="cr-anim" style={{ background:'#fff', borderRadius:24, padding:'30px 26px', maxWidth:360, width:'100%', textAlign:'center', animation:'cr-pop .5s ease both' }}>
-          <div style={{ fontSize:64 }}>{region?.emoji || '🌍'}</div>
-          <div style={{ display:'flex', justifyContent:'center', margin:'6px 0' }}><Trophy size={40} color="#E0A927"/></div>
+          <div style={{ display:'flex', justifyContent:'center', alignItems:'flex-end', gap:4 }}>
+            <Pip theme={theme} pose="celebrate" size={130} he={he} bounce />
+            <span style={{ fontSize:44 }} aria-hidden>{region?.emoji || '🌍'}</span>
+          </div>
           <div style={{ fontWeight:900, fontSize:22, color:'#065F46', fontFamily:'"Baloo 2",sans-serif' }}>
             {he ? `השלמת את ${region?.name}!` : `${region?.name} complete!`}
           </div>
@@ -399,7 +402,7 @@ export default function CardsPage() {
   return (
     <div dir={he?'rtl':'ltr'} style={{minHeight:'100vh',background:T.bg,fontFamily:'"Nunito",sans-serif'}}>
       {toast&&<div style={{position:'fixed',bottom:84,right:20,zIndex:300,padding:'12px 18px',borderRadius:14,background:'#F0FDF4',border:'1px solid #86EFAC',color:'#166534',fontWeight:700,fontSize:13,boxShadow:'0 8px 24px rgba(0,0,0,0.1)',display:'flex',alignItems:'center',gap:6}}><PartyPopper size={15}/> {toast}</div>}
-      {reveal&&<CardReveal card={reveal.card} region={reveal.region} he={he} onClose={()=>setReveal(null)}/>}
+      {reveal&&<CardReveal card={reveal.card} region={reveal.region} he={he} theme={themeKey} onClose={()=>setReveal(null)}/>}
       {openCard&&<CardModal card={openCard} onClose={()=>setOpenCard(null)} initialHe={he}/>}
 
       {/* Header */}

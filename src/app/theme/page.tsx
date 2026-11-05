@@ -1,4 +1,5 @@
 'use client'
+import { Pip } from '@/components/Pip'
 import { useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
@@ -82,7 +83,7 @@ function MiniHomePreview({ theme }: { theme: string }) {
   return (
     <div style={{ background: T.bg, borderRadius: '14px', padding: '14px', border: `1px solid ${T.border}` }}>
       <div style={{ background: T.panel, borderRadius: T.radius === '0px' ? '4px' : T.radius, border: `1.5px solid ${T.border}`, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-        <div style={{ width: 22, height: 22, borderRadius: T.radius === '0px' ? '4px' : '50%', background: `linear-gradient(135deg,${T.accent1},${T.accent2})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>{T.mascot}</div>
+        <Pip theme={theme} pose="wave" size={30} style={{ flexShrink: 0 }} />
         <div style={{ fontFamily: T.fontHead, fontSize: 9, fontWeight: 900, color: T.accent1 }}>EduPlay</div>
         <div style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, color: T.accent2 }}>⭐ 1,250</div>
       </div>
