@@ -20,7 +20,7 @@ export async function GET() {
 
   const { data, error } = await createServiceRoleClient()
     .from('children')
-    .select('id, display_name, grade')
+    .select('id, display_name, grade, theme')
     .eq('family_id', auth.parent.familyId)
     .order('created_at')
 

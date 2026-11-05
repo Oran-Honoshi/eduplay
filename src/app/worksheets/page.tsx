@@ -7,6 +7,7 @@ import {
   ToggleLeft, ToggleRight, Sliders, Users, RefreshCw,
 } from 'lucide-react'
 import EduPlayLogo from '@/components/EduPlayLogo'
+import { useFamilyChildren, EMPTY_CHILD, type FamilyChild } from '@/lib/useFamilyChildren'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import TopicMultiSelect from '@/components/TopicMultiSelect'
 import { PARENT_COLORS, PARENT_FONTS, CHILD_AVATAR_COLORS } from '@/lib/parentTheme'
@@ -26,17 +27,6 @@ const D = {
   text:'#F1F5F9', textSec:'#94A3B8', textMuted:'#64748B', label:'#CBD5E1',
 }
 
-// TODO: hardcoded to this dev family's actual children (confirmed against
-// GET /api/family/children, which returns these same three ids) rather than
-// fetched per-family like dashboard/page.tsx does. Not fixed here — swap to
-// GET /api/family/children when this does get addressed. The identical
-// hardcoded array (same 3 ids) is independently copy-pasted in
-// curriculum/page.tsx too — same root cause, fix both together.
-const CHILDREN = [
-  { id:'22222222-2222-2222-2222-222222222001', name:'Lia',   grade:6, color:CHILD_AVATAR_COLORS[0] },
-  { id:'22222222-2222-2222-2222-222222222002', name:'Tamar', grade:4, color:CHILD_AVATAR_COLORS[1] },
-  { id:'22222222-2222-2222-2222-222222222003', name:'Tom',   grade:0, color:CHILD_AVATAR_COLORS[2] },
-]
 
 // Kept as distinct per-subject identity colors (same call as curriculum/page.tsx's
 // SUBJECTS) rather than flattened to one teal — real informational signal, not decoration.
@@ -164,9 +154,11 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
   const preChildId   = searchParams.get('childId')
 
   const [dark, setDark]             = useState(false)
-  const [selectedChild, setChild]   = useState(
-    CHILDREN.find(c => c.id === preChildId) || CHILDREN[1]
-  )
+  const { children: CHILDREN } = useFamilyChildren()
+  const [selectedChild, setChild]   = useState<FamilyChild>(EMPTY_CHILD)
+  useEffect(() => {
+    if (!selectedChild.id && CHILDREN.length) setChild(CHILDREN.find(c => c.id === preChildId) || CHILDREN[0])
+  }, [CHILDREN, preChildId, selectedChild.id])
   const [selectedSubject, setSubj]  = useState(SUBJECTS[0])
   const [topics, setTopics]         = useState<any[]>([])
   const [selectedTopics, setSel]    = useState<string[]>([])
