@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0F766E">
+<title>EduPlay</title>
+<style>
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+         background:#F7F5F0; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; color:#1f2a28; }
+  .card { background:#fff; border-radius:20px; padding:32px 28px; max-width:340px; text-align:center;
+          border:1px solid rgba(15,118,110,.14); }
+  img { width:72px; height:72px; border-radius:18px; }
+  h1 { font-size:20px; margin:16px 0 6px; }
+  p { margin:4px 0; color:#7a8f8b; font-size:15px; }
+  .en { direction:ltr; margin-top:14px; }
+  button { margin-top:20px; padding:12px 28px; border:none; border-radius:999px; background:#0F766E;
+           color:#fff; font-size:16px; font-weight:700; cursor:pointer; min-height:48px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img src="/icons/icon-192.png" alt="EduPlay">
+    <h1>אין חיבור לאינטרנט</h1>
+    <p>בדקו את החיבור ונסו שוב.</p>
+    <p class="en">No internet connection. Check it and try again.</p>
+    <button onclick="location.reload()">נסו שוב · Try again</button>
+  </div>
+</body>
+</html>

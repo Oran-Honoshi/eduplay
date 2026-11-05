@@ -1,9 +1,29 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import RegisterSW from '@/components/RegisterSW'
 
+// PWA: installable on phones/tablets (manifest + icons + theme color).
 export const metadata: Metadata = {
   title: 'EduPlay',
   description: 'K-6 learning platform',
+  manifest: '/manifest.json',
+  applicationName: 'EduPlay',
+  appleWebApp: { capable: true, title: 'EduPlay', statusBarStyle: 'default' },
+  icons: {
+    icon: [
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }],
+  },
+  formatDetection: { telephone: false },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#0F766E',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -14,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* NES.css for Minecraft pixelated UI */}
         <link href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css" rel="stylesheet"/>
       </head>
-      <body>{children}</body>
+      <body>{children}<RegisterSW /></body>
     </html>
   )
 }
