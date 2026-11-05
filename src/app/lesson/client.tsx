@@ -7,6 +7,7 @@ import { ThemeDecorations, CelebrationModal, KidOverlay, AnimatedBtn, Sparkles, 
 import { FONT_SIZES } from '@/lib/fontSize'
 import { isDistinctHe, translateOptionLabel } from '@/lib/text'
 import { saveKidLang, announceTokensChanged, type KidLang } from '@/lib/kidPrefs'
+import { answersMatch } from '@/lib/answerMatch'
 
 
 function Fraction({ n, d, size = 20 }: { n: any; d: any; size?: number }) {
@@ -563,6 +564,8 @@ export default function LessonClient({ child, topic, questions, passage, passage
   const [xpBalance, setXp]        = useState(child?.xp_balance || 0)
   const [xpNotif, setXpNotif]     = useState<string|null>(null)
   const [completed, setCompleted] = useState(false)
+  const [typedAnswer, setTypedAnswer] = useState('')
+  const [typedError, setTypedError] = useState(false)
   const [completionInfo, setCompletionInfo] = useState<{ message: string; emoji: string } | null>(null)
 
   const [celebration, setCelebration] = useState<{ message: string; emoji: string } | null>(null)
@@ -744,6 +747,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
     setCurrentStep(next)
     setQIndex(i => Math.min(i + 1, questions.length - 1))
     setAnswered(false); setSelected(null); setFeedback(null); setHint(false)
+    setTypedAnswer(''); setTypedError(false)
     setPip(pipLine)
   }
 
@@ -1016,6 +1020,26 @@ export default function LessonClient({ child, topic, questions, passage, passage
   </div>
 )}
 
+                  {/* Word problems have no options: a big answer box + Check */}
+                  {(!Array.isArray(currentQ.options) || currentQ.options.length === 0) && (
+                    <form onSubmit={e => { e.preventDefault(); const v = typedAnswer.trim(); if (!v) { setTypedError(true); return } checkAnswer({ label: v, isCorrect: answersMatch(v, String(currentQ.correct_answer ?? '')) }) }}
+                      style={{ display:'flex', gap:'8px', marginBottom:'12px', flexWrap:'wrap' }} dir={isHE ? 'rtl' : 'ltr'}>
+                      <input value={typedAnswer} disabled={answered} inputMode="text" autoComplete="off"
+                        onChange={e => { setTypedAnswer(e.target.value); setTypedError(false) }}
+                        placeholder={isHE ? 'כתבו כאן את התשובה' : 'Type your answer'}
+                        aria-label={isHE ? 'התשובה שלך' : 'Your answer'}
+                        style={{ flex:'1 1 180px', minHeight:'52px', fontSize:'20px', padding:'10px 14px', borderRadius:T.radius, border:`2px solid ${typedError ? '#E03030' : T.border}`, background:T.panel, color:T.text, fontFamily:'inherit' }}/>
+                      <button type="submit" disabled={answered}
+                        style={{ minHeight:'52px', padding:'10px 22px', borderRadius:T.radius, border:'none', background:T.accent1, color:'#fff', fontFamily:T.fontHead, fontSize:'15px', cursor:answered?'default':'pointer' }}>
+                        {isHE ? 'בדיקה' : 'Check'}
+                      </button>
+                      {typedError && <div style={{ width:'100%', color:'#E03030', fontSize:'13px' }}>{isHE ? 'כתבו תשובה קודם' : 'Type an answer first'}</div>}
+                      {answered && feedback && !feedback.correct && currentQ.correct_answer && (
+                        <div style={{ width:'100%', fontSize:'15px', color:T.text, fontWeight:700 }}>{isHE ? 'התשובה הנכונה: ' : 'The answer: '}<FractionText text={String(currentQ.correct_answer)} /></div>
+                      )}
+                    </form>
+                  )}
+
                   {currentQ.options && (
                     <div className="answer-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'12px' }}>
                       {currentQ.options.map((opt: any) => {
@@ -1055,7 +1079,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
 
                   <div className="cta-row" style={{ display:'flex', gap:'8px' }}>
                     <button onClick={() => setHint(v=>!v)} style={{ padding:'12px 18px', fontFamily:T.fontHead, fontSize:'15px', background:T.panel, border:`2px solid ${T.accent2}`, color:T.accent2, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>💡 {UI.hint}</button>
-                    <button onClick={() => { setQIndex(i=>(i+1)%Math.max(questions.length,1)); setAnswered(false); setSelected(null); setFeedback(null); setHint(false) }} style={{ padding:'12px 18px', fontFamily:T.fontHead, fontSize:'15px', background:T.panel, border:`2px solid ${T.accent3}`, color:T.accent3, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>🔄</button>
+                    <button onClick={() => { setQIndex(i=>(i+1)%Math.max(questions.length,1)); setAnswered(false); setSelected(null); setTypedAnswer(''); setFeedback(null); setHint(false) }} style={{ padding:'12px 18px', fontFamily:T.fontHead, fontSize:'15px', background:T.panel, border:`2px solid ${T.accent3}`, color:T.accent3, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>🔄</button>
                     <button onClick={nextStep} style={{ padding:'12px 20px', fontFamily:T.fontHead, fontSize:'16px', background:T.accent1, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, flex:1, fontWeight:800 }}>{UI.next}</button>
                   </div>
                 </ThemePanel>

@@ -4,6 +4,7 @@ import { ThemeDecorations } from '@/components/theme'
 import { ArrowLeft, Play, Map, Inbox } from 'lucide-react'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import { PARENT_COLORS, PARENT_FONTS, CHILD_AVATAR_COLORS } from '@/lib/parentTheme'
+import { useFamilyChildren, EMPTY_CHILD, type FamilyChild } from '@/lib/useFamilyChildren'
 
 const GRADE_LABELS: Record<number,string> = {0:'Kindergarten',1:'Grade 1',2:'Grade 2',3:'Grade 3',4:'Grade 4',5:'Grade 5',6:'Grade 6'}
 const GRADE_LABELS_HE: Record<number,string> = {0:'גן חובה',1:'כיתה א׳',2:'כיתה ב׳',3:'כיתה ג׳',4:'כיתה ד׳',5:'כיתה ה׳',6:'כיתה ו׳'}
@@ -14,17 +15,6 @@ const SUBJECTS = [
   { slug:'hebrew',  label:'Hebrew',      labelHe:'עברית',   icon:'🇮🇱', color:'#FF6B6B', light:'#FFF5F5' },
 ]
 
-// TODO: hardcoded to one specific dev family's actual children rather than
-// fetched per-family (same anti-pattern as worksheets/page.tsx — this exact
-// array, same 3 ids, is independently copy-pasted there too). Means this
-// page only produces working /lesson links for that one real family; any
-// other logged-in family gets a childId that isn't theirs. Not fixed here —
-// fix both files together, swap to GET /api/family/children.
-const CHILDREN = [
-  { id:'22222222-2222-2222-2222-222222222001', name:'Lia',   grade:6, theme:'minecraft',  accent:CHILD_AVATAR_COLORS[0] },
-  { id:'22222222-2222-2222-2222-222222222002', name:'Tamar', grade:4, theme:'minecraft',  accent:CHILD_AVATAR_COLORS[1] },
-  { id:'22222222-2222-2222-2222-222222222003', name:'Tom',   grade:0, theme:'plain',      accent:CHILD_AVATAR_COLORS[2] },
-]
 
 const THEME_BADGE: Record<string,{label:string;bg:string}> = {
   minecraft:  { label:'⛏️ Minecraft',  bg:'#1A1A2E' },
@@ -35,7 +25,11 @@ const THEME_BADGE: Record<string,{label:string;bg:string}> = {
 export default function CurriculumPage() {
   const [selectedGrade, setGrade]   = useState(4)
   const [subj,          setSubject] = useState(SUBJECTS[0])
-  const [child,         setChild]   = useState(CHILDREN[0])
+  const { children: CHILDREN } = useFamilyChildren()
+  const [child,         setChild]   = useState<FamilyChild>(EMPTY_CHILD)
+  useEffect(() => {
+    if (!child.id && CHILDREN.length) { setChild(CHILDREN[0]); setGrade(CHILDREN[0].grade) }
+  }, [CHILDREN, child.id])
   const [topics,        setTopics]  = useState<any[]>([])
   const [loading,       setLoading] = useState(false)
   const [lang,          setLang]    = useState<'en'|'he'>('en')

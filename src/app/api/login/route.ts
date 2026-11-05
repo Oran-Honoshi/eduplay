@@ -21,21 +21,46 @@ async function checkPassword(
   return matches
 }
 
+// ── Guessing protection ───────────────────────────────────────
+// A 4-digit PIN is only 10,000 options, so failed attempts are counted per
+// client IP in a sliding window and further tries are refused for a while.
+// Generous enough that a child mistyping a few times (or siblings sharing a
+// home connection) isn't locked out; far too slow to brute-force.
+const WINDOW_MIN = 15
+const LIMITS = { pin: 8, pw: 10 } as const
+
+function clientKey(req: NextRequest, kind: 'pin' | 'pw') {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
+  return `${kind}:${ip}`
+}
+async function tooManyAttempts(supabase: any, key: string, limit: number) {
+  const since = new Date(Date.now() - WINDOW_MIN * 60_000).toISOString()
+  const { count } = await supabase.from('login_attempts').select('id', { count: 'exact', head: true }).eq('key', key).gte('created_at', since)
+  return (count ?? 0) >= limit
+}
+async function recordFailure(supabase: any, key: string) {
+  await supabase.from('login_attempts').insert({ key })
+}
+async function clearFailures(supabase: any, key: string) {
+  await supabase.from('login_attempts').delete().eq('key', key)
+}
+const tooMany = () => NextResponse.json(
+  { error: 'Too many tries — please wait a few minutes and try again. · יותר מדי ניסיונות — נסו שוב בעוד כמה דקות.' },
+  { status: 429 }
+)
+
 export async function POST(req: NextRequest) {
   const supabase = createServiceRoleClient()
   const body = await req.json()
   const { pin, password } = body
 
-  // TODO(security): child PIN login has no rate limiting or lockout.
-  // - pin_code is compared in plaintext (still true as of 2026-07-23 recheck) — flagged in original
-  //   audit as lower priority than the missing rate limit, since PINs are only a 4-digit space anyway.
-  // - PIN space is 10,000 combinations (0000-9999) and this endpoint is unauthenticated, so it's
-  //   brute-forceable in a trivially small number of requests without throttling.
-  // - Needs attempt-based lockout per child per time window (e.g. N failed attempts -> temporary
-  //   lockout for that child id) before this is safe to leave as-is. Do not fix as a drive-by change
-  //   inside unrelated work (e.g. the IDOR pass) — track and fix as its own change.
+  // Security note: failed PIN/password attempts are now throttled per IP
+  // (see LIMITS above, 2026-11-05). pin_code is still compared in plaintext —
+  // lower risk now that guessing is throttled; hashing it is a separate change.
   // Child PIN login
   if (pin) {
+    const key = clientKey(req, 'pin')
+    if (await tooManyAttempts(supabase, key, LIMITS.pin)) return tooMany()
     const { data: children } = await supabase
       .from('children')
       .select('id, display_name, access_token, pin_code, grade, theme')
@@ -44,8 +69,10 @@ export async function POST(req: NextRequest) {
     const child = (children || []).find((c: any) => c.pin_code === pin)
 
     if (!child) {
+      await recordFailure(supabase, key)
       return NextResponse.json({ error: 'Wrong PIN — try again! 🔢' }, { status: 401 })
     }
+    await clearFailures(supabase, key)
 
     await createChildSession(child.id, FAMILY_ID)
 
@@ -64,6 +91,8 @@ export async function POST(req: NextRequest) {
 
   // Parent password login
 if (password) {
+  const pwKey = clientKey(req, 'pw')
+  if (await tooManyAttempts(supabase, pwKey, LIMITS.pw)) return tooMany()
   // Check individual parent passwords first
   const { data: allParents } = await supabase
     .from('family_parents')
@@ -85,6 +114,7 @@ if (password) {
       // previewing a child link mid-session) has no login call to hook here,
       // which is what that precedence fix covers.
       clearChildSession()
+      await clearFailures(supabase, pwKey)
       await createParentSession(parent.id, FAMILY_ID)
       return NextResponse.json({
         success: true,
@@ -110,6 +140,7 @@ if (password) {
     if (ok) {
       // See the individual-parent-password branch above for why this is here.
       clearChildSession()
+      await clearFailures(supabase, pwKey)
       await createParentSession(null, FAMILY_ID)
       return NextResponse.json({
         success: true,
@@ -119,6 +150,7 @@ if (password) {
     }
   }
 
+  await recordFailure(supabase, pwKey)
   return NextResponse.json({ error: 'Wrong password — try again! 🔑' }, { status: 401 })
 }
 

@@ -1,3 +1,4 @@
+import { answersMatch } from '@/lib/answerMatch'
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { authorizeChildAccess } from '@/lib/session'
@@ -41,11 +42,16 @@ export async function POST(req: NextRequest) {
     // principle as the questionId branch (never trust a client-supplied `correct`).
     if (questionId) {
       const { data: question } = await supabase
-        .from('questions').select('options').eq('id', questionId).single()
-      const matchedOption = Array.isArray(question?.options)
-        ? question.options.find((o: any) => o.label === answerGiven)
-        : null
-      correct = !!matchedOption?.isCorrect
+        .from('questions').select('options, correct_answer').eq('id', questionId).single()
+      const hasOptions = Array.isArray(question?.options) && question.options.length > 0
+      if (hasOptions) {
+        const matchedOption = question.options.find((o: any) => o.label === answerGiven)
+        correct = !!matchedOption?.isCorrect
+      } else {
+        // Word problems have no options: grade the typed answer, accepting
+        // equivalent forms (4/5 = 8/10, 0.5 = 1/2, units optional).
+        correct = answersMatch(String(answerGiven ?? ''), String(question?.correct_answer ?? ''))
+      }
     } else if (passageQuestionId) {
       const { data: passageQuestion } = await supabase
         .from('passage_questions').select('options').eq('id', passageQuestionId).single()
