@@ -198,7 +198,9 @@ function ThemeSelector() {
               {!theme.available && (
                 <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.5)', borderRadius: '50px', padding: '2px 8px', fontSize: '9px', color: 'white', fontWeight: 800 }}>SOON</div>
               )}
-              <div style={{ fontSize: '32px', marginBottom: '6px' }}>{theme.emoji}</div>
+              {theme.available
+                ? <Pip theme={theme.id} pose="wave" size={64} style={{ margin: '0 auto 4px' }} />
+                : <div style={{ fontSize: '32px', marginBottom: '6px' }}>{theme.emoji}</div>}
               <div style={{ fontSize: '13px', fontWeight: 800, color: theme.text }}>{theme.name}</div>
               <div style={{ fontSize: '10px', color: theme.text, opacity: .7, marginTop: '3px' }}>{theme.desc}</div>
             </div>
