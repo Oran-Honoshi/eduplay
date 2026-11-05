@@ -251,15 +251,19 @@ export function renderKidVisual(data: any, c: KidVisualCtx): string {
       const parts: string[] = (Array.isArray(data.parts) ? data.parts : []).map(String).slice(0, 4)
       if (!parts.length) return ''
       const rtl = parts.some(p => /[֐-׿]/.test(p))
-      const boxW = 70, gap = 26, total = parts.length * boxW + (parts.length - 1) * gap
+      // Letter-by-letter (p ? g) shows touching sound boxes; word parts (sun + shine) show the sum.
+      const letters = parts.every(p => p.length <= 2)
+      const boxW = letters ? 48 : 70, gap = letters ? 8 : 26, total = parts.length * boxW + (parts.length - 1) * gap
       const w = Math.max(W, total + 20), y = 20
       let x = (w - total) / 2, out = ''
       const seq = rtl ? [...parts].reverse() : parts
       seq.forEach((p, i) => {
-        out += `<rect x="${x}" y="${y}" width="${boxW}" height="40"  rx="8" fill="${hl}" fill-opacity="0.13" stroke="${hl}" stroke-width="2"/>` + text(x + boxW / 2, y + 26, p, 16)
-        if (i < seq.length - 1) out += text(x + boxW + gap / 2, y + 27, '+', 18)
+        const blank = /^[?_]+$/.test(p)
+        out += `<rect x="${x}" y="${y}" width="${boxW}" height="40"  rx="8" fill="${hl}" fill-opacity="${blank ? 0.04 : 0.13}" stroke="${hl}" stroke-width="2"${blank ? ' stroke-dasharray="5 4"' : ''}/>` + text(x + boxW / 2, y + 27, blank ? '?' : p, letters ? 20 : 16)
+        if (!letters && i < seq.length - 1) out += text(x + boxW + gap / 2, y + 27, '+', 18)
         x += boxW + gap
       })
+      if (letters) return svg(out, w, 80)
       out += text(w / 2, y + 80, '= ' + parts.join(''), 18)
       return svg(out, w, 120)
     }
