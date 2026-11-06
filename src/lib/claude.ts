@@ -13,11 +13,13 @@ export async function askClaudeJSON<T = any>(opts: {
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY!, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
       model: CLAUDE_MODEL, max_tokens: opts.maxTokens ?? 4000, system: opts.system,
+      thinking: { type: 'disabled' },
       messages: [{ role: 'user', content: opts.content }],
     }),
   })
-  if (!res.ok) return { ok: false, error: `AI request failed (${res.status})` }
+  if (!res.ok) return { ok: false, error: `AI request failed (${res.status}): ${(await res.text()).slice(0, 300)}` }
   const body = await res.json()
+  if (body.stop_reason === 'max_tokens') console.warn('[askClaudeJSON] answer cut at max_tokens')
   const text: string = (body.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('')
   const start = text.search(/[[{]/)
   const end = Math.max(text.lastIndexOf('}'), text.lastIndexOf(']'))

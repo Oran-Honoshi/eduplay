@@ -97,15 +97,17 @@ Output JSON only:
  "topics":[{"title_en":"...","title_he":"...","subtopics_he":["..."],"topic_slug":"..."|null,"is_new":true|false,"count":number}],
  "tags_he":["..."], "words":[{"en":"...","he":"..."}] (only for a workbook), "sections":[{"kind":"...","title_he":"...","instructions_he":"...","count":number}] (only for a workbook)}`
 
-  const ai = await askClaudeJSON<any>({
+  const ask = () => askClaudeJSON<any>({
     system,
     content: [{ type: 'text', text: [
       mtext.text ? `The parent uploaded ${(b.upload_ids || []).length} file(s); they were already read. The child's material, page by page:\n${mtext.text}` : '',
       requestText ? `Parent's request: ${requestText}` : 'Plan from the material above.',
     ].filter(Boolean).join('\n\n') }],
-    maxTokens: 6000,
+    maxTokens: 8000,
   })
-  if (!ai.ok) return NextResponse.json({ error: 'Could not plan this right now. Try again.' }, { status: 502 })
+  let ai = await ask()
+  if (!ai.ok) { console.warn('[create/plan] first try failed:', ai.error); ai = await ask() }
+  if (!ai.ok) { console.error('[create/plan]', ai.error); return NextResponse.json({ error: 'Could not plan this right now. Try again.', detail: ai.error.slice(0, 200) }, { status: 502 }) }
   const p = ai.data || {}
   if (p.off_topic) return NextResponse.json({ error: 'EduPlay יוצר רק חומרי לימוד לבית הספר — תרגול, מבחנים ודפי הסבר. נסו לתאר נושא לימודי.' }, { status: 400 })
 
