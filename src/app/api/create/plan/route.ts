@@ -5,7 +5,7 @@ import { loadUploadBlocks } from '@/lib/uploadBlocks'
 import { askClaudeJSON } from '@/lib/claude'
 import { ON_REQUEST_FROM_GRADE, topicSlug } from '@/lib/onRequestTopics'
 
-export const maxDuration = 60
+export const maxDuration = 300
 
 // ─── POST /api/create/plan ─────────────────────────────────────
 // Step 1 of Create: read what the parent wants (+ any uploaded material) and
@@ -79,18 +79,19 @@ What the parent wants to make — ${kindText}
 Read the parent's request and any attached material (workbook pages, an exam material list, a worksheet).
 ${onRequest
   ? `Choose topics freely. When a topic matches one of these existing shared topics, use its slug in "topic_slug"; otherwise set topic_slug to null and is_new true: ${JSON.stringify(catalog.slice(0, 300))}`
-  : `You MUST use only these topics for this grade (topic_slug is required and must be one of them); pick the closest ones: ${JSON.stringify(catalog)}`}
+  : `Prefer these curriculum topics for this grade and put the matching slug in "topic_slug": ${JSON.stringify(catalog)}. Only if the material clearly covers something none of them matches (for example a narrower or different scope), set topic_slug to null and is_new true.`}
 Rules: topic names are general curriculum names (not page numbers). Keep the topic order of the material. Practice: 1–2 topics unless the parent asked for more, 10–15 questions each. Exam: 3–8 topics, 4–8 questions each, total about 20–40, and time_minutes. Question types: choose from "multiple_choice" and "word_problem" (open answer); use both unless the parent said otherwise.
 ${learnedText}
 If something important is missing or unclear (for example which chapter, or the level), say so briefly in missing_he — but still give your best plan.
+${uploads.blocks.length ? `Also write "material_digest": a detailed description of the attached material in Hebrew, so a question writer who cannot see the pages can write matching questions — for each page or section: the topic, the exact terms and notation used (how points, angles, numbers are written), the kinds of exercises with 2–3 representative examples including their numbers, any scope limits (for example "first quadrant only", "whole numbers up to 20"), and the difficulty. Up to about 900 words.` : ''}
 Output JSON only:
-{"title_he":"...","title_en":"...","summary_he":"one or two sentences explaining the plan to the parent","missing_he":["..."],"difficulty":"progressive"|"mixed"|"easy"|"medium"|"hard","q_types":["multiple_choice","word_problem"],"time_minutes":number|null,
+{"title_he":"...","title_en":"...","summary_he":"one or two sentences explaining the plan to the parent","missing_he":["..."],"material_digest":"..."|null,"difficulty":"progressive"|"mixed"|"easy"|"medium"|"hard","q_types":["multiple_choice","word_problem"],"time_minutes":number|null,
  "topics":[{"title_en":"...","title_he":"...","subtopics_he":["..."],"topic_slug":"..."|null,"is_new":true|false,"count":number}]}`
 
   const ai = await askClaudeJSON<any>({
     system,
     content: [...uploads.blocks, { type: 'text', text: requestText ? `Parent's request: ${requestText}` : 'Plan from the attached material.' }],
-    maxTokens: 3000,
+    maxTokens: 7000,
   })
   if (!ai.ok) return NextResponse.json({ error: 'Could not plan this right now. Try again.' }, { status: 502 })
   const p = ai.data || {}
@@ -102,7 +103,6 @@ Output JSON only:
       const guess = topicSlug(t.title_en)
       if (bySlug.has(guess)) slug = guess
     }
-    if (!slug && !onRequest) slug = topics[0]?.slug ?? null // K–6 must map to a curated topic
     const row = slug ? bySlug.get(slug) : null
     return {
       key: `t${i + 1}`,
@@ -134,13 +134,29 @@ Output JSON only:
     q_types: Array.isArray(p.q_types) && p.q_types.length ? p.q_types.filter((x: any) => ['multiple_choice', 'word_problem'].includes(x)) : ['multiple_choice', 'word_problem'],
     time_minutes: kind === 'exam' ? Math.max(10, Math.min(240, Number(p.time_minutes) || 45)) : null,
     topics: planTopics,
+    digest: typeof p.material_digest === 'string' ? p.material_digest.slice(0, 12000) : null,
     skipped_uploads: uploads.skipped,
   }
 
+  // Re-planning an untouched draft updates it instead of making a new one
+  const rowData = {
+    family_id: familyId, child_id: childId, kind, subject_slug: subject, grade, language,
+    title: plan.title_he || plan.title_en || 'חומר חדש', request_text: requestText || null,
+    upload_ids: (Array.isArray(b.upload_ids) ? b.upload_ids : []).filter((x: any) => typeof x === 'string').slice(0, 25),
+    plan, time_minutes: plan.time_minutes, updated_at: new Date().toISOString(),
+  }
+  if (typeof b.material_id === 'string') {
+    const { data: prev } = await db.from('materials').select('id, family_id, question_ids, status').eq('id', b.material_id).maybeSingle()
+    if (prev && prev.family_id === familyId && prev.status === 'draft' && !(prev.question_ids || []).length) {
+      const { data: updated, error: upErr } = await db.from('materials').update(rowData).eq('id', prev.id).select('*').single()
+      if (upErr) return NextResponse.json({ error: upErr.message }, { status: 500 })
+      return NextResponse.json({ material: updated })
+    }
+  }
   const { data: material, error } = await db.from('materials').insert({
     family_id: familyId, child_id: childId, kind, subject_slug: subject, grade, language,
     title: plan.title_he || plan.title_en || 'חומר חדש', request_text: requestText || null,
-    upload_ids: (Array.isArray(b.upload_ids) ? b.upload_ids : []).filter((x: any) => typeof x === 'string').slice(0, 10),
+    upload_ids: (Array.isArray(b.upload_ids) ? b.upload_ids : []).filter((x: any) => typeof x === 'string').slice(0, 25),
     plan, time_minutes: plan.time_minutes,
   }).select('*').single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

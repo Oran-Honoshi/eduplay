@@ -19,6 +19,7 @@ import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
 import { Pip } from '@/components/Pip'
 import { FeedbackPrompt } from '@/components/Feedback'
+import { FunLoader, FunLine } from '@/components/FunLoader'
 import { useFamilyChildren, type FamilyChild } from '@/lib/useFamilyChildren'
 import { PARENT_COLORS } from '@/lib/parentTheme'
 
@@ -97,6 +98,20 @@ function CreateInner() {
     })()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Every step can be left with the browser's back button or the step bar.
+  const go = (s: Step) => {
+    setStep(s); setError(null)
+    try { window.history.pushState({ createStep: s }, '') } catch {}
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  useEffect(() => {
+    try { window.history.replaceState({ createStep: step }, '') } catch {}
+    const onPop = (e: PopStateEvent) => { if (e.state?.createStep) setStep(e.state.createStep) }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const [failed, setFailed] = useState<any[]>([])
+
   function pickChild(c: FamilyChild) {
     setChild(c); setGrade(c.grade)
   }
@@ -107,13 +122,13 @@ function CreateInner() {
     try {
       const res = await fetch('/api/create/plan', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind, child_id: child?.id, subject_slug: subject, grade, language: lang, request_text: request, upload_ids: materials.map(m => m.id) }),
+        body: JSON.stringify({ kind, child_id: child?.id, subject_slug: subject, grade, language: lang, request_text: request,
+          upload_ids: materials.length ? materials.map(m => m.id) : (mat?.upload_ids || []),
+          material_id: mat?.status === 'draft' && !(mat?.question_ids || []).length ? mat.id : undefined }),
       })
       const d = await res.json()
-      if (!res.ok) throw new Error(d.error || 'שגיאה')
-      const m = d.material
-      m.plan.topics = m.plan.topics.map((t: any) => ({ ...t, reuse: Math.min(t.bank_count || 0, t.count) }))
-      setMat(m); setStep('plan')
+      if (!res.ok) throw new Error(d.error || 'משהו השתבש. נסו שוב.')
+      setMat(d.material); if (step !== 'plan') go('plan')
     } catch (e: any) { setError(e.message) } finally { setBusy(false) }
   }
 
@@ -124,42 +139,72 @@ function CreateInner() {
     return d.material
   }
 
-  // ── step 3 → 4: build, topic by topic, ≤10 new questions per request ──
+  // ── step 3 → 4: build. Each topic is split into parts of ≤5 questions;
+  // 3 parts run at the same time. Questions already in the bank quietly fill
+  // part of a topic when no material was uploaded (with material, everything is
+  // written fresh to match it). Failed parts can be retried from the review step.
+  type Job = { key: string; label: string; reuse: number; generate: number; part: number; parts: number }
+  async function runJobs(m: any, jobs: Job[]) {
+    setProgress({ done: 0, total: jobs.length, label: '' })
+    const bad: Job[] = []
+    let next = 0, done = 0
+    async function worker() {
+      while (next < jobs.length) {
+        const j = jobs[next++]
+        setProgress(p => ({ ...p, label: j.label }))
+        const r = await fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic_key: j.key, generate: j.generate, reuse: j.reuse, part: j.part, parts: j.parts }) }).catch(() => null)
+        if (!r || !r.ok) bad.push(j)
+        setProgress(p => ({ ...p, done: ++done }))
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(3, jobs.length) }, worker))
+    return bad
+  }
+
   async function build() {
     const m = await savePlan(mat.plan, { time_minutes: mat.plan.time_minutes ?? undefined })
     if (!m) return
-    setStep('build'); setError(null)
+    go('build')
     const topics = m.plan.topics
     if (m.kind === 'explanation') {
       setProgress({ done: 0, total: topics.length, label: '' })
-      for (let i = 0; i < topics.length; i++) {
-        setProgress({ done: i, total: topics.length, label: topics[i].title_he || topics[i].title_en })
-        const r = await fetch(`/api/materials/${m.id}/explain`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic_key: topics[i].key }) })
-        if (!r.ok) setError(`לא הצלחנו לכתוב את הדף "${topics[i].title_he || topics[i].title_en}". אפשר לנסות שוב.`)
-      }
+      let done = 0
+      const bad: any[] = []
+      await Promise.all(topics.map(async (t: any) => {
+        const r = await fetch(`/api/materials/${m.id}/explain`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic_key: t.key }) }).catch(() => null)
+        if (!r || !r.ok) bad.push(t)
+        setProgress(p => ({ ...p, done: ++done, label: t.title_he || t.title_en }))
+      }))
+      if (bad.length) setError(`לא הצלחנו לכתוב ${bad.length} דפים. אפשר לחזור לתוכנית ולנסות שוב.`)
     } else {
-      const jobs: { key: string; label: string; reuse: number; generate: number }[] = []
+      const hasMaterial = (m.upload_ids || []).length > 0 || !!m.plan.digest
+      const jobs: Job[] = []
       for (const t of topics) {
-        const reuse = Math.min(t.reuse || 0, t.count)
-        let left = t.count - reuse
-        jobs.push({ key: t.key, label: t.title_he || t.title_en, reuse, generate: Math.min(10, left) })
-        left -= Math.min(10, left)
-        while (left > 0) { jobs.push({ key: t.key, label: t.title_he || t.title_en, reuse: 0, generate: Math.min(10, left) }); left -= Math.min(10, left) }
-      }
-      setProgress({ done: 0, total: jobs.length, label: '' })
-      for (let i = 0; i < jobs.length; i++) {
-        const j = jobs[i]
-        setProgress({ done: i, total: jobs.length, label: j.label })
-        const r = await fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic_key: j.key, generate: j.generate, reuse: j.reuse }) })
-        if (!r.ok) {
-          const d = await r.json().catch(() => ({}))
-          setError(`חלק מ"${j.label}" לא נוצר (${d.error || 'שגיאה'}). אפשר להמשיך ולבדוק את מה שכן נוצר.`)
+        const reuse = hasMaterial ? 0 : Math.min(t.bank_count || 0, Math.floor(t.count / 2))
+        const fresh = t.count - reuse
+        const parts = Math.max(1, Math.ceil(fresh / 5))
+        for (let k = 0; k < parts; k++) {
+          const size = Math.min(5, fresh - k * 5)
+          jobs.push({ key: t.key, label: t.title_he || t.title_en, reuse: k === 0 ? reuse : 0, generate: size, part: k, parts })
         }
+        if (fresh === 0 && reuse > 0) jobs.push({ key: t.key, label: t.title_he || t.title_en, reuse, generate: 0, part: 0, parts: 1 })
       }
+      const bad = await runJobs(m, jobs)
+      setFailed(bad)
+      if (bad.length) setError(`${bad.length} חלקים לא נוצרו הפעם. אפשר לבדוק את מה שכן נוצר, וללחוץ "להשלים את החסר".`)
     }
-    setProgress(p => ({ ...p, done: p.total }))
     await reload(m.id)
-    setStep('review')
+    go('review')
+  }
+
+  async function retryFailed() {
+    const jobs = failed
+    setFailed([]); go('build')
+    const bad = await runJobs(mat, jobs)
+    setFailed(bad)
+    setError(bad.length ? `עדיין ${bad.length} חלקים לא נוצרו. אפשר לנסות שוב בעוד רגע.` : null)
+    await reload(mat.id)
+    go('review')
   }
 
   async function reload(id = mat.id) {
@@ -205,7 +250,7 @@ function CreateInner() {
 
         {view === 'history' ? <HistoryList onMore={(m: any) => { window.location.href = `/create?from=${m.id}` }} /> : (
           <>
-            <Steps step={step} />
+            <Steps step={step} canGo={(s: Step) => step !== 'build' && (s === 'kind' || s === 'details' || (s === 'plan' && !!mat) || (s === 'review' && !!mat && ((mat.question_ids || []).length > 0 || !!mat.explanation)) || (s === 'done' && mat?.status === 'ready'))} onGo={go} />
             {error && (
               <div className="mb-4 flex items-start gap-2 rounded-xl border border-[#F59E0B55] bg-[#FFFBEB] px-4 py-3 text-sm text-[#7c4a03]">
                 <AlertTriangle size={16} className="mt-0.5 shrink-0" /> <span>{error}</span>
@@ -215,7 +260,7 @@ function CreateInner() {
             {step === 'kind' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {KINDS.map(k => (
-                  <button key={k.id} onClick={() => { setKind(k.id); setStep('details') }}
+                  <button key={k.id} onClick={() => { setKind(k.id); go('details') }}
                     className={`${card} p-5 text-start hover:border-[#0F766E] hover:shadow-md transition`}>
                     <div className="w-12 h-12 rounded-xl bg-[#E4F3F1] text-[#0F766E] flex items-center justify-center mb-3"><k.Icon size={24} /></div>
                     <div className="text-lg font-black text-[#1f2a28]">{k.he}</div>
@@ -228,7 +273,10 @@ function CreateInner() {
               </div>
             )}
 
-            {step === 'details' && (
+            {step === 'details' && busy && (
+              <div className={`${card} p-8`}><FunLoader kind="plan" pose="think" size={110} sub={materials.length > 4 ? 'הרבה דפים — זה ייקח עד דקה' : undefined} /></div>
+            )}
+            {step === 'details' && !busy && (
               <div className={`${card} p-5 flex flex-col gap-5`}>
                 <Field label="בשביל מי?">
                   <div className="flex flex-wrap gap-2">
@@ -272,48 +320,59 @@ function CreateInner() {
                   <MaterialUpload value={materials} onChange={setMaterials} he />
                 </Field>
                 <div className="flex gap-2 justify-between">
-                  <button className={btnGhost} onClick={() => setStep('kind')}><ArrowLeft size={16} className="rotate-180" /> חזרה</button>
+                  <button className={btnGhost} onClick={() => go('kind')}><ArrowLeft size={16} className="rotate-180" /> חזרה</button>
                   <button className={btnPrimary} disabled={busy || (!request.trim() && !materials.length)} onClick={makePlan}>
-                    {busy ? <><Loader2 size={18} className="animate-spin" /> קוראים ומתכננים…</> : <><Sparkles size={18} /> הכינו לי תוכנית</>}
+                    {busy ? <><Loader2 size={18} className="animate-spin" /> <FunLine kind="plan" /></> : <><Sparkles size={18} /> הכינו לי תוכנית</>}
                   </button>
                 </div>
               </div>
             )}
 
             {step === 'plan' && mat && (
-              <PlanEditor mat={mat} setMat={setMat} onBack={() => setStep('details')} onBuild={build} />
+              <PlanEditor mat={mat} setMat={setMat} request={request} setRequest={setRequest} replanning={busy} onReplan={makePlan} onBack={() => go('details')} onBuild={build} />
             )}
 
             {step === 'build' && (
-              <div className={`${card} p-8 text-center`}>
-                <Pip pose="read" size={120} he style={{ margin: '0 auto 8px' }} />
-                <div className="text-lg font-black text-[#1f2a28]">בונים את החומר…</div>
-                <div className="text-sm text-[#5b6b68] mt-1">{progress.label ? `עכשיו: ${progress.label}` : 'מתחילים'} · זה לוקח בערך חצי דקה לכל חלק</div>
-                <div className="h-2 rounded-full bg-[#E4F3F1] mt-4 overflow-hidden">
-                  <div className="h-full bg-[#0F766E] transition-all" style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 5}%` }} />
+              <div className={`${card} p-8`}>
+                <FunLoader kind={mat?.kind === 'explanation' ? 'explain' : 'build'} pose="read" size={120}
+                  sub={progress.label ? `עכשיו: ${progress.label}` : undefined} />
+                <div className="h-2 rounded-full bg-[#E4F3F1] mt-5 overflow-hidden">
+                  <div className="h-full bg-[#0F766E] transition-all duration-700" style={{ width: `${progress.total ? Math.max(6, (progress.done / progress.total) * 100) : 6}%` }} />
                 </div>
-                <div className="text-xs text-[#7a8f8b] mt-2">{progress.done} / {progress.total}</div>
+                <div className="text-xs text-[#7a8f8b] mt-2 text-center">אפשר להשאיר את המסך פתוח ולחזור בעוד דקה</div>
               </div>
             )}
 
             {step === 'review' && mat && (
               mat.kind === 'explanation'
-                ? <ExplanationReview mat={mat} onDone={async () => { await savePlan(mat.plan, { status: 'ready' }); setStep('done') }} />
+                ? <ExplanationReview mat={mat} onDone={async () => { await savePlan(mat.plan, { status: 'ready' }); go('done') }} />
                 : (
                   <div className="flex flex-col gap-3">
                     <div className={`${card} p-4 flex flex-wrap items-center justify-between gap-3`}>
                       <div>
                         <div className="font-black text-[#1f2a28]">{mat.title}</div>
-                        <div className="text-sm text-[#5b6b68]">{questions.length} שאלות · {pending ? `${pending} מחכות לאישור שלכם` : 'הכול אושר'}</div>
+                        <div className="text-sm text-[#5b6b68]">{questions.length} שאלות{questions.length ? ` · ${pending ? `${pending} מחכות לאישור שלכם` : 'הכול אושר'}` : ''}</div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
+                        <button className={btnGhost} onClick={() => go('plan')}><ArrowLeft size={16} className="rotate-180" /> לתוכנית</button>
+                        {failed.length > 0 && <button className={btnGhost} onClick={retryFailed}><Sparkles size={16} /> להשלים את החסר</button>}
                         {pending > 0 && <button className={btnGhost} disabled={busy} onClick={approveAll}><Check size={16} /> לאשר את כל השאר</button>}
-                        <button className={btnPrimary} disabled={questions.length === 0 || pending > 0} onClick={async () => { await savePlan(mat.plan, { status: 'ready' }); setStep('done') }}>
+                        <button className={btnPrimary} disabled={questions.length === 0 || pending > 0} onClick={async () => { await savePlan(mat.plan, { status: 'ready' }); go('done') }}>
                           המשך
                         </button>
                       </div>
                     </div>
-                    <p className="text-xs text-[#7a8f8b] m-0">רק שאלות שאישרתם יגיעו לילד/ה. אפשר לערוך שאלה, או להסיר אותה.</p>
+                    {questions.length === 0 ? (
+                      <div className={`${card} p-6 text-center`}>
+                        <Pip pose="think" size={90} he style={{ margin: '0 auto' }} />
+                        <div className="font-bold mt-2">עוד לא נוצרו שאלות</div>
+                        <div className="text-sm text-[#5b6b68] mb-3">זה קורה לפעמים כשהשרת עמוס. אפשר לנסות שוב, או לחזור לתוכנית ולשנות.</div>
+                        <div className="flex justify-center gap-2">
+                          <button className={btnPrimary} onClick={failed.length ? retryFailed : build}><Sparkles size={16} /> לנסות שוב</button>
+                          <button className={btnGhost} onClick={() => go('plan')}>לתוכנית</button>
+                        </div>
+                      </div>
+                    ) : <p className="text-xs text-[#7a8f8b] m-0">רק שאלות שאישרתם יגיעו לילד/ה. אפשר לערוך שאלה, או להסיר אותה.</p>}
                     {(mat.plan?.topics || []).map((t: any) => {
                       const qs = questions.filter(q => q.topic_id === t.topic_id)
                       if (!qs.length) return null
@@ -342,112 +401,181 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <div><div className="text-xs font-bold text-[#5b6b68] mb-1.5">{label}</div>{children}</div>
 }
 
-function Steps({ step }: { step: Step }) {
+function Steps({ step, canGo, onGo }: { step: Step; canGo: (s: Step) => boolean; onGo: (s: Step) => void }) {
   const order: Step[] = ['kind', 'details', 'plan', 'build', 'review', 'done']
   const labels = ['מה', 'פרטים', 'תוכנית', 'בנייה', 'בדיקה', 'מוכן']
   const at = order.indexOf(step)
   return (
-    <ol className="flex gap-1 mb-4 overflow-x-auto p-0 list-none">
-      {labels.map((l, i) => (
-        <li key={l} className={`flex-1 min-w-[60px] text-center text-xs font-bold py-1.5 rounded-full ${i <= at ? 'bg-[#0F766E] text-white' : 'bg-white text-[#9aa6a3] border border-[#e3ebe9]'}`}>{i + 1}. {l}</li>
-      ))}
+    <ol className="flex gap-1 mb-4 overflow-x-auto p-0 list-none" dir="rtl">
+      {labels.map((l, i) => {
+        const s = order[i]
+        const clickable = s !== step && s !== 'build' && canGo(s)
+        const cls = `w-full text-center text-xs font-bold py-1.5 rounded-full ${i <= at ? 'bg-[#0F766E] text-white' : 'bg-white text-[#9aa6a3] border border-[#e3ebe9]'} ${clickable ? 'cursor-pointer hover:opacity-80 underline-offset-2 hover:underline' : ''}`
+        return (
+          <li key={l} className="flex-1 min-w-[60px]">
+            {clickable ? <button className={cls} onClick={() => onGo(s)}>{i + 1}. {l}</button> : <div className={cls} aria-current={s === step ? 'step' : undefined}>{i + 1}. {l}</div>}
+          </li>
+        )
+      })}
     </ol>
   )
 }
 
-// ── Plan: the parent adjusts before anything is generated ──
-function PlanEditor({ mat, setMat, onBack, onBuild }: any) {
+// ── Plan: organised by issue, every part editable, the request always visible ──
+function Section({ title, children, hint }: { title: string; children: React.ReactNode; hint?: string }) {
+  return (
+    <section className="rounded-2xl border border-[#e3ebe9] p-4" dir="rtl">
+      <h3 className="text-sm font-black text-[#0F766E] m-0 mb-2">{title}</h3>
+      {hint && <p className="text-xs text-[#7a8f8b] mt-0 mb-2">{hint}</p>}
+      {children}
+    </section>
+  )
+}
+
+function BulletList({ items, onChange, placeholder }: { items: string[]; onChange: (next: string[]) => void; placeholder: string }) {
+  const [draft, setDraft] = useState('')
+  return (
+    <div className="flex flex-col gap-1.5">
+      <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
+        {items.map((x, i) => (
+          <li key={i} className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0F766E] shrink-0" aria-hidden />
+            <input dir="auto" value={x} onChange={e => onChange(items.map((y, j) => j === i ? e.target.value : y))}
+              className="flex-1 min-h-[38px] px-2 rounded-lg border border-transparent hover:border-[#e3ebe9] focus:border-[#0F766E] focus:outline-none bg-transparent text-[15px]" />
+            <button aria-label="הסרה" onClick={() => onChange(items.filter((_, j) => j !== i))} className="w-8 h-8 rounded-lg text-[#9aa6a3] hover:text-[#DC2626] flex items-center justify-center"><X size={15} /></button>
+          </li>
+        ))}
+      </ul>
+      <form className="flex items-center gap-2" onSubmit={e => { e.preventDefault(); if (draft.trim()) { onChange([...items, draft.trim()]); setDraft('') } }}>
+        <Plus size={15} className="text-[#0F766E] shrink-0" />
+        <input dir="auto" value={draft} onChange={e => setDraft(e.target.value)} placeholder={placeholder}
+          className="flex-1 min-h-[38px] px-2 rounded-lg border border-dashed border-[#cfdcd9] focus:border-[#0F766E] focus:outline-none bg-white text-sm" />
+        {draft.trim() && <button className="text-sm font-bold text-[#0F766E] px-2">הוספה</button>}
+      </form>
+    </div>
+  )
+}
+
+function Chips({ options, value, onChange, multi = false }: { options: [string, string][]; value: string | string[]; onChange: (v: any) => void; multi?: boolean }) {
+  const on = (v: string) => (multi ? (value as string[]).includes(v) : value === v)
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map(([v, l]) => (
+        <button key={v} aria-pressed={on(v)} onClick={() => {
+          if (!multi) return onChange(v)
+          const cur = value as string[]
+          const next = on(v) ? cur.filter(x => x !== v) : [...cur, v]
+          if (next.length) onChange(next)
+        }} className={`min-h-[40px] px-4 rounded-full border-2 text-sm font-bold ${on(v) ? 'border-[#0F766E] bg-[#E4F3F1] text-[#0F766E]' : 'border-[#e3ebe9] bg-white text-[#3d4f4b]'}`}>{l}</button>
+      ))}
+    </div>
+  )
+}
+
+function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, onBack, onBuild }: any) {
   const plan = mat.plan
   const [newTopic, setNewTopic] = useState('')
+  const [showDigest, setShowDigest] = useState(false)
   const set = (p: any) => setMat({ ...mat, plan: { ...plan, ...p } })
   const setTopic = (key: string, patch: any) => set({ topics: plan.topics.map((t: any) => t.key === key ? { ...t, ...patch } : t) })
   const total = plan.topics.reduce((s: number, t: any) => s + (t.count || 0), 0)
   const isExpl = mat.kind === 'explanation'
+  const files = (mat.upload_ids || []).length
+
+  if (replanning) return <div className={`${card} p-8`}><FunLoader kind="plan" pose="think" size={110} /></div>
+
   return (
-    <div className={`${card} p-5 flex flex-col gap-4`}>
+    <div className={`${card} p-5 flex flex-col gap-4`} dir="rtl">
       <div className="flex items-start gap-3">
         <Pip pose="think" size={64} he />
         <div className="flex-1">
-          <input value={mat.title} onChange={e => setMat({ ...mat, title: e.target.value })}
-            className="w-full text-lg font-black text-[#1f2a28] bg-transparent border-b border-dashed border-[#cfdcd9] focus:outline-none focus:border-[#0F766E]" />
+          <input dir="auto" aria-label="שם" value={mat.title} onChange={e => setMat({ ...mat, title: e.target.value })}
+            className="w-full text-xl font-black text-[#1f2a28] bg-transparent border-b border-dashed border-[#cfdcd9] focus:outline-none focus:border-[#0F766E]" />
           {plan.summary_he && <p className="text-sm text-[#3d4f4b] mt-2 mb-0 leading-relaxed">{plan.summary_he}</p>}
         </div>
       </div>
+
+      <Section title="הבקשה שלכם" hint={files ? `${files} קבצים מצורפים` : undefined}>
+        <textarea dir="auto" rows={3} value={request} onChange={e => setRequest(e.target.value)}
+          className="w-full px-3 py-2 text-[15px] rounded-xl border border-[rgba(15,118,110,.2)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]" />
+        <button className={btnGhost + ' mt-2'} onClick={onReplan}><Sparkles size={16} /> לתכנן מחדש לפי הבקשה</button>
+      </Section>
+
+      {plan.digest && (
+        <Section title="מה הבנו מהחומר" hint="כך נכתוב את השאלות. אפשר לתקן או להוסיף.">
+          {showDigest
+            ? <textarea dir="auto" rows={10} value={plan.digest} onChange={e => set({ digest: e.target.value })} className="w-full px-3 py-2 text-sm leading-relaxed rounded-xl border border-[rgba(15,118,110,.2)] bg-white" />
+            : <><p className="text-sm text-[#3d4f4b] m-0 leading-relaxed line-clamp-3 whitespace-pre-line">{plan.digest}</p>
+               <button className="text-sm font-bold text-[#0F766E] mt-1" onClick={() => setShowDigest(true)}>להציג הכול ולערוך</button></>}
+        </Section>
+      )}
+
       {plan.missing_he?.length > 0 && (
-        <div className="rounded-xl bg-[#FFFBEB] border border-[#F59E0B44] px-4 py-3 text-sm text-[#7c4a03]">
-          <div className="font-bold mb-1">כדאי לבדוק:</div>
-          <ul className="m-0 ps-5">{plan.missing_he.map((x: string, i: number) => <li key={i}>{x}</li>)}</ul>
-          <div className="text-xs mt-1">אפשר להוסיף פרטים או חומר ולתכנן מחדש, או להמשיך כמו שזה.</div>
-        </div>
+        <Section title="כדאי לבדוק">
+          <BulletList items={plan.missing_he} onChange={v => set({ missing_he: v })} placeholder="הערה נוספת…" />
+          <p className="text-xs text-[#7a8f8b] mb-0">אפשר לענות בבקשה למעלה ולתכנן מחדש, או להמשיך כמו שזה.</p>
+        </Section>
       )}
 
-      <div className="flex flex-col gap-2">
-        {plan.topics.map((t: any) => (
-          <div key={t.key} className="rounded-xl border border-[#e3ebe9] p-3">
-            <div className="flex items-start gap-2">
-              <div className="flex-1">
-                <div className="font-bold text-[#1f2a28]">{t.title_he || t.title_en} {t.title_en && t.title_he && <span className="text-xs font-normal text-[#7a8f8b]" dir="ltr">· {t.title_en}</span>}</div>
-                {t.subtopics_he?.length > 0 && <div className="text-xs text-[#5b6b68] mt-1">{t.subtopics_he.join(' · ')}</div>}
-                {!isExpl && (t.bank_count > 0
-                  ? <label className="flex items-center gap-2 text-xs text-[#0F766E] mt-2">
-                      <input type="checkbox" checked={(t.reuse || 0) > 0} onChange={e => setTopic(t.key, { reuse: e.target.checked ? Math.min(t.bank_count, t.count) : 0 })} />
-                      יש כבר {t.bank_count} שאלות מאושרות במאגר — להשתמש בהן קודם
-                    </label>
-                  : <div className="text-xs text-[#7a8f8b] mt-2">{t.is_new ? 'נושא חדש — ייכתבו שאלות חדשות' : 'אין עדיין שאלות במאגר — ייכתבו חדשות'}</div>)}
+      <Section title="נושאים">
+        <div className="flex flex-col gap-3">
+          {plan.topics.map((t: any, idx: number) => (
+            <div key={t.key} className="rounded-xl bg-[#F7FBFA] border border-[#e3ebe9] p-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-black text-[#0F766E] w-5">{idx + 1}.</span>
+                <input dir="auto" aria-label="שם הנושא" value={t.title_he || t.title_en} onChange={e => setTopic(t.key, { title_he: e.target.value })}
+                  className="flex-1 min-h-[40px] px-2 rounded-lg border border-transparent hover:border-[#e3ebe9] focus:border-[#0F766E] focus:outline-none bg-transparent font-bold text-[15px]" />
+                {!isExpl && (
+                  <div className="flex items-center gap-1" aria-label="כמות שאלות">
+                    <button aria-label="פחות" className="w-9 h-9 rounded-lg border border-[#e3ebe9] bg-white flex items-center justify-center" onClick={() => setTopic(t.key, { count: Math.max(1, t.count - 1) })}><Minus size={14} /></button>
+                    <span className="w-14 text-center text-sm"><b>{t.count}</b> שאלות</span>
+                    <button aria-label="יותר" className="w-9 h-9 rounded-lg border border-[#e3ebe9] bg-white flex items-center justify-center" onClick={() => setTopic(t.key, { count: Math.min(30, t.count + 1) })}><Plus size={14} /></button>
+                  </div>
+                )}
+                <button aria-label="הסרת נושא" className="w-9 h-9 rounded-lg text-[#9aa6a3] hover:text-[#DC2626] flex items-center justify-center" onClick={() => set({ topics: plan.topics.filter((x: any) => x.key !== t.key) })}><Trash2 size={16} /></button>
               </div>
-              {!isExpl && (
-                <div className="flex items-center gap-1" dir="ltr">
-                  <button aria-label="פחות" className="w-9 h-9 rounded-lg border border-[#e3ebe9] flex items-center justify-center" onClick={() => setTopic(t.key, { count: Math.max(1, t.count - 1), reuse: Math.min(t.reuse || 0, Math.max(1, t.count - 1)) })}><Minus size={14} /></button>
-                  <span className="w-8 text-center font-bold">{t.count}</span>
-                  <button aria-label="יותר" className="w-9 h-9 rounded-lg border border-[#e3ebe9] flex items-center justify-center" onClick={() => setTopic(t.key, { count: Math.min(30, t.count + 1) })}><Plus size={14} /></button>
-                </div>
-              )}
-              <button aria-label="הסרת נושא" className="w-9 h-9 rounded-lg text-[#9aa6a3] hover:text-[#DC2626] flex items-center justify-center" onClick={() => set({ topics: plan.topics.filter((x: any) => x.key !== t.key) })}><Trash2 size={16} /></button>
+              <div className="ps-7 mt-2">
+                <div className="text-xs font-bold text-[#5b6b68] mb-1">במה להתמקד</div>
+                <BulletList items={t.subtopics_he || []} onChange={v => setTopic(t.key, { subtopics_he: v })} placeholder="להוסיף נקודה למיקוד…" />
+              </div>
             </div>
-          </div>
-        ))}
-        <div className="flex gap-2">
-          <input value={newTopic} onChange={e => setNewTopic(e.target.value)} dir="auto" placeholder="להוסיף נושא…"
-            className="flex-1 min-h-[44px] px-3 rounded-xl border border-[rgba(15,118,110,.2)] bg-white text-sm" />
-          <button className={btnGhost} disabled={!newTopic.trim() || mat.grade < 7} title={mat.grade < 7 ? 'בגן–ו׳ הנושאים מגיעים מתוכנית הלימודים' : ''}
-            onClick={() => { set({ topics: [...plan.topics, { key: `t${Date.now()}`, title_he: newTopic.trim(), title_en: newTopic.trim(), subtopics_he: [], topic_slug: null, topic_id: null, is_new: true, bank_count: 0, reuse: 0, count: isExpl ? 0 : 10 }] }); setNewTopic('') }}>
-            <Plus size={16} /> הוספה
-          </button>
+          ))}
+          <form className="flex gap-2" onSubmit={e => { e.preventDefault(); if (!newTopic.trim()) return
+            set({ topics: [...plan.topics, { key: `t${Date.now()}`, title_he: newTopic.trim(), title_en: newTopic.trim(), subtopics_he: [], topic_slug: null, topic_id: null, is_new: true, bank_count: 0, count: isExpl ? 0 : 8 }] }); setNewTopic('') }}>
+            <input dir="auto" value={newTopic} onChange={e => setNewTopic(e.target.value)} placeholder="להוסיף נושא…"
+              className="flex-1 min-h-[44px] px-3 rounded-xl border border-dashed border-[#cfdcd9] bg-white text-sm" />
+            <button className={btnGhost} disabled={!newTopic.trim()}><Plus size={16} /> נושא</button>
+          </form>
         </div>
-      </div>
+      </Section>
 
-      {!isExpl && (
-        <div className="flex flex-wrap gap-4 items-end">
-          <Field label="רמת קושי">
-            <select value={plan.difficulty} onChange={e => set({ difficulty: e.target.value })} className="min-h-[44px] px-3 rounded-xl border border-[rgba(15,118,110,.2)] bg-white text-sm">
-              {Object.entries(DIFF_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-          </Field>
-          <Field label="סוגי שאלות">
-            <div className="flex gap-3 min-h-[44px] items-center">
-              {[['multiple_choice', 'אמריקאיות'], ['word_problem', 'פתוחות']].map(([v, l]) => (
-                <label key={v} className="flex items-center gap-1.5 text-sm">
-                  <input type="checkbox" checked={plan.q_types.includes(v)} onChange={e => {
-                    const next = e.target.checked ? [...plan.q_types, v] : plan.q_types.filter((x: string) => x !== v)
-                    if (next.length) set({ q_types: next })
-                  }} /> {l}
-                </label>
-              ))}
-            </div>
-          </Field>
-          {mat.kind === 'exam' && (
-            <Field label="זמן (דקות)">
-              <input type="number" min={5} max={300} value={plan.time_minutes || 45} onChange={e => set({ time_minutes: parseInt(e.target.value) || 45 })}
-                className="w-24 min-h-[44px] px-3 rounded-xl border border-[rgba(15,118,110,.2)] bg-white text-sm" />
-            </Field>
-          )}
-          <div className="text-sm text-[#5b6b68] min-h-[44px] flex items-center">סה״כ {total} שאלות</div>
-        </div>
-      )}
+      <Section title="דגשים כלליים" hint="למשל: רק רביע ראשון, מספרים עד 20, בלי שברים">
+        <BulletList items={plan.focus_he || []} onChange={v => set({ focus_he: v })} placeholder="להוסיף דגש…" />
+      </Section>
+
+      {!isExpl && <>
+        <Section title="רמת קושי">
+          <Chips options={Object.entries(DIFF_LABEL) as [string, string][]} value={plan.difficulty} onChange={v => set({ difficulty: v })} />
+        </Section>
+        <Section title="סוגי שאלות">
+          <Chips multi options={[['multiple_choice', 'אמריקאיות'], ['word_problem', 'פתוחות']]} value={plan.q_types} onChange={v => set({ q_types: v })} />
+        </Section>
+        <Section title={mat.kind === 'exam' ? 'כמות וזמן' : 'כמות'}>
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <span>סה״כ <b>{total}</b> שאלות</span>
+            {mat.kind === 'exam' && (
+              <label className="flex items-center gap-2">זמן המבחן:
+                <input type="number" min={5} max={300} value={plan.time_minutes || 45} onChange={e => set({ time_minutes: parseInt(e.target.value) || 45 })}
+                  className="w-20 min-h-[40px] px-2 rounded-lg border border-[rgba(15,118,110,.2)] bg-white" /> דקות
+              </label>
+            )}
+          </div>
+        </Section>
+      </>}
 
       <div className="flex gap-2 justify-between">
-        <button className={btnGhost} onClick={onBack}><ArrowLeft size={16} className="rotate-180" /> לשנות פרטים</button>
-        <button className={btnPrimary} disabled={!plan.topics.length} onClick={onBuild}><Sparkles size={18} /> {isExpl ? 'לכתוב את הדפים' : 'ליצור את השאלות'}</button>
+        <button className={btnGhost} onClick={onBack}><ArrowLeft size={16} className="rotate-180" /> לפרטים ולקבצים</button>
+        <button className={btnPrimary} disabled={!plan.topics.length} onClick={onBuild}><Sparkles size={18} /> {isExpl ? 'לכתוב את הדפים' : `ליצור ${total} שאלות`}</button>
       </div>
     </div>
   )

@@ -4,7 +4,7 @@ import { createServiceRoleClient } from '@/lib/supabase'
 import { loadUploadBlocks } from '@/lib/uploadBlocks'
 import { askClaudeJSON } from '@/lib/claude'
 
-export const maxDuration = 60
+export const maxDuration = 300
 
 // ─── POST /api/materials/[id]/explain ──────────────────────────
 // Writes one learning page for one topic of an "explanation" material:

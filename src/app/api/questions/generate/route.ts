@@ -26,7 +26,7 @@ import { ON_REQUEST_FROM_GRADE, findOrCreateOnRequestTopic, addGrade } from '@/l
 // question_ids back into notebook_section_questions with added_via:'generated'.
 
 // Reading several workbook pages takes longer than a plain prompt.
-export const maxDuration = 60
+export const maxDuration = 300
 
 const VALID_DIFFICULTIES = ['easy', 'medium', 'hard']
 const VALID_Q_TYPES = ['multiple_choice', 'word_problem']
@@ -231,9 +231,6 @@ export async function POST(req: NextRequest) {
   if (!Number.isInteger(grade) || grade < 0 || grade > 12) {
     return NextResponse.json({ error: 'grade must be an integer between 0 and 12' }, { status: 400 })
   }
-  if (newTopic && !onRequest) {
-    return NextResponse.json({ error: `new_topic is only for grade ${ON_REQUEST_FROM_GRADE} and up` }, { status: 400 })
-  }
   if (!newTopic && (typeof topic_slug !== 'string' || !topic_slug)) {
     return NextResponse.json({ error: 'topic_slug is required' }, { status: 400 })
   }
@@ -287,13 +284,15 @@ export async function POST(req: NextRequest) {
   // upload_ids: parent material uploaded straight to storage via POST /api/uploads
   // (workbook photos, PDFs, .docx/.txt) — any grade, up to MAX_UPLOADS_PER_GENERATION.
   const uploaded = await loadUploadBlocks(familyId, body.upload_ids)
+  const materialText: string | null = typeof body.material_text === 'string' && body.material_text.trim()
+    ? body.material_text.trim().slice(0, 12000) : null
 
   // When the section locks the topic, we already have its id/title_en from
   // the join above — no need for a second round-trip through subjects/topics.
   let topicRow: { id: string; title_en: string } | null = null
   if (topicLocked) {
     topicRow = { id: notebookSection!.topic_id!, title_en: notebookSection!.topic!.title_en }
-  } else if (onRequest) {
+  } else if (onRequest || newTopic) {
     // topic-first bank: one shared topic row per subject, grade is a tag on it
     const { data: subjectRow } = await serviceClient.from('subjects').select('id').eq('slug', subject_slug).single()
     if (!subjectRow) return NextResponse.json({ error: `Unknown subject_slug: ${subject_slug}` }, { status: 400 })
@@ -322,13 +321,19 @@ export async function POST(req: NextRequest) {
       .eq('grade', grade)
       .eq('slug', topic_slug)
       .maybeSingle()
-    if (!fetchedTopicRow) {
+    let resolved = fetchedTopicRow
+    if (!resolved) {
+      const { data: shared } = await serviceClient.from('topics').select('id, title_en, slug, title_he, grades')
+        .eq('subject_id', subjectRow.id).eq('origin', 'on_request').eq('slug', topic_slug).maybeSingle()
+      if (shared) { await addGrade(shared as any, grade); resolved = { id: shared.id, title_en: shared.title_en } as any }
+    }
+    if (!resolved) {
       return NextResponse.json(
         { error: `Topic not found for subject "${subject_slug}", grade ${grade}, slug "${topic_slug}"` },
         { status: 400 }
       )
     }
-    topicRow = fetchedTopicRow
+    topicRow = resolved
   }
 
   // ─── notebook recipe + files (checkpoint 6) — fetched once the section is
@@ -410,7 +415,9 @@ export async function POST(req: NextRequest) {
     ? `Order the ${count} questions from easiest to hardest — ramp difficulty across the array rather than keeping it flat at "${difficulty}". Set each question's own "difficulty" field to match its position in the ramp.`
     : `All ${count} questions should be at "${difficulty}" difficulty. Set each question's "difficulty" field to "${difficulty}".`
 
-  const referenceInstruction = (referenceFile || uploaded.blocks.length > 0)
+  const referenceInstruction = materialText
+    ? `\nThe parent uploaded the child's own material (workbook/textbook pages, an exam material list). Here is a detailed description of it — match its topics, notation, wording, scope and level, and cover what it covers. Write new, original questions; never copy exercises verbatim:\n<material>\n${materialText}\n</material>`
+    : (referenceFile || uploaded.blocks.length > 0)
     ? `\nThe parent attached ${uploaded.blocks.length + (referenceFile ? 1 : 0)} file(s) of the child's own material (for example workbook or textbook pages, a worksheet, or an exam material list). Read them carefully: match their topics, notation, wording and level, and cover what they cover. If a file is a list of exam topics, spread the questions across those topics. Write new, original questions inspired by the material — never copy exercises from it verbatim.`
     : ''
 

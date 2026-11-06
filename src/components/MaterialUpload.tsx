@@ -10,6 +10,7 @@
 import { useRef, useState } from 'react'
 import { Camera, FileText, Loader2, Paperclip, X } from 'lucide-react'
 import { createBrowserClient } from '@/lib/supabase'
+import { FunLine } from '@/components/FunLoader'
 import { UPLOAD_ACCEPT, UPLOAD_BUCKET, MAX_UPLOADS_PER_GENERATION, MAX_UPLOAD_BYTES, IMAGE_TYPES } from '@/lib/uploads'
 
 export interface UploadedMaterial { id: string; name: string; type: string; preview?: string }
@@ -61,6 +62,7 @@ export function MaterialUpload({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [drag, setDrag] = useState(false)
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
   const L = (en: string, hebrew: string) => (he ? hebrew : en)
 
   async function addFiles(list: FileList | File[] | null) {
@@ -103,20 +105,28 @@ export function MaterialUpload({
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'upload failed')
 
+      // 4 uploads at a time, in the parent's order
       const supabase = createBrowserClient()
-      const done: UploadedMaterial[] = []
-      for (let i = 0; i < prepared.length; i++) {
-        const u = data.uploads[i]
-        const { error: upErr } = await supabase.storage.from(UPLOAD_BUCKET)
-          .uploadToSignedUrl(u.path, u.token, prepared[i].file, { contentType: prepared[i].type })
-        if (upErr) { setError(L(`Upload failed for "${u.name}". Try again.`, `ההעלאה של "${u.name}" נכשלה. נסו שוב.`)); continue }
-        done.push({ id: u.id, name: u.name, type: prepared[i].type, preview: prepared[i].preview })
+      const done: (UploadedMaterial | null)[] = new Array(prepared.length).fill(null)
+      let next = 0, finished = 0
+      setProgress({ done: 0, total: prepared.length })
+      async function worker() {
+        while (next < prepared.length) {
+          const i = next++
+          const u = data.uploads[i]
+          const { error: upErr } = await supabase.storage.from(UPLOAD_BUCKET)
+            .uploadToSignedUrl(u.path, u.token, prepared[i].file, { contentType: prepared[i].type })
+          if (upErr) setError(L(`Upload failed for "${u.name}". Try again.`, `ההעלאה של "${u.name}" נכשלה. נסו שוב.`))
+          else done[i] = { id: u.id, name: u.name, type: prepared[i].type, preview: prepared[i].preview }
+          setProgress({ done: ++finished, total: prepared.length })
+        }
       }
-      onChange([...value, ...done])
+      await Promise.all(Array.from({ length: Math.min(4, prepared.length) }, worker))
+      onChange([...value, ...done.filter((x): x is UploadedMaterial => !!x)])
     } catch (e: any) {
       setError(L('Upload failed. Check the connection and try again.', 'ההעלאה נכשלה. בדקו את החיבור ונסו שוב.'))
     } finally {
-      setBusy(false)
+      setBusy(false); setProgress(null)
       if (fileRef.current) fileRef.current.value = ''
       if (camRef.current) camRef.current.value = ''
     }
@@ -147,6 +157,13 @@ export function MaterialUpload({
           </button>
           <span className="hidden md:inline-flex items-center text-xs text-[#7a8f8b]">{L('or drag files here', 'או גררו קבצים לכאן')}</span>
         </div>
+        {busy && (
+          <div className="mt-3 rounded-xl bg-white border border-[#e3ebe9] px-3 py-2 text-sm text-[#0F766E] font-semibold flex items-center gap-2">
+            <Loader2 size={16} className="animate-spin" />
+            {he ? <FunLine kind="upload" /> : 'Uploading…'}
+            {progress && <span className="ms-auto text-xs text-[#5b6b68]" dir="ltr">{progress.done}/{progress.total}</span>}
+          </div>
+        )}
         <input ref={fileRef} type="file" multiple accept={UPLOAD_ACCEPT} className="hidden" onChange={e => addFiles(e.target.files)} />
         <input ref={camRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => addFiles(e.target.files)} />
 

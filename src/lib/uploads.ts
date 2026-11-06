@@ -13,6 +13,6 @@ export const UPLOAD_TYPES = [...IMAGE_TYPES, ...DOC_TYPES]
 export const UPLOAD_ACCEPT = 'image/*,.heic,.heif,application/pdf,.pdf,.docx,.txt'
 
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024
-export const MAX_UPLOADS_PER_REQUEST = 10
+export const MAX_UPLOADS_PER_REQUEST = 25
 // What the AI reads per generation (pages of a workbook, a material list, etc.)
-export const MAX_UPLOADS_PER_GENERATION = 10
+export const MAX_UPLOADS_PER_GENERATION = 25
