@@ -1051,6 +1051,7 @@ function HistoryList({ onMore, kidsList: children }: any) {
   const [items, setItems] = useState<any[] | null>(null)
   const [f, setF] = useState({ child: 'all', grade: 'all', subject: 'all', tag: 'all' })
   const [confirm, setConfirm] = useState<any>(null)
+  const [moreTags, setMoreTags] = useState(false)
   useEffect(() => { fetch('/api/materials').then(r => r.json()).then(d => setItems(d.materials || [])) }, [])
   if (!items) return <div className="text-sm text-[#7a8f8b]">טוען…</div>
   if (!items.length) return <div className={`${card} p-6 text-sm text-[#5b6b68]`}>עוד לא יצרתם כלום. בואו נתחיל!</div>
@@ -1059,7 +1060,11 @@ function HistoryList({ onMore, kidsList: children }: any) {
   const childName = (id: string) => (children || []).find((c: any) => c.id === id)?.name
   const grades = [...new Set(items.map(m => m.grade))].sort((a, b) => a - b)
   const subjects = [...new Set(items.map(m => m.subject_slug))]
-  const tags = [...new Set(items.flatMap(m => m.tags || []))].slice(0, 40) as string[]
+  // most used tags first; the rest behind "more"
+  const freq = new Map<string, number>()
+  for (const t of items.flatMap(m => m.tags || []) as string[]) freq.set(t, (freq.get(t) || 0) + 1)
+  const allTags = [...freq.keys()].sort((a, b) => (freq.get(b)! - freq.get(a)!))
+  const tags = moreTags ? allTags : allTags.slice(0, 10)
   const kids = (children || []).filter((c: any) => items.some(m => m.child_id === c.id))
   const shown = items
     .filter(m => (f.child === 'all' || m.child_id === f.child) && (f.grade === 'all' || String(m.grade) === f.grade)
@@ -1091,6 +1096,7 @@ function HistoryList({ onMore, kidsList: children }: any) {
           <div className="flex flex-wrap gap-1.5">
             <button className={pill(f.tag === 'all') + ' !min-h-[30px] !text-xs'} onClick={() => setF({ ...f, tag: 'all' })}># הכול</button>
             {tags.map(t => <button key={t} className={pill(f.tag === t) + ' !min-h-[30px] !text-xs'} onClick={() => setF({ ...f, tag: f.tag === t ? 'all' : t })}># {t}</button>)}
+            {allTags.length > 10 && <button className="text-xs font-bold text-[#0F766E] px-2" onClick={() => setMoreTags(v => !v)}>{moreTags ? 'פחות' : `עוד ${allTags.length - 10}`}</button>}
           </div>
         )}
       </div>
