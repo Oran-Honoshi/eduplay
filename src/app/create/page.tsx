@@ -11,7 +11,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Target, ClipboardList, BookOpen, Printer, Smartphone, Check, X, Pencil, Plus, Minus,
-  Sparkles, ThumbsUp, Star, Copy, History, ArrowLeft, Loader2, AlertTriangle, Trash2, Share2, Library,
+  Sparkles, ThumbsUp, Star, Copy, History, ArrowLeft, ArrowUp, Loader2, AlertTriangle, Trash2, Share2, Library,
 } from 'lucide-react'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import { MaterialUpload, type UploadedMaterial } from '@/components/MaterialUpload'
@@ -149,21 +149,55 @@ function CreateInner() {
   // part of a topic when no material was uploaded (with material, everything is
   // written fresh to match it). Failed parts can be retried from the review step.
   type Job = { key: string; label: string; reuse: number; generate: number; part: number; parts: number }
-  async function runJobs(m: any, jobs: Job[]) {
+  async function runJobs(m: any, jobs: Job[], note?: string) {
     setProgress({ done: 0, total: jobs.length, label: '' })
     const bad: Job[] = []
-    let next = 0, done = 0
+    let done = 0
+    // parts of the same topic run one after another, so each part sees the
+    // questions already written and never repeats them; topics run side by side
+    const byTopic = new Map<string, Job[]>()
+    for (const j of jobs) byTopic.set(j.key, [...(byTopic.get(j.key) || []), j])
+    const queues = [...byTopic.values()]
+    let nextQ = 0
     async function worker() {
-      while (next < jobs.length) {
-        const j = jobs[next++]
-        setProgress(p => ({ ...p, label: j.label }))
-        const r = await fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic_key: j.key, generate: j.generate, reuse: j.reuse, part: j.part, parts: j.parts }) }).catch(() => null)
-        if (!r || !r.ok) bad.push(j)
-        setProgress(p => ({ ...p, done: ++done }))
+      while (nextQ < queues.length) {
+        const q = queues[nextQ++]
+        for (const j of q) {
+          setProgress(p => ({ ...p, label: j.label }))
+          const r = await fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic_key: j.key, generate: j.generate, reuse: j.reuse, part: j.part, parts: j.parts, note }) }).catch(() => null)
+          if (!r || !r.ok) bad.push(j)
+          setProgress(p => ({ ...p, done: ++done }))
+        }
       }
     }
-    await Promise.all(Array.from({ length: Math.min(3, jobs.length) }, worker))
+    await Promise.all(Array.from({ length: Math.min(3, queues.length) }, worker))
     return bad
+  }
+
+  // "Add questions" after review: a few more, optionally with a note like "more hard ones"
+  async function addMore(count: number, topicKey: string, note: string) {
+    const topics = (mat.plan?.topics || []).filter((t: any) => topicKey === 'all' || t.key === topicKey)
+    if (!topics.length) return
+    if (mat.status === 'ready') await savePlan(mat.plan, { status: 'draft' })
+    const per = Math.max(1, Math.round(count / topics.length))
+    const jobs: Job[] = []
+    for (const t of topics) {
+      const parts = Math.ceil(per / 5)
+      for (let k = 0; k < parts; k++) jobs.push({ key: t.key, label: t.title_he || t.title_en, reuse: 0, generate: Math.min(5, per - k * 5), part: k, parts })
+    }
+    go('build')
+    const bad = await runJobs(mat, jobs, note)
+    if (bad.length) setError(`${bad.length} חלקים לא נוצרו הפעם. אפשר לנסות שוב.`)
+    await reload(mat.id)
+    go('review')
+  }
+
+  // Remove with an optional reason; the reason steers the next questions
+  const [removing, setRemoving] = useState<any>(null)
+  async function removeQuestion(q: any, reasons: string[], note: string) {
+    await fetch(`/api/materials/${mat.id}/remove-question`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question_id: q.id, reasons, note }) })
+    setRemoving(null)
+    await reload()
   }
 
   // 3 sample questions (easy → hard) from the first topic, so the parent can
@@ -253,21 +287,23 @@ function CreateInner() {
   }
 
   async function act(q: any, action: 'approve' | 'reject') {
+    if (action === 'reject') { setRemoving(q); return }
+    setQuestions(qs => qs.map(x => x.id === q.id ? { ...x, approved: true } : x)) // instant feedback
     await fetch(`/api/questions/${q.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) })
-    if (action === 'reject') {
-      const ids = mat.question_ids.filter((x: string) => x !== q.id)
-      await fetch(`/api/materials/${mat.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question_ids: ids }) })
-    }
     await reload()
   }
 
+  const [approving, setApproving] = useState(false)
   async function approveAll() {
-    setBusy(true)
-    for (const q of questions.filter(q => !q.approved)) {
-      await fetch(`/api/questions/${q.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'approve' }) })
-    }
-    await reload(); setBusy(false)
+    setApproving(true)
+    try {
+      await fetch(`/api/materials/${mat.id}/approve-all`, { method: 'POST' })
+      await savePlan(mat.plan, { status: 'ready' })
+      await reload()
+      go('done')
+    } finally { setApproving(false) }
   }
+  async function finishReview() { await savePlan(mat.plan, { status: 'ready' }); go('done') }
 
   const pending = questions.filter(q => !q.approved).length
   const planned = mat?.kind === 'explanation' ? 0 : (mat?.plan?.topics || []).reduce((a: number, t: any) => a + (t.count || 0), 0)
@@ -276,7 +312,7 @@ function CreateInner() {
     if (mat.status === 'ready') await savePlan(mat.plan, { status: 'draft' })
     await build()
   }
-  const MissingBanner = () => missing > 0 && step !== 'build' && step !== 'plan' ? (
+  const MissingBanner = () => step === 'review' && missing >= Math.max(3, Math.ceil(planned * 0.3)) ? (
     <div className="mb-3 rounded-2xl border-2 border-[#0F766E] bg-[#E4F3F1] p-4 flex flex-wrap items-center gap-3" dir="rtl">
       <Pip pose="wave" size={48} he />
       <div className="flex-1 min-w-[200px]">
@@ -304,6 +340,8 @@ function CreateInner() {
           </div>
         </div>
 
+        {removing && <RemoveModal q={removing} onCancel={() => setRemoving(null)} onRemove={(r: string[], n: string) => removeQuestion(removing, r, n)} />}
+        <BackToTop />
         {previewUrl && (
           <div role="dialog" aria-modal="true" className="fixed inset-0 z-[700] bg-black/50 flex items-center justify-center p-3" onClick={() => setPreviewUrl(null)}>
             <div className="bg-white rounded-2xl w-full max-w-[900px] h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -442,7 +480,7 @@ function CreateInner() {
               </div>
             )}
 
-            {(step === 'review' || step === 'done') && mat && <MissingBanner />}
+            {mat && <MissingBanner />}
             {step === 'review' && mat && (
               mat.kind === 'explanation'
                 ? <ExplanationReview mat={mat} onDone={async () => { await savePlan(mat.plan, { status: 'ready' }); go('done') }} />
@@ -456,10 +494,9 @@ function CreateInner() {
                       <div className="flex flex-wrap gap-2">
                         <button className={btnGhost} onClick={() => go('plan')}><ArrowLeft size={16} className="rotate-180" /> לתוכנית</button>
                         {failed.length > 0 && <button className={btnGhost} onClick={retryFailed}><Sparkles size={16} /> להשלים את החסר</button>}
-                        {pending > 0 && <button className={btnGhost} disabled={busy} onClick={approveAll}><Check size={16} /> לאשר את כל השאר</button>}
-                        <button className={btnPrimary} disabled={questions.length === 0 || pending > 0} onClick={async () => { await savePlan(mat.plan, { status: 'ready' }); go('done') }}>
-                          המשך
-                        </button>
+                        {pending > 0
+                          ? <button className={btnPrimary} disabled={approving} onClick={approveAll}>{approving ? <><Loader2 size={18} className="animate-spin" /> מאשרים…</> : <><Check size={18} /> לאשר את כל {pending} השאלות ולהמשיך</>}</button>
+                          : <button className={btnPrimary} disabled={questions.length === 0} onClick={finishReview}>סיימתי — להדפסה ולאפליקציה ←</button>}
                       </div>
                     </div>
                     {questions.length === 0 ? (
@@ -473,6 +510,7 @@ function CreateInner() {
                         </div>
                       </div>
                     ) : <p className="text-xs text-[#7a8f8b] m-0">רק שאלות שאישרתם יגיעו לילד/ה. אפשר לערוך שאלה, או להסיר אותה.</p>}
+                    {questions.length > 0 && <AddMorePanel topics={mat.plan?.topics || []} onAdd={addMore} />}
                     {(mat.plan?.topics || []).map((t: any) => {
                       const qs = questions.filter(q => q.topic_id === t.topic_id)
                       if (!qs.length) return null
@@ -819,11 +857,13 @@ function DonePanel({ mat, setMat, child, questions }: any) {
   const approvedIds = useMemo(() => questions.filter((q: any) => q.approved).map((q: any) => q.id), [questions])
   const isExpl = mat.kind === 'explanation'
 
-  function print(withKey: boolean) {
+  const [printOpen, setPrintOpen] = useState(false)
+  const [opts, setOpts] = useState({ hints: false, solutions: false, answers: true })
+  function print(o = opts) {
     if (isExpl) { window.open(`/api/materials/${mat.id}/print`, '_blank'); return }
     const params = new URLSearchParams({
       childId: mat.child_id || child?.id || '', topicIds: (mat.topic_ids || []).join(','), questionIds: approvedIds.join(','),
-      lang: mat.language, answerKey: String(withKey), includeHints: String(mat.kind !== 'exam'), solutionSteps: String(withKey),
+      lang: mat.language, answerKey: String(o.answers), includeHints: String(o.hints && mat.kind !== 'exam'), solutionSteps: String(o.solutions),
       wsType: mat.kind === 'exam' ? 'exam' : 'practice', questionCount: String(approvedIds.length), materialId: mat.id,
       ...(mat.time_minutes ? { timeMinutes: String(mat.time_minutes) } : {}),
     })
@@ -869,14 +909,9 @@ function DonePanel({ mat, setMat, child, questions }: any) {
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <button className={`${card} p-4 text-start hover:border-[#0F766E]`} onClick={() => print(false)}>
-          <Printer className="text-[#0F766E]" /><div className="font-bold mt-2">להדפסה</div><div className="text-xs text-[#5b6b68]">{isExpl ? 'דפי הסבר ממותגים' : 'דף לילד/ה'}</div>
+        <button className={`${card} p-4 text-start hover:border-[#0F766E]`} onClick={() => (isExpl ? print() : setPrintOpen(true))}>
+          <Printer className="text-[#0F766E]" /><div className="font-bold mt-2">להדפסה</div><div className="text-xs text-[#5b6b68]">{isExpl ? 'דפי הסבר ממותגים' : 'בוחרים: רמזים, פתרונות, תשובות בסוף'}</div>
         </button>
-        {!isExpl && (
-          <button className={`${card} p-4 text-start hover:border-[#0F766E]`} onClick={() => print(true)}>
-            <ClipboardList className="text-[#0F766E]" /><div className="font-bold mt-2">עם דף תשובות</div><div className="text-xs text-[#5b6b68]">תשובות ופתרונות להורה</div>
-          </button>
-        )}
         {!isExpl && (
           <button className={`${card} p-4 text-start hover:border-[#0F766E] disabled:opacity-60`} disabled={sending || !!sent || !(mat.child_id || child?.id)} onClick={sendToApp}>
             <Smartphone className="text-[#0F766E]" /><div className="font-bold mt-2">{sent ? 'נשלח לאפליקציה ✓' : 'לשלוח לאפליקציה'}</div>
@@ -915,6 +950,27 @@ function DonePanel({ mat, setMat, child, questions }: any) {
         <a href={`/create?from=${mat.id}`} className={btnGhost + ' ms-auto'}><Copy size={16} /> עוד כזה, עם שאלות אחרות</a>
       </div>
       <FeedbackPrompt materialId={mat.id} />
+      {printOpen && (
+        <div role="dialog" aria-modal="true" dir="rtl" className="fixed inset-0 z-[700] bg-black/40 flex items-end sm:items-center justify-center p-3" onClick={() => setPrintOpen(false)}>
+          <div className="bg-white rounded-3xl w-full max-w-[420px] p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4"><Printer className="text-[#0F766E]" /><div className="font-black text-lg">מה להדפיס?</div></div>
+            {([
+              ['hints', 'רמזים ליד כל שאלה', 'עזרה קטנה שלא מגלה את התשובה'],
+              ['solutions', 'פתרון מלא צעד אחר צעד', 'בעמודים נפרדים בסוף'],
+              ['answers', 'דף תשובות', 'בעמוד האחרון, כדי לבדוק אחר כך'],
+            ] as const).filter(([k]) => !(k === 'hints' && mat.kind === 'exam')).map(([k, l, d]) => (
+              <label key={k} className="flex items-start gap-3 py-2.5 border-b border-[#f0f3f2] cursor-pointer">
+                <input type="checkbox" className="mt-1 w-5 h-5 accent-[#0F766E]" checked={(opts as any)[k]} onChange={e => setOpts(o => ({ ...o, [k]: e.target.checked }))} />
+                <span><span className="font-bold block">{l}</span><span className="text-xs text-[#5b6b68]">{d}</span></span>
+              </label>
+            ))}
+            <div className="flex gap-2 justify-between mt-4">
+              <button className={btnGhost} onClick={() => setPrintOpen(false)}>ביטול</button>
+              <button className={btnPrimary} onClick={() => { setPrintOpen(false); print() }}><Printer size={16} /> להדפסה</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -941,5 +997,92 @@ function HistoryList({ onMore }: any) {
         </div>
       ))}
     </div>
+  )
+}
+
+// ── Remove a question, optionally saying why (the reason improves the next ones) ──
+const REMOVE_REASONS = ['קשה לקרוא / הציור לא ברור', 'חוזרת על שאלה אחרת', 'התשובה מופיעה בשאלה או בציור', 'חסר ציור או גרף', 'לא מתאים לחומר', 'קלה מדי', 'קשה מדי', 'ניסוח לא ברור', 'יש טעות']
+function RemoveModal({ q, onCancel, onRemove }: any) {
+  const [picked, setPicked] = useState<string[]>([])
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
+  const go = async (withReason: boolean) => { setBusy(true); await onRemove(withReason ? picked : [], withReason ? note : '') }
+  return (
+    <div role="dialog" aria-modal="true" dir="rtl" className="fixed inset-0 z-[700] bg-black/40 flex items-end sm:items-center justify-center p-3" onClick={onCancel}>
+      <div className="bg-white rounded-3xl w-full max-w-[480px] p-5" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-3">
+          <Pip pose="think" size={56} he />
+          <div>
+            <div className="font-black text-lg">למה להסיר?</div>
+            <div className="text-sm text-[#5b6b68]">זה עוזר לנו לכתוב שאלות טובות יותר בהמשך. לא חובה.</div>
+          </div>
+        </div>
+        <div className="text-sm text-[#3d4f4b] bg-[#F7FBFA] rounded-xl px-3 py-2 mb-3 line-clamp-2"><FractionText text={q.prompt_he || q.prompt_en} /></div>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {REMOVE_REASONS.map(r => (
+            <button key={r} aria-pressed={picked.includes(r)} onClick={() => setPicked(p => p.includes(r) ? p.filter(x => x !== r) : [...p, r])}
+              className={`min-h-[38px] px-3 rounded-full border-2 text-sm font-bold ${picked.includes(r) ? 'border-[#0F766E] bg-[#E4F3F1] text-[#0F766E]' : 'border-[#e3ebe9] text-[#3d4f4b]'}`}>{r}</button>
+          ))}
+        </div>
+        <textarea dir="auto" rows={2} value={note} onChange={e => setNote(e.target.value)} placeholder="משהו נוסף? למשל: לשאול על היקף ולא על שטח"
+          className="w-full px-3 py-2 rounded-xl border border-[rgba(15,118,110,.2)] text-[15px] mb-3" />
+        <div className="flex flex-wrap gap-2 justify-between">
+          <button className={btnGhost} onClick={onCancel}>ביטול</button>
+          <div className="flex gap-2">
+            <button className={btnGhost} disabled={busy} onClick={() => go(false)}>להסיר בלי לפרט</button>
+            <button className={btnPrimary} disabled={busy || (!picked.length && !note.trim())} onClick={() => go(true)}><X size={16} /> להסיר</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Add a few more questions, with an optional note ("more hard ones") ──
+function AddMorePanel({ topics, onAdd }: { topics: any[]; onAdd: (count: number, topicKey: string, note: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const [count, setCount] = useState(5)
+  const [topic, setTopic] = useState('all')
+  const [note, setNote] = useState('')
+  if (!open) return (
+    <button className={btnGhost + ' self-start'} onClick={() => setOpen(true)}><Plus size={16} /> להוסיף שאלות</button>
+  )
+  return (
+    <div className={`${card} p-4 flex flex-col gap-3`} dir="rtl">
+      <div className="font-black text-[#1f2a28]">להוסיף שאלות</div>
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <span>כמה?</span>
+        {[3, 5, 10].map(n => <button key={n} aria-pressed={count === n} onClick={() => setCount(n)} className={`min-h-[38px] px-4 rounded-full border-2 font-bold ${count === n ? 'border-[#0F766E] bg-[#E4F3F1] text-[#0F766E]' : 'border-[#e3ebe9]'}`}>{n}</button>)}
+        {topics.length > 1 && (
+          <select value={topic} onChange={e => setTopic(e.target.value)} className="min-h-[40px] px-3 rounded-xl border border-[rgba(15,118,110,.2)] bg-white">
+            <option value="all">כל הנושאים</option>
+            {topics.map(t => <option key={t.key} value={t.key}>{t.title_he || t.title_en}</option>)}
+          </select>
+        )}
+      </div>
+      <input dir="auto" value={note} onChange={e => setNote(e.target.value)} placeholder="על מה? למשל: עוד שאלות קשות על היקף ושטח"
+        className="min-h-[44px] px-3 rounded-xl border border-[rgba(15,118,110,.2)] bg-white text-[15px]" />
+      <div className="flex gap-2">
+        <button className={btnPrimary} onClick={() => { setOpen(false); onAdd(count, topic, note) }}><Sparkles size={16} /> ליצור {count} שאלות</button>
+        <button className={btnGhost} onClick={() => setOpen(false)}>ביטול</button>
+      </div>
+    </div>
+  )
+}
+
+// ── Floating "back to top" once the page is scrolled ──
+function BackToTop() {
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    const on = () => setShow(window.scrollY > 600)
+    window.addEventListener('scroll', on, { passive: true }); on()
+    return () => window.removeEventListener('scroll', on)
+  }, [])
+  if (!show) return null
+  return (
+    <button aria-label="לראש הדף" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      className="fixed bottom-5 left-5 z-[500] w-12 h-12 rounded-full bg-[#0F766E] text-white shadow-lg flex items-center justify-center hover:bg-[#0d665f]">
+      <ArrowUp size={22} />
+    </button>
   )
 }
