@@ -256,6 +256,8 @@ export function generateHTML({ child, topics, questions: questionsIn, difficulty
   const isHebrew    = langMode === 'he_only'
   const isBilingual = langMode === 'bilingual'
   const isEnglish   = langMode === 'en_only'
+  // a workbook for a Hebrew-speaking child gets Hebrew page labels even when bilingual
+  const heUI = isHebrew || ((Array.isArray(sections) && sections.length > 0) && !isEnglish)
   const subjectLabel   = subject?.label_en || 'Worksheet'
   const subjectLabelHe = subject?.label_he || ''
   const topicLabels    = topics.map((t: any) => (langMode === 'he_only' && t.title_he) ? t.title_he : t.title_en).join(' · ')
@@ -272,7 +274,7 @@ export function generateHTML({ child, topics, questions: questionsIn, difficulty
     if (q.options) {
       answerHTML = `<div class="options-grid">${q.options.map((opt: any) => {
         const displayVal = visibleOption(opt, q.options, langMode)
-        const displayLabel = isHebrew ? translateOptionLabel(opt.label) : opt.label
+        const displayLabel = heUI ? translateOptionLabel(opt.label) : opt.label
         return `<div class="option">
           <span class="opt-label">${displayLabel}.</span>
           <span class="opt-value">${/[\u0590-\u05FF]/.test(String(displayVal ?? '')) ? heHTML(displayVal) : `<bdi dir="ltr">${fractionsToHTML(displayVal)}</bdi>`}</span>
@@ -400,14 +402,14 @@ export function generateHTML({ child, topics, questions: questionsIn, difficulty
 
   const answerKeyHTML = includeKey ? `
     <div class="answer-key-section">
-      <div class="answer-key-title">✅ ${isHebrew ? 'תשובות' : 'Answer Key'} — ${typeEmoji} ${isHebrew ? (wsType === 'practice' ? 'תרגול' : wsType === 'quiz' ? 'חידון' : 'מבחן') : typeLabel}</div>
+      <div class="answer-key-title">✅ ${heUI ? 'תשובות' : 'Answer Key'} — ${typeEmoji} ${heUI ? (wsType === 'practice' ? 'תרגול' : wsType === 'quiz' ? 'חידון' : 'מבחן') : typeLabel}</div>
       <div class="key-grid">
         ${questions.map((q: any, i: number) => {
           const co = Array.isArray(q.options) ? q.options.find((o: any) => o.isCorrect) : null
           const keyText = co
-            ? `${isHebrew ? translateOptionLabel(co.label) : co.label}. ${isHebrew ? heHTML(co.value_he || co.value_en) : `<bdi dir="ltr">${fractionsToHTML(co.value_en)}</bdi>`}`
-            : (isHebrew ? heHTML(q.correct_answer) : fractionsToHTML(q.correct_answer))
-          return `<div class="key-item"><div class="key-q">${isHebrew ? "" : "Q"}${i + 1}</div><div class="key-a">${keyText}</div></div>`
+            ? `${heUI ? translateOptionLabel(co.label) : co.label}. ${heUI ? heHTML(co.value_he || co.value_en) : `<bdi dir="ltr">${fractionsToHTML(co.value_en)}</bdi>`}`
+            : (heUI ? heHTML(q.correct_answer) : fractionsToHTML(q.correct_answer))
+          return `<div class="key-item"><div class="key-q">${heUI ? "" : "Q"}${i + 1}</div><div class="key-a">${keyText}</div></div>`
         }).join('')}
       </div>
     </div>` : ''
@@ -543,38 +545,38 @@ export function generateHTML({ child, topics, questions: questionsIn, difficulty
 </head>
 <body>
   <div class="no-print">
-    <button class="btn-print" onclick="window.print()">🖨️ ${isHebrew ? 'הדפסה / שמירה כ-PDF' : 'Print / Save as PDF'}</button>
-    <button class="btn-close" onclick="window.close()">✕ ${isHebrew ? 'סגירה' : 'Close'}</button>
+    <button class="btn-print" onclick="window.print()">🖨️ ${heUI ? 'הדפסה / שמירה כ-PDF' : 'Print / Save as PDF'}</button>
+    <button class="btn-close" onclick="window.close()">✕ ${heUI ? 'סגירה' : 'Close'}</button>
   </div>
 
-  ${brandHeader(b, isHebrew, wsType === 'exam' ? 'think' : 'wave')}
+  ${brandHeader(b, heUI, wsType === 'exam' ? 'think' : 'wave')}
   <div class="header">
     <div>
       <div class="ws-title">${customTitle ? customTitle : ''}</div>
     </div>
     <div class="header-meta">
-      ${child.display_name ? `<div><strong>${isHebrew ? 'תלמיד' : 'Student'}:</strong> ${child.display_name}</div>` : ''}
-      <div><strong>${isHebrew ? 'כיתה' : 'Grade'}:</strong> ${isHebrew ? 'כיתה' : 'Grade'} ${child.grade === 0 ? 'K' : child.grade}</div>
-      <div><strong>${isHebrew ? 'תאריך' : 'Date'}:</strong> ${date}</div>
+      ${child.display_name ? `<div><strong>${heUI ? 'תלמיד' : 'Student'}:</strong> ${child.display_name}</div>` : ''}
+      <div><strong>${heUI ? 'כיתה' : 'Grade'}:</strong> ${heUI ? 'כיתה' : 'Grade'} ${child.grade === 0 ? 'K' : child.grade}</div>
+      <div><strong>${heUI ? 'תאריך' : 'Date'}:</strong> ${date}</div>
     </div>
   </div>
 
-  ${wsType === 'exam' && timeMinutes ? `<div class="exam-bar">⏱ ${isHebrew ? `משך המבחן: ${timeMinutes} דקות` : `Time: ${timeMinutes} minutes`}<span style="margin-inline-start:auto;font-weight:600">${isHebrew ? 'בהצלחה!' : 'Good luck!'}</span></div>` : ''}
-  <div class="ws-title">${isHebrew ? subjectLabelHe : subjectLabel} — ${typeEmoji} ${isHebrew ? (wsType === 'practice' ? 'תרגול' : wsType === 'quiz' ? 'חידון' : 'מבחן') : typeLabel}</div>
+  ${wsType === 'exam' && timeMinutes ? `<div class="exam-bar">⏱ ${heUI ? `משך המבחן: ${timeMinutes} דקות` : `Time: ${timeMinutes} minutes`}<span style="margin-inline-start:auto;font-weight:600">${heUI ? 'בהצלחה!' : 'Good luck!'}</span></div>` : ''}
+  <div class="ws-title">${heUI ? subjectLabelHe : subjectLabel} — ${typeEmoji} ${heUI ? (wsType === 'practice' ? 'תרגול' : wsType === 'quiz' ? 'חידון' : 'מבחן') : typeLabel}</div>
   <div class="ws-topics">${topicLabels}</div>
 
   <div class="badges">
-    <span class="badge badge-blue">${isHebrew ? subjectLabelHe : subjectLabel}</span>
-    <span class="badge badge-blue">${isHebrew ? 'כיתה' : 'Grade'} ${child.grade === 0 ? 'K' : child.grade}</span>
-    <span class="badge badge-${difficulty === 'easy' ? 'green' : difficulty === 'hard' ? 'red' : difficulty === 'mixed' ? 'purple' : 'orange'}">${isHebrew ? translateDifficulty(difficulty) : diffLabel}</span>
-    <span class="badge badge-purple">${questions.length} ${isHebrew ? 'שאלות' : 'Questions'}</span>
-    ${includeKey ? `<span class="badge badge-green">${isHebrew ? 'כולל תשובות' : 'Answer Key Included'}</span>` : ''}
+    <span class="badge badge-blue">${heUI ? subjectLabelHe : subjectLabel}</span>
+    <span class="badge badge-blue">${heUI ? 'כיתה' : 'Grade'} ${child.grade === 0 ? 'K' : child.grade}</span>
+    <span class="badge badge-${difficulty === 'easy' ? 'green' : difficulty === 'hard' ? 'red' : difficulty === 'mixed' ? 'purple' : 'orange'}">${heUI ? translateDifficulty(difficulty) : diffLabel}</span>
+    <span class="badge badge-purple">${questions.length} ${heUI ? 'שאלות' : 'Questions'}</span>
+    ${includeKey ? `<span class="badge badge-green">${heUI ? 'כולל תשובות' : 'Answer Key Included'}</span>` : ''}
   </div>
 
   <div class="student-row">
-    <div class="student-field"><span class="student-label">${isHebrew ? 'שם:' : 'Name:'}</span><span class="student-line"></span></div>
-    <div class="student-field"><span class="student-label">${isHebrew ? 'ציון:' : 'Score:'}</span><span class="student-line"></span></div>
-    <div class="student-field"><span class="student-label">${isHebrew ? 'תאריך:' : 'Date:'}</span><span class="student-line"></span></div>
+    <div class="student-field"><span class="student-label">${heUI ? 'שם:' : 'Name:'}</span><span class="student-line"></span></div>
+    <div class="student-field"><span class="student-label">${heUI ? 'ציון:' : 'Score:'}</span><span class="student-line"></span></div>
+    <div class="student-field"><span class="student-label">${heUI ? 'תאריך:' : 'Date:'}</span><span class="student-line"></span></div>
   </div>
 
   ${questionsHTML}
