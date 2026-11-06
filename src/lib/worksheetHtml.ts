@@ -2,6 +2,7 @@
 // library can render the same branded printable).
 import { renderMathVisualSVG } from '@/lib/mathVisual'
 import { fractionsToHTML } from '@/lib/fractionText'
+import { mathRunsToHTML, normalizeFractions } from '@/lib/bidiMath'
 import { brandBits, brandHeader, brandFooter, BRAND_CSS, type Brand } from '@/lib/printBrand'
 import { isDistinctHe, translateDifficulty, translateOptionLabel, extractBareEquation, segmentHebrewMath } from '@/lib/text'
 
@@ -222,14 +223,9 @@ export function noQuestionsHTML(child: any) {
 // paper too ("-5", "A(2,3)", "x=-4", "3/4"); otherwise the minus sign jumps to
 // the wrong side. A hyphen glued to a Hebrew letter (ל-3, ב-5) is Hebrew
 // punctuation, not a minus, so it stays outside the isolated run.
-function isolateLtrRuns(text: string): string {
-  if (!text || !/[֐-׿]/.test(text)) return text
-  return text.replace(/(?<![\u0590-\u05FF])[-−]?[∢∠△A-Za-z0-9|(][A-Za-z0-9.,:+\-−×÷=*/%()|'_ °∢∠]*[A-Za-z0-9)|°]|(?<![\u0590-\u05FF])[-−]?[0-9]/g,
-    m => `<bdi dir="ltr">${m}</bdi>`)
-}
 const heHTML = (t: any) => {
   const v = String(t ?? '')
-  return /[\u0590-\u05FF]/.test(v) ? fractionsToHTML(isolateLtrRuns(v)) : (v ? `<bdi dir="ltr">${fractionsToHTML(v)}</bdi>` : '')
+  return /[\u0590-\u05FF]/.test(v) ? mathRunsToHTML(v, fractionsToHTML) : (v ? `<bdi dir="ltr">${fractionsToHTML(normalizeFractions(v))}</bdi>` : '')
 }
 
 function renderHeTextLines(promptHe: string): string {

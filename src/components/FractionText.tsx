@@ -1,6 +1,7 @@
 'use client'
 import React from 'react'
 import { tokenizeFractionText, type FractionToken } from '@/lib/fractionText'
+import { splitMathRuns, normalizeFractions } from '@/lib/bidiMath'
 
 // ─────────────────────────────────────────────────────────────
 //  FractionText — thin client wrapper around the shared tokenizer
@@ -39,10 +40,11 @@ const HEBREW = /[\u0590-\u05FF]/
 
 export default function FractionText({ text }: FractionTextProps) {
   if (!text) return null
-  const segments = tokenizeFractionText(text)
-  const content = segments.map((seg, i) =>
-    typeof seg === 'string' ? <React.Fragment key={i}>{seg}</React.Fragment> : <FractionGlyph key={i} {...seg} />
-  )
-  if (!HEBREW.test(text)) return <bdi dir="ltr" style={{ unicodeBidi: 'isolate' }}>{content}</bdi>
-  return <>{content}</>
+  const glyphs = (t: string, key: string) => tokenizeFractionText(t).map((seg, i) =>
+    typeof seg === 'string' ? <React.Fragment key={`${key}-${i}`}>{seg}</React.Fragment> : <FractionGlyph key={`${key}-${i}`} {...seg} />)
+  if (!HEBREW.test(text)) return <bdi dir="ltr" style={{ unicodeBidi: 'isolate' }}>{glyphs(normalizeFractions(text), 'a')}</bdi>
+  // Hebrew with math inside: each math run is isolated left-to-right (see lib/bidiMath)
+  return <>{splitMathRuns(text).map((p, i) => p.ltr
+    ? <bdi key={i} dir="ltr" style={{ unicodeBidi: 'isolate' }}>{glyphs(p.text, String(i))}</bdi>
+    : <React.Fragment key={i}>{glyphs(p.text, String(i))}</React.Fragment>)}</>
 }
