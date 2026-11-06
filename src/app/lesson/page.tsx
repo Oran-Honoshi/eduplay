@@ -39,6 +39,7 @@ export default async function LessonPage({ searchParams }: Props) {
       .contains('grades', [child.grade]).order('sort_order').limit(1).maybeSingle()
     topic = t
   }
+  if (!topic) topic = (await kidTopicsForGrade(supabase, child.grade))[0] || null
 
   const isReadingTopic = topic?.slug?.includes('reading') ||
     topic?.slug?.includes('comprehension') ||
