@@ -1,5 +1,6 @@
 'use client'
 import EduPlayLogo from './EduPlayLogo'
+import { SuggestionsButton } from './Feedback'
 import { PARENT_COLORS, PARENT_FONTS } from '@/lib/parentTheme'
 
 // Sticky top bar shared across the parent portal: dashboard passes a full
@@ -27,7 +28,7 @@ export default function ParentHeaderBar({ center, right }: { center?: React.Reac
         </span>
       </div>
       {center}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>{right}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}><span className="hidden md:inline-flex"><SuggestionsButton /></span>{right}</div>
     </header>
   )
 }

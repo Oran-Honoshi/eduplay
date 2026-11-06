@@ -452,6 +452,7 @@ function LibraryHub() {
         { icon:BookOpen, title:'Reading passages', desc:'Stories with comprehension questions, by level.', href:'/passages', tone:'amber' },
         { icon:Printer,  title:'Past worksheets', desc:'Worksheets and exams you already generated; print again anytime.', href:'/worksheets?view=history' },
         { icon:Notebook, title:'Notebook', desc:'Your saved sections: files, linked questions and generation recipes.', href:'/notebook' },
+        { icon:Map, title:'Free library · ספרייה חינמית', desc:'Free worksheets and explanation pages other parents shared — and where yours appear once approved.', href:'/free', tone:'accent' },
       ]}/>
     </div>
   )

@@ -11,13 +11,14 @@ import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Target, ClipboardList, BookOpen, Printer, Smartphone, Check, X, Pencil, Plus, Minus,
-  Sparkles, ThumbsUp, Star, Copy, History, ArrowLeft, Loader2, AlertTriangle, Trash2,
+  Sparkles, ThumbsUp, Star, Copy, History, ArrowLeft, Loader2, AlertTriangle, Trash2, Share2, Library,
 } from 'lucide-react'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import { MaterialUpload, type UploadedMaterial } from '@/components/MaterialUpload'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
 import { Pip } from '@/components/Pip'
+import { FeedbackPrompt } from '@/components/Feedback'
 import { useFamilyChildren, type FamilyChild } from '@/lib/useFamilyChildren'
 import { PARENT_COLORS } from '@/lib/parentTheme'
 
@@ -584,6 +585,20 @@ function DonePanel({ mat, setMat, child, questions }: any) {
       setSent('sent')
     } catch (e: any) { setErr(e.message) } finally { setSending(false) }
   }
+  const [share, setShare] = useState<{ url: string; library_status: string } | null>(
+    mat.share_slug ? { url: `${typeof window !== 'undefined' ? window.location.origin : ''}/s/${mat.share_slug}`, library_status: mat.library_status || 'none' } : null)
+  async function makeShare(library?: boolean) {
+    const r = await fetch(`/api/materials/${mat.id}/share`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(library === undefined ? {} : { library }) })
+    const d = await r.json()
+    if (r.ok) setShare(d); else setErr(d.error || 'שגיאה')
+    return r.ok ? d : null
+  }
+  async function shareWhatsApp() {
+    const s = share || await makeShare()
+    if (!s) return
+    const text = `${mat.title} — דף ${({ practice: 'תרגול', exam: 'מבחן', explanation: 'הסבר' } as any)[mat.kind]} חינם מ-EduPlay 🦉\n${s.url}`
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+  }
   async function rate(patch: any) {
     const r = await fetch(`/api/materials/${mat.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) })
     const d = await r.json(); if (r.ok) setMat(d.material)
@@ -616,6 +631,21 @@ function DonePanel({ mat, setMat, child, questions }: any) {
       </div>
       {err && <div className="text-sm text-[#DC2626]">{err}</div>}
 
+      <div className="border-t border-[#e3ebe9] pt-4 flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-bold text-[#3d4f4b]">לשתף:</span>
+          <button className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-xl bg-[#25D366] text-white font-bold text-sm" onClick={shareWhatsApp}><Share2 size={16} /> בוואטסאפ</button>
+          <button className={btnGhost} onClick={async () => { const s = share || await makeShare(); if (s) { try { await navigator.clipboard.writeText(s.url) } catch {} } }}>העתקת קישור</button>
+          {share && <a href={share.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#0F766E] underline" dir="ltr">{share.url.replace(/^https?:\/\//, '')}</a>}
+        </div>
+        <p className="text-xs text-[#7a8f8b] m-0">בקישור רואים רק את הדף עצמו, בלי שם הילד/ה ובלי פרטים על המשפחה.</p>
+        <label className="flex items-center gap-2 text-sm text-[#3d4f4b]">
+          <input type="checkbox" checked={!!share && share.library_status !== 'none'} onChange={e => makeShare(e.target.checked)} />
+          <Library size={15} className="text-[#0F766E]" /> להציע לספרייה החינמית של EduPlay, כדי שהורים אחרים ייהנו (נבדק לפני שמתפרסם)
+          {share?.library_status === 'listed' && <span className="text-xs font-bold text-[#16A34A]">· מופיע בספרייה</span>}
+        </label>
+      </div>
+
       <div className="border-t border-[#e3ebe9] pt-4 flex flex-wrap items-center gap-4">
         <span className="text-sm font-bold text-[#3d4f4b]">איך יצא?</span>
         <button aria-pressed={!!mat.liked} onClick={() => rate({ liked: mat.liked ? null : true })}
@@ -629,6 +659,7 @@ function DonePanel({ mat, setMat, child, questions }: any) {
         </div>
         <a href={`/create?from=${mat.id}`} className={btnGhost + ' ms-auto'}><Copy size={16} /> עוד כזה, עם שאלות אחרות</a>
       </div>
+      <FeedbackPrompt materialId={mat.id} />
     </div>
   )
 }

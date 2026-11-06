@@ -41,6 +41,10 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
             {link}
           </a>
         ))}
+        <a href="/free" style={{
+            padding: '8px 14px', borderRadius: 8, fontWeight: 800, fontSize: 13,
+            color: scrolled ? '#0F766E' : 'white', textDecoration: 'none',
+          }}>Free worksheets · דפים חינם</a>
         <div style={{ width: 1, height: 20, background: scrolled ? '#E5E7EB' : 'rgba(255,255,255,0.25)', margin: '0 4px' }} />
         <a href="/login" style={{
           padding: '8px 16px', borderRadius: 50,

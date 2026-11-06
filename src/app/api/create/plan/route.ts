@@ -54,6 +54,20 @@ export async function POST(req: NextRequest) {
   const topics = topicRows || []
   const catalog = topics.map(t => ({ slug: t.slug, en: t.title_en, he: t.title_he }))
 
+  // Learn from what worked: this family's liked / 4–5★ materials, and the
+  // best-rated ones in the free library, shape the defaults (never correctness).
+  const { data: liked } = await db.from('materials').select('kind, plan, rating, liked')
+    .eq('family_id', familyId).eq('status', 'ready').or('liked.eq.true,rating.gte.4')
+    .order('created_at', { ascending: false }).limit(5)
+  const likedHints = (liked || []).filter(x => x.kind === kind).map(x => ({
+    difficulty: x.plan?.difficulty, q_types: x.plan?.q_types,
+    per_topic: Math.round(((x.plan?.topics || []).reduce((a: number, t: any) => a + (t.count || 0), 0)) / Math.max(1, (x.plan?.topics || []).length)),
+    time_minutes: x.plan?.time_minutes ?? undefined,
+  }))
+  const learnedText = likedHints.length
+    ? `\nThis parent liked earlier ${kind} materials with these settings — prefer similar ones unless the request says otherwise: ${JSON.stringify(likedHints)}`
+    : ''
+
   const kindText = {
     practice: 'PRACTICE: focused on one or two topics, many questions per topic, ramping from easy to hard.',
     exam: 'EXAM: covers every topic in the material, a few questions per topic, mixed difficulty, with a suggested time limit in minutes.',
@@ -67,6 +81,7 @@ ${onRequest
   ? `Choose topics freely. When a topic matches one of these existing shared topics, use its slug in "topic_slug"; otherwise set topic_slug to null and is_new true: ${JSON.stringify(catalog.slice(0, 300))}`
   : `You MUST use only these topics for this grade (topic_slug is required and must be one of them); pick the closest ones: ${JSON.stringify(catalog)}`}
 Rules: topic names are general curriculum names (not page numbers). Keep the topic order of the material. Practice: 1–2 topics unless the parent asked for more, 10–15 questions each. Exam: 3–8 topics, 4–8 questions each, total about 20–40, and time_minutes. Question types: choose from "multiple_choice" and "word_problem" (open answer); use both unless the parent said otherwise.
+${learnedText}
 If something important is missing or unclear (for example which chapter, or the level), say so briefly in missing_he — but still give your best plan.
 Output JSON only:
 {"title_he":"...","title_en":"...","summary_he":"one or two sentences explaining the plan to the parent","missing_he":["..."],"difficulty":"progressive"|"mixed"|"easy"|"medium"|"hard","q_types":["multiple_choice","word_problem"],"time_minutes":number|null,
