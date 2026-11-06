@@ -4,7 +4,7 @@ import { createServiceRoleClient } from '@/lib/supabase'
 import { loadUploadBlocks } from '@/lib/uploadBlocks'
 import { topicSlug } from '@/lib/onRequestTopics'
 
-export const maxDuration = 60
+export const maxDuration = 300
 
 // ─── POST /api/topics/suggest ──────────────────────────────────
 // Reads the parent's uploaded material (an exam material list, workbook

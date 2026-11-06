@@ -432,7 +432,7 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
                 {suggested.map(t => (
                   <button key={t.slug} type="button" onClick={() => pickSuggested(t)}
                     className={`text-start rounded-xl border px-3 py-2 ${(topicSlug === t.slug || newTopicName.includes(t.title_en)) ? 'border-[#0F766E] bg-[#E4F3F1]' : 'border-[rgba(15,118,110,.14)] bg-white hover:bg-[#F7FBFA]'}`}>
-                    <div className="text-sm font-bold text-[#1f2a28]">{t.title_he || t.title_en} <span className="font-normal text-[#7a8f8b]" dir="ltr">· {t.title_en}</span>{t.existing && <span className="ms-2 text-[11px] text-[#0F766E]">כבר במאגר</span>}</div>
+                    <div className="text-sm font-bold text-[#1f2a28]">{t.title_he || t.title_en} <span className="font-normal text-[#7a8f8b]" dir="ltr">· {t.title_en}</span></div>
                     {t.subtopics_he.length > 0 && <div className="text-xs text-[#5b6b68] mt-0.5">{t.subtopics_he.join(' · ')}</div>}
                   </button>
                 ))}
