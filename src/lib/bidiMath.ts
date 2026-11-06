@@ -21,12 +21,16 @@ export function normalizeFractions(text: string): string {
 }
 
 const HEB = /[֐-׿]/
+// A comparison or equation (expression ☐ expression, a < b, a = b) is ONE run,
+// so the expression written first stays on the left, where the child reads it
+// first — otherwise a right-to-left sentence swaps the two sides and the
+// correct sign looks wrong.
 // A math run: starts with a digit, a Latin letter, a sign, an opening bracket,
 // an absolute-value bar or an angle mark; continues through math characters
 // and spaces; ends on a digit, letter, closing bracket, bar or degree sign.
 // A hyphen glued to a Hebrew letter (ל-3, ב-5) is Hebrew punctuation, so a
 // run never starts right after a Hebrew letter.
-const RUN = /(?<![֐-׿])(?:[-−+]?\(?[-−+]?[0-9A-Za-z∢∠△|(])(?:[0-9A-Za-z.,:+\-−×÷·=<>≤≥≠*/%()|'_ °∢∠△\[\]]*[0-9A-Za-z)|°\]=])?(?:\s*=\s*\?)?/g
+const RUN = /(?<![֐-׿])(?:[-−+]?\(?[-−+]?[0-9A-Za-z∢∠△|(])(?:[0-9A-Za-z.,:+\-−×÷·=<>≤≥≠*/%()|'_ °∢∠△\[\]☐▢□⬜]*[0-9A-Za-z)|°\]=])?(?:\s*=\s*\?)?/g
 
 export type BidiPart = { ltr: boolean; text: string }
 
