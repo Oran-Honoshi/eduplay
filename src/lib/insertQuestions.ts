@@ -13,6 +13,12 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 
 export interface QuestionInput {
   topic_slug: string
+  // When set, used instead of looking the topic up by slug (slugs repeat across grades).
+  topic_id?: string
+  // The grade this question was written for (topic-first bank: grade is a tag).
+  grade?: number
+  created_by_family?: string
+  explanation_he?: string
   difficulty: 'easy' | 'medium' | 'hard'
   q_type: string
   prompt_en: string
@@ -104,11 +110,10 @@ export async function insertQuestions(questions: QuestionInput[]): Promise<Inser
   const supabase = createServerClient()
 
   // Look up topic IDs from slugs in one query
-  const slugs = [...new Set(questions.map(q => q.topic_slug))]
-  const { data: topics, error: topicErr } = await supabase
-    .from('topics')
-    .select('id, slug')
-    .in('slug', slugs)
+  const slugs = [...new Set(questions.filter(q => !q.topic_id).map(q => q.topic_slug))]
+  const { data: topics, error: topicErr } = slugs.length
+    ? await supabase.from('topics').select('id, slug').in('slug', slugs)
+    : { data: [], error: null }
 
   if (topicErr) throw topicErr
 
@@ -122,7 +127,7 @@ export async function insertQuestions(questions: QuestionInput[]): Promise<Inser
 
   // Build insert rows
   const rows = questions.map(q => ({
-    topic_id:       topicMap[q.topic_slug],
+    topic_id:       q.topic_id || topicMap[q.topic_slug],
     difficulty:     q.difficulty,
     q_type:         q.q_type || 'multiple_choice',
     prompt_en:      q.prompt_en,
@@ -132,6 +137,9 @@ export async function insertQuestions(questions: QuestionInput[]): Promise<Inser
     hint_en:        q.hint_en || null,
     hint_he:        q.hint_he || null,
     explanation_en: q.explanation_en || null,
+    explanation_he: q.explanation_he || null,
+    grade:          q.grade ?? null,
+    created_by_family: q.created_by_family ?? null,
     visual_data:    q.visual_data || null,
     // AI-generated questions go in as approved=false for review
     approved:       q.approved ?? false,

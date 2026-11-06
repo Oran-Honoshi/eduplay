@@ -200,21 +200,31 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
 
     // ── ANGLE ────────────────────────────────────────────────
     case 'angle': {
-      const deg = data.degrees || 90
-      const cx = W * 0.25, cy = H * 0.75
-      const len = Math.min(W, H) * 0.45
+      const deg = Math.max(1, Math.min(180, Number(data.degrees) || 90))
       const rad = (deg * Math.PI) / 180
+      // vertex placement keeps both rays inside the box for any angle up to 180°
+      const cx = deg > 100 ? W * 0.5 : W * 0.22, cy = H * 0.72
+      const len = Math.min(W, H) * (deg > 100 ? 0.4 : 0.55)
       const x2 = cx + len, y2 = cy
-      const x3 = cx + len * Math.cos(Math.PI - rad)
-      const y3 = cy - len * Math.sin(Math.PI - rad)
+      const x3 = cx + len * Math.cos(rad)
+      const y3 = cy - len * Math.sin(rad)
       const arcR = len * 0.28
       const isRight = deg === 90
       const arcOrBox = isRight
-        ? `<path d="M${cx + arcR},${cy} L${cx + arcR},${cy - arcR} L${cx},${cy - arcR}" fill="none" stroke="${hl}" stroke-width="2"/>`
-        : `<path d="M${cx + arcR},${cy} A${arcR},${arcR} 0 0 1 ${cx + arcR * Math.cos(Math.PI - rad)},${cy - arcR * Math.sin(Math.PI - rad)}" fill="${hl}20" stroke="${hl}" stroke-width="2"/>`
-      const lx = cx + (isRight ? arcR + 14 : arcR * 1.5 * Math.cos((Math.PI - rad) / 2) + 6)
-      const ly = cy - (isRight ? arcR : arcR * 1.5 * Math.sin((Math.PI - rad) / 2)) + 4
-      return svg(`<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="2.5"/><line x1="${cx}" y1="${cy}" x2="${x3}" y2="${y3}" stroke="${stroke}" stroke-width="2.5"/>${arcOrBox}<text x="${lx}" y="${ly}" font-size="14" font-weight="bold" font-family="Georgia,serif" fill="${hl}">${deg}°</text><circle cx="${cx}" cy="${cy}" r="3" fill="${stroke}"/>`)
+        ? `<path d="M${cx + arcR * 0.55},${cy} L${cx + arcR * 0.55},${cy - arcR * 0.55} L${cx},${cy - arcR * 0.55}" fill="none" stroke="${hl}" stroke-width="2"/>`
+        : `<path d="M${cx},${cy} L${cx + arcR},${cy} A${arcR},${arcR} 0 0 0 ${cx + arcR * Math.cos(rad)},${cy - arcR * Math.sin(rad)} Z" fill="${hl}" fill-opacity="0.15" stroke="none"/><path d="M${cx + arcR},${cy} A${arcR},${arcR} 0 0 0 ${cx + arcR * Math.cos(rad)},${cy - arcR * Math.sin(rad)}" fill="none" stroke="${hl}" stroke-width="2"/>`
+      const lx = cx + arcR * 1.55 * Math.cos(rad / 2)
+      const ly = cy - arcR * 1.55 * Math.sin(rad / 2) + 5
+      // Optional: letters: [end of ray 1, vertex, end of ray 2] e.g. ['A','B','C']
+      // (three-letter naming, vertex in the middle); label: shown instead of the
+      // degrees (e.g. 'α' or '?'); hide_degrees: no label at all.
+      const letters: string[] = Array.isArray(data.letters) ? data.letters.map(String) : []
+      const angLabel = data.hide_degrees ? '' : (data.label != null ? String(data.label) : `${deg}°`)
+      const letterSvg = letters.length === 3
+        ? [[x2 + 10, y2 + 5, letters[0]], [cx - 12, cy + 16, letters[1]], [x3 + (x3 < cx ? -12 : 6), y3 - 8, letters[2]]]
+            .map(([x, y, t]) => `<text x="${x}" y="${y}" text-anchor="middle" font-size="15" font-weight="bold" font-family="Georgia,serif" fill="${lbl}">${escapeText(t)}</text>`).join('')
+        : ''
+      return svg(`<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="2.5"/><line x1="${cx}" y1="${cy}" x2="${x3}" y2="${y3}" stroke="${stroke}" stroke-width="2.5"/>${arcOrBox}${angLabel ? `<text x="${lx}" y="${ly}" text-anchor="middle" font-size="14" font-weight="bold" font-family="Georgia,serif" fill="${hl}">${escapeText(angLabel)}</text>` : ''}<circle cx="${cx}" cy="${cy}" r="3" fill="${stroke}"/>${letterSvg}`)
     }
 
     // ── NUMBER LINE ──────────────────────────────────────────
@@ -277,7 +287,21 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
 
       const axes = `<line x1="${cx}" y1="${pad - 4}" x2="${cx}" y2="${H - pad + 4}" stroke="${stroke}" stroke-width="2"/><line x1="${pad - 4}" y1="${cy}" x2="${W - pad + 4}" y2="${cy}" stroke="${stroke}" stroke-width="2"/><polygon points="${cx},${pad - 4} ${cx - 4},${pad + 6} ${cx + 4},${pad + 6}" fill="${stroke}"/><polygon points="${W - pad + 4},${cy} ${W - pad - 6},${cy - 4} ${W - pad - 6},${cy + 4}" fill="${stroke}"/><text x="${cx + 6}" y="${pad + 12}" font-size="11" font-family="Georgia,serif" fill="${lbl}">y</text><text x="${W - pad + 6}" y="${cy + 4}" font-size="11" font-family="Georgia,serif" fill="${lbl}">x</text>`
 
-      return svg(`${gridLines}${axes}${tickLabels}${plotted}${connector}`)
+      // Optional extras (grade 7): vlines:[x] → the line x=a, hlines:[y] → y=b,
+      // polygon:[[x,y],…] → a shape such as a rectangle, segments:[[[x1,y1],[x2,y2]],…].
+      const inRange = (v: number) => Math.abs(v) <= steps
+      const vlines = (Array.isArray(data.vlines) ? data.vlines : []).filter((v: any) => Number.isFinite(+v) && inRange(+v))
+        .map((v: any) => `<line x1="${cx + +v * step}" y1="${pad}" x2="${cx + +v * step}" y2="${H - pad}" stroke="${hl}" stroke-width="2" stroke-dasharray="6,4"/><text x="${cx + +v * step + 4}" y="${pad + 10}" font-size="10" font-family="Georgia,serif" fill="${hl}">x=${+v}</text>`).join('')
+      const hlines = (Array.isArray(data.hlines) ? data.hlines : []).filter((v: any) => Number.isFinite(+v) && inRange(+v))
+        .map((v: any) => `<line x1="${pad}" y1="${cy - +v * step}" x2="${W - pad}" y2="${cy - +v * step}" stroke="${hl}" stroke-width="2" stroke-dasharray="6,4"/><text x="${pad + 2}" y="${cy - +v * step - 4}" font-size="10" font-family="Georgia,serif" fill="${hl}">y=${+v}</text>`).join('')
+      const poly = Array.isArray(data.polygon) && data.polygon.length >= 3
+        ? `<polygon points="${data.polygon.map(([px, py]: number[]) => `${cx + px * step},${cy - py * step}`).join(' ')}" fill="${hl}" fill-opacity="0.13" stroke="${hl}" stroke-width="2"/>`
+        : ''
+      const segs = (Array.isArray(data.segments) ? data.segments : []).map((sg: any) =>
+        Array.isArray(sg) && sg.length === 2
+          ? `<line x1="${cx + sg[0][0] * step}" y1="${cy - sg[0][1] * step}" x2="${cx + sg[1][0] * step}" y2="${cy - sg[1][1] * step}" stroke="${hl}" stroke-width="3"/>`
+          : '').join('')
+      return svg(`${gridLines}${axes}${tickLabels}${vlines}${hlines}${poly}${segs}${plotted}${connector}`)
     }
 
     // ── GRID (multiplication / area array model) ──────────────

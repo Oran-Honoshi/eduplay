@@ -27,12 +27,13 @@ export default async function PracticePage({ searchParams }: Props) {
   if (!child) redirect('/dashboard')
 
   const parsed = parseInt(searchParams.grade ?? '', 10)
-  const grade = Number.isFinite(parsed) && parsed >= 0 && parsed <= 6 ? parsed : (child.grade ?? 0)
+  const grade = Number.isFinite(parsed) && parsed >= 0 && parsed <= 12 ? parsed : (child.grade ?? 0)
 
   const [{ data: subjects }, { data: topics }, { data: progress }] = await Promise.all([
     supabase.from('subjects').select('id, slug, label_en, label_he, sort_order').order('sort_order'),
     supabase.from('topics').select('id, title_en, title_he, sort_order, grade, subject:subjects(slug, label_en, label_he)')
-      .eq('grade', grade).order('sort_order'),
+      // grade 7+ topics are shared across grades: match on the grade tag
+      .match(grade >= 7 ? { origin: 'on_request' } : { grade }).filter('grades', 'cs', `{${grade}}`).order('sort_order'),
     supabase.from('child_topic_progress').select('topic_id, status, steps_completed, steps_total').eq('child_id', childId),
   ])
 

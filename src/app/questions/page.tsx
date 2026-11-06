@@ -1,4 +1,5 @@
 'use client'
+import { MaterialUpload, type UploadedMaterial } from '@/components/MaterialUpload'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createBrowserClient } from '@/lib/supabase'
 import FractionText from '@/components/FractionText'
@@ -26,6 +27,7 @@ interface Topic {
   id: string
   slug: string
   title_en: string
+  title_he?: string | null
   grade: number
 }
 
@@ -88,8 +90,6 @@ const Q_TYPE_OPTIONS = [
 ]
 // Mirrors the caps enforced server-side in api/questions/generate/route.ts —
 // 3MB raw keeps base64+JSON under Vercel's ~4.5MB serverless request-body limit.
-const ALLOWED_REFERENCE_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
-const MAX_REFERENCE_FILE_BYTES = 3 * 1024 * 1024
 
 // ── Preferred-style control ──────────────────────────────────────
 function StyleControl() {
@@ -164,8 +164,39 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
     const p = new URLSearchParams(window.location.search).get('prompt')
     if (p) setCustomPrompt(p)
   }, [])
-  const [referenceFile, setReferenceFile] = useState<{ media_type: string; data: string; name: string; size: number } | null>(null)
-  const [fileError, setFileError] = useState<string | null>(null)
+  const [materials, setMaterials] = useState<UploadedMaterial[]>([])
+  // Grade 7+: topics come from the shared on-request bank or are named by the parent.
+  const onRequest = grade >= 7
+  const [newTopicName, setNewTopicName] = useState('')
+  const [suggesting, setSuggesting] = useState(false)
+  const [suggested, setSuggested] = useState<{ title_en: string; title_he: string; subtopics_he: string[]; slug: string; existing: boolean }[] | null>(null)
+  const [suggestError, setSuggestError] = useState<string | null>(null)
+  const findTopics = async () => {
+    setSuggesting(true); setSuggestError(null)
+    try {
+      const res = await fetch('/api/topics/suggest', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject_slug: subjectSlug, grade, upload_ids: materials.map(m => m.id), prompt: customPrompt || undefined }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'failed')
+      setSuggested(data.topics || [])
+    } catch (e: any) { setSuggestError(e.message || 'Could not read the material.') }
+    finally { setSuggesting(false) }
+  }
+  const pickSuggested = (t: { title_en: string; title_he: string; subtopics_he: string[]; slug: string; existing: boolean }) => {
+    if (t.existing && topics.some(x => x.slug === t.slug)) { setTopicSlug(t.slug); setNewTopicName('') }
+    else { setTopicSlug('__new__'); setNewTopicName(t.title_he ? `${t.title_he} | ${t.title_en}` : t.title_en) }
+    if (t.subtopics_he.length) setCustomPrompt(`להתמקד ב: ${t.subtopics_he.join('; ')}`)
+  }
+  // Material handed over from another screen (e.g. the worksheet builder's
+  // "make it from your own material" box) — picked up once, then cleared.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('eduplay:pendingMaterials')
+      if (raw) { setMaterials(JSON.parse(raw)); sessionStorage.removeItem('eduplay:pendingMaterials') }
+    } catch {}
+  }, [])
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState<string | null>(null)
   const [existingCount, setExistingCount] = useState<number | null>(null)
@@ -239,30 +270,6 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
     setQTypes(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    e.target.value = '' // clear so re-selecting the same file still fires onChange
-    if (!file) return
-    setFileError(null)
-
-    if (!ALLOWED_REFERENCE_TYPES.includes(file.type)) {
-      setFileError('Only JPG, PNG, or PDF files are supported.')
-      return
-    }
-    if (file.size > MAX_REFERENCE_FILE_BYTES) {
-      setFileError(`File is too large — max ${MAX_REFERENCE_FILE_BYTES / 1024 / 1024}MB.`)
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      const base64 = (reader.result as string).split(',')[1] || ''
-      setReferenceFile({ media_type: file.type, data: base64, name: file.name, size: file.size })
-    }
-    reader.onerror = () => setFileError('Could not read that file — try again.')
-    reader.readAsDataURL(file)
-  }
-
   const generate = async () => {
     setGenerating(true)
     setResult(null)
@@ -273,14 +280,21 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
         body: JSON.stringify({
           subject_slug: subjectSlug,
           grade,
-          topic_slug: topicSlug,
+          topic_slug: topicSlug === '__new__' ? undefined : topicSlug,
+          new_topic: topicSlug === '__new__' && newTopicName.trim() ? (() => {
+            const [a, b] = newTopicName.split('|').map(x => x.trim())
+            const hasLatin = (x?: string) => !!x && /[a-z]{3}/i.test(x)
+            const en = hasLatin(b) ? b : hasLatin(a) ? a : a
+            const he = /[\u0590-\u05FF]/.test(a) ? a : (b && /[\u0590-\u05FF]/.test(b) ? b : undefined)
+            return { title_en: en, title_he: he }
+          })() : undefined,
           q_types: qTypes,
           difficulty,
           count,
           progressive,
           language,
           custom_prompt: customPrompt || undefined,
-          reference_file: referenceFile ? { media_type: referenceFile.media_type, data: referenceFile.data } : undefined,
+          upload_ids: materials.length ? materials.map(m => m.id) : undefined,
         }),
       })
       const data = await res.json()
@@ -295,8 +309,9 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
           if (otherCount > 0) parts.push(`${otherCount} skipped due to other errors — see history`)
           skipNote = ` (${parts.join('; ')})`
         }
+        if (data.skipped_uploads?.length) skipNote += ` — couldn't read: ${data.skipped_uploads.join(', ')}`
         setResult(`✅ Generated ${n} question${n !== 1 ? 's' : ''}${skipNote} — saved for review.`)
-        setReferenceFile(null)
+        setMaterials([])
         onGenerated()
       } else {
         setResult(`❌ ${apiErrorText(res.status, data.error, 'Error generating questions')}`)
@@ -338,11 +353,17 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
         </div>
         <div className="min-w-48">
           <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Topic</label>
-          <select value={topicSlug} onChange={e => setTopicSlug(e.target.value)} disabled={topics.length === 0}
+          <select value={topicSlug} onChange={e => setTopicSlug(e.target.value)} disabled={topics.length === 0 && !onRequest}
             className="w-full px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33] disabled:bg-[#F7F5F0] disabled:text-[#9aa6a3]">
-            <option value="">{topicsLoading ? 'Loading topics…' : topics.length === 0 ? 'No topics for this grade' : 'Select a topic...'}</option>
-            {topics.map(t => <option key={t.slug} value={t.slug}>{t.title_en}</option>)}
+            <option value="">{topicsLoading ? 'Loading topics…' : topics.length === 0 ? (onRequest ? 'Pick or add a topic...' : 'No topics for this grade') : 'Select a topic...'}</option>
+            {topics.map(t => <option key={t.slug} value={t.slug}>{onRequest && t.title_he ? `${t.title_he} · ${t.title_en}` : t.title_en}</option>)}
+            {onRequest && <option value="__new__">+ New topic…</option>}
           </select>
+          {onRequest && topicSlug === '__new__' && (
+            <input value={newTopicName} onChange={e => setNewTopicName(e.target.value)} dir="auto"
+              placeholder="e.g. מספרים מכוונים / Positive and negative numbers"
+              className="mt-2 w-full px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]" />
+          )}
         </div>
         <div>
           <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Difficulty</label>
@@ -396,20 +417,30 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
       </div>
 
       <div className="mb-4">
-        <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Reference file (optional)</label>
-        <p className="text-xs text-[#9aa6a3] mb-1.5">Upload a photo or PDF of a worksheet or textbook page — new questions will be modeled after its style, content, and difficulty.</p>
-        {referenceFile ? (
-          <div className="flex items-center gap-2 text-sm text-[#1f2a28] bg-[#F7F5F0] border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-2 w-fit">
-            <Paperclip size={13} color={PARENT_COLORS.textMuted} />
-            <span>{referenceFile.name} ({(referenceFile.size / 1024).toFixed(0)}KB)</span>
-            <button onClick={() => setReferenceFile(null)} className="text-[#9aa6a3] hover:text-[#7a8f8b]" aria-label="Remove file"><X size={13} /></button>
+        <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Your own material (optional)</label>
+        <MaterialUpload value={materials} onChange={setMaterials} />
+        {onRequest && (materials.length > 0 || customPrompt.trim()) && (
+          <div className="mt-3">
+            <button type="button" onClick={findTopics} disabled={suggesting}
+              className="inline-flex items-center gap-2 min-h-[40px] px-4 rounded-xl bg-[#E4F3F1] text-[#0F766E] text-sm font-semibold hover:bg-[#0F766E22] disabled:opacity-60">
+              <Sparkles size={15} /> {suggesting ? 'Reading your material…' : 'Find the topics in this material'}
+            </button>
+            {suggestError && <p className="text-xs text-[#DC2626] mt-1">{suggestError}</p>}
+            {suggested && (
+              <div className="mt-2 flex flex-col gap-2" dir="rtl">
+                {suggested.length === 0 && <p className="text-xs text-[#7a8f8b]" dir="ltr">No topics found — try clearer photos or add a note.</p>}
+                {suggested.map(t => (
+                  <button key={t.slug} type="button" onClick={() => pickSuggested(t)}
+                    className={`text-start rounded-xl border px-3 py-2 ${(topicSlug === t.slug || newTopicName.includes(t.title_en)) ? 'border-[#0F766E] bg-[#E4F3F1]' : 'border-[rgba(15,118,110,.14)] bg-white hover:bg-[#F7FBFA]'}`}>
+                    <div className="text-sm font-bold text-[#1f2a28]">{t.title_he || t.title_en} <span className="font-normal text-[#7a8f8b]" dir="ltr">· {t.title_en}</span>{t.existing && <span className="ms-2 text-[11px] text-[#0F766E]">כבר במאגר</span>}</div>
+                    {t.subtopics_he.length > 0 && <div className="text-xs text-[#5b6b68] mt-0.5">{t.subtopics_he.join(' · ')}</div>}
+                  </button>
+                ))}
+                {suggested.length > 0 && <p className="text-xs text-[#7a8f8b]" dir="ltr">Pick a topic, then Generate. Do the next topic after.</p>}
+              </div>
+            )}
           </div>
-        ) : (
-          <input type="file" accept="image/jpeg,image/png,application/pdf" onChange={handleFileChange}
-            className="text-sm text-[#7a8f8b] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-[#E4F3F1] file:text-[#0F766E] file:text-xs file:font-semibold file:cursor-pointer hover:file:bg-[#0F766E22] cursor-pointer"
-          />
         )}
-        {fileError && <p className="text-xs text-[#DC2626] mt-1">{fileError}</p>}
       </div>
 
       {!!existingCount && (
@@ -425,7 +456,7 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
         </div>
       )}
 
-      <button onClick={generate} disabled={generating || !topicSlug || qTypes.length === 0}
+      <button onClick={generate} disabled={generating || !topicSlug || (topicSlug === '__new__' && !newTopicName.trim()) || qTypes.length === 0}
         className={`px-5 py-2 text-white font-bold text-sm rounded-xl transition-colors inline-flex items-center gap-2 ${
           generating ? 'bg-[#0F766E] cursor-wait' : 'bg-[#0F766E] hover:bg-[#0B5C56] disabled:bg-[#f0efe9] disabled:text-[#9aa6a3]'
         }`}>

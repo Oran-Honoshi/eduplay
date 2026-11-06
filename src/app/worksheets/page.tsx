@@ -10,6 +10,7 @@ import EduPlayLogo from '@/components/EduPlayLogo'
 import { useFamilyChildren, EMPTY_CHILD, type FamilyChild } from '@/lib/useFamilyChildren'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import TopicMultiSelect from '@/components/TopicMultiSelect'
+import { MaterialUpload, type UploadedMaterial } from '@/components/MaterialUpload'
 import { PARENT_COLORS, PARENT_FONTS, CHILD_AVATAR_COLORS } from '@/lib/parentTheme'
 
 // ─── Tokens ───────────────────────────────────────────────────
@@ -153,6 +154,7 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
   const searchParams = useSearchParams()
   const preChildId   = searchParams.get('childId')
 
+  const [materials, setMaterials]   = useState<UploadedMaterial[]>([])
   const [dark, setDark]             = useState(false)
   const { children: CHILDREN } = useFamilyChildren()
   const [selectedChild, setChild]   = useState<FamilyChild>(EMPTY_CHILD)
@@ -245,6 +247,27 @@ function WorksheetBuilder({ tab, onSwitchTab }: {
           <p style={{ color: T.textMuted, margin: '5px 0 0', fontSize: 13 }}>
             Create a custom worksheet or exam — choose a child, subject, topics and options, then download.
           </p>
+        </div>
+
+        {/* From the child's own material — any grade. Files are uploaded here and
+            handed to the question generator, which writes matching questions for
+            review; approved ones can then be printed from this builder. */}
+        <div style={{ background: T.card, borderRadius: 20, padding: 20, border: `1px solid ${T.border}`, marginBottom: 20 }}>
+          <div style={{ fontWeight: 800, fontSize: 15, color: T.text, marginBottom: 4 }}>Make it from your child's own material</div>
+          <p style={{ color: T.textMuted, margin: '0 0 12px', fontSize: 13 }}>
+            Upload workbook pages, a worksheet or an exam material list. We'll write matching questions for you to review, then you can print them here.
+          </p>
+          <MaterialUpload value={materials} onChange={setMaterials} compact />
+          {materials.length > 0 && (
+            <button
+              onClick={() => {
+                try { sessionStorage.setItem('eduplay:pendingMaterials', JSON.stringify(materials.map(({ preview, ...m }) => m))) } catch {}
+                window.location.href = '/questions'
+              }}
+              style={{ marginTop: 12, minHeight: 44, padding: '10px 20px', borderRadius: 12, border: 'none', background: PARENT_COLORS.primary, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>
+              Continue with {materials.length} file{materials.length !== 1 ? 's' : ''} →
+            </button>
+          )}
         </div>
 
         <div className="builder-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20, alignItems: 'start' }}>

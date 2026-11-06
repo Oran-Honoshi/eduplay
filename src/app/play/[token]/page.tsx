@@ -6,6 +6,7 @@
 // state and gets superseded by a client-side refetch — the assignments banner is the
 // first thing here that depends on the server render itself being fresh.
 export const revalidate = 0
+import { kidTopicsForGrade } from '@/lib/kidTopics'
 import { createServiceRoleClient } from '@/lib/supabase'
 import ChildPortalClient from './client'
 import { redirect } from 'next/navigation'
@@ -42,11 +43,7 @@ export default async function ChildPortalPage({ params }: { params: { token: str
     .select('*')
     .order('sort_order')
 
-  const { data: allTopics } = await supabase
-    .from('topics')
-    .select('*, subject:subjects(*)')
-    .eq('grade', child.grade)
-    .order('sort_order')
+  const allTopics = await kidTopicsForGrade(supabase, child.grade)
 
   // Get child's progress
   const { data: progress } = await supabase

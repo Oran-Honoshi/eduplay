@@ -1,4 +1,5 @@
 import { createServiceRoleClient } from '@/lib/supabase'
+import { kidTopicsForGrade } from '@/lib/kidTopics'
 import { authorizeChildAccess } from '@/lib/session'
 import LessonClient from './client'
 import { redirect } from 'next/navigation'
@@ -35,7 +36,7 @@ export default async function LessonPage({ searchParams }: Props) {
   if (!topic) {
     const { data: t } = await supabase
       .from('topics').select('*, subject:subjects(*)')
-      .eq('grade', child.grade).order('sort_order').limit(1).single()
+      .contains('grades', [child.grade]).order('sort_order').limit(1).maybeSingle()
     topic = t
   }
 
@@ -104,9 +105,7 @@ export default async function LessonPage({ searchParams }: Props) {
     }
   }
 
-  const { data: allTopics } = await supabase
-    .from('topics').select('*, subject:subjects(*)')
-    .eq('grade', child.grade).order('sort_order')
+  const allTopics = await kidTopicsForGrade(supabase, child.grade)
 
   const { data: subjects } = await supabase
     .from('subjects').select('*').order('sort_order')

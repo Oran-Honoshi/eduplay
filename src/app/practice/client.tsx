@@ -5,8 +5,8 @@ import { THEME_CONFIG, KidNavBar, ThemeDecorations, CollectionButton } from '@/c
 import { readKidLang, type KidLang } from '@/lib/kidPrefs'
 
 const SUBJECT_ICON: Record<string, string> = { math: '🔢', english: '🔤', hebrew: 'א' }
-const GRADE_LABEL_HE = ['גן', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳']
-const GRADE_LABEL_EN = ['K', '1', '2', '3', '4', '5', '6']
+const GRADE_LABEL_HE = ['גן', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ז׳', 'ח׳', 'ט׳', 'י׳', 'י״א', 'י״ב']
+const GRADE_LABEL_EN = ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
 // A normal lesson uses 10 questions; below that a topic can't fill one round.
 const MIN_FOR_LESSON = 10
 
@@ -52,7 +52,8 @@ export default function PracticeClient({ child, token, grade, subjects, topics, 
         {/* Grade — a starting point, not a wall */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
           <span style={{ fontSize: 13, fontWeight: 800, color: T.text, opacity: .7, marginInlineEnd: 4 }}>{t('כיתה', 'Grade')}</span>
-          {GRADE_LABEL_EN.map((_, g) => (
+          {/* K–6 always; higher grades only up to the child's own (7+ is built on request) */}
+          {GRADE_LABEL_EN.slice(0, Math.max(7, (child.grade ?? 0) + 1, grade + 1)).map((_, g) => (
             <button key={g} onClick={() => switchGrade(g)} aria-pressed={g === grade}
               style={{ minWidth: 40, height: 40, borderRadius: theme === 'minecraft' ? 4 : 999, cursor: 'pointer', fontWeight: 900, fontSize: 14,
                 border: `2px solid ${g === grade ? T.accent1 : T.border}`, background: g === grade ? T.accent1 : T.panel, color: g === grade ? '#fff' : T.text }}>
