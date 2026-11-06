@@ -21,7 +21,8 @@ export function normalizeFractions(text: string): string {
 }
 
 const HEB = /[֐-׿]/
-// A comparison or equation (expression ☐ expression, a < b, a = b) is ONE run,
+// A comparison or equation (expression ☐ expression, a < b, a = b) is ONE run —
+// any box or blank shape (☐ ▢ □ ◻ ⬜ ___) counts as part of the math —
 // so the expression written first stays on the left, where the child reads it
 // first — otherwise a right-to-left sentence swaps the two sides and the
 // correct sign looks wrong.
@@ -30,7 +31,7 @@ const HEB = /[֐-׿]/
 // and spaces; ends on a digit, letter, closing bracket, bar or degree sign.
 // A hyphen glued to a Hebrew letter (ל-3, ב-5) is Hebrew punctuation, so a
 // run never starts right after a Hebrew letter.
-const RUN = /(?<![֐-׿])(?:[-−+]?\(?[-−+]?[0-9A-Za-z∢∠△|(])(?:[0-9A-Za-z.,:+\-−×÷·=<>≤≥≠*/%()|'_ °∢∠△\[\]☐▢□⬜]*[0-9A-Za-z)|°\]=])?(?:\s*=\s*\?)?/g
+const RUN = /(?<![֐-׿])(?:[-−+]?\(?[-−+]?[0-9A-Za-z∢∠△|(\u25A0-\u25FF\u2B1A-\u2B1C\u2610_?])(?:[0-9A-Za-z.,:+\-−×÷·=<>≤≥≠*/%()|'_ °∢∠△\[\]\u25A0-\u25FF\u2B1A-\u2B1C\u2610?]*[0-9A-Za-z)|°\]=\u25A0-\u25FF\u2B1A-\u2B1C\u2610_])?(?:\s*=\s*\?)?/g
 
 export type BidiPart = { ltr: boolean; text: string }
 
@@ -44,6 +45,8 @@ export function splitMathRuns(input: string): BidiPart[] {
     const start = m.index ?? 0
     // a lone word in Latin letters (a name like "Tom") can stay inline; isolate anything with a digit, sign or symbol
     if (!/[0-9+\-−=<>|°∢∠△()]/.test(run)) continue
+    // a run must contain a digit or a math sign — a lone "?" or blank is not math
+    if (!/[0-9=<>+\-−×÷]/.test(run)) continue
     if (start > last) out.push({ ltr: false, text: text.slice(last, start) })
     out.push({ ltr: true, text: run })
     last = start + run.length
