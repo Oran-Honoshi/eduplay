@@ -21,10 +21,21 @@ const asPoint = (t: string): [number, number] | null => {
   return m ? [Number(m[1]), Number(m[2])] : null
 }
 
-export function checkQuestion(q: any, existingNorm: Set<string>): { ok: boolean; reason?: string; q: any } {
+// Same answer + same drawn points = the same question, however it is worded
+export function signature(q: any): string {
+  const v = q?.visual_data || {}
+  const pts = [...(Array.isArray(v.points) ? v.points : []), ...((Array.isArray(v.series) ? v.series : []).flatMap((sr: any) => sr?.points || []))]
+    .map((p: any) => `${+p[0]},${+p[1]}`).sort().join(';')
+  const ans = normQ(answerText(q))
+  return ans ? `${ans}|${pts}` : ''
+}
+
+export function checkQuestion(q: any, existingNorm: Set<string>, existingSig: Set<string> = new Set()): { ok: boolean; reason?: string; q: any } {
   const prompt = String(q.prompt_he || q.prompt_en || '')
   const n = normQ(prompt)
   if (n && existingNorm.has(n)) return { ok: false, reason: 'repeats an existing question', q }
+  const sig = signature(q)
+  if (sig && sig.includes('|') && sig.split('|')[1] && existingSig.has(sig)) return { ok: false, reason: 'same answer and drawing as an existing question', q }
 
   const v = q.visual_data && typeof q.visual_data === 'object' ? { ...q.visual_data } : null
   if (MENTIONS_PICTURE.test(prompt) && !v) return { ok: false, reason: 'mentions a graph or drawing but has none', q }

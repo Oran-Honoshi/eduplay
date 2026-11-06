@@ -3,7 +3,7 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import { requireParentOnlySession } from '@/lib/session'
 import { insertQuestions, QuestionInput } from '@/lib/insertQuestions'
 import { loadUploadBlocks } from '@/lib/uploadBlocks'
-import { checkQuestion, normQ } from '@/lib/questionChecks'
+import { checkQuestion, normQ, signature } from '@/lib/questionChecks'
 import { ON_REQUEST_FROM_GRADE, findOrCreateOnRequestTopic, addGrade } from '@/lib/onRequestTopics'
 
 // ─── POST /api/questions/generate ──────────────────────────────
@@ -289,6 +289,7 @@ export async function POST(req: NextRequest) {
   // ones) so new parts don't repeat them or their mistakes
   const avoidPrompts: string[] = Array.isArray(body.avoid_prompts) ? body.avoid_prompts.filter((x: any) => typeof x === 'string').slice(0, 80) : []
   const avoidNorm = new Set(avoidPrompts.map(normQ))
+  const avoidSig = new Set<string>(Array.isArray(body.avoid_signatures) ? body.avoid_signatures.filter((x: any) => typeof x === 'string').slice(0, 200) : [])
   const parentNote: string | null = typeof body.note === 'string' && body.note.trim() ? body.note.trim().slice(0, 600) : null
   const materialText: string | null = typeof body.material_text === 'string' && body.material_text.trim()
     ? body.material_text.trim().slice(0, 12000) : null
@@ -587,10 +588,11 @@ Use null when no picture helps.`
     typeof he === 'string' && he !== '' && he !== en ? he : undefined
 
   for (let i = 0; i < parsedQuestions.length; i++) {
-    const checked = checkQuestion(parsedQuestions[i], avoidNorm)
+    const checked = checkQuestion(parsedQuestions[i], avoidNorm, avoidSig)
     if (!checked.ok) { failures.push(`question ${i + 1}: ${checked.reason} — discarded`); continue }
     const q = checked.q
     avoidNorm.add(normQ(q.prompt_he || q.prompt_en))
+    const sg = signature(q); if (sg) avoidSig.add(sg)
 
     // Deterministic gate, not just a prompt instruction: the system prompt asks
     // for only the requested q_types, but the model can and does ignore that
