@@ -88,7 +88,7 @@ export function renderKidVisual(data: any, c: KidVisualCtx): string {
       const circled = data.circled != null ? Math.max(0, Math.min(count - crossed, n(data.circled))) : 0
       const perRow = count <= 5 ? count : count <= 10 ? 5 : Math.ceil(count / Math.ceil(count / 6))
       const rows = Math.max(1, Math.ceil(count / Math.max(1, perRow)))
-      const cell = Math.min((W - 20) / Math.max(1, perRow), (H - 20) / rows, 44)
+      const cell = Math.min((W - 20) / Math.max(1, perRow), (H - 20) / rows, count <= 3 ? 90 : 44)  // one or two items are pictures to name, so draw them big
       const r = cell * 0.32
       const ox = (W - cell * perRow) / 2, oy = (H - cell * rows) / 2
       let out = ''
