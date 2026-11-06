@@ -34,13 +34,11 @@ export async function GET(req: NextRequest) {
   const { data: subjectRow } = await supabase.from('subjects').select('id').eq('slug', subject_slug).single()
   if (!subjectRow) return NextResponse.json({ count: 0 })
 
-  const { data: topicRow } = await supabase
-    .from('topics')
-    .select('id')
-    .eq('subject_id', subjectRow.id)
-    .eq('grade', parseInt(grade))
-    .eq('slug', topic_slug)
-    .maybeSingle()
+  // Grade 7+ topics are shared across grades (topic first, grade is a tag).
+  const g = parseInt(grade)
+  let topicQuery = supabase.from('topics').select('id').eq('subject_id', subjectRow.id).eq('slug', topic_slug)
+  topicQuery = g >= 7 ? topicQuery.eq('origin', 'on_request') : topicQuery.eq('grade', g)
+  const { data: topicRow } = await topicQuery.maybeSingle()
   if (!topicRow) return NextResponse.json({ count: 0 })
 
   const { count } = await supabase

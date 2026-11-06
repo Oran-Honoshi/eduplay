@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import { requireParentOnlySession } from '@/lib/session'
 import { insertQuestions, QuestionInput } from '@/lib/insertQuestions'
+import { loadUploadBlocks } from '@/lib/uploadBlocks'
+import { ON_REQUEST_FROM_GRADE, findOrCreateOnRequestTopic, addGrade } from '@/lib/onRequestTopics'
 
 // ─── POST /api/questions/generate ──────────────────────────────
 // AI-generates a batch of questions for a topic and saves them via
@@ -22,6 +24,9 @@ import { insertQuestions, QuestionInput } from '@/lib/insertQuestions'
 // uploaded files as extra multimodal blocks, locks subject/grade/topic to the
 // section's linked topic when one is set, and auto-links the resulting
 // question_ids back into notebook_section_questions with added_via:'generated'.
+
+// Reading several workbook pages takes longer than a plain prompt.
+export const maxDuration = 60
 
 const VALID_DIFFICULTIES = ['easy', 'medium', 'hard']
 const VALID_Q_TYPES = ['multiple_choice', 'word_problem']
@@ -211,7 +216,13 @@ export async function POST(req: NextRequest) {
   const topicLocked = !!(notebookSection?.topic_id && notebookSection.topic)
   const subject_slug: string = topicLocked ? notebookSection!.topic!.subject!.slug : bodySubjectSlug
   const grade: number = topicLocked ? notebookSection!.topic!.grade : bodyGrade
-  const topic_slug: string = topicLocked ? notebookSection!.topic!.slug : bodyTopicSlug
+  let topic_slug: string = topicLocked ? notebookSection!.topic!.slug : bodyTopicSlug
+  // Grade 7+: no pre-made bank. The parent may name a brand-new topic
+  // (new_topic: { title_en, title_he? }) instead of picking an existing one.
+  const newTopic = !topicLocked && body.new_topic && typeof body.new_topic.title_en === 'string' && body.new_topic.title_en.trim()
+    ? { title_en: String(body.new_topic.title_en).trim(), title_he: typeof body.new_topic.title_he === 'string' ? body.new_topic.title_he.trim() : null }
+    : null
+  const onRequest = !topicLocked && Number.isInteger(bodyGrade) && bodyGrade >= ON_REQUEST_FROM_GRADE
 
   // ─── server-side validation — every field, before any Anthropic call ───
   if (typeof subject_slug !== 'string' || !subject_slug) {
@@ -220,7 +231,10 @@ export async function POST(req: NextRequest) {
   if (!Number.isInteger(grade) || grade < 0 || grade > 12) {
     return NextResponse.json({ error: 'grade must be an integer between 0 and 12' }, { status: 400 })
   }
-  if (typeof topic_slug !== 'string' || !topic_slug) {
+  if (newTopic && !onRequest) {
+    return NextResponse.json({ error: `new_topic is only for grade ${ON_REQUEST_FROM_GRADE} and up` }, { status: 400 })
+  }
+  if (!newTopic && (typeof topic_slug !== 'string' || !topic_slug)) {
     return NextResponse.json({ error: 'topic_slug is required' }, { status: 400 })
   }
   if (q_types.length === 0 || q_types.some(t => !VALID_Q_TYPES.includes(t))) {
@@ -270,11 +284,30 @@ export async function POST(req: NextRequest) {
     referenceFile = { media_type: rf.media_type, data: rf.data }
   }
 
+  // upload_ids: parent material uploaded straight to storage via POST /api/uploads
+  // (workbook photos, PDFs, .docx/.txt) — any grade, up to MAX_UPLOADS_PER_GENERATION.
+  const uploaded = await loadUploadBlocks(familyId, body.upload_ids)
+
   // When the section locks the topic, we already have its id/title_en from
   // the join above — no need for a second round-trip through subjects/topics.
   let topicRow: { id: string; title_en: string } | null = null
   if (topicLocked) {
     topicRow = { id: notebookSection!.topic_id!, title_en: notebookSection!.topic!.title_en }
+  } else if (onRequest) {
+    // topic-first bank: one shared topic row per subject, grade is a tag on it
+    const { data: subjectRow } = await serviceClient.from('subjects').select('id').eq('slug', subject_slug).single()
+    if (!subjectRow) return NextResponse.json({ error: `Unknown subject_slug: ${subject_slug}` }, { status: 400 })
+    if (newTopic) {
+      const t = await findOrCreateOnRequestTopic({ subjectId: subjectRow.id, grade, titleEn: newTopic.title_en, titleHe: newTopic.title_he, familyId })
+      topicRow = { id: t.id, title_en: t.title_en }
+      topic_slug = t.slug
+    } else {
+      const { data: t } = await serviceClient.from('topics').select('id, slug, title_en, title_he, grades')
+        .eq('subject_id', subjectRow.id).eq('origin', 'on_request').eq('slug', topic_slug).maybeSingle()
+      if (!t) return NextResponse.json({ error: `Topic "${topic_slug}" not found` }, { status: 400 })
+      await addGrade(t as any, grade)
+      topicRow = { id: t.id, title_en: t.title_en }
+    }
   } else {
     const supabase = createServerClient()
     const { data: subjectRow } = await supabase.from('subjects').select('id').eq('slug', subject_slug).single()
@@ -377,8 +410,8 @@ export async function POST(req: NextRequest) {
     ? `Order the ${count} questions from easiest to hardest — ramp difficulty across the array rather than keeping it flat at "${difficulty}". Set each question's own "difficulty" field to match its position in the ramp.`
     : `All ${count} questions should be at "${difficulty}" difficulty. Set each question's "difficulty" field to "${difficulty}".`
 
-  const referenceInstruction = referenceFile
-    ? `\nA reference file (a photo or PDF of a worksheet or textbook excerpt) is attached. Model the new questions after its style, content, and difficulty — write new, original questions inspired by it, not copies of what's in it.`
+  const referenceInstruction = (referenceFile || uploaded.blocks.length > 0)
+    ? `\nThe parent attached ${uploaded.blocks.length + (referenceFile ? 1 : 0)} file(s) of the child's own material (for example workbook or textbook pages, a worksheet, or an exam material list). Read them carefully: match their topics, notation, wording and level, and cover what they cover. If a file is a list of exam topics, spread the questions across those topics. Write new, original questions inspired by the material — never copy exercises from it verbatim.`
     : ''
 
   // notebook section context is additive to the family-level styleGuidance
@@ -408,12 +441,12 @@ export async function POST(req: NextRequest) {
 - Each option's value_en: required non-empty per option, same rule as prompt_en — a short internal gloss only, never a real translation. Exception: if the option value is purely symbolic or numeric (e.g. "3/4" or "12"), value_en and value_he are identical anyway, so just repeat the same value in both rather than inventing a fake gloss.
 - correct_answer: write this in Hebrew — it is only ever used for answer-key/display purposes, matching whichever content is the correct one.
 - hint_he only: write a Hebrew hint if you'd write one at all. Leave hint_en null always in this mode.
-- explanation_en: leave this null in this mode — there is no Hebrew explanation field, and writing a real English explanation would contradict Hebrew-only.`,
+- explanation_en: leave this null in this mode. Write the step-by-step solution in explanation_he instead.`,
     bilingual: `Every question must read naturally as equally-primary content in both languages, not a translation of one into the other:
 - prompt_en AND prompt_he: both required.
 - Each option's value_en AND value_he: both required for every option.
 - If you write a hint at all: hint_en AND hint_he are BOTH required together — never write hint_en alone and leave hint_he null. If you'd rather skip the Hebrew hint, omit hint_en too and leave the question with no hint.
-- explanation_en only — there is no Hebrew explanation field, leave it in English.
+- explanation_en AND explanation_he: write the step-by-step solution in both languages.
 - Exception: if a prompt/option/hint is purely symbolic or numeric with no natural-language words to translate (e.g. "2/3 + 2/3 = ?"), there is nothing to write in Hebrew that differs from the English — leave that field's _he counterpart null rather than repeating the same text.`,
   }[language]
 
@@ -426,7 +459,7 @@ export async function POST(req: NextRequest) {
 - For reducing a fraction to its lowest terms, use "צמצמו" (צמצום שברים is the standard curriculum term for this) — never "פשטו" for this. Reserve "פשטו" for algebraic simplification (simplifying an expression), which is a different operation.`
     : ''
 
-  const systemPrompt = `You are an expert educational content writer for Israeli K-6 students, generating practice questions for the topic "${topicRow.title_en}" (grade ${grade}, subject ${subject_slug}).
+  const systemPrompt = `You are an expert educational content writer for Israeli school students (kindergarten through 12th grade), writing at exactly the level of the grade given, generating practice questions for the topic "${topicRow.title_en}" (grade ${grade}, subject ${subject_slug}).
 Generate exactly ${count} questions.
 Allowed question types: ${q_types.join(', ')} — use a mix if more than one is allowed. Every question's "q_type" must be one of these — never emit any other type.
 ${progressiveInstruction}
@@ -437,7 +470,16 @@ ${hebrewPhrasingGuidance}
 For multiple_choice questions: "options" must be an array of exactly 4 objects, each {"label":"A"|"B"|"C"|"D","value_en":"...","value_he":"..."|null,"isCorrect":true|false}, with exactly one isCorrect:true. If two options would be mathematically equivalent (e.g. an improper fraction and its mixed-number form, or an unreduced and a reduced fraction), pick exactly ONE canonical representation for the correct answer and never include another option equal to it — every distractor must be a genuinely different value, not just a different way of writing the same one.
 For word_problem questions: omit "options" (or set it to null); "correct_answer" holds the final answer as a plain string.
 OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects, each shaped:
-{"q_type":"multiple_choice"|"word_problem","difficulty":"easy"|"medium"|"hard","prompt_en":"...","prompt_he":"..."|null,"options":[...]|null,"correct_answer":"...","hint_en":"..."|null,"hint_he":"..."|null,"explanation_en":"..."|null}`
+{"q_type":"multiple_choice"|"word_problem","difficulty":"easy"|"medium"|"hard","prompt_en":"...","prompt_he":"..."|null,"options":[...]|null,"correct_answer":"...","hint_en":"..."|null,"hint_he":"..."|null,"explanation_en":"..."|null,"explanation_he":"..."|null,"visual_data":{...}|null}
+Hints nudge the child toward the method without giving away the answer. explanation_en / explanation_he are a short step-by-step solution a child can follow alone (one step per sentence, ending with the answer). Write explanation_he whenever the question has Hebrew text (he_only or bilingual).
+visual_data (optional): add a picture only when it genuinely helps understanding, and never one that reveals the answer. Allowed shapes, with numbers that match the question exactly:
+- {"type":"coordinate","steps":6,"points":[[x,y,"A"],...],"vlines":[a],"hlines":[b],"polygon":[[x,y],...],"segments":[[[x1,y1],[x2,y2]]]} (steps = axis range, all keys except type optional)
+- {"type":"number_line","min":-10,"max":10,"marked":[...]} (integers, at most 24 apart)
+- {"type":"angle","degrees":50,"letters":["A","B","C"],"label":"α"} (letters = ray end, vertex, ray end; label replaces the degrees, use "?" or a Greek letter to hide the size)
+- {"type":"rectangle","w":6,"h":4}, {"type":"triangle","sides":[3,4,5]}, {"type":"circle","r":3}
+- {"type":"fraction","numerator":3,"denominator":4}, {"type":"bar_model","parts":[5,3],"total":"?"}, {"type":"objects","icon":"apple","count":5,"crossed":2}
+- {"type":"clock","h":3,"m":30}, {"type":"highlight_text","text":"...","highlight":["..."]}
+Use null when no picture helps.`
 
   const userPrompt = custom_prompt
     ? `Generate the questions now. Additional instructions: ${custom_prompt}`
@@ -448,6 +490,7 @@ OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects
   // text); otherwise keep the plain string the API already accepted.
   const fileBlocks = [
     ...(referenceFile ? [fileContentBlock(referenceFile.media_type, referenceFile.data)] : []),
+    ...uploaded.blocks,
     ...notebookFileBlocks,
   ]
   const messageContent = fileBlocks.length > 0
@@ -465,7 +508,7 @@ OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects
       },
       body: JSON.stringify({
         model: 'claude-sonnet-5',
-        max_tokens: Math.min(8192, 400 * count + 800),
+        max_tokens: Math.min(16000, 750 * count + 1000),
         thinking: { type: 'disabled' },
         system: systemPrompt,
         messages: [{ role: 'user', content: messageContent }],
@@ -550,6 +593,11 @@ OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects
       hint_en: q.hint_en || undefined,
       hint_he: dedupeHe(q.hint_he, q.hint_en),
       explanation_en: q.explanation_en || undefined,
+      explanation_he: typeof q.explanation_he === 'string' && q.explanation_he.trim() ? q.explanation_he : undefined,
+      visual_data: q.visual_data && typeof q.visual_data === 'object' && typeof q.visual_data.type === 'string' ? q.visual_data : undefined,
+      topic_id: topicRow!.id,
+      grade,
+      created_by_family: familyId,
       approved: false,
     }
 
@@ -598,6 +646,7 @@ OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects
     generation_id: genRow.id,
     ...(notebookSection ? { notebook_section_id: notebookSection.id } : {}),
     ...(skippedNotebookFiles.length > 0 ? { skipped_notebook_files: skippedNotebookFiles } : {}),
+    ...(uploaded.skipped.length > 0 ? { skipped_uploads: uploaded.skipped } : {}),
     ...(failures.length > 0 ? { warnings: failures } : {}),
   })
 }
