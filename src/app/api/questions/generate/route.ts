@@ -5,6 +5,7 @@ import { insertQuestions, QuestionInput } from '@/lib/insertQuestions'
 import { loadUploadBlocks } from '@/lib/uploadBlocks'
 import { checkQuestion, normQ, signature } from '@/lib/questionChecks'
 import { ON_REQUEST_FROM_GRADE, findOrCreateOnRequestTopic, addGrade } from '@/lib/onRequestTopics'
+import { cleanSections, cleanWords, sectionSpec } from '@/lib/workbook'
 
 // ─── POST /api/questions/generate ──────────────────────────────
 // AI-generates a batch of questions for a topic and saves them via
@@ -291,6 +292,11 @@ export async function POST(req: NextRequest) {
   const avoidNorm = new Set(avoidPrompts.map(normQ))
   const avoidSig = new Set<string>(Array.isArray(body.avoid_signatures) ? body.avoid_signatures.filter((x: any) => typeof x === 'string').slice(0, 200) : [])
   const parentNote: string | null = typeof body.note === 'string' && body.note.trim() ? body.note.trim().slice(0, 600) : null
+  // a workbook section (word bank, true/false, picture match…) with its own format
+  const section = body.section ? cleanSections([body.section])[0] || null : null
+  const sectionWords = cleanWords(body.words)
+  const spec = section ? sectionSpec(section, sectionWords, language) : null
+  const usedAnswers = new Set<string>((Array.isArray(body.used_answers) ? body.used_answers : []).map((x: any) => String(x).trim().toLowerCase()))
   const materialText: string | null = typeof body.material_text === 'string' && body.material_text.trim()
     ? body.material_text.trim().slice(0, 12000) : null
 
@@ -501,7 +507,10 @@ visual_data (optional): add a picture only when it genuinely helps understanding
 - {"type":"rectangle","w":6,"h":4}, {"type":"triangle","sides":[3,4,5]}, {"type":"circle","r":3}
 - {"type":"fraction","numerator":3,"denominator":4}, {"type":"bar_model","parts":[5,3],"total":"?"}, {"type":"objects","icon":"apple","count":5,"crossed":2}
 - {"type":"clock","h":3,"m":30}, {"type":"highlight_text","text":"...","highlight":["..."]}
-Use null when no picture helps.`
+Use null when no picture helps.${spec ? `
+
+=== FORMAT FOR THIS SECTION — this overrides the general format rules above wherever they conflict ===
+${spec.text}` : ''}`
 
   const userPrompt = [
     'Generate the questions now.',
@@ -613,6 +622,29 @@ Use null when no picture helps.`
     const options = Array.isArray(q.options)
       ? q.options.map((o: any) => ({ ...o, value_he: dedupeHe(o.value_he, o.value_en) ?? null }))
       : q.options
+
+    // what the child sees must differ between options (e.g. never four times "village")
+    if (Array.isArray(options) && options.length) {
+      const enVals = options.map((o: any) => String(o.value_en ?? '').trim().toLowerCase())
+      const heVals = options.map((o: any) => String(o.value_he ?? o.value_en ?? '').trim().toLowerCase())
+      const distinct = (a: string[]) => new Set(a).size === a.length && a.every(Boolean)
+      if (!distinct(enVals) && distinct(heVals)) options.forEach((o: any) => { o.value_en = o.value_he; o.value_he = null })
+      else if (!distinct(enVals)) { failures.push(`question ${i + 1}: options look the same — discarded`); continue }
+    }
+    if (section?.kind === 'true_false' && (!Array.isArray(options) || options.length !== 2)) {
+      failures.push(`question ${i + 1}: true/false needs exactly 2 options — discarded`); continue
+    }
+    if (section?.kind === 'picture_match' && q.visual_data?.type !== 'objects') {
+      failures.push(`question ${i + 1}: picture question without a picture — discarded`); continue
+    }
+    if (section?.kind === 'word_bank') {
+      const ans = String(q.correct_answer || '').trim().toLowerCase()
+      const bank = (section.words || []).map(w => w.toLowerCase())
+      if (!bank.includes(ans) || usedAnswers.has(ans) || !/_{2,}/.test(String(q.prompt_en || ''))) {
+        failures.push(`question ${i + 1}: word-bank sentence uses a word outside the bank or twice — discarded`); continue
+      }
+      usedAnswers.add(ans)
+    }
 
     if (qType === 'multiple_choice' && Array.isArray(options) && optionsHaveDuplicateValue(options)) {
       failures.push(`question ${i + 1}: two multiple_choice options are mathematically equal — discarded`)
