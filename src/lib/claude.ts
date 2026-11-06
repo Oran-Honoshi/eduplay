@@ -22,8 +22,12 @@ export async function askClaudeJSON<T = any>(opts: {
   const start = text.search(/[[{]/)
   const end = Math.max(text.lastIndexOf('}'), text.lastIndexOf(']'))
   if (start < 0 || end < start) return { ok: false, error: 'AI returned no JSON' }
-  try { return { ok: true, data: JSON.parse(text.slice(start, end + 1)) } }
-  catch { return { ok: false, error: 'AI returned invalid JSON' } }
+  const raw = text.slice(start, end + 1)
+  // a plain " between Hebrew letters (מיצ"ב) is an abbreviation mark — make it ״ and try again
+  for (const candidate of [raw, raw.replace(/([\u0590-\u05FF])"([\u0590-\u05FF])/g, '$1״$2')]) {
+    try { return { ok: true, data: JSON.parse(candidate) } } catch {}
+  }
+  return { ok: false, error: 'AI returned invalid JSON' }
 }
 
 // Plain-text answer (no JSON), for free text such as a page description,

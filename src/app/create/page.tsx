@@ -173,7 +173,8 @@ function CreateInner() {
     if (!t) return
     setSampling(true)
     try {
-      await fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic_key: t.key, generate: 3, reuse: 0, part: 0, parts: 1 }) })
+      const r = await fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic_key: t.key, generate: 3, reuse: 0, part: 0, parts: 1 }) }).catch(() => null)
+      if (!r || !r.ok) setError('הדוגמה לא נוצרה הפעם. לחצו "ליצור דוגמה" כדי לנסות שוב.')
       await reload(m.id)
     } finally { setSampling(false) }
   }

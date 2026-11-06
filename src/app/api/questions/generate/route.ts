@@ -476,6 +476,7 @@ ${languageInstruction}
 ${hebrewPhrasingGuidance}
 For multiple_choice questions: "options" must be an array of exactly 4 objects, each {"label":"A"|"B"|"C"|"D","value_en":"...","value_he":"..."|null,"isCorrect":true|false}, with exactly one isCorrect:true. If two options would be mathematically equivalent (e.g. an improper fraction and its mixed-number form, or an unreduced and a reduced fraction), pick exactly ONE canonical representation for the correct answer and never include another option equal to it — every distractor must be a genuinely different value, not just a different way of writing the same one.
 For word_problem (open) questions: omit "options" (or set it to null); "correct_answer" holds ONE short final answer the child can type — a number (with unit if needed), a point like (2,4), or one or two words. Never ask several sub-questions (א/ב/ג) in one question; write them as separate questions instead.
+In Hebrew abbreviations and acronyms always use the Hebrew mark ״ (gershayim) or ׳ (geresh), never a plain double quote.
 OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects, each shaped:
 {"q_type":"multiple_choice"|"word_problem","difficulty":"easy"|"medium"|"hard","prompt_en":"...","prompt_he":"..."|null,"options":[...]|null,"correct_answer":"...","hint_en":"..."|null,"hint_he":"..."|null,"explanation_en":"..."|null,"explanation_he":"..."|null,"visual_data":{...}|null}
 Hints nudge the child toward the method without giving away the answer. explanation_en / explanation_he are a short step-by-step solution a child can follow alone (one step per sentence, ending with the answer). Write explanation_he whenever the question has Hebrew text (he_only or bilingual).
@@ -504,46 +505,57 @@ Use null when no picture helps.`
     ? [...fileBlocks, { type: 'text', text: userPrompt }]
     : userPrompt
 
-  let anthropicText: string
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY!,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        max_tokens: Math.min(16000, 750 * count + 1000),
-        thinking: { type: 'disabled' },
-        system: systemPrompt,
-        messages: [{ role: 'user', content: messageContent }],
-      }),
-    })
-
-    const data = await response.json()
-    if (!response.ok) {
-      const message = data.error?.message || 'Anthropic API request failed'
-      const genRow = await writeGenerationRow([], message)
-      return NextResponse.json({ error: message, generation_id: genRow.id }, { status: 502 })
+  // The model is asked for a bare JSON array, but now and then it adds a
+  // sentence around it or splits text blocks — read the array out of the
+  // reply robustly, and retry the whole call once before giving up.
+  const extractArray = (text: string): any[] | null => {
+    const clean = text.replace(/```json\n?|\n?```/g, '').trim()
+    const sliced = clean.slice(clean.indexOf('['), clean.lastIndexOf(']') + 1)
+    // a plain " between Hebrew letters (מיצ"ב, ת"א) is an abbreviation mark, not JSON — make it ״
+    const fixHe = (t: string) => t.replace(/([\u0590-\u05FF])"([\u0590-\u05FF])/g, '$1״$2')
+    for (const candidate of [clean, sliced, fixHe(sliced)]) {
+      try { const v = JSON.parse(candidate); if (Array.isArray(v)) return v } catch {}
     }
-    anthropicText = data.content?.[0]?.text ?? ''
-  } catch (err: any) {
-    const genRow = await writeGenerationRow([], err.message)
-    return NextResponse.json({ error: err.message, generation_id: genRow.id }, { status: 502 })
+    return null
   }
+  let anthropicText = ''
+  let parsedQuestions: any[] | null = null
+  for (let attempt = 0; attempt < 2 && !parsedQuestions; attempt++) {
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY!,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-5',
+          max_tokens: Math.min(16000, 750 * count + 1000),
+          thinking: { type: 'disabled' },
+          system: systemPrompt,
+          messages: [{ role: 'user', content: messageContent }],
+        }),
+      })
 
-  let parsedQuestions: any[]
-  try {
-    parsedQuestions = JSON.parse(anthropicText.replace(/```json\n?|\n?```/g, '').trim())
-    if (!Array.isArray(parsedQuestions)) throw new Error('not an array')
-  } catch {
+      const data = await response.json()
+      if (!response.ok) {
+        const message = data.error?.message || 'Anthropic API request failed'
+        const genRow = await writeGenerationRow([], message)
+        return NextResponse.json({ error: message, generation_id: genRow.id }, { status: 502 })
+      }
+      anthropicText = (data.content || []).filter((c: any) => c.type === 'text').map((c: any) => c.text).join('')
+    } catch (err: any) {
+      const genRow = await writeGenerationRow([], err.message)
+      return NextResponse.json({ error: err.message, generation_id: genRow.id }, { status: 502 })
+    }
+
+
+    parsedQuestions = extractArray(anthropicText)
+  }
+  if (!parsedQuestions) {
     const genRow = await writeGenerationRow([], 'Failed to parse AI response as a JSON array')
-    return NextResponse.json(
-      { error: 'Failed to parse AI response', raw: anthropicText, generation_id: genRow.id },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to parse AI response', raw: anthropicText.slice(0, 2000), generation_id: genRow.id }, { status: 502 })
   }
 
   // ─── insert one question at a time so a single malformed question
