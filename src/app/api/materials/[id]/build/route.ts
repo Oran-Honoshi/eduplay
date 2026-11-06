@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireParentOnlySession } from '@/lib/session'
 import { createServiceRoleClient } from '@/lib/supabase'
+import { signature } from '@/lib/questionChecks'
 
 export const maxDuration = 300
 
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const plan = m.plan || {}
     // every question already in this material (any topic), so parts never repeat each other
     const { data: existingQs } = (m.question_ids || []).length
-      ? await db.from('questions').select('prompt_he, prompt_en').in('id', m.question_ids)
+      ? await db.from('questions').select('prompt_he, prompt_en, options, correct_answer, visual_data').in('id', m.question_ids)
       : { data: [] as any[] }
     const existingPrompts = (existingQs || []).map((q: any) => q.prompt_he || q.prompt_en).filter(Boolean)
     const diffSetting = plan.difficulty || 'progressive'
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       custom_prompt: focus || undefined,
       note: typeof b.note === 'string' && b.note.trim() ? b.note.trim().slice(0, 600) : undefined,
       avoid_prompts: existingPrompts,
+      avoid_signatures: (existingQs || []).map(signature).filter(Boolean),
       // the material was read once while planning; send that summary instead of
       // re-sending every photo (much faster). Older drafts without one fall back to the files.
       ...(m.plan?.digest ? { material_text: m.plan.digest } : (m.upload_ids?.length ? { upload_ids: m.upload_ids } : {})),
