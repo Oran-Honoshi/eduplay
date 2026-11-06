@@ -45,6 +45,6 @@ export default function FractionText({ text }: FractionTextProps) {
   if (!HEBREW.test(text)) return <bdi dir="ltr" style={{ unicodeBidi: 'isolate' }}>{glyphs(normalizeFractions(text), 'a')}</bdi>
   // Hebrew with math inside: each math run is isolated left-to-right (see lib/bidiMath)
   return <>{splitMathRuns(text).map((p, i) => p.ltr
-    ? <bdi key={i} dir="ltr" style={{ unicodeBidi: 'isolate' }}>{glyphs(p.text, String(i))}</bdi>
+    ? <bdi key={i} dir="ltr" style={{ unicodeBidi: 'isolate', whiteSpace: 'nowrap' }}>{glyphs(p.text, String(i))}</bdi>
     : <React.Fragment key={i}>{glyphs(p.text, String(i))}</React.Fragment>)}</>
 }
