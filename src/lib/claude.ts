@@ -25,3 +25,17 @@ export async function askClaudeJSON<T = any>(opts: {
   try { return { ok: true, data: JSON.parse(text.slice(start, end + 1)) } }
   catch { return { ok: false, error: 'AI returned invalid JSON' } }
 }
+
+// Plain-text answer (no JSON), for free text such as a page description,
+// where quotes inside Hebrew abbreviations (מיצ"ב, ת"א) would break JSON.
+export async function askClaudeText(opts: { system: string; content: any[] | string; maxTokens?: number }): Promise<string | null> {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY!, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: opts.maxTokens ?? 1500, system: opts.system, messages: [{ role: 'user', content: opts.content }] }),
+  })
+  if (!res.ok) return null
+  const body = await res.json()
+  const text: string = (body.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('').trim()
+  return text || null
+}
