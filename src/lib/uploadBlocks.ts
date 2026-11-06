@@ -1,6 +1,7 @@
 import 'server-only'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { UPLOAD_BUCKET, IMAGE_TYPES, MAX_UPLOADS_PER_GENERATION } from '@/lib/uploads'
+import { askClaudeJSON } from '@/lib/claude'
 
 // Turns a family's uploaded files into Anthropic message content blocks:
 // images → image blocks, PDFs → document blocks, .docx/.txt → extracted text.
@@ -54,4 +55,44 @@ export async function loadUploadBlocks(familyId: string, ids: unknown): Promise<
     names.push(r.original_filename)
   }
   return { blocks, names, skipped }
+}
+
+
+// ─── Reading one uploaded file into text (once) ───────────────
+// Each page is read on its own, right after upload and in parallel with the
+// others, so by the time the parent asks for a plan the material is usually
+// already understood. The text is stored on the upload row and reused.
+
+const READ_PROMPT = `You read one page (or file) of an Israeli child's school material: a workbook or textbook page, a worksheet, or an exam material list.
+Describe it in Hebrew for a question writer who cannot see it:
+- the topic and sub-skills on the page,
+- the exact terms and notation used (how points, angles, numbers, units are written),
+- the kinds of exercises, with 2–3 representative examples including their numbers,
+- any scope limits (for example "first quadrant only", "whole numbers up to 20"),
+- the level of difficulty.
+If it is a list of exam topics, list every topic and sub-topic in order.
+At most 250 words. Output JSON only: {"digest":"..."}`
+
+export async function readUpload(familyId: string, id: string): Promise<{ name: string; digest: string } | null> {
+  const db = createServiceRoleClient()
+  const { data: r } = await db.from('generation_uploads').select('id, original_filename, digest').eq('id', id).eq('family_id', familyId).maybeSingle()
+  if (!r) return null
+  if (r.digest) return { name: r.original_filename, digest: r.digest }
+  const { blocks } = await loadUploadBlocks(familyId, [id])
+  if (!blocks.length) return null
+  const ai = await askClaudeJSON<{ digest: string }>({ system: READ_PROMPT, content: [...blocks, { type: 'text', text: 'Describe this page.' }], maxTokens: 900 })
+  if (!ai.ok || typeof ai.data?.digest !== 'string') return null
+  const digest = ai.data.digest.trim().slice(0, 4000)
+  await db.from('generation_uploads').update({ digest, digest_at: new Date().toISOString() }).eq('id', id)
+  return { name: r.original_filename, digest }
+}
+
+// All files of a request as one text (reads any not read yet, in parallel).
+export async function uploadsAsText(familyId: string, ids: unknown): Promise<{ text: string; read: number; failed: string[] }> {
+  const list = Array.isArray(ids) ? ids.filter((x): x is string => typeof x === 'string').slice(0, MAX_UPLOADS_PER_GENERATION) : []
+  const results = await Promise.all(list.map(id => readUpload(familyId, id).catch(() => null)))
+  const parts: string[] = []
+  const failed: string[] = []
+  results.forEach((r, i) => { if (r) parts.push(`--- דף ${i + 1} (${r.name}) ---\n${r.digest}`); else failed.push(list[i]) })
+  return { text: parts.join('\n\n'), read: parts.length, failed }
 }

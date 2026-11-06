@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireParentOnlySession, requireFamilyMatch } from '@/lib/session'
 import { createServiceRoleClient } from '@/lib/supabase'
-import { loadUploadBlocks } from '@/lib/uploadBlocks'
+import { uploadsAsText } from '@/lib/uploadBlocks'
 import { askClaudeJSON } from '@/lib/claude'
 import { ON_REQUEST_FROM_GRADE, topicSlug } from '@/lib/onRequestTopics'
 
@@ -36,8 +36,9 @@ export async function POST(req: NextRequest) {
   if (!subject || !Number.isInteger(grade) || grade < 0 || grade > 12) return NextResponse.json({ error: 'subject and grade are required' }, { status: 400 })
   if (childId && !(await requireFamilyMatch(childId, familyId))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const uploads = await loadUploadBlocks(familyId, b.upload_ids)
-  if (!requestText && uploads.blocks.length === 0) {
+  // Pages are normally read right after upload; anything not read yet is read now, in parallel.
+  const mtext = await uploadsAsText(familyId, b.upload_ids)
+  if (!requestText && !mtext.text) {
     return NextResponse.json({ error: 'Describe what you need or upload material.' }, { status: 400 })
   }
 
@@ -76,22 +77,24 @@ export async function POST(req: NextRequest) {
 
   const system = `You plan learning material for an Israeli parent. Subject: ${subj.label_en} (${subject}). Grade: ${grade}. Output language for the child: ${language}.
 What the parent wants to make — ${kindText}
-Read the parent's request and any attached material (workbook pages, an exam material list, a worksheet).
+Read the parent's request and the child's material (described page by page) (workbook pages, an exam material list, a worksheet).
 ${onRequest
   ? `Choose topics freely. When a topic matches one of these existing shared topics, use its slug in "topic_slug"; otherwise set topic_slug to null and is_new true: ${JSON.stringify(catalog.slice(0, 300))}`
   : `Prefer these curriculum topics for this grade and put the matching slug in "topic_slug": ${JSON.stringify(catalog)}. Only if the material clearly covers something none of them matches (for example a narrower or different scope), set topic_slug to null and is_new true.`}
 Rules: topic names are general curriculum names (not page numbers). Keep the topic order of the material. Practice: 1–2 topics unless the parent asked for more, 10–15 questions each. Exam: 3–8 topics, 4–8 questions each, total about 20–40, and time_minutes. Question types: choose from "multiple_choice" and "word_problem" (open answer); use both unless the parent said otherwise.
 ${learnedText}
 If something important is missing or unclear (for example which chapter, or the level), say so briefly in missing_he — but still give your best plan.
-${uploads.blocks.length ? `Also write "material_digest": a detailed description of the attached material in Hebrew, so a question writer who cannot see the pages can write matching questions — for each page or section: the topic, the exact terms and notation used (how points, angles, numbers are written), the kinds of exercises with 2–3 representative examples including their numbers, any scope limits (for example "first quadrant only", "whole numbers up to 20"), and the difficulty. Up to about 900 words.` : ''}
 Output JSON only:
-{"title_he":"...","title_en":"...","summary_he":"one or two sentences explaining the plan to the parent","missing_he":["..."],"material_digest":"..."|null,"difficulty":"progressive"|"mixed"|"easy"|"medium"|"hard","q_types":["multiple_choice","word_problem"],"time_minutes":number|null,
+{"title_he":"...","title_en":"...","summary_he":"one short sentence","missing_he":["at most 2, only if really important"],"difficulty":"progressive"|"mixed"|"easy"|"medium"|"hard","q_types":["multiple_choice","word_problem"],"time_minutes":number|null,
  "topics":[{"title_en":"...","title_he":"...","subtopics_he":["..."],"topic_slug":"..."|null,"is_new":true|false,"count":number}]}`
 
   const ai = await askClaudeJSON<any>({
     system,
-    content: [...uploads.blocks, { type: 'text', text: requestText ? `Parent's request: ${requestText}` : 'Plan from the attached material.' }],
-    maxTokens: 7000,
+    content: [{ type: 'text', text: [
+      mtext.text ? `The child's material, page by page:\n${mtext.text}` : '',
+      requestText ? `Parent's request: ${requestText}` : 'Plan from the material above.',
+    ].filter(Boolean).join('\n\n') }],
+    maxTokens: 2500,
   })
   if (!ai.ok) return NextResponse.json({ error: 'Could not plan this right now. Try again.' }, { status: 502 })
   const p = ai.data || {}
@@ -134,8 +137,8 @@ Output JSON only:
     q_types: Array.isArray(p.q_types) && p.q_types.length ? p.q_types.filter((x: any) => ['multiple_choice', 'word_problem'].includes(x)) : ['multiple_choice', 'word_problem'],
     time_minutes: kind === 'exam' ? Math.max(10, Math.min(240, Number(p.time_minutes) || 45)) : null,
     topics: planTopics,
-    digest: typeof p.material_digest === 'string' ? p.material_digest.slice(0, 12000) : null,
-    skipped_uploads: uploads.skipped,
+    digest: mtext.text ? mtext.text.slice(0, 12000) : null,
+    skipped_uploads: mtext.failed,
   }
 
   // Re-planning an untouched draft updates it instead of making a new one

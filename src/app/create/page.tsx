@@ -111,6 +111,9 @@ function CreateInner() {
     return () => window.removeEventListener('popstate', onPop)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [failed, setFailed] = useState<any[]>([])
+  const [sampling, setSampling] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   function pickChild(c: FamilyChild) {
     setChild(c); setGrade(c.grade)
@@ -128,7 +131,9 @@ function CreateInner() {
       })
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || 'משהו השתבש. נסו שוב.')
-      setMat(d.material); if (step !== 'plan') go('plan')
+      setMat(d.material); setQuestions([]); setEditing(false)
+      if (step !== 'plan') go('plan')
+      if (d.material.kind !== 'explanation') makeSamples(d.material)
     } catch (e: any) { setError(e.message) } finally { setBusy(false) }
   }
 
@@ -161,6 +166,36 @@ function CreateInner() {
     return bad
   }
 
+  // 3 sample questions (easy → hard) from the first topic, so the parent can
+  // judge the result before everything is made. They stay part of the material.
+  async function makeSamples(m: any) {
+    const t = m.plan?.topics?.[0]
+    if (!t) return
+    setSampling(true)
+    try {
+      await fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic_key: t.key, generate: 3, reuse: 0, part: 0, parts: 1 }) })
+      await reload(m.id)
+    } finally { setSampling(false) }
+  }
+  async function newSamples() {
+    const m = await savePlan(mat.plan)
+    for (const q of questions) await fetch(`/api/questions/${q.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject' }) })
+    await fetch(`/api/materials/${mat.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question_ids: [] }) })
+    setQuestions([])
+    await makeSamples(m || mat)
+  }
+  function openPreview() {
+    const ids = questions.map(q => q.id)
+    if (!ids.length) return
+    const params = new URLSearchParams({
+      childId: mat.child_id || child?.id || '', topicIds: (mat.topic_ids || []).join(','), questionIds: ids.join(','),
+      lang: mat.language, answerKey: 'false', includeHints: String(mat.kind !== 'exam'), solutionSteps: 'false',
+      wsType: mat.kind === 'exam' ? 'exam' : 'practice', questionCount: String(ids.length), materialId: mat.id, noprint: '1',
+      ...(mat.plan?.time_minutes ? { timeMinutes: String(mat.plan.time_minutes) } : {}),
+    })
+    setPreviewUrl(`/api/worksheets/builder?${params}`)
+  }
+
   async function build() {
     const m = await savePlan(mat.plan, { time_minutes: mat.plan.time_minutes ?? undefined })
     if (!m) return
@@ -179,9 +214,13 @@ function CreateInner() {
     } else {
       const hasMaterial = (m.upload_ids || []).length > 0 || !!m.plan.digest
       const jobs: Job[] = []
-      for (const t of topics) {
-        const reuse = hasMaterial ? 0 : Math.min(t.bank_count || 0, Math.floor(t.count / 2))
-        const fresh = t.count - reuse
+      const fresh0 = await fetch(`/api/materials/${m.id}`).then(r => r.json()).catch(() => ({ questions: [] }))
+      const made = (fresh0.questions || []) as any[]
+      const planNow = fresh0.material?.plan?.topics || topics
+      for (const t of planNow) {
+        const already = made.filter(q => t.topic_id && q.topic_id === t.topic_id).length
+        const reuse = hasMaterial || already ? 0 : Math.min(t.bank_count || 0, Math.floor(t.count / 2))
+        const fresh = Math.max(0, t.count - reuse - already)
         const parts = Math.max(1, Math.ceil(fresh / 5))
         for (let k = 0; k < parts; k++) {
           const size = Math.min(5, fresh - k * 5)
@@ -248,6 +287,17 @@ function CreateInner() {
           </div>
         </div>
 
+        {previewUrl && (
+          <div role="dialog" aria-modal="true" className="fixed inset-0 z-[700] bg-black/50 flex items-center justify-center p-3" onClick={() => setPreviewUrl(null)}>
+            <div className="bg-white rounded-2xl w-full max-w-[900px] h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-4 py-2 border-b border-[#e3ebe9]">
+                <span className="font-bold text-sm">תצוגה מקדימה — כך ייראה הדף המודפס (עם הדוגמאות)</span>
+                <button aria-label="סגירה" className="w-9 h-9 rounded-full hover:bg-[#F1F5F9] flex items-center justify-center" onClick={() => setPreviewUrl(null)}><X size={18} /></button>
+              </div>
+              <iframe title="תצוגה מקדימה" src={previewUrl} className="flex-1 w-full border-0" />
+            </div>
+          </div>
+        )}
         {view === 'history' ? <HistoryList onMore={(m: any) => { window.location.href = `/create?from=${m.id}` }} /> : (
           <>
             <Steps step={step} canGo={(s: Step) => step !== 'build' && (s === 'kind' || s === 'details' || (s === 'plan' && !!mat) || (s === 'review' && !!mat && ((mat.question_ids || []).length > 0 || !!mat.explanation)) || (s === 'done' && mat?.status === 'ready'))} onGo={go} />
@@ -317,7 +367,7 @@ function CreateInner() {
                     className="w-full px-3 py-2 text-[15px] rounded-xl border border-[rgba(15,118,110,.2)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]" />
                 </Field>
                 <Field label="חומר של הילד/ה (לא חובה)">
-                  <MaterialUpload value={materials} onChange={setMaterials} he />
+                  <MaterialUpload value={materials} onChange={setMaterials} he autoRead />
                 </Field>
                 <div className="flex gap-2 justify-between">
                   <button className={btnGhost} onClick={() => go('kind')}><ArrowLeft size={16} className="rotate-180" /> חזרה</button>
@@ -329,7 +379,33 @@ function CreateInner() {
             )}
 
             {step === 'plan' && mat && (
-              <PlanEditor mat={mat} setMat={setMat} request={request} setRequest={setRequest} replanning={busy} onReplan={makePlan} onBack={() => go('details')} onBuild={build} />
+              busy ? <div className={`${card} p-8`}><FunLoader kind="plan" pose="think" size={110} /></div> : <>
+              <PlanSummary mat={mat} editing={editing} onEdit={() => setEditing(e => !e)} />
+              {editing && <div className="mt-3"><PlanEditor mat={mat} setMat={setMat} request={request} setRequest={setRequest} replanning={busy} onReplan={makePlan} onBack={() => go('details')} onBuild={build} /></div>}
+              {mat.kind !== 'explanation' && (
+                <div className={`${card} p-5 mt-3`} dir="rtl">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <h3 className="text-base font-black text-[#1f2a28] m-0">כך ייראו השאלות</h3>
+                    <div className="flex gap-2">
+                      <button className={btnGhost} disabled={!questions.length || sampling} onClick={openPreview}><Printer size={16} /> תצוגה מקדימה של הדף</button>
+                      <button className={btnGhost} disabled={sampling} onClick={newSamples}><Sparkles size={16} /> {questions.length ? 'דוגמה אחרת' : 'ליצור דוגמה'}</button>
+                    </div>
+                  </div>
+                  {sampling
+                    ? <div className="py-4"><FunLoader kind="build" pose="read" size={84} /></div>
+                    : questions.length
+                      ? <div className="flex flex-col gap-2">{questions.slice(0, 3).map((q, i) => <QuestionCard key={q.id} q={q} n={i + 1} lang={mat.language} onApprove={() => act(q, 'approve')} onRemove={() => act(q, 'reject')} onSaved={() => reload()} />)}</div>
+                      : <p className="text-sm text-[#5b6b68] m-0">עוד אין דוגמה. לחצו "ליצור דוגמה".</p>}
+                  {editing && questions.length > 0 && <p className="text-xs text-[#7a8f8b] mt-2 mb-0">שיניתם את התוכנית? לחצו "דוגמה אחרת" כדי לראות שאלות לפי השינויים.</p>}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2 justify-between mt-3" dir="rtl">
+                <button className={btnGhost} onClick={() => go('details')}><ArrowLeft size={16} className="rotate-180" /> לפרטים ולקבצים</button>
+                <button className={btnPrimary} disabled={sampling || !mat.plan.topics.length} onClick={build}>
+                  <Sparkles size={18} /> {mat.kind === 'explanation' ? 'לכתוב את הדפים' : questions.length ? `נראה טוב — ליצור את כל ${mat.plan.topics.reduce((a: number, t: any) => a + (t.count || 0), 0)} השאלות` : 'ליצור את השאלות'}
+                </button>
+              </div>
+              </>
             )}
 
             {step === 'build' && (
@@ -487,11 +563,10 @@ function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, on
   return (
     <div className={`${card} p-5 flex flex-col gap-4`} dir="rtl">
       <div className="flex items-start gap-3">
-        <Pip pose="think" size={64} he />
         <div className="flex-1">
+          <div className="text-xs font-bold text-[#5b6b68] mb-1">שם</div>
           <input dir="auto" aria-label="שם" value={mat.title} onChange={e => setMat({ ...mat, title: e.target.value })}
             className="w-full text-xl font-black text-[#1f2a28] bg-transparent border-b border-dashed border-[#cfdcd9] focus:outline-none focus:border-[#0F766E]" />
-          {plan.summary_he && <p className="text-sm text-[#3d4f4b] mt-2 mb-0 leading-relaxed">{plan.summary_he}</p>}
         </div>
       </div>
 
@@ -573,9 +648,37 @@ function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, on
         </Section>
       </>}
 
-      <div className="flex gap-2 justify-between">
-        <button className={btnGhost} onClick={onBack}><ArrowLeft size={16} className="rotate-180" /> לפרטים ולקבצים</button>
-        <button className={btnPrimary} disabled={!plan.topics.length} onClick={onBuild}><Sparkles size={18} /> {isExpl ? 'לכתוב את הדפים' : `ליצור ${total} שאלות`}</button>
+    </div>
+  )
+}
+
+// ── Short plan: what will be made, in one glance ──
+function PlanSummary({ mat, editing, onEdit }: { mat: any; editing: boolean; onEdit: () => void }) {
+  const plan = mat.plan
+  const total = plan.topics.reduce((a: number, t: any) => a + (t.count || 0), 0)
+  const types = (plan.q_types || []).map((t: string) => (t === 'multiple_choice' ? 'אמריקאיות' : 'פתוחות')).join(' + ')
+  return (
+    <div className={`${card} p-5`} dir="rtl">
+      <div className="flex items-start gap-3">
+        <Pip pose="thumbs" size={60} he />
+        <div className="flex-1 min-w-0">
+          <h2 className="text-xl font-black text-[#1f2a28] m-0">{mat.title}</h2>
+          {plan.summary_he && <p className="text-sm text-[#3d4f4b] mt-1 mb-0">{plan.summary_he}</p>}
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {plan.topics.map((t: any) => (
+              <span key={t.key} className="text-sm font-bold px-3 py-1 rounded-full bg-[#E4F3F1] text-[#0F766E]">
+                {t.title_he || t.title_en}{mat.kind !== 'explanation' ? ` · ${t.count}` : ''}
+              </span>
+            ))}
+          </div>
+          <div className="text-sm text-[#5b6b68] mt-2">
+            {mat.kind === 'explanation' ? `${plan.topics.length} דפי הסבר` : <>{total} שאלות · {DIFF_LABEL[plan.difficulty] || ''} · {types}{mat.kind === 'exam' && plan.time_minutes ? ` · ${plan.time_minutes} דקות` : ''}</>}
+          </div>
+          {(plan.missing_he || []).slice(0, 2).map((x: string, i: number) => (
+            <div key={i} className="text-xs text-[#92400E] bg-[#FFFBEB] rounded-lg px-3 py-1.5 mt-2">💡 {x}</div>
+          ))}
+        </div>
+        <button className={btnGhost + ' shrink-0'} onClick={onEdit}><Pencil size={15} /> {editing ? 'סגירת העריכה' : 'לערוך את התוכנית'}</button>
       </div>
     </div>
   )

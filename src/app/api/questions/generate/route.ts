@@ -475,12 +475,12 @@ ${styleGuidance}${notebookGuidance}${recipeGuidance}${referenceInstruction}${not
 ${languageInstruction}
 ${hebrewPhrasingGuidance}
 For multiple_choice questions: "options" must be an array of exactly 4 objects, each {"label":"A"|"B"|"C"|"D","value_en":"...","value_he":"..."|null,"isCorrect":true|false}, with exactly one isCorrect:true. If two options would be mathematically equivalent (e.g. an improper fraction and its mixed-number form, or an unreduced and a reduced fraction), pick exactly ONE canonical representation for the correct answer and never include another option equal to it — every distractor must be a genuinely different value, not just a different way of writing the same one.
-For word_problem questions: omit "options" (or set it to null); "correct_answer" holds the final answer as a plain string.
+For word_problem (open) questions: omit "options" (or set it to null); "correct_answer" holds ONE short final answer the child can type — a number (with unit if needed), a point like (2,4), or one or two words. Never ask several sub-questions (א/ב/ג) in one question; write them as separate questions instead.
 OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects, each shaped:
 {"q_type":"multiple_choice"|"word_problem","difficulty":"easy"|"medium"|"hard","prompt_en":"...","prompt_he":"..."|null,"options":[...]|null,"correct_answer":"...","hint_en":"..."|null,"hint_he":"..."|null,"explanation_en":"..."|null,"explanation_he":"..."|null,"visual_data":{...}|null}
 Hints nudge the child toward the method without giving away the answer. explanation_en / explanation_he are a short step-by-step solution a child can follow alone (one step per sentence, ending with the answer). Write explanation_he whenever the question has Hebrew text (he_only or bilingual).
 visual_data (optional): add a picture only when it genuinely helps understanding, and never one that reveals the answer. Allowed shapes, with numbers that match the question exactly:
-- {"type":"coordinate","steps":6,"points":[[x,y,"A"],...],"vlines":[a],"hlines":[b],"polygon":[[x,y],...],"segments":[[[x1,y1],[x2,y2]]]} (steps = axis range, all keys except type optional)
+- {"type":"coordinate","steps":6,"quadrant":1,"points":[[x,y,"A"],...],"vlines":[a],"hlines":[b],"polygon":[[x,y],...],"segments":[[[x1,y1],[x2,y2]]]} (steps = axis range; "quadrant":1 draws the first quadrant only — use it whenever all points are non-negative or the material is first-quadrant; all keys except type optional)
 - {"type":"number_line","min":-10,"max":10,"marked":[...]} (integers, at most 24 apart)
 - {"type":"angle","degrees":50,"letters":["A","B","C"],"label":"α"} (letters = ray end, vertex, ray end; label replaces the degrees, use "?" or a Greek letter to hide the size)
 - {"type":"rectangle","w":6,"h":4}, {"type":"triangle","sides":[3,4,5]}, {"type":"circle","r":3}
