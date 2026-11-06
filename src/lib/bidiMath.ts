@@ -52,8 +52,10 @@ export function splitMathRuns(input: string): BidiPart[] {
   return out
 }
 
+// A math run never breaks across lines (a break inside it would scramble its
+// order in a right-to-left paragraph).
 // HTML-string version for printed pages; `render` turns each piece into HTML
 // (escaping, fraction glyphs).
 export function mathRunsToHTML(text: string, render: (s: string) => string): string {
-  return splitMathRuns(String(text ?? '')).map(p => (p.ltr ? `<bdi dir="ltr">${render(p.text)}</bdi>` : render(p.text))).join('')
+  return splitMathRuns(String(text ?? '')).map(p => (p.ltr ? `<bdi dir="ltr" style="white-space:nowrap">${render(p.text)}</bdi>` : render(p.text))).join('')
 }
