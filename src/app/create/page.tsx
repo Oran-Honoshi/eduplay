@@ -273,7 +273,7 @@ function CreateInner() {
   // ── render ──
   return (
     <div className="min-h-screen bg-[#F7F5F0]" dir="rtl" lang="he" style={{ fontFamily: "'Assistant', 'Nunito', system-ui, sans-serif" }}>
-      <ParentHeaderBar />
+      <ParentHeaderBar active="create" />
       <div className="max-w-[920px] mx-auto px-4 py-6">
         <div className="flex items-center justify-between gap-3 mb-5">
           <div>
@@ -300,6 +300,12 @@ function CreateInner() {
         )}
         {view === 'history' ? <HistoryList onMore={(m: any) => { window.location.href = `/create?from=${m.id}` }} /> : (
           <>
+            {step !== 'kind' && step !== 'build' && (
+              <button className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0F766E] mb-2 min-h-[36px]"
+                onClick={() => { const order: Step[] = ['kind', 'details', 'plan', 'review', 'done']; const i = order.indexOf(step); go(order[Math.max(0, i - 1)]) }}>
+                <ArrowLeft size={16} className="rotate-180" /> חזרה
+              </button>
+            )}
             <Steps step={step} canGo={(s: Step) => step !== 'build' && (s === 'kind' || s === 'details' || (s === 'plan' && !!mat) || (s === 'review' && !!mat && ((mat.question_ids || []).length > 0 || !!mat.explanation)) || (s === 'done' && mat?.status === 'ready'))} onGo={go} />
             {error && (
               <div className="mb-4 flex items-start gap-2 rounded-xl border border-[#F59E0B55] bg-[#FFFBEB] px-4 py-3 text-sm text-[#7c4a03]">
