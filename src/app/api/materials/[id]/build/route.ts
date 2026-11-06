@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/lib/supabase'
 import { signature } from '@/lib/questionChecks'
 import { insertQuestions } from '@/lib/insertQuestions'
 import { SECTION_KINDS, type Section, type Word } from '@/lib/workbook'
+import { buildFixed } from '@/lib/workbookFixed'
 
 export const maxDuration = 300
 
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const topic = section ? (m.plan?.topics || [])[0] : (m.plan?.topics || []).find((t: any) => t.key === b.topic_key)
   if (!topic) return NextResponse.json({ error: 'Unknown topic' }, { status: 400 })
   if (section && SECTION_KINDS[section.kind].q === 'none') return NextResponse.json({ added: [], total: (m.question_ids || []).length, warnings: [] })
-  if (section?.kind === 'translate_words') return translateWords(m, topic, section)
+  if (section && ['translate_words', 'true_false', 'picture_match'].includes(section.kind)) return fixedSection(m, topic, section, Math.max(1, Math.min(15, Number(b.generate) || section.count)))
   const toGenerate = Math.max(0, Math.min(section ? 10 : 8, Number(b.generate) || 0))
   const toReuse = Math.max(0, Math.min(30, Number(b.reuse) || 0))
 
@@ -137,16 +138,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json({ added, total, warnings })
 }
 
-// "Translate yourself": one short open question per word, written directly
-// from the approved word list (no AI needed, so it is instant and exact).
-async function translateWords(m: any, topic: any, section: Section) {
+// Sections written straight from the approved word list (no AI, so they are
+// instant and always right): "translate yourself", true/false on meanings, and
+// picture matching (quantities → number words, pictured items → words).
+async function fixedSection(m: any, topic: any, section: Section, want: number) {
   const db = createServiceRoleClient()
-  const words: Word[] = (m.plan?.words || [])
-  const pick = (section.words?.length ? section.words : words.map(w => w.en)).slice(0, section.count || 10)
-  const byEn = new Map(words.map(w => [w.en.toLowerCase(), w]))
+  const words: Word[] = (m.plan?.words || []).filter((w: Word) => w.en && w.he)
+  const he = m.language !== 'en_only'
   let topicId: string | null = topic.topic_id || null
   if (!topicId) {
-    // the topic is created on first AI generation; make sure it exists first
     const { findOrCreateOnRequestTopic } = await import('@/lib/onRequestTopics')
     const { data: subj } = await db.from('subjects').select('id').eq('slug', m.subject_slug).single()
     if (!subj) return NextResponse.json({ error: 'Unknown subject' }, { status: 400 })
@@ -155,25 +155,24 @@ async function translateWords(m: any, topic: any, section: Section) {
     await db.rpc('set_material_plan_topic', { p_id: m.id, p_key: topic.key, p_topic: t.id, p_slug: t.slug })
   }
   const { data: trow } = await db.from('topics').select('slug').eq('id', topicId).single()
-  const rows = pick.map(en => {
-    const w = byEn.get(en.toLowerCase())
-    return {
-      topic_slug: trow!.slug, topic_id: topicId!, difficulty: 'easy', q_type: 'word_problem',
-      prompt_en: en, prompt_he: undefined, correct_answer: w?.he || en,
-      grade: m.grade, created_by_family: m.family_id, approved: false,
-    }
-  })
+  const have: string[] = (m.section_q || {})[section.key] || []
+  const { data: haveRows } = have.length ? await db.from('questions').select('prompt_en').in('id', have) : { data: [] as any[] }
+  const used = new Set((haveRows || []).map((q: any) => q.prompt_en))
+  const rows: any[] = buildFixed(section, words, he, want, used, have.length).map(r => ({
+    ...r, topic_slug: trow!.slug, topic_id: topicId!, grade: m.grade, created_by_family: m.family_id, approved: false,
+  }))
   const ids: string[] = []
   if (rows.length) {
-    const res = await insertQuestions(rows as any)
+    const res = await insertQuestions(rows)
     if (!res.ok) return NextResponse.json({ error: res.error }, { status: 500 })
-    // words already saved earlier (same topic) are reused
-    const { data: found } = await db.from('questions').select('id, prompt_en').eq('topic_id', topicId).in('prompt_en', pick)
+    // the same item saved earlier (same topic) is reused
+    const prompts = rows.map(r => r.prompt_en)
+    const { data: found } = await db.from('questions').select('id, prompt_en').eq('topic_id', topicId).in('prompt_en', prompts)
     const map = new Map((found || []).map(q => [q.prompt_en, q.id]))
-    for (const en of pick) { const id = map.get(en); if (id) ids.push(id) }
-    // a word this family removed before comes back for review
+    for (const p of prompts) { const id = map.get(p); if (id && !ids.includes(id)) ids.push(id) }
     if (ids.length) await db.from('questions').update({ rejected_at: null, rejected_reason: null }).in('id', ids).eq('created_by_family', m.family_id).eq('approved', false)
   }
   const { data: total } = await db.rpc('append_material_section', { p_id: m.id, p_key: section.key, p_qids: ids, p_topic: topicId })
-  return NextResponse.json({ added: ids, total, warnings: [] })
+  return NextResponse.json({ added: ids, total, warnings: ids.length < want ? [`${want - ids.length} items could not be made from the word list`] : [] })
 }
+
