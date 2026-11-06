@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
     .select('id, topic_id')
     .in('id', questionIds)
     .eq('approved', true)
-    .not('options', 'is', null)
 
   if (validateError) return NextResponse.json({ error: validateError.message }, { status: 500 })
 
@@ -51,7 +50,7 @@ export async function POST(req: NextRequest) {
   const invalidIds = questionIds.filter((id: string) => !validIds.has(id))
   if (invalidIds.length > 0) {
     return NextResponse.json(
-      { error: 'Some selected questions are not assignable (must be approved, multiple-choice questions)', invalidIds },
+      { error: 'Some selected questions are not assignable (must be approved questions)', invalidIds },
       { status: 400 }
     )
   }

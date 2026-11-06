@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/lib/supabase'
 import { authorizeChildAccess } from '@/lib/session'
 import { renderMathVisualSVG } from '@/lib/mathVisual'
 import { fractionsToHTML } from '@/lib/fractionText'
+import { brandBits, brandHeader, brandFooter, BRAND_CSS, type Brand } from '@/lib/printBrand'
 import { isDistinctHe, translateDifficulty, translateOptionLabel, extractBareEquation, segmentHebrewMath } from '@/lib/text'
 
 export async function GET(req: NextRequest) {
@@ -26,6 +27,8 @@ export async function GET(req: NextRequest) {
   const solutionSteps = searchParams.get('solutionSteps') === 'true'
   const preview       = searchParams.get('preview') === 'true'
   const isRegenerate  = searchParams.get('regenerate') === 'true'
+  const timeMinutes   = parseInt(searchParams.get('timeMinutes') || '0') || null
+  const materialId    = searchParams.get('materialId')
 
   if (!childId || topicIds.length === 0) {
     return NextResponse.json({ error: 'childId and topicIds required' }, { status: 400 })
@@ -61,7 +64,7 @@ export async function GET(req: NextRequest) {
       finalQuestions = (selectedQs || []).map(q => {
         const topic = topics.find(t => t.id === q.topic_id)
         return { ...q, topicTitle: topic?.title_en || '', topicTitleHe: topic?.title_he || '' }
-      })
+      }).sort((a: any, b: any) => questionIds.indexOf(a.id) - questionIds.indexOf(b.id))
     } else {
       const qPerTopic = Math.max(2, Math.ceil(questionCount / topics.length))
       for (const topic of topics) {
@@ -101,12 +104,19 @@ export async function GET(req: NextRequest) {
     }
 
     const subject = topics[0]?.subject
+    // A Create material supplies its own title (same family only)
+    let customTitle: string | null = null
+    if (materialId) {
+      const { data: mat } = await supabase.from('materials').select('title, family_id').eq('id', materialId).maybeSingle()
+      if (mat && mat.family_id === child.family_id) customTitle = mat.title
+    }
+    const brand = await brandBits(new URL(req.url).origin)
     const html = generateHTML({
       child, topics, questions: finalQuestions,
       difficulty, langMode, includeKey,
       wsType, includeHints, solutionSteps,
       date: new Date().toLocaleDateString('en-GB'),
-      subject,
+      subject, brand, customTitle, timeMinutes,
     })
 
     // ── Log this generation to worksheet_generations (history/regenerate) ──
@@ -385,13 +395,14 @@ function renderHeTextLines(promptHe: string): string {
   ).join('')
 }
 
-function generateHTML({ child, topics, questions, difficulty, langMode, includeKey, wsType, includeHints, solutionSteps, date, subject }: any) {
+function generateHTML({ child, topics, questions, difficulty, langMode, includeKey, wsType, includeHints, solutionSteps, date, subject, brand, customTitle, timeMinutes }: any) {
+  const b: Brand = brand
   const isHebrew    = langMode === 'he_only'
   const isBilingual = langMode === 'bilingual'
   const isEnglish   = langMode === 'en_only'
   const subjectLabel   = subject?.label_en || 'Worksheet'
   const subjectLabelHe = subject?.label_he || ''
-  const topicLabels    = topics.map((t: any) => t.title_en).join(' · ')
+  const topicLabels    = topics.map((t: any) => (langMode === 'he_only' && t.title_he) ? t.title_he : t.title_en).join(' · ')
   const diffLabel      = difficulty.charAt(0).toUpperCase() + difficulty.slice(1)
   const typeEmoji      = wsType === 'practice' ? '📝' : wsType === 'quiz' ? '✅' : '🎓'
   const typeLabel      = wsType === 'practice' ? 'Practice' : wsType === 'quiz' ? 'Quiz' : 'Exam'
@@ -598,6 +609,8 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
     .line { flex: 1; border-bottom: 1.5px solid #9AA5B8; }
     .hint { margin-top: 6px; font-size: 11px; color: #9AA5B8; padding: 5px 9px; background: #FFFBF0; border-left: 3px solid #F5A623; border-radius: 0 5px 5px 0; }
 
+    ${BRAND_CSS}
+    .exam-bar { display:flex; gap:16px; align-items:center; padding:8px 14px; margin-bottom:14px; border:2px solid #0F766E; border-radius:10px; font-weight:800; color:#0F3D3A; }
     .footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #EEF1F6; font-size: 10px; color: #9AA5B8; line-height: 1.7; }
     .answer-key-section { page-break-before: always; padding-top: 20px; }
     .answer-key-title { font-size: 17px; font-weight: 900; color: #27AE60; margin-bottom: 14px; }
@@ -620,10 +633,10 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
     <button class="btn-close" onclick="window.close()">✕ Close</button>
   </div>
 
+  ${brandHeader(b, isHebrew, wsType === 'exam' ? 'think' : 'wave')}
   <div class="header">
     <div>
-      <div class="logo">Edu<span>Play</span></div>
-      <div style="font-size:10px;color:#9AA5B8;margin-top:1px;">eduplay-tau.vercel.app</div>
+      <div class="ws-title">${customTitle ? customTitle : ''}</div>
     </div>
     <div class="header-meta">
       <div><strong>${isHebrew ? 'תלמיד' : 'Student'}:</strong> ${child.display_name}</div>
@@ -632,6 +645,7 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
     </div>
   </div>
 
+  ${wsType === 'exam' && timeMinutes ? `<div class="exam-bar">⏱ ${isHebrew ? `משך המבחן: ${timeMinutes} דקות` : `Time: ${timeMinutes} minutes`}<span style="margin-inline-start:auto;font-weight:600">${isHebrew ? 'בהצלחה!' : 'Good luck!'}</span></div>` : ''}
   <div class="ws-title">${isHebrew ? subjectLabelHe : subjectLabel} — ${typeEmoji} ${isHebrew ? (wsType === 'practice' ? 'תרגול' : wsType === 'quiz' ? 'חידון' : 'מבחן') : typeLabel}</div>
   <div class="ws-topics">${topicLabels}</div>
 
@@ -651,16 +665,11 @@ function generateHTML({ child, topics, questions, difficulty, langMode, includeK
 
   ${questionsHTML}
 
-  <div class="footer">
-    ${isHebrew
-      ? 'דפי העבודה של EduPlay מותאמים לתכנית הלימודים ומעוצבים על ידי מומחי תוכן חינוכי.'
-      : 'EduPlay worksheets are curriculum-aligned and designed by educational content specialists. Parents are encouraged to review all materials before use.'
-    }<br/>
-    Generated by EduPlay · eduplay-tau.vercel.app
-  </div>
+  ${brandFooter(b, isHebrew)}
 
   ${answerKeyHTML}
   ${stepsHTML}
+  ${answerKeyHTML || stepsHTML ? brandFooter(b, isHebrew) : ''}
 
   <script>setTimeout(() => window.print(), 800)</script>
 </body>

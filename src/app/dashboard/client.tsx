@@ -406,7 +406,7 @@ function CreateHub({ children }: any) {
   const [err, setErr] = useState(false)
   function go() {
     if (!prompt.trim()) { setErr(true); return }
-    window.location.href = `/questions?prompt=${encodeURIComponent(prompt.trim())}`
+    window.location.href = `/create?prompt=${encodeURIComponent(prompt.trim())}`
   }
   const names = (children || []).map((c: any) => c.display_name).filter(Boolean)
   return (
@@ -419,16 +419,22 @@ function CreateHub({ children }: any) {
           style={{ width:'100%', boxSizing:'border-box', borderRadius:'12px', border:`1.5px solid ${err ? PARENT_COLORS.danger : PARENT_COLORS.border}`, padding:'12px 14px', fontSize:'14px', fontFamily:PARENT_FONTS.body, resize:'vertical', background:'#fff' }}/>
         {err && <div style={{ color:PARENT_COLORS.danger, fontSize:'13px', marginTop:'6px' }}>Describe what you need first.</div>}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap', marginTop:'10px' }}>
-          <span style={{ fontSize:'12px', color:PARENT_COLORS.textSecondary }}>You can attach a photo, screenshot or PDF on the next step.</span>
+          <span style={{ fontSize:'12px', color:PARENT_COLORS.textSecondary }}>Next you choose practice, exam or explanation pages, and can attach photos, PDFs or documents.</span>
           <button onClick={go} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'10px 22px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'#fff', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>
             Continue <ChevronRight size={15}/>
           </button>
         </div>
       </div>
-      <div style={{ fontSize:'12px', fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:PARENT_COLORS.textMuted }}>Or pick a tool</div>
       <HubGrid items={[
-        { icon:Printer,  title:'Worksheet or exam', desc:'Printable practice by topic and difficulty, with an answer key, in Hebrew, English or both.', href:'/worksheets' },
-        { icon:Sparkles, title:'New questions with AI', desc:'Describe what you need or upload a page; review the questions before they go live.', href:'/questions', tone:'accent' },
+        { icon:Sparkles, title:'Practice · תרגול', desc:'One or two topics, easy to hard, with hints and step-by-step solutions. Print, app, or both.', href:'/create?kind=practice', tone:'accent' },
+        { icon:Printer,  title:'Exam · מבחן', desc:'Many topics, mixed difficulty, a time limit and an answer key — great before a test.', href:'/create?kind=exam' },
+        { icon:FileText, title:'Explanation pages · דפי הסבר', desc:'A learning page per topic: what it is, worked examples, common mistakes.', href:'/create?kind=explanation', tone:'amber' },
+        { icon:BookOpen, title:'What I made · מה יצרתי', desc:'Everything you created, liked first. Reprint, resend, or make more like it.', href:'/create?view=history' },
+      ]}/>
+      <div style={{ fontSize:'12px', fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:PARENT_COLORS.textMuted }}>More tools</div>
+      <HubGrid items={[
+        { icon:Printer,  title:'Quick worksheet from the bank', desc:'Print ready-made K–6 practice by topic and difficulty, with an answer key.', href:'/worksheets' },
+        { icon:Sparkles, title:'AI question generator', desc:'The detailed generator: one topic at a time, every setting by hand.', href:'/questions' },
         { icon:BookOpen, title:'Reading passage', desc:'A short story at the right reading level, with comprehension questions.', href:'/passages', tone:'amber' },
         { icon:FileText, title:'Explanation booklet', desc:'Printable topic explanations with worked examples and pictures.', href:'/booklet' },
       ]}/>

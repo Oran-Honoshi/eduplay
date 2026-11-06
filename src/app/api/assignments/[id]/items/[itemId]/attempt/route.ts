@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { answersMatch } from '@/lib/answerMatch'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { requireOwnChildSession } from '@/lib/session'
 import { creditTopicProgress } from '@/lib/progressCredit'
@@ -52,13 +53,16 @@ export async function POST(
 
   const { data: question } = await supabase
     .from('questions')
-    .select('options, hint_en, hint_he, explanation_en')
+    .select('options, correct_answer, hint_en, hint_he, explanation_en, explanation_he')
     .eq('id', item.question_id)
     .single()
 
   const options = Array.isArray(question?.options) ? question.options : []
-  const matchedOption = options.find((o: any) => o.label === answerGiven)
-  const isCorrect = !!matchedOption?.isCorrect
+  // Open questions (no options) are graded against correct_answer with the same
+  // forgiving match the lessons use (fractions, units, Hebrew niqqud…).
+  const isCorrect = options.length > 0
+    ? !!options.find((o: any) => o.label === answerGiven)?.isCorrect
+    : answersMatch(String(answerGiven), String(question?.correct_answer ?? ''))
   const isFirstAttempt = item.status === 'not_started'
 
   const update = isFirstAttempt
@@ -125,7 +129,9 @@ export async function POST(
     reveal: !isCorrect && !isFirstAttempt
       ? {
           correct: options.find((o: any) => o.isCorrect) || null,
+          correct_answer: options.length === 0 ? question?.correct_answer ?? null : undefined,
           explanation_en: question?.explanation_en,
+          explanation_he: question?.explanation_he,
         }
       : undefined,
   })
