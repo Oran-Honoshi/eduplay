@@ -270,6 +270,22 @@ function CreateInner() {
   }
 
   const pending = questions.filter(q => !q.approved).length
+  const planned = mat?.kind === 'explanation' ? 0 : (mat?.plan?.topics || []).reduce((a: number, t: any) => a + (t.count || 0), 0)
+  const missing = Math.max(0, planned - questions.length)
+  async function makeTheRest() {
+    if (mat.status === 'ready') await savePlan(mat.plan, { status: 'draft' })
+    await build()
+  }
+  const MissingBanner = () => missing > 0 && step !== 'build' && step !== 'plan' ? (
+    <div className="mb-3 rounded-2xl border-2 border-[#0F766E] bg-[#E4F3F1] p-4 flex flex-wrap items-center gap-3" dir="rtl">
+      <Pip pose="wave" size={48} he />
+      <div className="flex-1 min-w-[200px]">
+        <div className="font-black text-[#0F3D3A]">נוצרו {questions.length} מתוך {planned} שאלות</div>
+        <div className="text-sm text-[#3d4f4b]">אלה היו הדוגמאות. ליצור עכשיו את {missing} השאלות הנוספות לפי התוכנית?</div>
+      </div>
+      <button className={btnPrimary} onClick={makeTheRest}><Sparkles size={18} /> ליצור עוד {missing} שאלות</button>
+    </div>
+  ) : null
 
   // ── render ──
   return (
@@ -426,6 +442,7 @@ function CreateInner() {
               </div>
             )}
 
+            {(step === 'review' || step === 'done') && mat && <MissingBanner />}
             {step === 'review' && mat && (
               mat.kind === 'explanation'
                 ? <ExplanationReview mat={mat} onDone={async () => { await savePlan(mat.plan, { status: 'ready' }); go('done') }} />
