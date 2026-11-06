@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
@@ -23,6 +23,9 @@ interface AssignmentItem {
     hint_en: string | null
     hint_he: string | null
     explanation_en: string | null
+    explanation_he?: string | null
+    correct_answer?: string | null
+    q_type?: string | null
     visual_data: any
   }
 }
@@ -59,6 +62,9 @@ export default function AssignmentClient({ child, assignment, items: initialItem
   function goHome() {
     window.location.href = token ? `/play/${token}` : '/dashboard'
   }
+
+  const [typed, setTyped] = useState('')
+  useEffect(() => { setTyped('') }, [currentIndex])
 
   async function submitAnswer(label: string) {
     if (!currentItem || submitting) return
@@ -252,6 +258,30 @@ export default function AssignmentClient({ child, assignment, items: initialItem
             })}
           </div>
 
+          {/* Open question (no options): the child types the answer */}
+          {options.length === 0 && (
+            <form onSubmit={e => { e.preventDefault(); if (typed.trim()) { submitAnswer(typed.trim()); setTyped('') } }}
+              style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'14px' }}>
+              {wrongLabels.length > 0 && (
+                <div style={{ fontSize:'13px', color:'#E03030', fontWeight:700 }}>
+                  {isHE ? 'ניסית:' : 'You tried:'} {wrongLabels.map((w, i) => <bdi key={i} style={{ marginInlineStart:6 }}>{w}</bdi>)}
+                </div>
+              )}
+              {canAnswer && (
+                <div style={{ display:'flex', gap:'8px' }}>
+                  <input value={typed} onChange={e => setTyped(e.target.value)} dir="auto" inputMode="text" autoComplete="off"
+                    placeholder={isHE ? 'כתבו את התשובה' : 'Type your answer'}
+                    aria-label={isHE ? 'התשובה שלך' : 'Your answer'}
+                    style={{ flex:1, minHeight:'52px', padding:'10px 14px', fontSize:'18px', fontWeight:700, background:T.panel2, color:T.text, border:`2px solid ${T.border}`, borderRadius:T.radius }} />
+                  <button type="submit" disabled={!typed.trim()}
+                    style={{ minHeight:'52px', minWidth:'96px', padding:'0 18px', background:T.accent1, color:'#fff', border:'none', borderRadius:T.radius, fontWeight:900, fontSize:'16px', cursor:'pointer', opacity: typed.trim() ? 1 : 0.5 }}>
+                    {isHE ? 'בדיקה' : 'Check'}
+                  </button>
+                </div>
+              )}
+            </form>
+          )}
+
           {showHint && (currentQ?.hint_en || currentQ?.hint_he || isHE) && (
             <div style={{ background:`${T.accent2}15`, border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'10px 12px', marginBottom:'12px', direction:isHE?'rtl':'ltr' }}>
               <div style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2, marginBottom:'4px' }}>💡 {isHE ? 'רמז' : 'Hint'}</div>
@@ -273,8 +303,8 @@ export default function AssignmentClient({ child, assignment, items: initialItem
                     ? (isHE ? 'נכון בפעם הראשונה!' : 'Correct — first try!')
                     : (isHE ? 'נכון!' : 'Correct!')}
                 </div>
-                {currentQ?.explanation_en && !isHE && (
-                  <div style={{ fontSize:'13px', color:T.text2, lineHeight:1.6 }}><FractionText text={currentQ.explanation_en} /></div>
+                {(isHE ? currentQ?.explanation_he : currentQ?.explanation_en) && (
+                  <div style={{ fontSize:'13px', color:T.text2, lineHeight:1.6 }}><FractionText text={(isHE ? currentQ?.explanation_he : currentQ?.explanation_en) || ''} /></div>
                 )}
               </div>
             </div>
@@ -285,10 +315,12 @@ export default function AssignmentClient({ child, assignment, items: initialItem
               <span style={{ fontSize:'22px' }}>👀</span>
               <div>
                 <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:'#E03030', marginBottom:'3px' }}>
-                  {isHE ? 'התשובה הנכונה' : 'The correct answer'}: {correctOption?.label}. {isHE ? (correctOption?.value_he || correctOption?.value_en) : correctOption?.value_en}
+                  {isHE ? 'התשובה הנכונה' : 'The correct answer'}: {correctOption
+                    ? <>{isHE ? translateOptionLabel(correctOption.label) : correctOption.label}. <FractionText text={isHE ? (correctOption.value_he || correctOption.value_en) : correctOption.value_en} /></>
+                    : <bdi><FractionText text={currentQ?.correct_answer || ''} /></bdi>}
                 </div>
-                {currentQ?.explanation_en && !isHE && (
-                  <div style={{ fontSize:'13px', color:T.text2, lineHeight:1.6 }}><FractionText text={currentQ.explanation_en} /></div>
+                {(isHE ? currentQ?.explanation_he : currentQ?.explanation_en) && (
+                  <div style={{ fontSize:'13px', color:T.text2, lineHeight:1.6 }}><FractionText text={(isHE ? currentQ?.explanation_he : currentQ?.explanation_en) || ''} /></div>
                 )}
               </div>
             </div>
