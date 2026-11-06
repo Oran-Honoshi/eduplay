@@ -22,6 +22,9 @@ import { FeedbackPrompt } from '@/components/Feedback'
 import { FunLoader, FunLine } from '@/components/FunLoader'
 import { useFamilyChildren, type FamilyChild } from '@/lib/useFamilyChildren'
 import { PARENT_COLORS } from '@/lib/parentTheme'
+import { SECTION_KINDS, SECTION_ORDER, assignSectionWords, hasSections, plannedCount, questionSections, visibleOption, type Section, type SectionKind } from '@/lib/workbook'
+
+const isHeText = (t: any) => /[\u0590-\u05FF]/.test(String(t || ''))
 
 type Kind = 'practice' | 'exam' | 'explanation'
 type Lang = 'he_only' | 'bilingual' | 'en_only'
@@ -115,6 +118,15 @@ function CreateInner() {
   const [editing, setEditing] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
+  // "New creation" always starts from the beginning (never reopens the last one)
+  function startNew() {
+    setMat(null); setQuestions([]); setMaterials([]); setRequest(''); setError(null); setFailed([]); setEditing(false)
+    setKind('practice'); if (children.length) pickChild(children[0])
+    setView('make'); setStep('kind')
+    try { window.history.replaceState({ createStep: 'kind' }, '', '/create') } catch {}
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   function pickChild(c: FamilyChild) {
     setChild(c); setGrade(c.grade)
   }
@@ -148,7 +160,7 @@ function CreateInner() {
   // 3 parts run at the same time. Questions already in the bank quietly fill
   // part of a topic when no material was uploaded (with material, everything is
   // written fresh to match it). Failed parts can be retried from the review step.
-  type Job = { key: string; label: string; reuse: number; generate: number; part: number; parts: number }
+  type Job = { key: string; label: string; reuse: number; generate: number; part: number; parts: number; section?: boolean }
   async function runJobs(m: any, jobs: Job[], note?: string) {
     setProgress({ done: 0, total: jobs.length, label: '' })
     const bad: Job[] = []
@@ -164,7 +176,7 @@ function CreateInner() {
         const q = queues[nextQ++]
         for (const j of q) {
           setProgress(p => ({ ...p, label: j.label }))
-          const r = await fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic_key: j.key, generate: j.generate, reuse: j.reuse, part: j.part, parts: j.parts, note }) }).catch(() => null)
+          const r = await fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [j.section ? 'section_key' : 'topic_key']: j.key, generate: j.generate, reuse: j.reuse, part: j.part, parts: j.parts, note }) }).catch(() => null)
           if (!r || !r.ok) bad.push(j)
           setProgress(p => ({ ...p, done: ++done }))
         }
@@ -176,14 +188,15 @@ function CreateInner() {
 
   // "Add questions" after review: a few more, optionally with a note like "more hard ones"
   async function addMore(count: number, topicKey: string, note: string) {
-    const topics = (mat.plan?.topics || []).filter((t: any) => topicKey === 'all' || t.key === topicKey)
+    const secMode = hasSections(mat.plan)
+    const topics = (secMode ? questionSections(mat.plan).filter(x => x.kind !== 'translate_words') : (mat.plan?.topics || [])).filter((t: any) => topicKey === 'all' || t.key === topicKey)
     if (!topics.length) return
     if (mat.status === 'ready') await savePlan(mat.plan, { status: 'draft' })
     const per = Math.max(1, Math.round(count / topics.length))
     const jobs: Job[] = []
     for (const t of topics) {
       const parts = Math.ceil(per / 5)
-      for (let k = 0; k < parts; k++) jobs.push({ key: t.key, label: t.title_he || t.title_en, reuse: 0, generate: Math.min(5, per - k * 5), part: k, parts })
+      for (let k = 0; k < parts; k++) jobs.push({ key: t.key, label: t.title_he || t.title_en, reuse: 0, generate: Math.min(5, per - k * 5), part: k, parts, section: secMode })
     }
     go('build')
     const bad = await runJobs(mat, jobs, note)
@@ -207,13 +220,23 @@ function CreateInner() {
     if (!t) return
     setSampling(true)
     try {
+      if (hasSections(m.plan)) {
+        // one sample from each of up to 3 different written sections
+        const pref: SectionKind[] = ['word_bank', 'multiple_choice', 'picture_match', 'true_false', 'translate_sentences', 'draw', 'open']
+        const secs = questionSections(m.plan).filter(x => x.kind !== 'translate_words')
+          .sort((a, b) => pref.indexOf(a.kind) - pref.indexOf(b.kind)).slice(0, 3)
+        const rs = await Promise.all(secs.map(sc => fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ section_key: sc.key, generate: 1, part: 0, parts: 1 }) }).catch(() => null)))
+        if (rs.some(r => !r || !r.ok)) setError('חלק מהדוגמאות לא נוצרו הפעם. לחצו "דוגמה אחרת" כדי לנסות שוב.')
+        await reload(m.id)
+        return
+      }
       const r = await fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic_key: t.key, generate: 3, reuse: 0, part: 0, parts: 1 }) }).catch(() => null)
       if (!r || !r.ok) setError('הדוגמה לא נוצרה הפעם. לחצו "ליצור דוגמה" כדי לנסות שוב.')
       await reload(m.id)
     } finally { setSampling(false) }
   }
   async function newSamples() {
-    const m = await savePlan(mat.plan)
+    const m = await savePlan(assignSectionWords(mat.plan))
     for (const q of questions) await fetch(`/api/questions/${q.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'reject' }) })
     await fetch(`/api/materials/${mat.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question_ids: [] }) })
     setQuestions([])
@@ -232,7 +255,7 @@ function CreateInner() {
   }
 
   async function build() {
-    const m = await savePlan(mat.plan, { time_minutes: mat.plan.time_minutes ?? undefined })
+    const m = await savePlan(assignSectionWords(mat.plan), { time_minutes: mat.plan.time_minutes ?? undefined })
     if (!m) return
     go('build')
     const topics = m.plan.topics
@@ -246,6 +269,21 @@ function CreateInner() {
         setProgress(p => ({ ...p, done: ++done, label: t.title_he || t.title_en }))
       }))
       if (bad.length) setError(`לא הצלחנו לכתוב ${bad.length} דפים. אפשר לחזור לתוכנית ולנסות שוב.`)
+    } else if (hasSections(m.plan)) {
+      // workbook: every section on its own; the word bank in one go (each word once)
+      const fresh0 = await fetch(`/api/materials/${m.id}`).then(r => r.json()).catch(() => ({}))
+      const sq = fresh0.material?.section_q || {}
+      const jobs: Job[] = []
+      for (const sc of questionSections(m.plan)) {
+        const fresh = Math.max(0, sc.count - (sq[sc.key] || []).length)
+        if (!fresh) continue
+        const size = sc.kind === 'word_bank' || sc.kind === 'translate_words' ? fresh : 5
+        const parts = Math.ceil(fresh / size)
+        for (let k = 0; k < parts; k++) jobs.push({ key: sc.key, label: sc.title_he, reuse: 0, generate: Math.min(size, fresh - k * size), part: k, parts, section: true })
+      }
+      const bad = await runJobs(m, jobs)
+      setFailed(bad)
+      if (bad.length) setError(`${bad.length} חלקים לא נוצרו הפעם. אפשר לבדוק את מה שכן נוצר, וללחוץ "להשלים את החסר".`)
     } else {
       const hasMaterial = (m.upload_ids || []).length > 0 || !!m.plan.digest
       const jobs: Job[] = []
@@ -306,7 +344,7 @@ function CreateInner() {
   async function finishReview() { await savePlan(mat.plan, { status: 'ready' }); go('done') }
 
   const pending = questions.filter(q => !q.approved).length
-  const planned = mat?.kind === 'explanation' ? 0 : (mat?.plan?.topics || []).reduce((a: number, t: any) => a + (t.count || 0), 0)
+  const planned = mat ? plannedCount(mat.plan, mat.kind) : 0
   const missing = Math.max(0, planned - questions.length)
   async function makeTheRest() {
     if (mat.status === 'ready') await savePlan(mat.plan, { status: 'draft' })
@@ -334,7 +372,7 @@ function CreateInner() {
             <p className="text-sm text-[#5b6b68] mt-1 mb-0">תרגול, מבחן או דפי הסבר — להדפסה, לאפליקציה, או לשניהם.</p>
           </div>
           <div className="flex gap-2">
-            <button className={btnGhost} onClick={() => setView(view === 'make' ? 'history' : 'make')}>
+            <button className={btnGhost} onClick={() => (view === 'make' ? setView('history') : startNew())}>
               {view === 'make' ? <><History size={16} /> מה כבר יצרתי</> : <><Sparkles size={16} /> יצירה חדשה</>}
             </button>
           </div>
@@ -353,7 +391,7 @@ function CreateInner() {
             </div>
           </div>
         )}
-        {view === 'history' ? <HistoryList onMore={(m: any) => { window.location.href = `/create?from=${m.id}` }} /> : (
+        {view === 'history' ? <HistoryList kidsList={children} onMore={(m: any) => { window.location.href = `/create?from=${m.id}` }} /> : (
           <>
             {step !== 'kind' && step !== 'build' && (
               <button className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0F766E] mb-2 min-h-[36px]"
@@ -463,7 +501,7 @@ function CreateInner() {
               <div className="flex flex-wrap gap-2 justify-between mt-3" dir="rtl">
                 <button className={btnGhost} onClick={() => go('details')}><ArrowLeft size={16} className="rotate-180" /> לפרטים ולקבצים</button>
                 <button className={btnPrimary} disabled={sampling || !mat.plan.topics.length} onClick={build}>
-                  <Sparkles size={18} /> {mat.kind === 'explanation' ? 'לכתוב את הדפים' : questions.length ? `נראה טוב — ליצור את כל ${mat.plan.topics.reduce((a: number, t: any) => a + (t.count || 0), 0)} השאלות` : 'ליצור את השאלות'}
+                  <Sparkles size={18} /> {mat.kind === 'explanation' ? 'לכתוב את הדפים' : questions.length ? `נראה טוב — ליצור את כל ${plannedCount(mat.plan, mat.kind)} השאלות` : 'ליצור את השאלות'}
                 </button>
               </div>
               </>
@@ -510,8 +548,9 @@ function CreateInner() {
                         </div>
                       </div>
                     ) : <p className="text-xs text-[#7a8f8b] m-0">רק שאלות שאישרתם יגיעו לילד/ה. אפשר לערוך שאלה, או להסיר אותה.</p>}
-                    {questions.length > 0 && <AddMorePanel topics={mat.plan?.topics || []} onAdd={addMore} />}
-                    {(mat.plan?.topics || []).map((t: any) => {
+                    {questions.length > 0 && <AddMorePanel topics={hasSections(mat.plan) ? questionSections(mat.plan).filter(x => x.kind !== 'translate_words') : (mat.plan?.topics || [])} onAdd={addMore} />}
+                    {hasSections(mat.plan) && <SectionReview mat={mat} questions={questions} act={act} reload={reload} />}
+                    {!hasSections(mat.plan) && (mat.plan?.topics || []).map((t: any) => {
                       const qs = questions.filter(q => q.topic_id === t.topic_id)
                       if (!qs.length) return null
                       return (
@@ -616,7 +655,7 @@ function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, on
   const [showDigest, setShowDigest] = useState(false)
   const set = (p: any) => setMat({ ...mat, plan: { ...plan, ...p } })
   const setTopic = (key: string, patch: any) => set({ topics: plan.topics.map((t: any) => t.key === key ? { ...t, ...patch } : t) })
-  const total = plan.topics.reduce((s: number, t: any) => s + (t.count || 0), 0)
+  const total = plannedCount(plan, mat.kind)
   const isExpl = mat.kind === 'explanation'
   const files = (mat.upload_ids || []).length
 
@@ -654,7 +693,14 @@ function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, on
         </Section>
       )}
 
-      <Section title="נושאים">
+      {hasSections(plan) && <WordsEditor words={plan.words || []} onChange={(w: any[]) => set({ words: w })} />}
+      {hasSections(plan) && <SectionsEditor sections={plan.sections} onChange={(sc: Section[]) => set({ sections: sc })} />}
+
+      <Section title="תגיות" hint="עוזרות למצוא את זה אחר כך ב&quot;מה כבר יצרתי&quot;">
+        <BulletList items={plan.tags || []} onChange={v => set({ tags: v })} placeholder="להוסיף תגית… (למשל: מבחן חנוכה)" />
+      </Section>
+
+      {!hasSections(plan) && <Section title="נושאים">
         <div className="flex flex-col gap-3">
           {plan.topics.map((t: any, idx: number) => (
             <div key={t.key} className="rounded-xl bg-[#F7FBFA] border border-[#e3ebe9] p-3">
@@ -684,7 +730,7 @@ function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, on
             <button className={btnGhost} disabled={!newTopic.trim()}><Plus size={16} /> נושא</button>
           </form>
         </div>
-      </Section>
+      </Section>}
 
       <Section title="דגשים כלליים" hint="למשל: רק רביע ראשון, מספרים עד 20, בלי שברים">
         <BulletList items={plan.focus_he || []} onChange={v => set({ focus_he: v })} placeholder="להוסיף דגש…" />
@@ -694,9 +740,9 @@ function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, on
         <Section title="רמת קושי">
           <Chips options={Object.entries(DIFF_LABEL) as [string, string][]} value={plan.difficulty} onChange={v => set({ difficulty: v })} />
         </Section>
-        <Section title="סוגי שאלות">
+        {!hasSections(plan) && <Section title="סוגי שאלות">
           <Chips multi options={[['multiple_choice', 'אמריקאיות'], ['word_problem', 'פתוחות']]} value={plan.q_types} onChange={v => set({ q_types: v })} />
-        </Section>
+        </Section>}
         <Section title={mat.kind === 'exam' ? 'כמות וזמן' : 'כמות'}>
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <span>סה״כ <b>{total}</b> שאלות</span>
@@ -717,7 +763,8 @@ function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, on
 // ── Short plan: what will be made, in one glance ──
 function PlanSummary({ mat, editing, onEdit }: { mat: any; editing: boolean; onEdit: () => void }) {
   const plan = mat.plan
-  const total = plan.topics.reduce((a: number, t: any) => a + (t.count || 0), 0)
+  const total = plannedCount(plan, mat.kind)
+  const secMode = hasSections(plan)
   const types = (plan.q_types || []).map((t: string) => (t === 'multiple_choice' ? 'אמריקאיות' : 'פתוחות')).join(' + ')
   return (
     <div className={`${card} p-5`} dir="rtl">
@@ -726,15 +773,25 @@ function PlanSummary({ mat, editing, onEdit }: { mat: any; editing: boolean; onE
         <div className="flex-1 min-w-0">
           <h2 className="text-xl font-black text-[#1f2a28] m-0">{mat.title}</h2>
           {plan.summary_he && <p className="text-sm text-[#3d4f4b] mt-1 mb-0">{plan.summary_he}</p>}
-          <div className="flex flex-wrap gap-1.5 mt-3">
+          {secMode ? (
+            <ol className="mt-3 mb-0 p-0 list-none flex flex-col gap-1">
+              {plan.sections.map((sc: Section, i: number) => (
+                <li key={sc.key} className="flex items-center gap-2 text-sm">
+                  <span className="w-6 h-6 rounded-full bg-[#E4F3F1] text-[#0F766E] font-black flex items-center justify-center text-xs shrink-0">{i + 1}</span>
+                  <b className="text-[#1f2a28]">{sc.title_he}</b>
+                  <span className="text-[#7a8f8b]">· {SECTION_KINDS[sc.kind].q === 'none' ? `${(sc.words || []).length || sc.count} מילים` : sc.kind === 'word_bank' ? `${sc.count} משפטים, מחסן של ${(sc.words || []).length} מילים` : `${sc.count}`}</span>
+                </li>
+              ))}
+            </ol>
+          ) : <div className="flex flex-wrap gap-1.5 mt-3">
             {plan.topics.map((t: any) => (
               <span key={t.key} className="text-sm font-bold px-3 py-1 rounded-full bg-[#E4F3F1] text-[#0F766E]">
                 {t.title_he || t.title_en}{mat.kind !== 'explanation' ? ` · ${t.count}` : ''}
               </span>
             ))}
-          </div>
+          </div>}
           <div className="text-sm text-[#5b6b68] mt-2">
-            {mat.kind === 'explanation' ? `${plan.topics.length} דפי הסבר` : <>{total} שאלות · {DIFF_LABEL[plan.difficulty] || ''} · {types}{mat.kind === 'exam' && plan.time_minutes ? ` · ${plan.time_minutes} דקות` : ''}</>}
+            {mat.kind === 'explanation' ? `${plan.topics.length} דפי הסבר` : secMode ? <>{(plan.words || []).length} מילים לתרגול · {total} שאלות · {plan.sections.length} חלקים</> : <>{total} שאלות · {DIFF_LABEL[plan.difficulty] || ''} · {types}{mat.kind === 'exam' && plan.time_minutes ? ` · ${plan.time_minutes} דקות` : ''}</>}
           </div>
           {(plan.missing_he || []).slice(0, 2).map((x: string, i: number) => (
             <div key={i} className="text-xs text-[#92400E] bg-[#FFFBEB] rounded-lg px-3 py-1.5 mt-2">💡 {x}</div>
@@ -771,18 +828,18 @@ function QuestionCard({ q, n, lang, onApprove, onRemove, onSaved }: any) {
       <div className="flex items-center gap-2 mb-2 text-xs">
         <span className="font-black text-[#0F766E]">#{n}</span>
         <span className="px-2 py-0.5 rounded-full font-bold" style={{ background: `${diffColor}18`, color: diffColor }}>{({ easy: 'קל', medium: 'בינוני', hard: 'קשה' } as any)[q.difficulty]}</span>
-        <span className="px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#475569] font-bold">{q.options ? 'אמריקאית' : 'פתוחה'}</span>
+        <span className="px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#475569] font-bold">{q.options ? (q.options.length === 2 ? 'נכון / לא נכון' : 'אמריקאית') : 'פתוחה'}</span>
         {q.approved && <span className="ms-auto inline-flex items-center gap-1 text-[#16A34A] font-bold"><Check size={14} /> אושרה</span>}
       </div>
       {!edit ? (
         <>
-          <div className="text-[15px] font-bold text-[#1f2a28] leading-relaxed text-start" dir={he ? 'rtl' : 'ltr'}><FractionText text={prompt} /></div>
+          <div className="text-[15px] font-bold text-[#1f2a28] leading-relaxed text-start" dir={isHeText(prompt) ? 'rtl' : 'ltr'}><FractionText text={prompt} /></div>
           {q.visual_data && <div className="flex justify-center my-2"><MathVisual data={q.visual_data} size={180} color="#0F766E" /></div>}
           {q.options ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2">
               {q.options.map((o: any) => (
-                <div key={o.label} className={`rounded-lg px-3 py-2 text-sm border ${o.isCorrect ? 'border-[#16A34A] bg-[#F0FDF4] font-bold' : 'border-[#e3ebe9]'}`} dir={he ? 'rtl' : 'ltr'}>
-                  <FractionText text={he ? (o.value_he || o.value_en) : o.value_en} />{o.isCorrect && ' ✓'}
+                <div key={o.label} className={`rounded-lg px-3 py-2 text-sm border ${o.isCorrect ? 'border-[#16A34A] bg-[#F0FDF4] font-bold' : 'border-[#e3ebe9]'}`} dir={isHeText(visibleOption(o, q.options, lang)) ? 'rtl' : 'ltr'}>
+                  <FractionText text={visibleOption(o, q.options, lang)} />{o.isCorrect && ' ✓'}
                 </div>
               ))}
             </div>
@@ -855,6 +912,9 @@ function DonePanel({ mat, setMat, child, questions }: any) {
   const [sent, setSent] = useState<string | null>(mat.assignment_id ? 'sent' : null)
   const [err, setErr] = useState<string | null>(null)
   const approvedIds = useMemo(() => questions.filter((q: any) => q.approved).map((q: any) => q.id), [questions])
+  // drawing tasks are for paper only
+  const paperOnly = useMemo(() => new Set<string>((mat.plan?.sections || []).filter((sc: Section) => !SECTION_KINDS[sc.kind]?.appOk).flatMap((sc: Section) => (mat.section_q || {})[sc.key] || [])), [mat])
+  const appIds = approvedIds.filter((id: string) => !paperOnly.has(id))
   const isExpl = mat.kind === 'explanation'
 
   const [printOpen, setPrintOpen] = useState(false)
@@ -872,7 +932,7 @@ function DonePanel({ mat, setMat, child, questions }: any) {
   async function sendToApp() {
     setSending(true); setErr(null)
     try {
-      const r = await fetch('/api/assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ childId: mat.child_id || child?.id, questionIds: approvedIds, title: mat.title }) })
+      const r = await fetch('/api/assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ childId: mat.child_id || child?.id, questionIds: appIds, title: mat.title }) })
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || 'שגיאה')
       const id = d.assignment?.id
@@ -915,7 +975,7 @@ function DonePanel({ mat, setMat, child, questions }: any) {
         {!isExpl && (
           <button className={`${card} p-4 text-start hover:border-[#0F766E] disabled:opacity-60`} disabled={sending || !!sent || !(mat.child_id || child?.id)} onClick={sendToApp}>
             <Smartphone className="text-[#0F766E]" /><div className="font-bold mt-2">{sent ? 'נשלח לאפליקציה ✓' : 'לשלוח לאפליקציה'}</div>
-            <div className="text-xs text-[#5b6b68]">{child ? `יופיע ל${child.name} ב"היום"` : 'בחרו ילד/ה'}</div>
+            <div className="text-xs text-[#5b6b68]">{child ? `יופיע ל${child.name} ב"היום"` : 'בחרו ילד/ה'}{paperOnly.size ? ' · משימות הציור רק בדף' : ''}</div>
           </button>
         )}
       </div>
@@ -975,28 +1035,189 @@ function DonePanel({ mat, setMat, child, questions }: any) {
   )
 }
 
-// ── history: everything this family made ──
-function HistoryList({ onMore }: any) {
+// ── history: everything this family made — filter by child, grade, subject, tag; remove ──
+function HistoryList({ onMore, kidsList: children }: any) {
   const [items, setItems] = useState<any[] | null>(null)
+  const [f, setF] = useState({ child: 'all', grade: 'all', subject: 'all', tag: 'all' })
+  const [confirm, setConfirm] = useState<any>(null)
   useEffect(() => { fetch('/api/materials').then(r => r.json()).then(d => setItems(d.materials || [])) }, [])
   if (!items) return <div className="text-sm text-[#7a8f8b]">טוען…</div>
   if (!items.length) return <div className={`${card} p-6 text-sm text-[#5b6b68]`}>עוד לא יצרתם כלום. בואו נתחיל!</div>
   const kindHe: any = { practice: 'תרגול', exam: 'מבחן', explanation: 'דפי הסבר' }
-  const sorted = [...items].sort((a, b) => Number(!!b.liked) - Number(!!a.liked))
+  const subjHe = (sl: string) => SUBJECTS.find(x => x.slug === sl)?.he || sl
+  const childName = (id: string) => (children || []).find((c: any) => c.id === id)?.name
+  const grades = [...new Set(items.map(m => m.grade))].sort((a, b) => a - b)
+  const subjects = [...new Set(items.map(m => m.subject_slug))]
+  const tags = [...new Set(items.flatMap(m => m.tags || []))].slice(0, 40) as string[]
+  const kids = (children || []).filter((c: any) => items.some(m => m.child_id === c.id))
+  const shown = items
+    .filter(m => (f.child === 'all' || m.child_id === f.child) && (f.grade === 'all' || String(m.grade) === f.grade)
+      && (f.subject === 'all' || m.subject_slug === f.subject) && (f.tag === 'all' || (m.tags || []).includes(f.tag)))
+    .sort((a, b) => Number(!!b.liked) - Number(!!a.liked))
+  async function remove(m: any) {
+    const r = await fetch(`/api/materials/${m.id}`, { method: 'DELETE' })
+    if (r.ok) setItems(xs => (xs || []).filter(x => x.id !== m.id))
+    setConfirm(null)
+  }
+  const sel = 'min-h-[40px] px-3 rounded-xl border border-[rgba(15,118,110,.2)] bg-white text-sm'
+  const pill = (on: boolean) => `min-h-[36px] px-3 rounded-full border-2 text-sm font-bold ${on ? 'border-[#0F766E] bg-[#E4F3F1] text-[#0F766E]' : 'border-[#e3ebe9] bg-white text-[#3d4f4b]'}`
   return (
-    <div className="flex flex-col gap-2">
-      {sorted.map(m => (
+    <div className="flex flex-col gap-2" dir="rtl">
+      <div className={`${card} p-3 flex flex-col gap-2`}>
+        <div className="flex flex-wrap gap-2">
+          {kids.length > 1 && <>
+            <button className={pill(f.child === 'all')} onClick={() => setF({ ...f, child: 'all' })}>כל הילדים</button>
+            {kids.map((c: any) => <button key={c.id} className={pill(f.child === c.id)} onClick={() => setF({ ...f, child: c.id })}>{c.name}</button>)}
+          </>}
+          {grades.length > 1 && <select aria-label="כיתה" className={sel} value={f.grade} onChange={e => setF({ ...f, grade: e.target.value })}>
+            <option value="all">כל הכיתות</option>{grades.map(g => <option key={g} value={g}>{gradeHe(g)}</option>)}
+          </select>}
+          {subjects.length > 1 && <select aria-label="מקצוע" className={sel} value={f.subject} onChange={e => setF({ ...f, subject: e.target.value })}>
+            <option value="all">כל המקצועות</option>{subjects.map(x => <option key={x} value={x}>{subjHe(x)}</option>)}
+          </select>}
+        </div>
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            <button className={pill(f.tag === 'all') + ' !min-h-[30px] !text-xs'} onClick={() => setF({ ...f, tag: 'all' })}># הכול</button>
+            {tags.map(t => <button key={t} className={pill(f.tag === t) + ' !min-h-[30px] !text-xs'} onClick={() => setF({ ...f, tag: f.tag === t ? 'all' : t })}># {t}</button>)}
+          </div>
+        )}
+      </div>
+      {shown.length === 0 && <div className={`${card} p-5 text-sm text-[#5b6b68]`}>אין כאן כלום עם הסינון הזה.</div>}
+      {shown.map(m => (
         <div key={m.id} className={`${card} p-4 flex flex-wrap items-center gap-3`}>
           <div className="flex-1 min-w-[200px]">
             <div className="font-bold text-[#1f2a28]">{m.title} {m.liked && <ThumbsUp size={14} className="inline text-[#0F766E]" />}</div>
-            <div className="text-xs text-[#5b6b68]">{kindHe[m.kind]} · {gradeHe(m.grade)} · {m.question_ids?.length || 0} שאלות · {new Date(m.created_at).toLocaleDateString('he-IL')}{m.status === 'draft' ? ' · טיוטה' : ''}</div>
+            <div className="text-xs text-[#5b6b68]">{kindHe[m.kind]} · {subjHe(m.subject_slug)} · {gradeHe(m.grade)}{childName(m.child_id) ? ` · ${childName(m.child_id)}` : ''} · {m.question_ids?.length || 0} שאלות · {new Date(m.created_at).toLocaleDateString('he-IL')}{m.status === 'draft' ? ' · טיוטה' : ''}</div>
+            {(m.tags || []).length > 0 && <div className="flex flex-wrap gap-1 mt-1">{m.tags.slice(0, 5).map((t: string) => <span key={t} className="text-[11px] px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#475569]">#{t}</span>)}</div>}
           </div>
           {m.rating && <div className="text-xs text-[#B7862F]" dir="ltr">{'★'.repeat(m.rating)}</div>}
           <a className={btnGhost} href={`/create?open=${m.id}`}>פתיחה</a>
           <button className={btnGhost} onClick={() => onMore(m)}><Copy size={15} /> עוד כזה</button>
+          <button aria-label="מחיקה" className={btnGhost + ' !text-[#DC2626] !px-3'} onClick={() => setConfirm(m)}><Trash2 size={16} /></button>
         </div>
       ))}
+      {confirm && (
+        <div role="dialog" aria-modal="true" dir="rtl" className="fixed inset-0 z-[700] bg-black/40 flex items-end sm:items-center justify-center p-3" onClick={() => setConfirm(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-[400px] p-5" onClick={e => e.stopPropagation()}>
+            <div className="font-black text-lg mb-1">למחוק את "{confirm.title}"?</div>
+            <div className="text-sm text-[#5b6b68] mb-4">הוא ייעלם מהרשימה{confirm.library_status === 'listed' ? ' ומהספרייה החינמית' : ''}. מה שכבר נשלח לאפליקציה נשאר אצל הילד/ה.</div>
+            <div className="flex gap-2 justify-between">
+              <button className={btnGhost} onClick={() => setConfirm(null)}>ביטול</button>
+              <button className={btnPrimary + ' !bg-[#DC2626]'} onClick={() => remove(confirm)}><Trash2 size={16} /> למחוק</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+// ── Workbook: the word list to approve (English + Hebrew), editable ──
+function WordsEditor({ words, onChange }: { words: { en: string; he: string }[]; onChange: (w: any[]) => void }) {
+  const [en, setEn] = useState(''), [he, setHe] = useState('')
+  const [all, setAll] = useState(false)
+  const shown = all ? words : words.slice(0, 24)
+  const upd = (i: number, k: 'en' | 'he', v: string) => onChange(words.map((w, j) => (j === i ? { ...w, [k]: v } : w)))
+  return (
+    <Section title={`המילים לתרגול (${words.length})`} hint="זו הרשימה שממנה ייכתבו כל החלקים. אפשר לתקן תרגום, למחוק או להוסיף מילים.">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+        {shown.map((w, i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            <input dir="ltr" aria-label="מילה באנגלית" value={w.en} onChange={e => upd(i, 'en', e.target.value)} className="w-[42%] min-h-[36px] px-2 rounded-lg border border-[#e3ebe9] bg-white font-bold text-sm" />
+            <input dir="rtl" aria-label="תרגום" value={w.he} onChange={e => upd(i, 'he', e.target.value)} className="flex-1 min-h-[36px] px-2 rounded-lg border border-[#e3ebe9] bg-white text-sm" />
+            <button aria-label="הסרה" onClick={() => onChange(words.filter((_, j) => j !== i))} className="w-8 h-8 rounded-lg text-[#9aa6a3] hover:text-[#DC2626] flex items-center justify-center shrink-0"><X size={15} /></button>
+          </div>
+        ))}
+      </div>
+      {words.length > 24 && <button className="text-sm font-bold text-[#0F766E] mt-2" onClick={() => setAll(a => !a)}>{all ? 'להציג פחות' : `להציג את כל ${words.length} המילים`}</button>}
+      <form className="flex items-center gap-1.5 mt-2" onSubmit={e => { e.preventDefault(); if (!en.trim()) return; onChange([...words, { en: en.trim(), he: he.trim() }]); setEn(''); setHe('') }}>
+        <Plus size={15} className="text-[#0F766E] shrink-0" />
+        <input dir="ltr" value={en} onChange={e => setEn(e.target.value)} placeholder="word" className="w-[38%] min-h-[38px] px-2 rounded-lg border border-dashed border-[#cfdcd9] bg-white text-sm" />
+        <input dir="rtl" value={he} onChange={e => setHe(e.target.value)} placeholder="תרגום" className="flex-1 min-h-[38px] px-2 rounded-lg border border-dashed border-[#cfdcd9] bg-white text-sm" />
+        <button className="text-sm font-bold text-[#0F766E] px-2" disabled={!en.trim()}>הוספה</button>
+      </form>
+    </Section>
+  )
+}
+
+// ── Workbook: the parts, in order — count, rename, remove, add ──
+function SectionsEditor({ sections, onChange }: { sections: Section[]; onChange: (s: Section[]) => void }) {
+  const [add, setAdd] = useState<SectionKind | ''>('')
+  const upd = (key: string, patch: any) => onChange(sections.map(x => (x.key === key ? { ...x, ...patch } : x)))
+  const move = (i: number, d: number) => { const a = [...sections]; const [x] = a.splice(i, 1); a.splice(Math.max(0, Math.min(a.length, i + d)), 0, x); onChange(a) }
+  const unit = (k: SectionKind) => (k === 'word_list' || k === 'translate_words' ? 'מילים' : k === 'word_bank' || k === 'translate_sentences' || k === 'draw' ? 'משפטים' : 'שאלות')
+  return (
+    <Section title="חלקי החוברת" hint="בסדר הזה הם יודפסו. אפשר לשנות כמות, לשנות סדר, להסיר או להוסיף חלק.">
+      <div className="flex flex-col gap-2">
+        {sections.map((sc, i) => (
+          <div key={sc.key} className="rounded-xl bg-[#F7FBFA] border border-[#e3ebe9] p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-black text-[#0F766E] w-5">{i + 1}.</span>
+              <input dir="auto" aria-label="שם החלק" value={sc.title_he} onChange={e => upd(sc.key, { title_he: e.target.value })}
+                className="flex-1 min-w-[140px] min-h-[40px] px-2 rounded-lg border border-transparent hover:border-[#e3ebe9] focus:border-[#0F766E] focus:outline-none bg-transparent font-bold text-[15px]" />
+              <div className="flex items-center gap-1">
+                <button aria-label="פחות" className="w-9 h-9 rounded-lg border border-[#e3ebe9] bg-white flex items-center justify-center" onClick={() => upd(sc.key, { count: Math.max(1, sc.count - 1) })}><Minus size={14} /></button>
+                <span className="w-20 text-center text-sm"><b>{sc.count}</b> {unit(sc.kind)}</span>
+                <button aria-label="יותר" className="w-9 h-9 rounded-lg border border-[#e3ebe9] bg-white flex items-center justify-center" onClick={() => upd(sc.key, { count: Math.min(sc.kind === 'word_bank' ? 10 : 30, sc.count + 1) })}><Plus size={14} /></button>
+              </div>
+              <button aria-label="למעלה" disabled={i === 0} className="w-8 h-8 rounded-lg text-[#5b6b68] disabled:opacity-30 flex items-center justify-center" onClick={() => move(i, -1)}><ArrowUp size={15} /></button>
+              <button aria-label="הסרת חלק" className="w-8 h-8 rounded-lg text-[#9aa6a3] hover:text-[#DC2626] flex items-center justify-center" onClick={() => onChange(sections.filter(x => x.key !== sc.key))}><Trash2 size={16} /></button>
+            </div>
+            <input dir="auto" aria-label="ההוראה לילד/ה" value={sc.instructions_he} onChange={e => upd(sc.key, { instructions_he: e.target.value })}
+              className="w-full mt-1 ps-7 min-h-[34px] px-2 rounded-lg border border-transparent hover:border-[#e3ebe9] focus:border-[#0F766E] focus:outline-none bg-transparent text-sm text-[#5b6b68]" />
+          </div>
+        ))}
+        <div className="flex gap-2">
+          <select aria-label="להוסיף חלק" value={add} onChange={e => setAdd(e.target.value as any)} className="flex-1 min-h-[44px] px-3 rounded-xl border border-dashed border-[#cfdcd9] bg-white text-sm">
+            <option value="">להוסיף חלק…</option>
+            {SECTION_ORDER.map(k => <option key={k} value={k}>{SECTION_KINDS[k].he}</option>)}
+          </select>
+          <button className={btnGhost} disabled={!add} onClick={() => { if (!add) return
+            const k = SECTION_KINDS[add]; onChange([...sections, { key: `s${Date.now()}`, kind: add, title_he: k.he, instructions_he: k.instr, count: k.def }]); setAdd('') }}><Plus size={16} /> חלק</button>
+        </div>
+      </div>
+    </Section>
+  )
+}
+
+// ── Workbook review: the parts in order, with the word table and the bank ──
+function SectionReview({ mat, questions, act, reload }: any) {
+  const words: { en: string; he: string }[] = mat.plan?.words || []
+  const byId = new Map(questions.map((q: any) => [q.id, q]))
+  let n = 0
+  return (
+    <>
+      {(mat.plan.sections as Section[]).map((sc, si) => {
+        const qs = (((mat.section_q || {})[sc.key] || []) as string[]).map(id => byId.get(id)).filter(Boolean) as any[]
+        const head = (
+          <div className="mt-3 mb-2">
+            <h3 className="text-base font-black text-[#0F766E] m-0">{si + 1}. {sc.title_he} <span className="text-xs font-semibold text-[#7a8f8b]">{SECTION_KINDS[sc.kind].q === 'none' ? '' : `· ${qs.length}`}</span></h3>
+            <div className="text-xs text-[#5b6b68]">{sc.instructions_he}{!SECTION_KINDS[sc.kind].appOk ? ' · רק בדף המודפס' : ''}</div>
+          </div>
+        )
+        if (sc.kind === 'word_list') return (
+          <div key={sc.key}>{head}
+            <div className={`${card} p-3 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-sm`}>
+              {(sc.words || []).map(en => <div key={en} className="flex justify-between gap-2 border-b border-[#f0f3f2] py-1"><b dir="ltr">{en}</b><span>{words.find(w => w.en === en)?.he}</span></div>)}
+            </div>
+          </div>
+        )
+        if (!qs.length) return null
+        return (
+          <div key={sc.key}>{head}
+            {sc.kind === 'word_bank' && (sc.words || []).length > 0 && (
+              <div className="flex flex-wrap justify-center gap-2 border-2 border-dashed border-[#0F766E55] rounded-2xl p-3 mb-2" dir="ltr">
+                {(sc.words || []).map(w => <span key={w} className="px-3 py-1 rounded-lg bg-[#E4F3F1] font-bold text-sm">{w}</span>)}
+              </div>
+            )}
+            <div className="flex flex-col gap-2">
+              {qs.map(q => <QuestionCard key={q.id} q={q} n={++n} lang={mat.language} onApprove={() => act(q, 'approve')} onRemove={() => act(q, 'reject')} onSaved={reload} />)}
+            </div>
+          </div>
+        )
+      })}
+    </>
   )
 }
 

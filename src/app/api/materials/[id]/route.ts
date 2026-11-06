@@ -37,7 +37,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const upd: any = { updated_at: new Date().toISOString() }
   if (typeof b.title === 'string' && b.title.trim()) upd.title = b.title.trim().slice(0, 120)
   if (b.plan && typeof b.plan === 'object') upd.plan = b.plan
-  if (Array.isArray(b.question_ids)) upd.question_ids = b.question_ids.filter((x: any) => (m.question_ids || []).includes(x))
+  if (Array.isArray(b.question_ids)) {
+    upd.question_ids = b.question_ids.filter((x: any) => (m.question_ids || []).includes(x))
+    upd.section_q = Object.fromEntries(Object.entries(m.section_q || {}).map(([k, v]: any) => [k, (v || []).filter((x: string) => upd.question_ids.includes(x))]))
+  }
   if (b.status === 'ready' || b.status === 'draft') upd.status = b.status
   if (b.liked === true || b.liked === false || b.liked === null) upd.liked = b.liked
   if (b.rating === null || (Number.isInteger(b.rating) && b.rating >= 1 && b.rating <= 5)) upd.rating = b.rating
@@ -46,4 +49,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data, error } = await createServiceRoleClient().from('materials').update(upd).eq('id', m.id).select('*').single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ material: data })
+}
+
+// DELETE /api/materials/[id] — remove it from "What I made". Questions it
+// wrote stay in the bank only if they were approved; the rest are set aside.
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const auth = await requireParentOnlySession()
+  if (!auth.ok) return NextResponse.json({ error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' }, { status: auth.status })
+  const m = await load(params.id, auth.parent.familyId)
+  if (!m) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const db = createServiceRoleClient()
+  if ((m.question_ids || []).length) {
+    await db.from('questions').update({ rejected_at: new Date().toISOString(), rejected_reason: 'material deleted' })
+      .in('id', m.question_ids).eq('approved', false).eq('created_by_family', m.family_id).is('rejected_at', null)
+  }
+  const { error } = await db.from('materials').delete().eq('id', m.id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
 }

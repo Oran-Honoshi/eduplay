@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireParentOnlySession } from '@/lib/session'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { signature } from '@/lib/questionChecks'
+import { insertQuestions } from '@/lib/insertQuestions'
+import { SECTION_KINDS, type Section, type Word } from '@/lib/workbook'
 
 export const maxDuration = 300
 
@@ -22,9 +24,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!m || m.family_id !== auth.parent.familyId) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const b = await req.json().catch(() => ({}))
-  const topic = (m.plan?.topics || []).find((t: any) => t.key === b.topic_key)
+  // a workbook section builds into the plan's first topic
+  const section: Section | null = typeof b.section_key === 'string'
+    ? (m.plan?.sections || []).find((s: Section) => s.key === b.section_key) || null : null
+  if (b.section_key && !section) return NextResponse.json({ error: 'Unknown section' }, { status: 400 })
+  const topic = section ? (m.plan?.topics || [])[0] : (m.plan?.topics || []).find((t: any) => t.key === b.topic_key)
   if (!topic) return NextResponse.json({ error: 'Unknown topic' }, { status: 400 })
-  const toGenerate = Math.max(0, Math.min(8, Number(b.generate) || 0))
+  if (section && SECTION_KINDS[section.kind].q === 'none') return NextResponse.json({ added: [], total: (m.question_ids || []).length, warnings: [] })
+  if (section?.kind === 'translate_words') return translateWords(m, topic, section)
+  const toGenerate = Math.max(0, Math.min(section ? 10 : 8, Number(b.generate) || 0))
   const toReuse = Math.max(0, Math.min(30, Number(b.reuse) || 0))
 
   const have: string[] = m.question_ids || []  // only used to avoid reusing the same bank question twice
@@ -34,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   let topicSlug: string | null = topic.topic_slug || null
 
   // 1) reuse approved bank questions
-  if (toReuse > 0 && topicId) {
+  if (toReuse > 0 && topicId && !section) {
     const { data: bank } = await db.from('questions').select('id, difficulty')
       .eq('topic_id', topicId).eq('approved', true).limit(200)
     const order = { easy: 0, medium: 1, hard: 2 } as Record<string, number>
@@ -74,9 +82,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       m.kind === 'exam' ? 'These questions are part of a practice exam: exam-style wording, no hints in the question text.' : '',
       m.request_text ? `The parent asked: ${m.request_text}` : '',
     ].filter(Boolean).join(' ')
+    const words: Word[] = plan.words || []
+    const sectionIds: string[] = section ? ((m.section_q || {})[section.key] || []) : []
+    const { data: secRows } = sectionIds.length ? await db.from('questions').select('correct_answer').in('id', sectionIds) : { data: [] as any[] }
     const genBody: any = {
       subject_slug: m.subject_slug, grade: m.grade,
-      q_types: m.plan?.q_types?.length ? m.plan.q_types : ['multiple_choice'],
+      ...(section ? {
+        section, words,
+        used_answers: (secRows || []).map((q: any) => q.correct_answer),
+        q_types: section.kind === 'word_bank' || section.kind === 'translate_sentences' || section.kind === 'draw' ? ['word_problem']
+          : section.kind === 'open' ? ['word_problem', 'multiple_choice'] : ['multiple_choice'],
+      } : { q_types: m.plan?.q_types?.length ? m.plan.q_types : ['multiple_choice'] }),
       difficulty, progressive, count: toGenerate, language: m.language,
       custom_prompt: focus || undefined,
       note: typeof b.note === 'string' && b.note.trim() ? b.note.trim().slice(0, 600) : undefined,
@@ -109,7 +125,50 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (t) await db.rpc('set_material_plan_topic', { p_id: m.id, p_key: topic.key, p_topic: t.id, p_slug: t.slug })
   }
   // atomic append: several topics of one material build in parallel
-  const { data: total } = await db.rpc('append_material_questions', { p_id: m.id, p_qids: added, p_topic: topicId })
+  const { data: total } = section
+    ? await db.rpc('append_material_section', { p_id: m.id, p_key: section.key, p_qids: added, p_topic: topicId })
+    : await db.rpc('append_material_questions', { p_id: m.id, p_qids: added, p_topic: topicId })
 
   return NextResponse.json({ added, total, warnings })
+}
+
+// "Translate yourself": one short open question per word, written directly
+// from the approved word list (no AI needed, so it is instant and exact).
+async function translateWords(m: any, topic: any, section: Section) {
+  const db = createServiceRoleClient()
+  const words: Word[] = (m.plan?.words || [])
+  const pick = (section.words?.length ? section.words : words.map(w => w.en)).slice(0, section.count || 10)
+  const byEn = new Map(words.map(w => [w.en.toLowerCase(), w]))
+  let topicId: string | null = topic.topic_id || null
+  if (!topicId) {
+    // the topic is created on first AI generation; make sure it exists first
+    const { findOrCreateOnRequestTopic } = await import('@/lib/onRequestTopics')
+    const { data: subj } = await db.from('subjects').select('id').eq('slug', m.subject_slug).single()
+    if (!subj) return NextResponse.json({ error: 'Unknown subject' }, { status: 400 })
+    const t = await findOrCreateOnRequestTopic({ subjectId: subj.id, grade: m.grade, titleEn: topic.title_en || topic.title_he, titleHe: topic.title_he || null, familyId: m.family_id })
+    topicId = t.id
+    await db.rpc('set_material_plan_topic', { p_id: m.id, p_key: topic.key, p_topic: t.id, p_slug: t.slug })
+  }
+  const { data: trow } = await db.from('topics').select('slug').eq('id', topicId).single()
+  const rows = pick.map(en => {
+    const w = byEn.get(en.toLowerCase())
+    return {
+      topic_slug: trow!.slug, topic_id: topicId!, difficulty: 'easy', q_type: 'word_problem',
+      prompt_en: en, prompt_he: undefined, correct_answer: w?.he || en,
+      grade: m.grade, created_by_family: m.family_id, approved: false,
+    }
+  })
+  const ids: string[] = []
+  if (rows.length) {
+    const res = await insertQuestions(rows as any)
+    if (!res.ok) return NextResponse.json({ error: res.error }, { status: 500 })
+    // words already saved earlier (same topic) are reused
+    const { data: found } = await db.from('questions').select('id, prompt_en').eq('topic_id', topicId).in('prompt_en', pick)
+    const map = new Map((found || []).map(q => [q.prompt_en, q.id]))
+    for (const en of pick) { const id = map.get(en); if (id) ids.push(id) }
+    // a word this family removed before comes back for review
+    if (ids.length) await db.from('questions').update({ rejected_at: null, rejected_reason: null }).in('id', ids).eq('created_by_family', m.family_id).eq('approved', false)
+  }
+  const { data: total } = await db.rpc('append_material_section', { p_id: m.id, p_key: section.key, p_qids: ids, p_topic: topicId })
+  return NextResponse.json({ added: ids, total, warnings: [] })
 }

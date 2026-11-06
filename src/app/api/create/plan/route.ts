@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/lib/supabase'
 import { uploadsAsText } from '@/lib/uploadBlocks'
 import { askClaudeJSON } from '@/lib/claude'
 import { ON_REQUEST_FROM_GRADE, topicSlug } from '@/lib/onRequestTopics'
+import { assignSectionWords, cleanSections, cleanWords } from '@/lib/workbook'
 
 export const maxDuration = 300
 
@@ -85,18 +86,24 @@ ${onRequest
   : `Prefer these curriculum topics for this grade and put the matching slug in "topic_slug": ${JSON.stringify(catalog)}. Only if the material clearly covers something none of them matches (for example a narrower or different scope), set topic_slug to null and is_new true.`}
 Rules: topic names are general curriculum names (not page numbers). Keep the topic order of the material. Practice: 1–2 topics unless the parent asked for more, 10–15 questions each. Exam: 3–8 topics, 4–8 questions each, total about 20–40, and time_minutes. Question types: choose from "multiple_choice" and "word_problem" (open answer); use both unless the parent said otherwise.
 ${learnedText}
+WORKBOOK WITH SECTIONS: when the parent asks for vocabulary / words practice, or asks for several different parts or kinds of exercises, ALSO output "words" and "sections" (otherwise leave them out).
+- "words": EVERY word to practice, each {"en":"village","he":"כפר"} with the meaning in Hebrew as taught at school: all the marked/boxed new words in the material (when the material lists them) PLUS every word the parent asked to add. If the parent asks for number words up to 100, list one…twenty, thirty, forty, fifty, sixty, seventy, eighty, ninety, one hundred and the examples the parent gave (other compound numbers appear in the exercises). If the parent asks for the months, list all 12.
+- "sections": the parts of the workbook in a sensible learning order, each {"kind":K,"title_he":"short title","instructions_he":"one instruction line for the child","count":N}. K is one of: "word_list" (a table of words with their translation, to get to know them; N = how many words, a part of the list, not all), "translate_words" (words with a blank to write the meaning; N words), "word_bank" (a bank of about 10 words and N = 8–10 sentences with a blank, each word used at most once), "translate_sentences" (English sentences to translate to Hebrew), "multiple_choice", "true_false", "picture_match" (pictures of items or quantities to match with words/numbers), "draw" (draw what a short sentence says, very easy things; 2–4), "open". Use the parts the parent asked for; you may add others that fit (only from this list).
+With sections, "topics" is ONE topic naming the subject matter (e.g. "אוצר מילים — יחידות 1–5"); its count is ignored.
+Also output "tags_he": 2–5 short Hebrew tags describing the content (e.g. "אוצר מילים","חודשים","מספרים עד 100").
 If something important is missing or unclear (for example which chapter, or the level), say so briefly in missing_he — but still give your best plan.
 Output JSON only:
 {"title_he":"...","title_en":"...","summary_he":"one short sentence","missing_he":["at most 2, only if really important"],"difficulty":"progressive"|"mixed"|"easy"|"medium"|"hard","q_types":["multiple_choice","word_problem"],"time_minutes":number|null,
- "topics":[{"title_en":"...","title_he":"...","subtopics_he":["..."],"topic_slug":"..."|null,"is_new":true|false,"count":number}]}`
+ "topics":[{"title_en":"...","title_he":"...","subtopics_he":["..."],"topic_slug":"..."|null,"is_new":true|false,"count":number}],
+ "tags_he":["..."], "words":[{"en":"...","he":"..."}] (only for a workbook), "sections":[{"kind":"...","title_he":"...","instructions_he":"...","count":number}] (only for a workbook)}`
 
   const ai = await askClaudeJSON<any>({
     system,
     content: [{ type: 'text', text: [
-      mtext.text ? `The child's material, page by page:\n${mtext.text}` : '',
+      mtext.text ? `The parent uploaded ${(b.upload_ids || []).length} file(s); they were already read. The child's material, page by page:\n${mtext.text}` : '',
       requestText ? `Parent's request: ${requestText}` : 'Plan from the material above.',
     ].filter(Boolean).join('\n\n') }],
-    maxTokens: 2500,
+    maxTokens: 6000,
   })
   if (!ai.ok) return NextResponse.json({ error: 'Could not plan this right now. Try again.' }, { status: 502 })
   const p = ai.data || {}
@@ -132,7 +139,7 @@ Output JSON only:
     for (const t of planTopics) if (t.topic_id) t.bank_count = counts[t.topic_id] || 0
   }
 
-  const plan = {
+  const plan0 = {
     title_he: String(p.title_he || '').slice(0, 120), title_en: String(p.title_en || '').slice(0, 120),
     summary_he: String(p.summary_he || '').slice(0, 600),
     missing_he: Array.isArray(p.missing_he) ? p.missing_he.filter((x: any) => typeof x === 'string').slice(0, 5) : [],
@@ -140,9 +147,13 @@ Output JSON only:
     q_types: Array.isArray(p.q_types) && p.q_types.length ? p.q_types.filter((x: any) => ['multiple_choice', 'word_problem'].includes(x)) : ['multiple_choice', 'word_problem'],
     time_minutes: kind === 'exam' ? Math.max(10, Math.min(240, Number(p.time_minutes) || 45)) : null,
     topics: planTopics,
+    tags: Array.isArray(p.tags_he) ? p.tags_he.filter((x: any) => typeof x === 'string' && x.trim()).map((x: string) => x.trim().slice(0, 30)).slice(0, 6) : [],
+    ...(kind !== 'explanation' && Array.isArray(p.sections) && p.sections.length ? { words: cleanWords(p.words), sections: cleanSections(p.sections) } : {}),
     digest: mtext.text ? mtext.text.slice(0, 12000) : null,
     skipped_uploads: mtext.failed,
   }
+
+  const plan = assignSectionWords(plan0)
 
   // Re-planning an untouched draft updates it instead of making a new one
   const rowData = {

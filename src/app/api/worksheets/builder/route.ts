@@ -105,9 +105,17 @@ export async function GET(req: NextRequest) {
     const subject = topics[0]?.subject
     // A Create material supplies its own title (same family only)
     let customTitle: string | null = null
+    let sections: any[] | undefined, words: any[] | undefined
     if (materialId) {
-      const { data: mat } = await supabase.from('materials').select('title, family_id').eq('id', materialId).maybeSingle()
-      if (mat && mat.family_id === child.family_id) customTitle = mat.title
+      const { data: mat } = await supabase.from('materials').select('title, family_id, plan, section_q').eq('id', materialId).maybeSingle()
+      if (mat && mat.family_id === child.family_id) {
+        customTitle = mat.title
+        if (Array.isArray(mat.plan?.sections) && mat.plan.sections.length) {
+          const shown = new Set(finalQuestions.map(q => q.id))
+          words = mat.plan.words || []
+          sections = mat.plan.sections.map((sc: any) => ({ ...sc, qids: ((mat.section_q || {})[sc.key] || []).filter((id: string) => shown.has(id)) }))
+        }
+      }
     }
     const brand = await brandBits(new URL(req.url).origin)
     const html = generateHTML({
@@ -115,7 +123,7 @@ export async function GET(req: NextRequest) {
       difficulty, langMode, includeKey,
       wsType, includeHints, solutionSteps,
       date: new Date().toLocaleDateString('en-GB'),
-      subject, brand, customTitle, timeMinutes,
+      subject, brand, customTitle, timeMinutes, sections, words,
     })
 
     // ── Log this generation to worksheet_generations (history/regenerate) ──

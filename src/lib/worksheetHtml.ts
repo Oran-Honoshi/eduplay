@@ -4,6 +4,7 @@ import { renderMathVisualSVG } from '@/lib/mathVisual'
 import { fractionsToHTML } from '@/lib/fractionText'
 import { mathRunsToHTML, normalizeFractions } from '@/lib/bidiMath'
 import { brandBits, brandHeader, brandFooter, BRAND_CSS, type Brand } from '@/lib/printBrand'
+import { visibleOption } from '@/lib/workbook'
 import { isDistinctHe, translateDifficulty, translateOptionLabel, extractBareEquation, segmentHebrewMath } from '@/lib/text'
 
 function inferVisualData(prompt: string): any | null {
@@ -199,6 +200,8 @@ function renderVisual(q: any, color = '#4A7FD4', instanceId: number | string = '
   return renderLegacyVisual(q)
 }
 
+const esc = (t: any) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
 export function noQuestionsHTML(child: any) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"/></head>
   <body style="font-family:Nunito,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#F8F9FB;">
@@ -240,8 +243,16 @@ function renderHeTextLines(promptHe: string): string {
   ).join('')
 }
 
-export function generateHTML({ child, topics, questions, difficulty, langMode, includeKey, wsType, includeHints, solutionSteps, date, subject, brand, customTitle, timeMinutes }: any) {
+export function generateHTML({ child, topics, questions: questionsIn, difficulty, langMode, includeKey, wsType, includeHints, solutionSteps, date, subject, brand, customTitle, timeMinutes, sections, words }: any) {
   const b: Brand = brand
+  // workbook: questions in section order (a question belongs to its section)
+  const secs: any[] = Array.isArray(sections) && sections.length ? sections : []
+  const secOf = new Map<string, any>()
+  for (const sc of secs) for (const id of sc.qids || []) secOf.set(id, sc)
+  const questions: any[] = secs.length
+    ? secs.flatMap(sc => (sc.qids || []).map((id: string) => questionsIn.find((q: any) => q.id === id)).filter(Boolean))
+        .concat(questionsIn.filter((q: any) => !secOf.has(q.id)))
+    : questionsIn
   const isHebrew    = langMode === 'he_only'
   const isBilingual = langMode === 'bilingual'
   const isEnglish   = langMode === 'en_only'
@@ -254,19 +265,21 @@ export function generateHTML({ child, topics, questions, difficulty, langMode, i
   const showHints      = includeHints && wsType !== 'quiz' && wsType !== 'exam'
   const subjectColor   = subject?.slug === 'math' ? '#4A7FD4' : subject?.slug === 'english' ? '#2EC4B6' : '#EF4444'
 
-  const questionsHTML = questions.map((q: any, i: number) => {
+  const renderQ = (q: any, i: number, sec?: any) => {
     const visualHTML = renderVisual(q, subjectColor, i)
 
     let answerHTML = ''
     if (q.options) {
       answerHTML = `<div class="options-grid">${q.options.map((opt: any) => {
-        const displayVal = isHebrew && opt.value_he ? opt.value_he : opt.value_en
+        const displayVal = visibleOption(opt, q.options, langMode)
         const displayLabel = isHebrew ? translateOptionLabel(opt.label) : opt.label
         return `<div class="option">
           <span class="opt-label">${displayLabel}.</span>
           <span class="opt-value">${/[\u0590-\u05FF]/.test(String(displayVal ?? '')) ? heHTML(displayVal) : `<bdi dir="ltr">${fractionsToHTML(displayVal)}</bdi>`}</span>
         </div>`
       }).join('')}</div>`
+    } else if (sec?.kind === 'draw') {
+      answerHTML = `<div class="draw-box"></div>`
     } else {
       const ansLabel = isHebrew ? 'תשובה:' : isBilingual ? 'Answer / תשובה:' : 'Answer:'
       answerHTML = `<div class="answer-line"><span class="ans-label">${ansLabel}</span><span class="line"></span></div>`
@@ -329,6 +342,20 @@ export function generateHTML({ child, topics, questions, difficulty, langMode, i
       ? `<div class="ws-equation" dir="ltr">${fractionsToHTML(workEquation)}</div>` : ''
     const workLineCount = workEquation ? 4 : 6
 
+    if (sec) {
+      const ltr = !/[\u0590-\u05FF]/.test(String(q.prompt_he || ''))
+      const promptHTML = sec.kind === 'word_bank'
+        ? `<div class="q-text-en" dir="ltr">${esc(q.prompt_en).replace(/_{2,}/g, '<span class="blank"></span>')}</div>`
+        : `${heText}${!heText ? `<div class="q-text-en" dir="${ltr ? 'ltr' : 'rtl'}">${fractionsToHTML(q.prompt_en)}</div>` : ''}`
+      return `
+      <div class="question compact">
+        <div class="q-left">
+          <div class="q-header"><div class="q-number">${i + 1}</div></div>
+          <div class="q-body">${promptHTML}${visualHTML}${sec.kind === 'word_bank' ? '' : answerHTML}${hintHTML}</div>
+        </div>
+      </div>`
+    }
+
     return `
       <div class="question">
         <div class="q-left">
@@ -349,6 +376,26 @@ export function generateHTML({ child, topics, questions, difficulty, langMode, i
           </div>
         </div>
       </div>`
+  }
+
+  const wordHe = (en: string) => (words || []).find((w: any) => w.en === en)?.he || ''
+  let n = 0
+  const questionsHTML = !secs.length ? questions.map((q: any, i: number) => renderQ(q, i)).join('') : secs.map((sc: any, si: number) => {
+    const qs = (sc.qids || []).map((id: string) => questions.find((q: any) => q.id === id)).filter(Boolean)
+    const head = `<div class="sec-head" dir="rtl"><div class="sec-title">${si + 1}. ${esc(sc.title_he)}</div><div class="sec-instr">${esc(sc.instructions_he)}</div></div>`
+    if (sc.kind === 'word_list') {
+      const ws: string[] = sc.words || []
+      if (!ws.length) return ''
+      return `<section class="sec">${head}<table class="word-table" dir="rtl"><tbody>${ws.map(en => `<tr><td class="w-en" dir="ltr">${esc(en)}</td><td class="w-he">${esc(wordHe(en))}</td></tr>`).join('')}</tbody></table></section>`
+    }
+    if (!qs.length) return ''
+    if (sc.kind === 'translate_words') {
+      const rows = qs.map((q: any) => { n++; return `<tr><td class="w-num">${n}</td><td class="w-en" dir="ltr">${esc(q.prompt_en)}</td><td class="w-blank"></td></tr>` }).join('')
+      return `<section class="sec">${head}<table class="word-table" dir="rtl"><tbody>${rows}</tbody></table></section>`
+    }
+    const bank = sc.kind === 'word_bank' && (sc.words || []).length
+      ? `<div class="bank" dir="ltr">${(sc.words || []).map((w: string) => `<span>${esc(w)}</span>`).join('')}</div>` : ''
+    return `<section class="sec">${head}${bank}${qs.map((q: any) => renderQ(q, n++, sc)).join('')}</section>`
   }).join('')
 
   const answerKeyHTML = includeKey ? `
@@ -389,7 +436,7 @@ export function generateHTML({ child, topics, questions, difficulty, langMode, i
     </div>` : ''
 
   return `<!DOCTYPE html>
-<html dir="${isHebrew ? 'rtl' : 'ltr'}">
+<html dir="${isHebrew || (secs.length && !isEnglish) ? 'rtl' : 'ltr'}">
 <head>
   <meta charset="UTF-8"/>
   <title>EduPlay — ${subjectLabel} ${typeLabel}</title>
@@ -459,6 +506,23 @@ export function generateHTML({ child, topics, questions, difficulty, langMode, i
     .line { flex: 1; border-bottom: 1.5px solid #9AA5B8; }
     .hint { margin-top: 6px; font-size: 11px; color: #9AA5B8; padding: 5px 9px; background: #FFFBF0; border-left: 3px solid #F5A623; border-radius: 0 5px 5px 0; }
 
+    .question.compact { min-height: 0; margin-bottom: 10px; }
+    .question.compact .q-left { border-inline-end: 0; }
+    .sec { margin: 18px 0 8px; }
+    .sec-head { border-inline-start: 5px solid ${subjectColor}; padding: 4px 10px; margin-bottom: 10px; background: #F7FBFA; border-radius: 6px; }
+    .sec-title { font-size: 16px; font-weight: 900; color: #1A2E4A; }
+    .sec-instr { font-size: 12.5px; color: #4A5568; margin-top: 2px; }
+    .word-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; page-break-inside: auto; }
+    .word-table td { border: 1px solid #DEE2E6; padding: 8px 10px; font-size: 14px; }
+    .word-table tr { page-break-inside: avoid; }
+    .w-en { font-weight: 800; text-align: left; width: 40%; }
+    .w-he { font-family: 'Noto Serif Hebrew', serif; }
+    .w-num { width: 34px; text-align: center; color: #9AA5B8; font-weight: 800; }
+    .w-blank { height: 34px; }
+    .bank { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; border: 2px dashed ${subjectColor}; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; page-break-inside: avoid; }
+    .bank span { font-weight: 800; font-size: 14px; padding: 3px 10px; background: #F0F7FF; border-radius: 8px; }
+    .blank { display: inline-block; min-width: 110px; border-bottom: 1.5px solid #4A5568; margin: 0 4px; }
+    .draw-box { height: 170px; border: 2px solid #CBD5E0; border-radius: 12px; margin-top: 8px; }
     ${BRAND_CSS}
     .exam-bar { display:flex; gap:16px; align-items:center; padding:8px 14px; margin-bottom:14px; border:2px solid #0F766E; border-radius:10px; font-weight:800; color:#0F3D3A; }
     .footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #EEF1F6; font-size: 10px; color: #9AA5B8; line-height: 1.7; }

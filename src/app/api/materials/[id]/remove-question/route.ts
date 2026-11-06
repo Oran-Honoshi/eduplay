@@ -10,7 +10,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const auth = await requireParentOnlySession()
   if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: auth.status })
   const db = createServiceRoleClient()
-  const { data: m } = await db.from('materials').select('id, family_id, question_ids, plan').eq('id', params.id).maybeSingle()
+  const { data: m } = await db.from('materials').select('id, family_id, question_ids, plan, section_q').eq('id', params.id).maybeSingle()
   if (!m || m.family_id !== auth.parent.familyId) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const b = await req.json().catch(() => ({}))
   const qid = String(b.question_id || '')
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
   const plan = { ...(m.plan || {}) }
   if (why) plan.avoid_he = [...(plan.avoid_he || []), `${why} (בשאלה: "${String(q?.prompt_he || q?.prompt_en || '').slice(0, 80)}")`].slice(-20)
-  await db.from('materials').update({ question_ids: m.question_ids.filter((x: string) => x !== qid), plan, updated_at: new Date().toISOString() }).eq('id', m.id)
+  const section_q = Object.fromEntries(Object.entries(m.section_q || {}).map(([k, v]: any) => [k, (v || []).filter((x: string) => x !== qid)]))
+  await db.from('materials').update({ question_ids: m.question_ids.filter((x: string) => x !== qid), section_q, plan, updated_at: new Date().toISOString() }).eq('id', m.id)
   return NextResponse.json({ ok: true })
 }
