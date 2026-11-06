@@ -67,6 +67,7 @@ function CreateInner() {
   const [lang, setLang] = useState<Lang>('he_only')
   const [request, setRequest] = useState(sp.get('prompt') || '')
   const [materials, setMaterials] = useState<UploadedMaterial[]>([])
+  const [mirror, setMirror] = useState(false)   // "make one just like the sheet I uploaded"
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -120,7 +121,7 @@ function CreateInner() {
 
   // "New creation" always starts from the beginning (never reopens the last one)
   function startNew() {
-    setMat(null); setQuestions([]); setMaterials([]); setRequest(''); setError(null); setFailed([]); setEditing(false)
+    setMat(null); setQuestions([]); setMaterials([]); setMirror(false); setRequest(''); setError(null); setFailed([]); setEditing(false)
     setKind('practice'); if (children.length) pickChild(children[0])
     setView('make'); setStep('kind')
     try { window.history.replaceState({ createStep: 'kind' }, '', '/create') } catch {}
@@ -137,7 +138,7 @@ function CreateInner() {
     try {
       const res = await fetch('/api/create/plan', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind, child_id: child?.id, subject_slug: subject, grade, language: lang, request_text: request,
+        body: JSON.stringify({ kind, child_id: child?.id, subject_slug: subject, grade, language: lang, request_text: request, mirror: mirror && (materials.length > 0 || (mat?.upload_ids || []).length > 0),
           upload_ids: materials.length ? materials.map(m => m.id) : (mat?.upload_ids || []),
           material_id: mat?.status === 'draft' && !(mat?.question_ids || []).length ? mat.id : undefined }),
       })
@@ -468,6 +469,15 @@ function CreateInner() {
                 <Field label="חומר של הילד/ה (לא חובה)">
                   <MaterialUpload value={materials} onChange={setMaterials} he autoRead />
                 </Field>
+                {materials.length > 0 && kind !== 'explanation' && (
+                  <label className={`flex items-start gap-3 rounded-2xl border-2 p-3 cursor-pointer ${mirror ? 'border-[#0F766E] bg-[#E4F3F1]' : 'border-[#e3ebe9] bg-white'}`}>
+                    <input type="checkbox" className="mt-1 w-5 h-5 accent-[#0F766E]" checked={mirror} onChange={e => setMirror(e.target.checked)} />
+                    <span>
+                      <span className="font-bold block text-[#1f2a28]">ליצור {kind === 'exam' ? 'מבחן' : 'דף'} דומה למה שהעליתי</span>
+                      <span className="text-xs text-[#5b6b68]">אותו מבנה, אותו סדר, אותה רמה ואותם סוגי שאלות — רק מספרים ובעיות אחרים</span>
+                    </span>
+                  </label>
+                )}
                 <div className="flex gap-2 justify-between">
                   <button className={btnGhost} onClick={() => go('kind')}><ArrowLeft size={16} className="rotate-180" /> חזרה</button>
                   <button className={btnPrimary} disabled={busy || (!request.trim() && !materials.length)} onClick={makePlan}>
@@ -773,6 +783,7 @@ function PlanSummary({ mat, editing, onEdit }: { mat: any; editing: boolean; onE
         <div className="flex-1 min-w-0">
           <h2 className="text-xl font-black text-[#1f2a28] m-0">{mat.title}</h2>
           {plan.summary_he && <p className="text-sm text-[#3d4f4b] mt-1 mb-0">{plan.summary_he}</p>}
+          {plan.mirror && <div className="inline-flex items-center gap-1.5 mt-2 text-xs font-bold px-3 py-1 rounded-full bg-[#FFF4D6] text-[#8a5a00]"><Copy size={13} /> דומה לדף שהעליתם — אותו מבנה, מספרים אחרים</div>}
           {secMode ? (
             <ol className="mt-3 mb-0 p-0 list-none flex flex-col gap-1">
               {plan.sections.map((sc: Section, i: number) => (

@@ -612,6 +612,21 @@ ${spec.text}` : ''}`
     // word_problem rows). Coercing an unrequested type into q_types[0] would
     // silently mislabel a question (e.g. a word_problem's shape forced into
     // multiple_choice), so an unrequested type is discarded outright instead.
+    // a workbook section decides the type by its shape (the model sometimes writes "true_false" etc.)
+    if (section) {
+      if (section.kind === 'true_false') {
+        const TF = /^(נכון|לא נכון|true|false)$/i
+        let opts = Array.isArray(q.options) ? q.options.filter((o: any) => TF.test(String(o?.value_he || o?.value_en || '').trim())) : []
+        if (opts.length !== 2 && /^(נכון|לא נכון|true|false)$/i.test(String(q.correct_answer || '').trim())) {
+          const yes = /^(נכון|true)$/i.test(String(q.correct_answer).trim())
+          const [t, f] = language === 'en_only' ? ['True', 'False'] : ['נכון', 'לא נכון']
+          opts = [{ label: 'A', value_en: t, value_he: t, isCorrect: yes }, { label: 'B', value_en: f, value_he: f, isCorrect: !yes }]
+        }
+        if (opts.length === 2 && opts.filter((o: any) => o.isCorrect).length === 1) q.options = opts.map((o: any, k: number) => ({ ...o, label: k ? 'B' : 'A' }))
+      }
+      q.q_type = Array.isArray(q.options) && q.options.length ? 'multiple_choice' : 'word_problem'
+      if (!q_types.includes(q.q_type)) { failures.push(`question ${i + 1}: wrong shape for this section — discarded`); continue }
+    }
     if (!q_types.includes(q.q_type)) {
       failures.push(`question ${i + 1}: q_type "${q.q_type}" was not in the requested types (${q_types.join(', ')}) — discarded`)
       continue

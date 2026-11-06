@@ -72,11 +72,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       else difficulty = part < parts / 3 ? 'easy' : part < (2 * parts) / 3 ? 'medium' : 'hard'
     }
     const subs: string[] = topic.subtopics_he || []
-    const mySubs = parts === 1 || subs.length === 0 ? subs
+    // a twin sheet keeps the original order: each part twins its own run of questions
+    const per = Math.ceil(subs.length / parts)
+    const mySubs = plan.mirror ? (parts === 1 ? subs.slice(0, toGenerate) : subs.slice(part * per, part * per + per))
+      : parts === 1 || subs.length === 0 ? subs
       : subs.length >= parts ? subs.filter((_, i) => i % parts === part)
       : [subs[part % subs.length]]
     const focus = [
-      mySubs.length ? `Focus on these sub-skills: ${mySubs.join('; ')}.` : '',
+      plan.mirror && mySubs.length
+        ? `TWIN SHEET: write one twin for each of these original questions, in this order — the same type, structure, wording pattern, kind of picture and difficulty, but different numbers, items and situations (never the original numbers): ${mySubs.map((x, i) => `(${i + 1}) ${x}`).join(' ')}.`
+        : mySubs.length ? `Focus on these sub-skills: ${mySubs.join('; ')}.` : '',
       plan.focus_he?.length ? `Parent's focus notes: ${plan.focus_he.join('; ')}.` : '',
       plan.avoid_he?.length ? `The parent removed earlier questions for these reasons — avoid these problems: ${plan.avoid_he.slice(-12).join('; ')}.` : '',
       m.kind === 'exam' ? 'These questions are part of a practice exam: exam-style wording, no hints in the question text.' : '',
