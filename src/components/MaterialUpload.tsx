@@ -49,14 +49,17 @@ async function prepareImage(f: File): Promise<File> {
 }
 
 export function MaterialUpload({
-  value, onChange, he = false, max = MAX_UPLOADS_PER_GENERATION, compact = false,
+  value, onChange, he = false, max = MAX_UPLOADS_PER_GENERATION, compact = false, autoRead = false,
 }: {
   value: UploadedMaterial[]
   onChange: (next: UploadedMaterial[]) => void
   he?: boolean
   max?: number
   compact?: boolean
+  // read each page right after upload (Create), so planning later is fast
+  autoRead?: boolean
 }) {
+  const [readState, setReadState] = useState<Record<string, 'reading' | 'ready' | 'failed'>>({})
   const fileRef = useRef<HTMLInputElement>(null)
   const camRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -122,7 +125,21 @@ export function MaterialUpload({
         }
       }
       await Promise.all(Array.from({ length: Math.min(4, prepared.length) }, worker))
-      onChange([...value, ...done.filter((x): x is UploadedMaterial => !!x)])
+      const added = done.filter((x): x is UploadedMaterial => !!x)
+      onChange([...value, ...added])
+      if (autoRead) {
+        // fire and forget, 4 at a time; the plan step reads anything still missing
+        setReadState(st => ({ ...st, ...Object.fromEntries(added.map(a => [a.id, 'reading' as const])) }))
+        let k = 0
+        const readWorker = async () => {
+          while (k < added.length) {
+            const a = added[k++]
+            const r = await fetch(`/api/uploads/${a.id}/read`, { method: 'POST' }).catch(() => null)
+            setReadState(st => ({ ...st, [a.id]: r && r.ok ? 'ready' : 'failed' }))
+          }
+        }
+        for (let w = 0; w < Math.min(4, added.length); w++) readWorker()
+      }
     } catch (e: any) {
       setError(L('Upload failed. Check the connection and try again.', 'ההעלאה נכשלה. בדקו את החיבור ונסו שוב.'))
     } finally {
@@ -175,6 +192,11 @@ export function MaterialUpload({
                   ? <img src={m.preview} alt={m.name} className="w-full h-24 object-cover" />
                   : <div className="h-24 flex items-center justify-center text-[#0F766E]"><FileText size={30} /></div>}
                 <div className="px-2 py-1 text-[11px] text-[#3d4f4b] truncate" title={m.name}>{i + 1}. {m.name}</div>
+                {autoRead && readState[m.id] && (
+                  <div className={`px-2 pb-1 text-[10px] font-bold ${readState[m.id] === 'ready' ? 'text-[#16A34A]' : readState[m.id] === 'failed' ? 'text-[#B45309]' : 'text-[#0F766E]'}`}>
+                    {readState[m.id] === 'ready' ? (he ? 'נקרא ✓' : 'Read ✓') : readState[m.id] === 'failed' ? (he ? 'ננסה שוב בתכנון' : 'Will retry') : (he ? 'פיפ קורא…' : 'Reading…')}
+                  </div>
+                )}
                 <button type="button" aria-label={L('Remove', 'הסרה')} onClick={() => onChange(value.filter(x => x.id !== m.id))}
                   className="absolute top-1 end-1 w-7 h-7 rounded-full bg-white/90 border border-[#e3ebe9] flex items-center justify-center text-[#7a8f8b] hover:text-[#DC2626]">
                   <X size={14} />

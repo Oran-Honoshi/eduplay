@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
   const isRegenerate  = searchParams.get('regenerate') === 'true'
   const timeMinutes   = parseInt(searchParams.get('timeMinutes') || '0') || null
   const materialId    = searchParams.get('materialId')
+  const noPrint       = searchParams.get('noprint') === '1'
 
   if (!childId || topicIds.length === 0) {
     return NextResponse.json({ error: 'childId and topicIds required' }, { status: 400 })
@@ -125,7 +126,7 @@ export async function GET(req: NextRequest) {
     // generation event, and logging it again would make History inflate every
     // time someone re-prints instead of reflecting distinct worksheets created.
     // Wrapped in try/catch: a logging failure must never break the print view.
-    if (!isRegenerate) {
+    if (!isRegenerate && !noPrint) {
       try {
         await supabase.from('worksheet_generations').insert({
           family_id: child.family_id,
@@ -157,7 +158,7 @@ export async function GET(req: NextRequest) {
     // is `worksheet_generations` (see the block above, and `/api/worksheets/history`),
     // which is unrelated to this dead code and was never affected by its removal.
 
-    return new NextResponse(html, {
+    return new NextResponse(noPrint ? html.replace('<script>setTimeout(() => window.print(), 800)</script>', '') : html, {
       headers: { 'Content-Type': 'text/html; charset=utf-8' }
     })
   } catch (err: any) {

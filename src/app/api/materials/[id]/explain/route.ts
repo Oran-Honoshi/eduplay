@@ -21,7 +21,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const topic = (m.plan?.topics || []).find((t: any) => t.key === b.topic_key)
   if (!topic) return NextResponse.json({ error: 'Unknown topic' }, { status: 400 })
 
-  const uploads = await loadUploadBlocks(m.family_id, m.upload_ids)
+  // the material was read once while planning; fall back to the files only for old drafts
+  const uploads = m.plan?.digest ? { blocks: [{ type: 'text', text: `The child's material, page by page:\n${m.plan.digest}` }] } : await loadUploadBlocks(m.family_id, m.upload_ids)
   const he = m.language !== 'en_only'
   const en = m.language !== 'he_only'
   const system = `You write a one-page learning explanation for an Israeli child, grade ${m.grade}, subject ${m.subject_slug}. Topic: "${topic.title_he || ''}" / "${topic.title_en || ''}".${topic.subtopics_he?.length ? ` Sub-skills: ${topic.subtopics_he.join('; ')}.` : ''}

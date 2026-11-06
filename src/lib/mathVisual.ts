@@ -253,24 +253,27 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
     // ── COORDINATE GRID (Cartesian plane) ─────────────────────
     case 'coordinate': {
       const steps = data.steps || data.range || 5
+      // quadrant:1 → first quadrant only (0..steps on both axes), as taught in 7th grade
+      const q1 = data.quadrant === 1 || data.quadrant === '1'
       const pad = 28
       const inner = Math.min(W, H) - pad * 2
-      const step = inner / (steps * 2)
-      const cx = W / 2, cy = H / 2
+      const step = q1 ? inner / steps : inner / (steps * 2)
+      const cx = q1 ? pad : W / 2, cy = q1 ? H - pad : H / 2
       // Points may be [x,y] or [x,y,label] — an explicit label overrides
       // the default "(x,y)" annotation.
       const points: [number, number, string?][] = data.points || []
 
+      const nLines = q1 ? steps + 1 : steps * 2 + 1
       let gridLines = ''
-      for (let i = 0; i < steps * 2 + 1; i++) {
+      for (let i = 0; i < nLines; i++) {
         const pos = pad + i * step
         gridLines += `<line x1="${pos}" y1="${pad}" x2="${pos}" y2="${H - pad}" stroke="${gridLn}" stroke-width="1"/><line x1="${pad}" y1="${pos}" x2="${W - pad}" y2="${pos}" stroke="${gridLn}" stroke-width="1"/>`
       }
 
       let tickLabels = ''
-      for (let i = 0; i < steps * 2 + 1; i++) {
-        const val = i - steps
-        if (val === 0) continue
+      for (let i = 0; i < nLines; i++) {
+        const val = q1 ? i : i - steps
+        if (val === 0) { if (q1) tickLabels += `<text x="${cx - 10}" y="${cy + 14}" text-anchor="middle" font-size="9" font-family="Georgia,serif" fill="${axisTick}">0</text>`; continue }
         const x = cx + val * step
         tickLabels += `<text x="${x}" y="${cy + 14}" text-anchor="middle" font-size="9" font-family="Georgia,serif" fill="${axisTick}">${val}</text><text x="${cx - 12}" y="${cy - val * step + 4}" text-anchor="middle" font-size="9" font-family="Georgia,serif" fill="${axisTick}">${val}</text>`
       }
@@ -289,7 +292,7 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
 
       // Optional extras (grade 7): vlines:[x] → the line x=a, hlines:[y] → y=b,
       // polygon:[[x,y],…] → a shape such as a rectangle, segments:[[[x1,y1],[x2,y2]],…].
-      const inRange = (v: number) => Math.abs(v) <= steps
+      const inRange = (v: number) => (q1 ? v >= 0 : Math.abs(v) <= steps) && Math.abs(v) <= steps
       const vlines = (Array.isArray(data.vlines) ? data.vlines : []).filter((v: any) => Number.isFinite(+v) && inRange(+v))
         .map((v: any) => `<line x1="${cx + +v * step}" y1="${pad}" x2="${cx + +v * step}" y2="${H - pad}" stroke="${hl}" stroke-width="2" stroke-dasharray="6,4"/><text x="${cx + +v * step + 4}" y="${pad + 10}" font-size="10" font-family="Georgia,serif" fill="${hl}">x=${+v}</text>`).join('')
       const hlines = (Array.isArray(data.hlines) ? data.hlines : []).filter((v: any) => Number.isFinite(+v) && inRange(+v))
