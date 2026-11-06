@@ -1,7 +1,7 @@
 import 'server-only'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { UPLOAD_BUCKET, IMAGE_TYPES, MAX_UPLOADS_PER_GENERATION } from '@/lib/uploads'
-import { askClaudeJSON } from '@/lib/claude'
+import { askClaudeText } from '@/lib/claude'
 
 // Turns a family's uploaded files into Anthropic message content blocks:
 // images → image blocks, PDFs → document blocks, .docx/.txt → extracted text.
@@ -71,7 +71,7 @@ Describe it in Hebrew for a question writer who cannot see it:
 - any scope limits (for example "first quadrant only", "whole numbers up to 20"),
 - the level of difficulty.
 If it is a list of exam topics, list every topic and sub-topic in order.
-At most 250 words. Output JSON only: {"digest":"..."}`
+At most 250 words. Write only the description, no preamble.`
 
 export async function readUpload(familyId: string, id: string): Promise<{ name: string; digest: string } | null> {
   const db = createServiceRoleClient()
@@ -80,9 +80,9 @@ export async function readUpload(familyId: string, id: string): Promise<{ name: 
   if (r.digest) return { name: r.original_filename, digest: r.digest }
   const { blocks } = await loadUploadBlocks(familyId, [id])
   if (!blocks.length) return null
-  const ai = await askClaudeJSON<{ digest: string }>({ system: READ_PROMPT, content: [...blocks, { type: 'text', text: 'Describe this page.' }], maxTokens: 900 })
-  if (!ai.ok || typeof ai.data?.digest !== 'string') return null
-  const digest = ai.data.digest.trim().slice(0, 4000)
+  const text = await askClaudeText({ system: READ_PROMPT, content: [...blocks, { type: 'text', text: 'Describe this page.' }], maxTokens: 900 })
+  if (!text) return null
+  const digest = text.slice(0, 4000)
   await db.from('generation_uploads').update({ digest, digest_at: new Date().toISOString() }).eq('id', id)
   return { name: r.original_filename, digest }
 }
