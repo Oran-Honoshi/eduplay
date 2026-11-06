@@ -50,6 +50,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // the parts add up to one ramp instead of five small ramps.
     const part = Math.max(0, Number(b.part) || 0), parts = Math.max(1, Number(b.parts) || 1)
     const plan = m.plan || {}
+    // every question already in this material (any topic), so parts never repeat each other
+    const { data: existingQs } = (m.question_ids || []).length
+      ? await db.from('questions').select('prompt_he, prompt_en').in('id', m.question_ids)
+      : { data: [] as any[] }
+    const existingPrompts = (existingQs || []).map((q: any) => q.prompt_he || q.prompt_en).filter(Boolean)
     const diffSetting = plan.difficulty || 'progressive'
     let difficulty = ['easy', 'medium', 'hard'].includes(diffSetting) ? diffSetting : 'medium'
     let progressive = diffSetting === 'mixed'
@@ -64,6 +69,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const focus = [
       mySubs.length ? `Focus on these sub-skills: ${mySubs.join('; ')}.` : '',
       plan.focus_he?.length ? `Parent's focus notes: ${plan.focus_he.join('; ')}.` : '',
+      plan.avoid_he?.length ? `The parent removed earlier questions for these reasons — avoid these problems: ${plan.avoid_he.slice(-12).join('; ')}.` : '',
       m.kind === 'exam' ? 'These questions are part of a practice exam: exam-style wording, no hints in the question text.' : '',
       m.request_text ? `The parent asked: ${m.request_text}` : '',
     ].filter(Boolean).join(' ')
@@ -72,6 +78,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       q_types: m.plan?.q_types?.length ? m.plan.q_types : ['multiple_choice'],
       difficulty, progressive, count: toGenerate, language: m.language,
       custom_prompt: focus || undefined,
+      note: typeof b.note === 'string' && b.note.trim() ? b.note.trim().slice(0, 600) : undefined,
+      avoid_prompts: existingPrompts,
       // the material was read once while planning; send that summary instead of
       // re-sending every photo (much faster). Older drafts without one fall back to the files.
       ...(m.plan?.digest ? { material_text: m.plan.digest } : (m.upload_ids?.length ? { upload_ids: m.upload_ids } : {})),

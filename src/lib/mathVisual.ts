@@ -251,6 +251,55 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
     }
 
     // ── COORDINATE GRID (Cartesian plane) ─────────────────────
+    // ── DATA GRAPH (point graph of real data, first quadrant) ─
+    // { type:'graph', xmax:5, ymax:40, ystep:5, xlabels:['א׳','ב׳',…], xlabel:'יום', ylabel:'תלמידים',
+    //   series:[{ points:[[1,30],[2,18]], hollow:false, name:'כדורסל' }, …] }
+    // Separate x / y scales, a labelled tick every ystep, category names on x,
+    // filled vs hollow points for two series and a small legend.
+    case 'graph': {
+      const series: any[] = Array.isArray(data.series) ? data.series.slice(0, 3) : (Array.isArray(data.points) ? [{ points: data.points }] : [])
+      const allPts = series.flatMap(sr => (Array.isArray(sr.points) ? sr.points : []))
+      const xlabels: string[] = Array.isArray(data.xlabels) ? data.xlabels.map(String) : []
+      const xmax = Math.max(1, Number(data.xmax) || xlabels.length || Math.max(1, ...allPts.map((p: any) => +p[0] || 0)))
+      const ymaxRaw = Math.max(1, Number(data.ymax) || Math.max(1, ...allPts.map((p: any) => +p[1] || 0)))
+      const ystep = Number(data.ystep) > 0 ? Number(data.ystep) : [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000].find(st => ymaxRaw / st <= 8) || Math.ceil(ymaxRaw / 8)
+      const ymax = Math.ceil(ymaxRaw / ystep) * ystep
+      const named = series.filter(sr => sr.name)
+      const padL = 34, padB = 30, padT = named.length > 1 ? 32 : 16, padR = 12
+      const gw = W - padL - padR, gh = H - padT - padB
+      const X = (v: number) => padL + (v / (xmax + 0.5)) * gw
+      const Y = (v: number) => padT + gh - (v / ymax) * gh
+      let g = ''
+      for (let v = 0; v <= ymax + 1e-9; v += ystep) {
+        g += `<line x1="${padL}" y1="${Y(v)}" x2="${W - padR}" y2="${Y(v)}" stroke="${gridLn}" stroke-width="1"/>`
+        g += `<text x="${padL - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="10" font-family="Georgia,serif" fill="${axisTick}">${+v.toFixed(2)}</text>`
+      }
+      for (let i = 1; i <= xmax; i++) {
+        g += `<line x1="${X(i)}" y1="${padT}" x2="${X(i)}" y2="${padT + gh}" stroke="${gridLn}" stroke-width="1"/>`
+        g += `<text x="${X(i)}" y="${padT + gh + 14}" text-anchor="middle" font-size="10" font-family="Arial,sans-serif" fill="${axisTick}">${escapeText(xlabels[i - 1] ?? String(i))}</text>`
+      }
+      g += `<line x1="${padL}" y1="${padT + gh}" x2="${W - padR + 2}" y2="${padT + gh}" stroke="${stroke}" stroke-width="2"/><line x1="${padL}" y1="${padT - 4}" x2="${padL}" y2="${padT + gh}" stroke="${stroke}" stroke-width="2"/>`
+      if (data.xlabel) g += `<text x="${W - padR}" y="${H - 2}" text-anchor="end" font-size="10" font-family="Arial,sans-serif" fill="${lbl}">${escapeText(data.xlabel)}</text>`
+      if (data.ylabel) g += `<text x="${padL + 4}" y="${padT - 4}" font-size="10" font-family="Arial,sans-serif" fill="${lbl}">${escapeText(data.ylabel)}</text>`
+      series.forEach((sr, k) => {
+        const hollow = sr.hollow ?? k === 1
+        for (const p of (Array.isArray(sr.points) ? sr.points : [])) {
+          const px = +p[0], py = +p[1]
+          if (!Number.isFinite(px) || !Number.isFinite(py)) continue
+          g += `<circle cx="${X(px)}" cy="${Y(py)}" r="5" fill="${hollow ? '#fff' : hl}" stroke="${hollow ? hl : stroke}" stroke-width="2"/>`
+          if (p[2]) g += `<text x="${X(px) + 7}" y="${Y(py) - 6}" font-size="11" font-weight="bold" font-family="Georgia,serif" fill="${hl}">${escapeText(p[2])}</text>`
+        }
+      })
+      if (named.length > 1) {
+        named.forEach((sr, k) => {
+          const hollow = sr.hollow ?? series.indexOf(sr) === 1
+          const lx = W - padR - 150 + k * 80, ly = 8
+          g += `<circle cx="${lx}" cy="${ly}" r="4" fill="${hollow ? '#fff' : hl}" stroke="${hollow ? hl : stroke}" stroke-width="2"/><text x="${lx + 8}" y="${ly + 4}" font-size="10" font-family="Arial,sans-serif" fill="${lbl}">${escapeText(sr.name)}</text>`
+        })
+      }
+      return svg(g)
+    }
+
     case 'coordinate': {
       const steps = data.steps || data.range || 5
       // quadrant:1 → first quadrant only (0..steps on both axes), as taught in 7th grade
@@ -271,17 +320,20 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
       }
 
       let tickLabels = ''
+      const every = Math.max(1, Math.ceil((q1 ? steps : steps * 2) / 10))
       for (let i = 0; i < nLines; i++) {
         const val = q1 ? i : i - steps
+        if (val !== 0 && val % every !== 0) continue
         if (val === 0) { if (q1) tickLabels += `<text x="${cx - 10}" y="${cy + 14}" text-anchor="middle" font-size="9" font-family="Georgia,serif" fill="${axisTick}">0</text>`; continue }
         const x = cx + val * step
         tickLabels += `<text x="${x}" y="${cy + 14}" text-anchor="middle" font-size="9" font-family="Georgia,serif" fill="${axisTick}">${val}</text><text x="${cx - 12}" y="${cy - val * step + 4}" text-anchor="middle" font-size="9" font-family="Georgia,serif" fill="${axisTick}">${val}</text>`
       }
 
-      const plotted = points.map(([px, py, ptLabel]) => {
+      const plotted = (points as any[]).map(([px, py, ptLabel, style]) => {
         const svgX = cx + px * step, svgY = cy - py * step
         const text = ptLabel ?? `(${px},${py})`
-        return `<circle cx="${svgX}" cy="${svgY}" r="5" fill="${hl}" stroke="${stroke}" stroke-width="1.5"/><text x="${svgX + 8}" y="${svgY - 6}" font-size="11" font-weight="bold" font-family="Georgia,serif" fill="${hl}">${escapeText(text)}</text>`
+        const hollow = style === 'hollow'
+        return `<circle cx="${svgX}" cy="${svgY}" r="5" fill="${hollow ? '#fff' : hl}" stroke="${hollow ? hl : stroke}" stroke-width="${hollow ? 2 : 1.5}"/><text x="${svgX + 8}" y="${svgY - 6}" font-size="11" font-weight="bold" font-family="Georgia,serif" fill="${hl}">${escapeText(text)}</text>`
       }).join('')
 
       const connector = points.length === 2
