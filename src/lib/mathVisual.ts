@@ -229,25 +229,37 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
 
     // ── NUMBER LINE ──────────────────────────────────────────
     case 'number_line': {
-      const min = data.min ?? 0
-      const max = data.max ?? 10
+      const min = Math.round(Number(data.min ?? 0))
+      const max = Math.round(Number(data.max ?? 10))
       // Accept either the singular `mark` (live app data) or the plural
       // `marked` array (worksheet-builder data) — union, not either/or.
-      const marks: number[] = data.marked ?? (data.mark != null ? [data.mark] : [])
-      const pad = 28, y = H / 2
-      const range = max - min
-      const scale = (W - pad * 2) / range
+      const marks: number[] = (data.marked ?? (data.mark != null ? [data.mark] : [])).map(Number)
+      const range = Math.max(1, max - min)
+      // at least ~22px between ticks; a long line gets its own wider canvas
+      const pad = 24
+      const w = Math.max(W, Math.min(720, range * 22 + pad * 2))
+      const h = 64, y = 26
+      const scale = (w - pad * 2) / range
+      const every = range <= 12 ? 1 : range <= 24 ? 2 : Math.ceil(range / 12)
       const ticks = Array.from({ length: range + 1 }, (_, i) => {
         const x = pad + i * scale
         const val = min + i
         const isM = marks.includes(val)
-        return `<g><line x1="${x}" y1="${y - 8}" x2="${x}" y2="${y + 8}" stroke="${isM ? hl : stroke}" stroke-width="${isM ? 3 : 1.5}"/>${isM ? `<circle cx="${x}" cy="${y}" r="6" fill="${hl}" opacity="0.3"/>` : ''}<text x="${x}" y="${y + 22}" text-anchor="middle" font-size="12" font-family="Georgia,serif" fill="${isM ? hl : lbl}" font-weight="${isM ? 'bold' : 'normal'}">${val}</text></g>`
+        const showLabel = isM || val === 0 || val % every === 0
+        return `<g><line x1="${x}" y1="${y - (val === 0 ? 9 : 7)}" x2="${x}" y2="${y + (val === 0 ? 9 : 7)}" stroke="${isM ? hl : stroke}" stroke-width="${isM ? 3 : val === 0 ? 2 : 1.5}"/>${isM ? `<circle cx="${x}" cy="${y}" r="6" fill="${hl}" fill-opacity="0.3"/>` : ''}${showLabel ? `<text x="${x}" y="${y + 24}" text-anchor="middle" font-size="13" font-family="Georgia,serif" fill="${isM ? hl : lbl}" font-weight="${isM || val === 0 ? 'bold' : 'normal'}">${val < 0 ? '−' + Math.abs(val) : val}</text>` : ''}</g>`
       }).join('')
-      const arrow = `<polygon points="${W - pad},${y} ${W - pad - 8},${y - 4} ${W - pad - 8},${y + 4}" fill="${stroke}"/>`
+      const arrow = `<polygon points="${w - pad + 10},${y} ${w - pad + 2},${y - 4} ${w - pad + 2},${y + 4}" fill="${stroke}"/>`
       const segment = data.segment
         ? `<line x1="${pad + (data.segment[0] - min) * scale}" y1="${y}" x2="${pad + (data.segment[1] - min) * scale}" y2="${y}" stroke="${hl}" stroke-width="5" opacity="0.5"/>`
         : ''
-      return svg(`<line x1="${pad}" y1="${y}" x2="${W - pad}" y2="${y}" stroke="${stroke}" stroke-width="2"/>${arrow}${ticks}${segment}`)
+      // jumps: [{ from: -7, to: 0 }] drawn as arcs above the line (for addition on the number line)
+      const jumps = (Array.isArray(data.jumps) ? data.jumps : []).map((j: any) => {
+        const x1 = pad + (Number(j.from) - min) * scale, x2 = pad + (Number(j.to) - min) * scale
+        const mid = (x1 + x2) / 2, hgt = Math.min(20, Math.abs(x2 - x1) / 3 + 6)
+        return `<path d="M${x1},${y - 8} Q${mid},${y - 8 - hgt * 2} ${x2},${y - 8}" fill="none" stroke="${hl}" stroke-width="2" marker-end="url(#nlArrow)"/>`
+      }).join('')
+      const defs = jumps ? `<defs><marker id="nlArrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="${hl}"/></marker></defs>` : ''
+      return `<svg viewBox="0 ${jumps ? -26 : 0} ${w} ${h + (jumps ? 26 : 0)}" width="${w}" height="${h + (jumps ? 26 : 0)}" style="max-width:100%;height:auto;direction:ltr" direction="ltr" xmlns="http://www.w3.org/2000/svg">${defs}<line x1="${pad - 6}" y1="${y}" x2="${w - pad + 4}" y2="${y}" stroke="${stroke}" stroke-width="2"/>${arrow}${segment}${jumps}${ticks}</svg>`
     }
 
     // ── COORDINATE GRID (Cartesian plane) ─────────────────────

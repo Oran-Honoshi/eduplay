@@ -1,15 +1,14 @@
 import 'server-only'
 import { renderMathVisualSVG } from '@/lib/mathVisual'
+import { fractionsToHTML } from '@/lib/fractionText'
+import { mathRunsToHTML, normalizeFractions } from '@/lib/bidiMath'
 import { brandHeader, brandFooter, BRAND_CSS, type Brand } from '@/lib/printBrand'
 
 // Branded, printable explanation pages (one page per topic) for a material.
 // Used by the parent's print view and by public share / free-library links.
 const esc = (v: any) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 // Latin/number runs inside Hebrew keep left-to-right order (−3, 3/4, A(2,3))
-const txt = (v: any, he: boolean) => {
-  const s = esc(v)
-  return he ? s.replace(/((?<![\u0590-\u05FF])[-−]?[∢∠△A-Za-z0-9(][A-Za-z0-9 .,:+\-−×÷=*/%()'_°∢∠]*[A-Za-z0-9)°]|(?<![\u0590-\u05FF])[-−]?[0-9])/g, '<bdi dir="ltr">$1</bdi>') : s
-}
+const txt = (v: any, he: boolean) => (he ? mathRunsToHTML(String(v ?? ''), x => fractionsToHTML(esc(x))) : fractionsToHTML(esc(normalizeFractions(String(v ?? '')))))
 
 export function renderExplanationHTML(m: any, b: Brand): string {
   const he = m.language !== 'en_only'

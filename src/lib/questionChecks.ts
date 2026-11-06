@@ -54,6 +54,13 @@ export function checkQuestion(q: any, existingNorm: Set<string>, existingSig: Se
     if (Array.isArray(v.series)) v.series = v.series.map((sr: any) => ({ ...sr, points: (sr.points || []).filter(keep) }))
     if (Array.isArray(v.segments)) v.segments = v.segments.filter((sg: any) => !(Array.isArray(sg) && sg.some((p: any) => +p[0] === pt[0] && +p[1] === pt[1])))
   }
+  // a number line must not mark the numeric answer (e.g. marking 0 for (−7)+(+7))
+  const num = Number(String(ans).replace('−', '-').replace(/[^\d.\-]/g, ''))
+  if (v && v.type === 'number_line' && /\d/.test(ans) && Number.isFinite(num) && !asPoint(ans)) {
+    if (Array.isArray(v.marked)) v.marked = v.marked.filter((x: any) => Number(x) !== num)
+    if (v.mark != null && Number(v.mark) === num) delete v.mark
+    if (Array.isArray(v.jumps)) v.jumps = v.jumps.filter((j: any) => Number(j?.to) !== num)
+  }
   // unlabeled points would print their coordinates — give them letters instead
   if (v && Array.isArray(v.points)) {
     const letters = 'ABCDEFGHJKLMNPQRSTUVW'
