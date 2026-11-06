@@ -187,7 +187,7 @@ function CreateInner() {
 
   // ── render ──
   return (
-    <div className="min-h-screen bg-[#F7F5F0]" dir="rtl" lang="he">
+    <div className="min-h-screen bg-[#F7F5F0]" dir="rtl" lang="he" style={{ fontFamily: "'Assistant', 'Nunito', system-ui, sans-serif" }}>
       <ParentHeaderBar />
       <div className="max-w-[920px] mx-auto px-4 py-6">
         <div className="flex items-center justify-between gap-3 mb-5">
