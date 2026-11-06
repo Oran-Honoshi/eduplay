@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import UpdateNotice from '@/components/UpdateNotice'
 import RegisterSW from '@/components/RegisterSW'
 
 // PWA: installable on phones/tablets (manifest + icons + theme color).
@@ -34,7 +35,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* NES.css for Minecraft pixelated UI */}
         <link href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css" rel="stylesheet"/>
       </head>
-      <body>{children}<RegisterSW /></body>
+      <body>{children}<RegisterSW />
+        <UpdateNotice /></body>
     </html>
   )
 }

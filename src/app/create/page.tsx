@@ -776,12 +776,12 @@ function QuestionCard({ q, n, lang, onApprove, onRemove, onSaved }: any) {
       </div>
       {!edit ? (
         <>
-          <div className="text-[15px] font-bold text-[#1f2a28] leading-relaxed" dir="auto"><FractionText text={prompt} /></div>
+          <div className="text-[15px] font-bold text-[#1f2a28] leading-relaxed text-start" dir={he ? 'rtl' : 'ltr'}><FractionText text={prompt} /></div>
           {q.visual_data && <div className="flex justify-center my-2"><MathVisual data={q.visual_data} size={180} color="#0F766E" /></div>}
           {q.options ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2">
               {q.options.map((o: any) => (
-                <div key={o.label} className={`rounded-lg px-3 py-2 text-sm border ${o.isCorrect ? 'border-[#16A34A] bg-[#F0FDF4] font-bold' : 'border-[#e3ebe9]'}`} dir="auto">
+                <div key={o.label} className={`rounded-lg px-3 py-2 text-sm border ${o.isCorrect ? 'border-[#16A34A] bg-[#F0FDF4] font-bold' : 'border-[#e3ebe9]'}`} dir={he ? 'rtl' : 'ltr'}>
                   <FractionText text={he ? (o.value_he || o.value_en) : o.value_en} />{o.isCorrect && ' ✓'}
                 </div>
               ))}
