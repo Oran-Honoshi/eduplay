@@ -15,7 +15,8 @@ export async function askClaudeJSON<T = any>(opts: {
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY!, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
       model: CLAUDE_MODEL, max_tokens: (opts.maxTokens ?? 4000) + (opts.think || 0), system: opts.system,
-      thinking: opts.think ? { type: 'enabled', budget_tokens: opts.think } : { type: 'disabled' },
+      // this model thinks adaptively; effort sets how much
+      ...(opts.think ? { thinking: { type: 'adaptive' }, output_config: { effort: opts.think >= 4000 ? 'high' : 'medium' } } : { thinking: { type: 'disabled' } }),
       messages: [{ role: 'user', content: opts.content }],
     }),
   })
