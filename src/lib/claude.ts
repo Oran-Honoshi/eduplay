@@ -7,13 +7,15 @@ export async function askClaudeJSON<T = any>(opts: {
   system: string
   content: any[] | string
   maxTokens?: number
+  /** let the model think first (token budget), for work where care matters more than speed */
+  think?: number
 }): Promise<{ ok: true; data: T } | { ok: false; error: string }> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY!, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
-      model: CLAUDE_MODEL, max_tokens: opts.maxTokens ?? 4000, system: opts.system,
-      thinking: { type: 'disabled' },
+      model: CLAUDE_MODEL, max_tokens: (opts.maxTokens ?? 4000) + (opts.think || 0), system: opts.system,
+      thinking: opts.think ? { type: 'enabled', budget_tokens: opts.think } : { type: 'disabled' },
       messages: [{ role: 'user', content: opts.content }],
     }),
   })

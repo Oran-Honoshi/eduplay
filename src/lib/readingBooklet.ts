@@ -8,7 +8,7 @@
 
 import { checkNiqqudDecodability } from '@/lib/readingDecodability'
 import { askClaudeJSON } from '@/lib/claude'
-import { PICTURE_KEYS, DOT_KEYS } from '@/lib/readingPictures'
+import { PICTURE_KEYS, DOT_KEYS, pictureWord } from '@/lib/readingPictures'
 
 export type BookletPage =
   | { type: 'syllables'; title: string; instructions?: string; rows: string[][] }
@@ -43,19 +43,20 @@ Good words at this level, for example: ${g.examples}. Before writing a word, che
 NEVER change a word's real niqqud to fit the level (כֶּלֶב must never become "כַּלָּב"; if the correct spelling uses other signs, do not use that word). Only real words with their standard dictionary niqqud, and only meaningful, natural sentences — never nonsense words or phrases made up to fit the rule. Short, simple, everyday words and sentences; a little humor is welcome. Correct Hebrew and correct niqqud only.
 The fields "title" and "instructions" are read by the ADULT — plain Hebrew without niqqud, short and friendly (e.g. "קראו את ההברות", "מתחו קו מהמילה לתמונה").
 ${theme ? `Theme of the booklet: ${theme}.` : 'Pick one warm everyday theme (family, the park, animals, the sea, a holiday, the kitchen…).'}${avoidTitles.length ? ` Booklets that already exist at this level (choose a different theme and different words): ${avoidTitles.join('; ')}.` : ''}
-Pictures you may use (key and its meaning): ${pictureHint}. Use a picture only where the Hebrew word you write means exactly that thing.
+Pictures you may use — key and the exact word it shows: ${pictureHint}. A picture goes ONLY with exactly that word (a picture never stands for another word). Words without a picture are fine.
 Connect-the-dots shapes: ${dotsHint}.
 Write 10 to 12 pages that build up, in this order, using these page types:
 1. "syllables": 4–5 rows of 4–6 single syllables — ONE letter with one vowel sign of this level (e.g. בָּ, מַ, דָ${level.level_number >= 2 ? ', בְּ' : ''}${level.level_number >= 3 ? ', פִּי' : ''}), using the letters of the words in this booklet; each row practises one letter or one vowel. Not whole words.
 2. "words": 8–10 words (with a picture key when one fits).
 3. "match": 4–5 words, each with its picture — the child draws a line from the word to the picture.
-4. "circle": 4 items — a picture and 3 similar-looking words; answer = the right one.
+4. "circle": 4 items — a picture and 3 DIFFERENT words that look alike (differ by one letter or one vowel); answer = the word for the picture, exactly as listed for that picture key.
 5. "sentences": 5–6 short sentences (2–5 words each) built only from words of this level.
 6. "story": a short story (3–4 short paragraphs, 2–3 sentences each) with "story_title"; optional "picture".
-7. "questions": 3–4 questions about the story; options are 2–3 short answers taken from the story (all pointed, this level only); "answer" = the right option.
+7. "questions": 3–4 questions about the story whose answers are clearly in the story; options are 2–3 DIFFERENT short answers taken from the story (all pointed, this level only); "answer" = the right option, true to the story.
 8. "dots": a connect-the-dots shape linked to the story, with a one-line "caption" the child reads (pointed).
 9. "draw": one sentence from the story's world to read and draw (very easy to draw).
-10. "color": a picture key and a sentence about it to read, then color the picture.
+10. "color": a picture key and a sentence that contains that picture's word, to read, then color the picture.
+The title is a short phrase about what happens in the story, using only words that appear in it. Check everything once more before answering: every word real with correct niqqud, every answer true to the story, every picture matching its word.
 You may repeat a type once (e.g. a second "words" or "sentences" page) if it helps the progression.
 OUTPUT JSON only: {"title_he":"short booklet title (pointed, this level)","theme_he":"plain Hebrew theme","pages":[...]} with each page exactly one of:
 {"type":"syllables","title":"…","instructions":"…","rows":[["…","…"]]}
@@ -72,6 +73,14 @@ OUTPUT JSON only: {"title_he":"short booklet title (pointed, this level)","theme
 
 const str = (x: any, n = 300) => (typeof x === 'string' ? x.trim().slice(0, n) : '')
 const pic = (x: any) => (typeof x === 'string' && PICTURE_KEYS.includes(x) ? x : undefined)
+const bare = (t: string) => t.replace(/[\u0591-\u05C7]/g, '').replace(/[^\u05D0-\u05EA]/g, '')
+/** a picture belongs to a word only if the word IS that thing (ה/ו/ב/ל prefix allowed) */
+const picFor = (word: string, key: any) => {
+  const k = pic(key); if (!k) return undefined
+  const w = bare(word), p = bare(pictureWord(k))
+  return w === p || (w.length === p.length + 1 && 'הובלכמש'.includes(w[0]) && w.slice(1) === p) ? k : undefined
+}
+const uniq = (a: string[]) => a.filter((x, i) => a.indexOf(x) === i)
 
 /** keeps only well-formed pages with known pictures / shapes */
 export function cleanPages(raw: any): BookletPage[] {
@@ -80,15 +89,28 @@ export function cleanPages(raw: any): BookletPage[] {
     const base = { title: str(p?.title, 80), instructions: str(p?.instructions, 200) || undefined }
     switch (p?.type) {
       case 'syllables': { const rows = (p.rows || []).map((r: any) => (Array.isArray(r) ? r.map((x: any) => str(x, 12)).filter(Boolean).slice(0, 8) : [])).filter((r: string[]) => r.length).slice(0, 8); if (rows.length) out.push({ type: 'syllables', ...base, rows }); break }
-      case 'words': { const words = (p.words || []).map((w: any) => ({ he: str(w?.he, 30), picture: pic(w?.picture) })).filter((w: any) => w.he).slice(0, 14); if (words.length) out.push({ type: 'words', ...base, words }); break }
-      case 'match': { const pairs = (p.pairs || []).map((w: any) => ({ he: str(w?.he, 30), picture: pic(w?.picture) })).filter((w: any) => w.he && w.picture).slice(0, 6) as any; if (pairs.length >= 3) out.push({ type: 'match', ...base, pairs }); break }
-      case 'circle': { const items = (p.items || []).map((it: any) => ({ picture: pic(it?.picture), options: (it?.options || []).map((o: any) => str(o, 30)).filter(Boolean).slice(0, 4), answer: str(it?.answer, 30) })).filter((it: any) => it.picture && it.options.length >= 2 && it.options.includes(it.answer)).slice(0, 6) as any; if (items.length) out.push({ type: 'circle', ...base, items }); break }
+      case 'words': {
+        const seen = new Set<string>()
+        const words = (p.words || []).map((w: any) => ({ he: str(w?.he, 30), picture: picFor(str(w?.he, 30), w?.picture) }))
+          .filter((w: any) => w.he && !seen.has(w.he) && seen.add(w.he)).slice(0, 14)
+        if (words.length) out.push({ type: 'words', ...base, words }); break
+      }
+      case 'match': {
+        const pairs = (p.pairs || []).map((w: any) => ({ he: str(w?.he, 30), picture: picFor(str(w?.he, 30), w?.picture) }))
+          .filter((w: any, i: number, a: any[]) => w.he && w.picture && a.findIndex(x => x.picture === w.picture) === i).slice(0, 6) as any
+        if (pairs.length >= 3) out.push({ type: 'match', ...base, pairs }); break
+      }
+      case 'circle': {
+        const items = (p.items || []).map((it: any) => ({ picture: pic(it?.picture), options: uniq((it?.options || []).map((o: any) => str(o, 30)).filter(Boolean)).slice(0, 4), answer: str(it?.answer, 30) }))
+          .filter((it: any) => it.picture && it.options.length >= 2 && it.options.includes(it.answer) && picFor(it.answer, it.picture)).slice(0, 6) as any
+        if (items.length) out.push({ type: 'circle', ...base, items }); break
+      }
       case 'sentences': { const sentences = (p.sentences || []).map((x: any) => str(x, 120)).filter(Boolean).slice(0, 10); if (sentences.length) out.push({ type: 'sentences', ...base, sentences }); break }
       case 'story': { const paragraphs = (p.paragraphs || []).map((x: any) => str(x, 500)).filter(Boolean).slice(0, 6); if (paragraphs.length) out.push({ type: 'story', ...base, story_title: str(p.story_title, 60), paragraphs, picture: pic(p.picture) }); break }
-      case 'questions': { const items = (p.items || []).map((it: any) => ({ q: str(it?.q, 160), options: (it?.options || []).map((o: any) => str(o, 60)).filter(Boolean).slice(0, 4), answer: str(it?.answer, 60) })).filter((it: any) => it.q && it.options.length >= 2).slice(0, 6); if (items.length) out.push({ type: 'questions', ...base, items }); break }
+      case 'questions': { const items = (p.items || []).map((it: any) => ({ q: str(it?.q, 160), options: uniq((it?.options || []).map((o: any) => str(o, 60)).filter(Boolean)).slice(0, 4), answer: str(it?.answer, 60) })).filter((it: any) => it.q && it.options.length >= 2 && it.options.includes(it.answer)).slice(0, 6); if (items.length) out.push({ type: 'questions', ...base, items }); break }
       case 'dots': if (DOT_KEYS.includes(p.shape)) out.push({ type: 'dots', ...base, shape: p.shape, caption: str(p.caption, 120) }); break
       case 'draw': if (str(p.sentence)) out.push({ type: 'draw', ...base, sentence: str(p.sentence, 160) }); break
-      case 'color': if (pic(p.picture) && str(p.sentence)) out.push({ type: 'color', ...base, picture: pic(p.picture)!, sentence: str(p.sentence, 160) }); break
+      case 'color': if (pic(p.picture) && str(p.sentence) && bare(str(p.sentence, 160)).includes(bare(pictureWord(p.picture)))) out.push({ type: 'color', ...base, picture: pic(p.picture)!, sentence: str(p.sentence, 160) }); break
     }
   }
   return out
@@ -128,6 +150,7 @@ export async function proofread(lines: string[]): Promise<{ text: string; why: s
 Output JSON only: {"problems":[{"text":"the exact wrong word or line as written","why":"short Hebrew explanation"}]}`,
     content: lines.map((l, i) => `${i + 1}. ${l}`).join('\n'),
     maxTokens: 2500,
+    think: 2500,
   })
   if (!r.ok) return []
   return (Array.isArray(r.data?.problems) ? r.data.problems : [])
@@ -171,7 +194,11 @@ Output JSON only: {"replace":[{"old":"the exact line as given","new":"the fixed 
   for (let r = 0; r < 2; r++) {
     const proof = await proofread(childText(title, pages))
     if (!proof.length) break
+    const before = { title, pages, bad: niqqudItems().length }
     await fixLines([...proof.map(p => ({ word: p.text, problem: p.why })), ...niqqudItems()])
+    for (let k = 0; k < 2 && niqqudItems().length; k++) await fixLines(niqqudItems())
+    // a fix that brings back words outside the level is undone
+    if (niqqudItems().length > before.bad) { title = before.title; pages = before.pages }
   }
   // 3) what is left for the admin to look at
   const report: any = checkBooklet(level.level_number, title, pages)
