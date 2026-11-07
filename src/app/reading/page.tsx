@@ -41,6 +41,9 @@ export default function ReadingPage() {
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || 'שגיאה')
       setTheme('')
+      // step 2: a second reader checks real words and correct niqqud, and fixes what it finds
+      setMsg('החוברת נכתבה — עכשיו בודקים כל מילה ומתקנים…')
+      await fetch(`/api/reading/booklets/${d.booklet.id}/fix`, { method: 'POST' }).catch(() => null)
       setMsg(admin ? 'החוברת מוכנה לבדיקה שלכם — עיינו ואשרו.' : 'החוברת נכתבה ונשלחה לבדיקה. אחרי אישור היא תופיע כאן לכולם.')
       await load()
       if (admin) setPreview(d.booklet.id)
@@ -123,7 +126,7 @@ export default function ReadingPage() {
         )}
 
         <div className={`${card} p-5 mt-4`}>
-          {making ? <FunLoader kind="build" pose="read" size={96} sub="כותבים חוברת ובודקים כל ניקוד — עד דקה וחצי" /> : <>
+          {making ? <FunLoader kind="build" pose="read" size={96} sub={msg || "כותבים חוברת ובודקים כל ניקוד — כשתי דקות"} /> : <>
             <div className="font-black text-[#1f2a28] mb-1">{approved.length ? 'עוד חוברת בשלב הזה' : 'חוברת ראשונה בשלב הזה'}</div>
             <div className="text-sm text-[#5b6b68] mb-3">נושא לבחירה (לא חובה) — למשל: בים, בגן החיות, יום הולדת. החוברת נשמרת במאגר ומשמשת את כולם אחרי בדיקה.</div>
             <div className="flex flex-wrap gap-2">
