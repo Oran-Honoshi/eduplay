@@ -39,13 +39,14 @@ export function bookletPrompt(level: { level_number: number; label_he: string },
   const g = LEVEL_GUIDE[level.level_number] || LEVEL_GUIDE[10]
   return `You write a printable early-reading booklet (חוברת קריאה) for an Israeli child in kindergarten or first grade, at niqqud level ${level.level_number}: "${level.label_he}".
 STRICT RULE for every word the CHILD reads (syllables, words, sentences, story, options, captions): full niqqud on every letter that needs a vowel, using ONLY these vowel signs: ${g.marks}
-Good words at this level, for example: ${g.examples}. Before writing a word, check each vowel sign in it; if a natural word needs another sign, choose a different word. Short, simple, everyday words and sentences; a little humor is welcome. Correct Hebrew and correct niqqud only.
+Good words at this level, for example: ${g.examples}. Before writing a word, check each vowel sign in it; if a natural word needs another sign, choose a different word.
+NEVER change a word's real niqqud to fit the level (כֶּלֶב must never become "כַּלָּב"; if the correct spelling uses other signs, do not use that word). Only real words with their standard dictionary niqqud, and only meaningful, natural sentences — never nonsense words or phrases made up to fit the rule. Short, simple, everyday words and sentences; a little humor is welcome. Correct Hebrew and correct niqqud only.
 The fields "title" and "instructions" are read by the ADULT — plain Hebrew without niqqud, short and friendly (e.g. "קראו את ההברות", "מתחו קו מהמילה לתמונה").
 ${theme ? `Theme of the booklet: ${theme}.` : 'Pick one warm everyday theme (family, the park, animals, the sea, a holiday, the kitchen…).'}${avoidTitles.length ? ` Booklets that already exist at this level (choose a different theme and different words): ${avoidTitles.join('; ')}.` : ''}
 Pictures you may use (key and its meaning): ${pictureHint}. Use a picture only where the Hebrew word you write means exactly that thing.
 Connect-the-dots shapes: ${dotsHint}.
 Write 10 to 12 pages that build up, in this order, using these page types:
-1. "syllables": 4–5 rows of 4–6 syllables (letters + this level's vowels), from the letters used later in the booklet.
+1. "syllables": 4–5 rows of 4–6 single syllables — ONE letter with one vowel sign of this level (e.g. בָּ, מַ, דָ${level.level_number >= 2 ? ', בְּ' : ''}${level.level_number >= 3 ? ', פִּי' : ''}), using the letters of the words in this booklet; each row practises one letter or one vowel. Not whole words.
 2. "words": 8–10 words (with a picture key when one fits).
 3. "match": 4–5 words, each with its picture — the child draws a line from the word to the picture.
 4. "circle": 4 items — a picture and 3 similar-looking words; answer = the right one.
@@ -120,15 +121,40 @@ export function checkBooklet(levelNumber: number, title: string, pages: BookletP
 /** Replaces every child-read word that breaks the level's niqqud: the model
  * gets each bad word with the exact line it sits in and returns replacements
  * for those lines (small answers, so a few rounds stay fast). */
+/** a second reader: real words, correct standard niqqud, natural sentences */
+export async function proofread(lines: string[]): Promise<{ text: string; why: string }[]> {
+  const r = await askClaudeJSON<any>({
+    system: `You proofread an early-reading booklet for Israeli children (fully pointed Hebrew). Find every problem a careful Hebrew teacher would mark: a word that is not a real Hebrew word, a real word with WRONG niqqud (e.g. "כַּלָּב" instead of "כֶּלֶב", "גָּדָל" instead of "גָּדַל"), or a line that is not natural, meaningful Hebrew. Ignore single syllables (one letter with a vowel). Be strict but do not invent problems.
+Output JSON only: {"problems":[{"text":"the exact wrong word or line as written","why":"short Hebrew explanation"}]}`,
+    content: lines.map((l, i) => `${i + 1}. ${l}`).join('\n'),
+    maxTokens: 2500,
+  })
+  if (!r.ok) return []
+  return (Array.isArray(r.data?.problems) ? r.data.problems : [])
+    .filter((p: any) => typeof p?.text === 'string' && p.text.trim() && lines.some(l => l.includes(p.text.trim())))
+    .map((p: any) => ({ text: p.text.trim(), why: String(p.why || '').slice(0, 120) })).slice(0, 40)
+}
+
 export async function repairBooklet(level: { level_number: number; label_he: string }, title: string, pages: BookletPage[], rounds = 4) {
   const g = LEVEL_GUIDE[level.level_number] || LEVEL_GUIDE[10]
-  let report = checkBooklet(level.level_number, title, pages)
-  for (let round = 0; round < rounds && report.bad.length; round++) {
+  let report: any = checkBooklet(level.level_number, title, pages)
+  let proof: { text: string; why: string }[] = []
+  let proofRounds = 0
+  for (let round = 0; round < rounds + 2; round++) {
+    if (!report.bad.length) {
+      // niqqud is clean: let a second reader check real words and correct pointing
+      if (proofRounds >= 2) break
+      proof = await proofread(childText(title, pages)); proofRounds++
+      if (!proof.length) break
+    }
     const lines = childText(title, pages)
-    const where = report.bad.map(w => ({ word: w, line: lines.find(l => l.includes(w)) || w }))
+    const where = [
+      ...report.bad.map((w: string) => ({ word: w, problem: 'forbidden vowel sign or no niqqud', line: lines.find(l => l.includes(w)) || w })),
+      ...(report.bad.length ? [] : proof.map(p => ({ word: p.text, problem: p.why, line: lines.find(l => l.includes(p.text)) || p.text }))),
+    ]
     const fix = await askClaudeJSON<any>({
       system: `You fix an early-reading booklet for Israeli children at niqqud level ${level.level_number} ("${level.label_he}"). Allowed vowel signs: ${g.marks} Good words: ${g.examples}.
-Each item below is a word that uses a forbidden vowel sign (or has no niqqud) and the exact line it appears in. Rewrite each line so it keeps its meaning as far as possible, is natural, correct Hebrew with correct full niqqud, and uses ONLY the allowed signs — choose different words when needed (a single word line gets a single different word that fits the same picture or context). Keep lines short.
+Each item below is a problem (a forbidden vowel sign, a wrong word, wrong niqqud or an unnatural line) and the exact line it appears in. Rewrite each line so it keeps its meaning as far as possible, is natural, correct Hebrew with correct full niqqud, and uses ONLY the allowed signs — choose different real words when needed (never change a word's correct niqqud to fit the rule) (a single word line gets a single different word that fits the same picture or context). Keep lines short.
 Output JSON only: {"replace":[{"old":"the exact line as given","new":"the fixed line"}]}`,
       content: JSON.stringify(where),
       maxTokens: 2500,
@@ -141,13 +167,17 @@ Output JSON only: {"replace":[{"old":"the exact line as given","new":"the fixed 
       const o = JSON.stringify(r.old).slice(1, -1), n = JSON.stringify(r.new).slice(1, -1)
       if (json.includes(o)) { json = json.split(o).join(n); changed = true }
     }
-    if (!changed) continue
+    if (!changed) { if (!report.bad.length) break; continue }
     try {
       const parsed = JSON.parse(json)
       // an answer that was rewritten must still be one of its options
       title = String(parsed.title_he || title); pages = cleanPages(parsed.pages)
     } catch { break }
     report = checkBooklet(level.level_number, title, pages)
+    if (!report.bad.length) proof = []
   }
+  // what is left for the admin to look at
+  if (!report.bad.length && proofRounds) proof = proofRounds < 3 ? await proofread(childText(title, pages)) : proof
+  report.proof = proof
   return { title, pages, report }
 }
