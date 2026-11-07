@@ -8,6 +8,7 @@
 
 import { checkNiqqudDecodability } from '@/lib/readingDecodability'
 import { askClaudeJSON } from '@/lib/claude'
+import { outsideBank, wordBank } from '@/lib/readingWordBank'
 import { PICTURE_KEYS, DOT_KEYS, pictureWord } from '@/lib/readingPictures'
 
 export type BookletPage =
@@ -39,7 +40,7 @@ export function bookletPrompt(level: { level_number: number; label_he: string },
   const g = LEVEL_GUIDE[level.level_number] || LEVEL_GUIDE[10]
   return `You write a printable early-reading booklet (חוברת קריאה) for an Israeli child in kindergarten or first grade, at niqqud level ${level.level_number}: "${level.label_he}".
 STRICT RULE for every word the CHILD reads (syllables, words, sentences, story, options, captions): full niqqud on every letter that needs a vowel, using ONLY these vowel signs: ${g.marks}
-Good words at this level, for example: ${g.examples}. Before writing a word, check each vowel sign in it; if a natural word needs another sign, choose a different word.
+${wordBank(level.level_number) ? `CLOSED WORD BANK: at this level every word the child reads (except the syllables page) must be one of these words, exactly as pointed here, optionally with the prefix ${level.level_number === 1 ? 'הַ/בַּ/לַ (or הָ/בָּ/לָ)' : 'הַ/בַּ/לַ, וְ/בְּ/לְ/כְּ'}, or one of: אֶת, שֶׁל, הוּא, הִיא, לֹא, זֶה, יֵשׁ, אֵין, גַּם, רַק, כָּל, אֵיפֹה. The bank: ${wordBank(level.level_number)!.join(', ')}. Build short, natural, meaningful sentences from these words only (e.g. "דָּן אָכַל בָּנָנָה.", "הַצָּב נָח בַּגַּן.", "אֵיפֹה הַדָּג?").` : `Good words at this level, for example: ${g.examples}.`} Before writing a word, check each vowel sign in it; if a natural word needs another sign, choose a different word.
 NEVER change a word's real niqqud to fit the level (כֶּלֶב must never become "כַּלָּב"; if the correct spelling uses other signs, do not use that word). Only real words with their standard dictionary niqqud, and only meaningful, natural sentences — never nonsense words or phrases made up to fit the rule. Short, simple, everyday words and sentences; a little humor is welcome. Correct Hebrew and correct niqqud only.
 The fields "title" and "instructions" are read by the ADULT — plain Hebrew without niqqud, short and friendly (e.g. "קראו את ההברות", "מתחו קו מהמילה לתמונה").
 ${theme ? `Theme of the booklet: ${theme}.` : 'Pick one warm everyday theme (family, the park, animals, the sea, a holiday, the kitchen…).'}${avoidTitles.length ? ` Booklets that already exist at this level (choose a different theme and different words): ${avoidTitles.join('; ')}.` : ''}
@@ -144,7 +145,9 @@ export function childText(title: string, pages: BookletPage[]): string[] {
 export function checkBooklet(levelNumber: number, title: string, pages: BookletPage[]) {
   const text = childText(title, pages).join('\n')
   const r = checkNiqqudDecodability(text, Math.min(10, Math.max(1, levelNumber)))
-  return { pct: r.pct, total: r.totalWords, bad: [...new Set(r.violatingWords)].slice(0, 60) }
+  // the earliest levels: words outside the closed bank count too (the syllables page is exempt)
+  const offBank = outsideBank(levelNumber, childText(title, pages.filter(p => p.type !== 'syllables')))
+  return { pct: r.pct, total: r.totalWords, bad: [...new Set([...r.violatingWords, ...offBank])].slice(0, 60) }
 }
 
 /** Replaces every child-read word that breaks the level's niqqud: the model
@@ -175,7 +178,7 @@ export async function repairBooklet(level: { level_number: number; label_he: str
     const where = items.map(it => ({ ...it, line: lines.find(l => l.includes(it.word)) || it.word }))
     const fix = await askClaudeJSON<any>({
       system: `You fix an early-reading booklet for Israeli children at niqqud level ${level.level_number} ("${level.label_he}"). Allowed vowel signs: ${g.marks} Good words: ${g.examples}.
-Each item below is a problem (a forbidden vowel sign, a wrong word, wrong niqqud or an unnatural line) and the exact line it appears in. Rewrite each line so it keeps its meaning as far as possible, is natural, correct Hebrew with correct full niqqud, and uses ONLY the allowed signs — choose different real words when needed (never change a word's correct niqqud to fit the rule). A single-word line gets a single different word that fits the same picture or context. Never shorten or invent a word (קָטָן must never become "קָט"); if no real word fits, rewrite the sentence with other real words. Keep every answer of a question true to the story. Keep lines short.
+${wordBank(level.level_number) ? `Use ONLY words from this closed bank (exactly as pointed, prefixes הַ/בַּ/לַ${level.level_number === 2 ? '/וְ/בְּ/לְ/כְּ' : ''} allowed, plus אֶת, שֶׁל, הוּא, הִיא, לֹא, זֶה, יֵשׁ, אֵין, גַּם, רַק, כָּל, אֵיפֹה): ${wordBank(level.level_number)!.join(', ')}.\n` : ''}Each item below is a problem (a forbidden vowel sign, a word outside the bank, a wrong word, wrong niqqud or an unnatural line) and the exact line it appears in. Rewrite each line so it keeps its meaning as far as possible, is natural, correct Hebrew with correct full niqqud, and uses ONLY the allowed signs — choose different real words when needed (never change a word's correct niqqud to fit the rule). A single-word line gets a single different word that fits the same picture or context. Never shorten or invent a word (קָטָן must never become "קָט"); if no real word fits, rewrite the sentence with other real words. Keep every answer of a question true to the story. Keep lines short.
 Output JSON only: {"replace":[{"old":"the exact line as given","new":"the fixed line"}]}`,
       content: JSON.stringify(where),
       maxTokens: 2500,
