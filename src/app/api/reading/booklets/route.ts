@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     bookletPrompt(level, theme, avoid, pictureHint(), dotsHint())
   let ai = await askClaudeJSON<any>({ system, content: 'Write the booklet now.', maxTokens: 9000 })
   if (!ai.ok) ai = await askClaudeJSON<any>({ system, content: 'Write the booklet now.', maxTokens: 9000 })
-  if (!ai.ok) return NextResponse.json({ error: 'לא הצלחנו לכתוב את החוברת הפעם. נסו שוב.' }, { status: 502 })
+  if (!ai.ok) { console.error('[reading/booklets]', ai.error); return NextResponse.json({ error: 'לא הצלחנו לכתוב את החוברת הפעם. נסו שוב.', detail: ai.error.slice(0, 200) }, { status: 502 }) }
 
   let title = String(ai.data?.title_he || '').trim().slice(0, 80) || level.label_he
   let pages: BookletPage[] = cleanPages(ai.data?.pages)

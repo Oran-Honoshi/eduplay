@@ -137,29 +137,18 @@ Output JSON only: {"problems":[{"text":"the exact wrong word or line as written"
 
 export async function repairBooklet(level: { level_number: number; label_he: string }, title: string, pages: BookletPage[], rounds = 4) {
   const g = LEVEL_GUIDE[level.level_number] || LEVEL_GUIDE[10]
-  let report: any = checkBooklet(level.level_number, title, pages)
-  let proof: { text: string; why: string }[] = []
-  let proofRounds = 0
-  for (let round = 0; round < rounds + 2; round++) {
-    if (!report.bad.length) {
-      // niqqud is clean: let a second reader check real words and correct pointing
-      if (proofRounds >= 2) break
-      proof = await proofread(childText(title, pages)); proofRounds++
-      if (!proof.length) break
-    }
+  // one repair round: each problem with the exact line it sits in → new lines
+  async function fixLines(items: { word: string; problem: string }[]) {
     const lines = childText(title, pages)
-    const where = [
-      ...report.bad.map((w: string) => ({ word: w, problem: 'forbidden vowel sign or no niqqud', line: lines.find(l => l.includes(w)) || w })),
-      ...(report.bad.length ? [] : proof.map(p => ({ word: p.text, problem: p.why, line: lines.find(l => l.includes(p.text)) || p.text }))),
-    ]
+    const where = items.map(it => ({ ...it, line: lines.find(l => l.includes(it.word)) || it.word }))
     const fix = await askClaudeJSON<any>({
       system: `You fix an early-reading booklet for Israeli children at niqqud level ${level.level_number} ("${level.label_he}"). Allowed vowel signs: ${g.marks} Good words: ${g.examples}.
-Each item below is a problem (a forbidden vowel sign, a wrong word, wrong niqqud or an unnatural line) and the exact line it appears in. Rewrite each line so it keeps its meaning as far as possible, is natural, correct Hebrew with correct full niqqud, and uses ONLY the allowed signs — choose different real words when needed (never change a word's correct niqqud to fit the rule) (a single word line gets a single different word that fits the same picture or context). Keep lines short.
+Each item below is a problem (a forbidden vowel sign, a wrong word, wrong niqqud or an unnatural line) and the exact line it appears in. Rewrite each line so it keeps its meaning as far as possible, is natural, correct Hebrew with correct full niqqud, and uses ONLY the allowed signs — choose different real words when needed (never change a word's correct niqqud to fit the rule). A single-word line gets a single different word that fits the same picture or context. Keep lines short.
 Output JSON only: {"replace":[{"old":"the exact line as given","new":"the fixed line"}]}`,
       content: JSON.stringify(where),
       maxTokens: 2500,
     })
-    if (!fix.ok) continue
+    if (!fix.ok) return false
     let json = JSON.stringify({ title_he: title, pages })
     let changed = false
     for (const r of Array.isArray(fix.data?.replace) ? fix.data.replace : []) {
@@ -167,17 +156,25 @@ Output JSON only: {"replace":[{"old":"the exact line as given","new":"the fixed 
       const o = JSON.stringify(r.old).slice(1, -1), n = JSON.stringify(r.new).slice(1, -1)
       if (json.includes(o)) { json = json.split(o).join(n); changed = true }
     }
-    if (!changed) { if (!report.bad.length) break; continue }
+    if (!changed) return false
     try {
       const parsed = JSON.parse(json)
-      // an answer that was rewritten must still be one of its options
       title = String(parsed.title_he || title); pages = cleanPages(parsed.pages)
-    } catch { break }
-    report = checkBooklet(level.level_number, title, pages)
-    if (!report.bad.length) proof = []
+      return true
+    } catch { return false }
   }
-  // what is left for the admin to look at
-  if (!report.bad.length && proofRounds) proof = proofRounds < 3 ? await proofread(childText(title, pages)) : proof
-  report.proof = proof
+  const niqqudItems = () => checkBooklet(level.level_number, title, pages).bad.map(w => ({ word: w, problem: 'forbidden vowel sign or no niqqud' }))
+
+  // 1) niqqud of the level
+  for (let r = 0; r < rounds; r++) { const bad = niqqudItems(); if (!bad.length) break; await fixLines(bad) }
+  // 2) a second reader: real words, correct pointing, natural lines
+  for (let r = 0; r < 2; r++) {
+    const proof = await proofread(childText(title, pages))
+    if (!proof.length) break
+    await fixLines([...proof.map(p => ({ word: p.text, problem: p.why })), ...niqqudItems()])
+  }
+  // 3) what is left for the admin to look at
+  const report: any = checkBooklet(level.level_number, title, pages)
+  report.proof = await proofread(childText(title, pages))
   return { title, pages, report }
 }
