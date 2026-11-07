@@ -844,6 +844,9 @@ function QuestionCard({ q, n, lang, onApprove, onRemove, onSaved }: any) {
       </div>
       {!edit ? (
         <>
+          {lang === 'bilingual' && q.prompt_he && q.prompt_en && !isHeText(q.prompt_en) && !q.prompt_he.includes(q.prompt_en) && (
+            <div className="text-[15px] text-[#1f2a28] leading-relaxed mb-1" dir="ltr"><FractionText text={q.prompt_en} /></div>
+          )}
           <div className="text-[15px] font-bold text-[#1f2a28] leading-relaxed text-start" dir={isHeText(prompt) ? 'rtl' : 'ltr'}><FractionText text={prompt} /></div>
           {q.visual_data && <div className="flex justify-center my-2"><MathVisual data={q.visual_data} size={180} color="#0F766E" /></div>}
           {q.options ? (

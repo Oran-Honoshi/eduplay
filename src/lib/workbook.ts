@@ -42,40 +42,53 @@ export function plannedCount(plan: any, kind?: string): number {
 const isNumberWord = (w: string) => /^(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|a hundred|one hundred)([ -](one|two|three|four|five|six|seven|eight|nine))?$/i.test(w.trim())
 const MONTHS = /^(january|february|march|april|may|june|july|august|september|october|november|december)$/i
 
-/** Deterministically gives the word table, "translate yourself" and the word bank
- * their own words: the table and the translate list are different words, the
- * bank prefers everyday words (not months or numbers) that fit in a sentence. */
+/** Gives every part its own words, deterministically, so the whole list gets
+ * practised: the table and "translate yourself" get different words, the bank
+ * prefers everyday words, and every other part gets its own run of the words
+ * no part has used yet. Words used in an earlier workbook (plan.used_before,
+ * set by "more like this") come last, so a new workbook starts with new words. */
 export function assignSectionWords(plan: any): any {
   if (!hasSections(plan)) return plan
   const words: Word[] = (plan.words || []).filter((w: Word) => w?.en)
-  const all = words.map(w => w.en)
-  const everyday = all.filter(w => !isNumberWord(w) && !MONTHS.test(w))
-  const table = plan.sections.find((s: Section) => s.kind === 'word_list')
-  const tableN = table ? Math.min(table.count || 12, all.length) : 0
-  // spread the table across the list (some of each group), the rest go to "translate"
-  const step = tableN ? all.length / tableN : 1
-  const tableWords = tableN ? Array.from({ length: tableN }, (_, i) => all[Math.floor(i * step)]) : []
-  const rest = all.filter(w => !tableWords.includes(w))
-  const sections = plan.sections.map((s: Section) => {
-    if (s.kind === 'word_list') return { ...s, words: tableWords }
-    if (s.kind === 'translate_words') {
-      const n = Math.min(s.count || 10, rest.length || all.length)
-      const pool = rest.length ? rest : all
-      const st = pool.length / Math.max(1, n)
-      const picked = Array.from({ length: n }, (_, i) => pool[Math.floor(i * st)])
-      return { ...s, count: picked.length, words: picked }
+  const before = new Set<string>((plan.used_before || []).map((x: string) => x.toLowerCase()))
+  const all = [...words.filter(w => !before.has(w.en.toLowerCase())), ...words.filter(w => before.has(w.en.toLowerCase()))].map(w => w.en)
+  const taken = new Set<string>()
+  const spread = (pool: string[], n: number) => {
+    const st = pool.length / Math.max(1, n)
+    return Array.from({ length: Math.min(n, pool.length) }, (_, i) => pool[Math.floor(i * st)])
+  }
+  // fresh words first; when they run out, words already given to another part
+  const pick = (n: number, ok: (w: string) => boolean = () => true, spreadOut = false) => {
+    const free = all.filter(w => !taken.has(w) && ok(w))
+    let got = spreadOut ? spread(free, n) : free.slice(0, n)
+    if (got.length < n) got = [...got, ...all.filter(w => ok(w) && !got.includes(w)).slice(0, n - got.length)]
+    got.forEach(w => taken.add(w))
+    return got
+  }
+  const out: Record<string, Section> = {}
+  const order = ['word_list', 'translate_words', 'word_bank']
+  const secs: Section[] = plan.sections
+  for (const kind of order) for (const sc of secs.filter(x => x.kind === kind)) {
+    if (kind === 'word_list') out[sc.key] = { ...sc, words: pick(Math.min(sc.count || 12, all.length), undefined, true) }
+    if (kind === 'translate_words') { const w = pick(sc.count || 10, undefined, true); out[sc.key] = { ...sc, count: w.length, words: w } }
+    if (kind === 'word_bank') {
+      const everyday = (w: string) => !isNumberWord(w) && !MONTHS.test(w)
+      const bank = pick(10, all.filter(everyday).length >= 6 ? everyday : undefined, true)
+      out[sc.key] = { ...sc, count: Math.min(sc.count || 8, bank.length), words: bank }
     }
-    if (s.kind === 'word_bank') {
-      const pool = everyday.length >= 6 ? everyday : all
-      const size = Math.min(10, pool.length)
-      const st = pool.length / Math.max(1, size)
-      const bank = Array.from({ length: size }, (_, i) => pool[Math.floor(i * st)])
-      return { ...s, count: Math.min(s.count || 8, bank.length), words: bank }
-    }
-    return s
-  })
-  return { ...plan, sections }
+  }
+  // the parts written from words: each gets its own run of not-yet-used words
+  for (const sc of secs) if (!out[sc.key]) {
+    out[sc.key] = ['translate_sentences', 'multiple_choice', 'true_false', 'draw', 'open'].includes(sc.kind)
+      ? { ...sc, words: pick(sc.kind === 'translate_sentences' ? (sc.count || 6) * 2 : sc.count || 6) }
+      : sc
+  }
+  return { ...plan, sections: secs.map(sc => out[sc.key] || sc) }
 }
+
+/** every word a workbook practised (to prefer new words next time) */
+export const usedWords = (plan: any): string[] =>
+  [...new Set<string>([...(plan?.used_before || []), ...((plan?.sections || []) as Section[]).flatMap(sc => sc.words || [])])]
 
 export function cleanWords(raw: any): Word[] {
   const seen = new Set<string>()
@@ -108,7 +121,10 @@ export function sectionSpec(s: Section, words: Word[], language: string): { q_ty
   const list = words.map(w => `${w.en} = ${w.he}`).join('; ')
   const he = language !== 'en_only'
   const both = 'For every option write the text the child sees in BOTH value_en and value_he (the same text). All options must be different words/meanings.'
-  const base = `This question set is one SECTION of a vocabulary workbook. The goal is understanding meaning, not spelling. Use only these practice words (with their meaning): ${list}.`
+  const focus = s.kind !== 'word_bank' && s.words?.length
+    ? ` FOCUS WORDS for this section, in order: ${s.words.join(', ')}. Build each question around a different focus word (go down the list) so all of them get practised; other practice words may appear only as distractors or context.`
+    : ''
+  const base = `This question set is one SECTION of a vocabulary workbook. The goal is understanding meaning, not spelling. Use only these practice words (with their meaning): ${list}.${focus}`
   const t = (k: string) => `Every question in this section has "q_type":"${k}".`
   switch (s.kind) {
     case 'word_bank': return { q_types: ['word_problem'], text: `${base}

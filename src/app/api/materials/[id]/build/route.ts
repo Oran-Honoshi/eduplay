@@ -158,7 +158,7 @@ async function fixedSection(m: any, topic: any, section: Section, want: number) 
   const have: string[] = (m.section_q || {})[section.key] || []
   const { data: haveRows } = have.length ? await db.from('questions').select('prompt_en').in('id', have) : { data: [] as any[] }
   const used = new Set((haveRows || []).map((q: any) => q.prompt_en))
-  const rows: any[] = buildFixed(section, words, he, want, used, have.length).map(r => ({
+  const rows: any[] = buildFixed(section, words, he, want, used, have.length + parseInt(String(m.id).slice(0, 6), 16) % 997).map(r => ({
     ...r, topic_slug: trow!.slug, topic_id: topicId!, grade: m.grade, created_by_family: m.family_id, approved: false,
   }))
   const ids: string[] = []
