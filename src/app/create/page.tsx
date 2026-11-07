@@ -417,6 +417,10 @@ function CreateInner() {
                     <div className="text-sm text-[#5b6b68] mt-1 leading-relaxed">{k.desc}</div>
                   </button>
                 ))}
+                <a href="/reading" className={`${card} md:col-span-3 p-4 flex items-center gap-4 text-start hover:border-[#0F766E] hover:shadow-md transition no-underline`}>
+                  <div className="w-12 h-12 rounded-xl bg-[#FFF4D6] text-[#8a5a00] flex items-center justify-center shrink-0"><BookOpen size={24} /></div>
+                  <div><div className="text-lg font-black text-[#1f2a28]">חוברות קריאה (גן–א׳)</div><div className="text-sm text-[#5b6b68]">קמץ, שווא, חיריק ועוד: הברות, מילים, משפטים וסיפור, עם התאמה לתמונות, חיבור נקודות וציור.</div></div>
+                </a>
                 <a href="/worksheets" className="md:col-span-3 text-sm text-[#0F766E] font-semibold underline-offset-2 hover:underline">
                   רק להדפיס דף עבודה מהמאגר המוכן (גן–ו׳)? לבונה דפי העבודה ←
                 </a>
