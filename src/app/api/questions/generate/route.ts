@@ -643,7 +643,12 @@ ${spec.text}` : ''}`
       const enVals = options.map((o: any) => String(o.value_en ?? '').trim().toLowerCase())
       const heVals = options.map((o: any) => String(o.value_he ?? o.value_en ?? '').trim().toLowerCase())
       const distinct = (a: string[]) => new Set(a).size === a.length && a.every(Boolean)
-      if (!distinct(enVals) && distinct(heVals)) options.forEach((o: any) => { o.value_en = o.value_he; o.value_he = null })
+      // "what does village mean?" must offer the Hebrew meanings, not the English word itself
+      const correct = options.find((o: any) => o.isCorrect)
+      const promptText = `${q.prompt_he || ''} ${q.prompt_en || ''}`.toLowerCase()
+      const asksMeaning = section && correct?.value_en && /[\u0590-\u05FF]/.test(String(correct?.value_he || ''))
+        && new RegExp(`(^|[^a-z])${String(correct.value_en).toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z]|$)`).test(promptText)
+      if ((asksMeaning || !distinct(enVals)) && distinct(heVals)) options.forEach((o: any) => { o.value_en = o.value_he; o.value_he = null })
       else if (!distinct(enVals)) { failures.push(`question ${i + 1}: options look the same — discarded`); continue }
     }
     if (section?.kind === 'true_false' && (!Array.isArray(options) || options.length !== 2)) {

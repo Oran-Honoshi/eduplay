@@ -24,7 +24,8 @@ export function buildFixed(section: Section, words: Word[], he: boolean, want: n
   }
   if (section.kind === 'true_false') {
     const [T, F] = he ? ['נכון', 'לא נכון'] : ['True', 'False']
-    shuffle(words, seed + 7).forEach((w, i) => {
+    const focus = section.words?.length ? words.filter(w => section.words!.some(x => x.toLowerCase() === w.en.toLowerCase())) : []
+    ;(focus.length ? [...focus, ...shuffle(words.filter(w => !focus.includes(w)), seed + 7)] : shuffle(words, seed + 7)).forEach((w, i) => {
       const truth = i % 2 === 0
       const other = words[(words.indexOf(w) + 3 + i) % words.length]
       const shown = truth || !other || other.he === w.he ? w.he : other.he
@@ -52,7 +53,7 @@ export function buildFixed(section: Section, words: Word[], he: boolean, want: n
       const [one] = ICONS[w.en.toLowerCase()]
       const wrong = shuffle([...items.map(x => x.en).filter(x => x !== w.en), ...everyday], seed + k).slice(0, 3)
       if (wrong.length < 3) continue
-      push({ difficulty: 'easy', q_type: 'multiple_choice', prompt_en: `What is in the picture? (${one})`, prompt_he: he ? 'מה רואים בתמונה? בחרו את המילה באנגלית' : undefined,
+      push({ difficulty: 'easy', q_type: 'multiple_choice', prompt_en: `What is in the picture?${'\u2060'.repeat(1 + Object.keys(ICONS).indexOf(one))}`  /* never name the item: the marker only keeps each picture a separate saved question */, prompt_he: he ? 'מה רואים בתמונה? בחרו את המילה באנגלית' : undefined,
         visual_data: { type: 'objects', icon: one, count: 1 }, options: opts(w.en, wrong, seed + k), correct_answer: w.en, explanation_he: he ? `${w.en} = ${w.he}` : undefined })
     } else {
       const n = counts[ci++]
