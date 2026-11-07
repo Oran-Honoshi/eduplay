@@ -750,6 +750,11 @@ function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, on
         <Section title="רמת קושי">
           <Chips options={Object.entries(DIFF_LABEL) as [string, string][]} value={plan.difficulty} onChange={v => set({ difficulty: v })} />
         </Section>
+        {mat.subject_slug === 'math' && !hasSections(plan) && (
+          <Section title="שרטוטים ומערכת צירים" hint="כשהילד/ה מסמנים בעצמם, הנקודות כתובות בשאלה ומקבלים מערכת צירים ריקה.">
+            <Chips options={[['child', 'הילד/ה מסמנים ומשרטטים'], ['ready', 'מוכנים מראש (למתחילים)']]} value={plan.draw_mode || 'child'} onChange={v => set({ draw_mode: v })} />
+          </Section>
+        )}
         {!hasSections(plan) && <Section title="סוגי שאלות">
           <Chips multi options={[['multiple_choice', 'אמריקאיות'], ['word_problem', 'פתוחות']]} value={plan.q_types} onChange={v => set({ q_types: v })} />
         </Section>}
@@ -1242,7 +1247,7 @@ function SectionReview({ mat, questions, act, reload }: any) {
 }
 
 // ── Remove a question, optionally saying why (the reason improves the next ones) ──
-const REMOVE_REASONS = ['קשה לקרוא / הציור לא ברור', 'חוזרת על שאלה אחרת', 'התשובה מופיעה בשאלה או בציור', 'חסר ציור או גרף', 'לא מתאים לחומר', 'קלה מדי', 'קשה מדי', 'ניסוח לא ברור', 'יש טעות']
+const REMOVE_REASONS = ['קשה לקרוא / הציור לא ברור', 'לא לשרטט מראש — שהילד/ה יסמנו', 'ציור מיותר', 'חוזרת על שאלה אחרת', 'התשובה מופיעה בשאלה או בציור', 'חסר ציור או גרף', 'לא מתאים לחומר', 'קלה מדי', 'קשה מדי', 'ניסוח לא ברור', 'יש טעות']
 function RemoveModal({ q, onCancel, onRemove }: any) {
   const [picked, setPicked] = useState<string[]>([])
   const [note, setNote] = useState('')
