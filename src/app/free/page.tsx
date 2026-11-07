@@ -26,6 +26,11 @@ export default async function FreeLibraryPage({ searchParams }: { searchParams: 
   const score = (id: string) => { const a = agg[id]; return ((a?.s || 0) + PRIOR * PRIOR_N) / ((a?.n || 0) + PRIOR_N) }
   const sorted = [...(items || [])].sort((a, b) => score(b.id) - score(a.id) || (b.download_count || 0) - (a.download_count || 0))
 
+  const { data: booklets } = await db.from('reading_booklets').select('id, title_he, theme_he, level_number, pages')
+    .eq('status', 'approved').eq('is_free', true).order('level_number')
+  const { data: levelRows } = await db.from('reading_levels').select('level_number, label_he').eq('track', 'niqqud')
+  const levelHe = (n: number) => levelRows?.find(l => l.level_number === n)?.label_he || ''
+
   const chip = (href: string, label: string, on: boolean) => (
     <a key={href} href={href} className={`text-sm font-bold px-3.5 min-h-[40px] inline-flex items-center rounded-full border ${on ? 'bg-[#0F766E] text-white border-[#0F766E]' : 'bg-white text-[#3d4f4b] border-[#e3ebe9]'}`}>{label}</a>
   )
@@ -47,6 +52,21 @@ export default async function FreeLibraryPage({ searchParams }: { searchParams: 
             <p className="text-[#5b6b68] mt-1 mb-0">תרגול, מבחנים לתרגול ודפי הסבר שהורים יצרו ובדקו. בלי הרשמה — מורידים ומדפיסים.</p>
           </div>
         </div>
+        {(booklets || []).length > 0 && !searchParams.subject && (
+          <section className="mb-8">
+            <h2 className="text-xl font-black text-[#1f2a28] mb-1">חוברות קריאה לגן ולכיתה א׳</h2>
+            <p className="text-sm text-[#5b6b68] mt-0 mb-3">חוברת לכל סימן ניקוד — הברות, מילים, משפטים וסיפור קצר, עם חיבור נקודות וציור.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {(booklets || []).map(b => (
+                <a key={b.id} href={`/api/reading/booklets/${b.id}/print`} target="_blank" rel="noopener noreferrer" className="bg-white rounded-2xl border border-[#e3ebe9] p-4 hover:border-[#0F766E] hover:shadow-md transition no-underline">
+                  <div className="text-xs font-bold text-[#8a5a00]">חוברת קריאה · {levelHe(b.level_number)}</div>
+                  <div className="font-black text-[#1f2a28] mt-1 leading-snug text-lg">{b.title_he}</div>
+                  <div className="text-xs text-[#5b6b68] mt-2">{b.theme_he ? `${b.theme_he} · ` : ''}{(b.pages || []).length} עמודים · להדפסה חינם</div>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
         <div className="flex flex-wrap gap-2 mb-3">
           {chip(qs({ subject: '' }), 'כל המקצועות', !searchParams.subject)}
           {Object.entries(SUBJECT_HE).map(([s, l]) => chip(qs({ subject: s }), l, searchParams.subject === s))}
