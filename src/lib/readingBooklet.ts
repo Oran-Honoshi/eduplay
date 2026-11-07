@@ -80,6 +80,8 @@ const picFor = (word: string, key: any) => {
   const w = bare(word), p = bare(pictureWord(k))
   return w === p || (w.length === p.length + 1 && 'הובלכמש'.includes(w[0]) && w.slice(1) === p) ? k : undefined
 }
+/** the picture that shows exactly this word, if there is one */
+const autoPic = (word: string) => PICTURE_KEYS.find(k => picFor(word, k))
 const uniq = (a: string[]) => a.filter((x, i) => a.indexOf(x) === i)
 
 /** keeps only well-formed pages with known pictures / shapes */
@@ -91,12 +93,12 @@ export function cleanPages(raw: any): BookletPage[] {
       case 'syllables': { const rows = (p.rows || []).map((r: any) => (Array.isArray(r) ? r.map((x: any) => str(x, 12)).filter(Boolean).slice(0, 8) : [])).filter((r: string[]) => r.length).slice(0, 8); if (rows.length) out.push({ type: 'syllables', ...base, rows }); break }
       case 'words': {
         const seen = new Set<string>()
-        const words = (p.words || []).map((w: any) => ({ he: str(w?.he, 30), picture: picFor(str(w?.he, 30), w?.picture) }))
+        const words = (p.words || []).map((w: any) => ({ he: str(w?.he, 30), picture: picFor(str(w?.he, 30), w?.picture) || autoPic(str(w?.he, 30)) }))
           .filter((w: any) => w.he && !seen.has(w.he) && seen.add(w.he)).slice(0, 14)
         if (words.length) out.push({ type: 'words', ...base, words }); break
       }
       case 'match': {
-        const pairs = (p.pairs || []).map((w: any) => ({ he: str(w?.he, 30), picture: picFor(str(w?.he, 30), w?.picture) }))
+        const pairs = (p.pairs || []).map((w: any) => ({ he: str(w?.he, 30), picture: picFor(str(w?.he, 30), w?.picture) || autoPic(str(w?.he, 30)) }))
           .filter((w: any, i: number, a: any[]) => w.he && w.picture && a.findIndex(x => x.picture === w.picture) === i).slice(0, 6) as any
         if (pairs.length >= 3) out.push({ type: 'match', ...base, pairs }); break
       }
@@ -208,4 +210,31 @@ Output JSON only: {"replace":[{"old":"the exact line as given","new":"the fixed 
   report.proof = await proofread(childText(title, pages))
   if (lastProofError) report.proof_error = lastProofError
   return { title, pages, report }
+}
+
+/** the admin's own note ("remove the repeated sentence", "use סֵפֶר not סִפְרִי"):
+ * the model rewrites only the lines the note is about, then niqqud and a
+ * second reading run as usual */
+export async function fixWithNote(level: { level_number: number; label_he: string }, title: string, pages: BookletPage[], note: string) {
+  const g = LEVEL_GUIDE[level.level_number] || LEVEL_GUIDE[10]
+  const lines = childText(title, pages)
+  const r = await askClaudeJSON<any>({
+    system: `You edit an early-reading booklet for Israeli children at niqqud level ${level.level_number} ("${level.label_he}"). Allowed vowel signs: ${g.marks}
+A teacher wrote a note about it. Change only the lines the note is about; keep correct full niqqud, real words, natural sentences, and only the allowed vowel signs. If the teacher asks for a word whose correct niqqud is not allowed at this level, use the closest natural alternative.
+Output JSON only: {"replace":[{"old":"the exact line as given","new":"the new line"}]}`,
+    content: `The teacher's note: ${note}\n\nThe lines:\n${lines.map((l, i) => `${i + 1}. ${l}`).join('\n')}`,
+    maxTokens: 3000,
+    think: 3000,
+  })
+  if (r.ok) {
+    let json = JSON.stringify({ title_he: title, pages })
+    for (const x of Array.isArray(r.data?.replace) ? r.data.replace : []) {
+      if (typeof x?.old !== 'string' || typeof x?.new !== 'string' || !x.old) continue
+      json = json.split(JSON.stringify(x.old).slice(1, -1)).join(JSON.stringify(x.new).slice(1, -1))
+    }
+    try { const parsed = JSON.parse(json); title = String(parsed.title_he || title); pages = cleanPages(parsed.pages) } catch {}
+  }
+  const out = await repairBooklet(level, title, pages, 2, false)
+  out.report.proof = await proofread(childText(out.title, out.pages))
+  return out
 }

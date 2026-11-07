@@ -3,7 +3,7 @@ import { getSession } from '@/lib/session'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { brandBits, brandFooter, brandHeader, BRAND_CSS } from '@/lib/printBrand'
 import { pictureSVG, dotsSVG } from '@/lib/readingPictures'
-import type { BookletPage } from '@/lib/readingBooklet'
+import { cleanPages, type BookletPage } from '@/lib/readingBooklet'
 
 const esc = (t: any) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const { data: level } = await db.from('reading_levels').select('label_he').eq('id', bk.level_id).maybeSingle()
   const brand = await brandBits(new URL(req.url).origin)
-  const pages: BookletPage[] = bk.pages || []
+  const pages: BookletPage[] = cleanPages(bk.pages || [])
   const html = `<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="utf-8"/><title>${esc(bk.title_he)} — EduPlay</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@400;600;700;800&family=Nunito:wght@700;900&display=swap');
@@ -86,6 +86,7 @@ ${BRAND_CSS}
 .cover h1 { font-size: 54px; font-weight: 800; line-height: 1.5; }
 .cover .lvl { font-size: 20px; font-weight: 800; background: #FFF4D6; color: #8a5a00; padding: 6px 18px; border-radius: 99px; }
 .cover .theme { font-size: 18px; color: #4A5568; }
+.cover .brand-head { align-self: stretch; }
 .cover .pip { width: 190px; height: 190px; object-fit: contain; }
 .cover .name { font-size: 22px; margin-top: 20px; }
 .cover .name span { display:inline-block; width: 260px; border-bottom: 2px solid #9AA5B8; }
