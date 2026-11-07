@@ -143,6 +143,7 @@ export function checkBooklet(levelNumber: number, title: string, pages: BookletP
 /** Replaces every child-read word that breaks the level's niqqud: the model
  * gets each bad word with the exact line it sits in and returns replacements
  * for those lines (small answers, so a few rounds stay fast). */
+let lastProofError: string | null = null
 /** a second reader: real words, correct standard niqqud, natural sentences */
 export async function proofread(lines: string[]): Promise<{ text: string; why: string }[]> {
   const r = await askClaudeJSON<any>({
@@ -152,7 +153,8 @@ Output JSON only: {"problems":[{"text":"the exact wrong word or line as written"
     maxTokens: 2500,
     think: 2500,
   })
-  if (!r.ok) return []
+  if (!r.ok) { lastProofError = r.error.slice(0, 200); return [] }
+  lastProofError = null
   return (Array.isArray(r.data?.problems) ? r.data.problems : [])
     .filter((p: any) => typeof p?.text === 'string' && p.text.trim() && lines.some(l => l.includes(p.text.trim())))
     .map((p: any) => ({ text: p.text.trim(), why: String(p.why || '').slice(0, 120) })).slice(0, 40)
@@ -203,5 +205,6 @@ Output JSON only: {"replace":[{"old":"the exact line as given","new":"the fixed 
   // 3) what is left for the admin to look at
   const report: any = checkBooklet(level.level_number, title, pages)
   report.proof = await proofread(childText(title, pages))
+  if (lastProofError) report.proof_error = lastProofError
   return { title, pages, report }
 }
