@@ -118,6 +118,11 @@ export function cleanPages(raw: any): BookletPage[] {
   return out
 }
 
+/** how much content a booklet holds (pages + items), so a fix can never quietly drop any */
+export function contentSize(pages: BookletPage[]): number {
+  return pages.reduce((a, p: any) => a + 1 + (p.rows?.length || 0) + (p.words?.length || 0) + (p.pairs?.length || 0) + (p.items?.length || 0) + (p.sentences?.length || 0) + (p.paragraphs?.length || 0), 0)
+}
+
 /** everything the child reads, page by page */
 export function childText(title: string, pages: BookletPage[]): string[] {
   const t: string[] = [title]
@@ -170,7 +175,7 @@ export async function repairBooklet(level: { level_number: number; label_he: str
     const where = items.map(it => ({ ...it, line: lines.find(l => l.includes(it.word)) || it.word }))
     const fix = await askClaudeJSON<any>({
       system: `You fix an early-reading booklet for Israeli children at niqqud level ${level.level_number} ("${level.label_he}"). Allowed vowel signs: ${g.marks} Good words: ${g.examples}.
-Each item below is a problem (a forbidden vowel sign, a wrong word, wrong niqqud or an unnatural line) and the exact line it appears in. Rewrite each line so it keeps its meaning as far as possible, is natural, correct Hebrew with correct full niqqud, and uses ONLY the allowed signs — choose different real words when needed (never change a word's correct niqqud to fit the rule). A single-word line gets a single different word that fits the same picture or context. Keep lines short.
+Each item below is a problem (a forbidden vowel sign, a wrong word, wrong niqqud or an unnatural line) and the exact line it appears in. Rewrite each line so it keeps its meaning as far as possible, is natural, correct Hebrew with correct full niqqud, and uses ONLY the allowed signs — choose different real words when needed (never change a word's correct niqqud to fit the rule). A single-word line gets a single different word that fits the same picture or context. Never shorten or invent a word (קָטָן must never become "קָט"); if no real word fits, rewrite the sentence with other real words. Keep every answer of a question true to the story. Keep lines short.
 Output JSON only: {"replace":[{"old":"the exact line as given","new":"the fixed line"}]}`,
       content: JSON.stringify(where),
       maxTokens: 2500,
@@ -186,7 +191,9 @@ Output JSON only: {"replace":[{"old":"the exact line as given","new":"the fixed 
     if (!changed) return false
     try {
       const parsed = JSON.parse(json)
-      title = String(parsed.title_he || title); pages = cleanPages(parsed.pages)
+      const next = cleanPages(parsed.pages)
+      if (contentSize(next) < contentSize(pages)) return false   // a fix that loses content is not used
+      title = String(parsed.title_he || title); pages = next
       return true
     } catch { return false }
   }
@@ -232,7 +239,10 @@ Output JSON only: {"replace":[{"old":"the exact line as given","new":"the new li
       if (typeof x?.old !== 'string' || typeof x?.new !== 'string' || !x.old) continue
       json = json.split(JSON.stringify(x.old).slice(1, -1)).join(JSON.stringify(x.new).slice(1, -1))
     }
-    try { const parsed = JSON.parse(json); title = String(parsed.title_he || title); pages = cleanPages(parsed.pages) } catch {}
+    try {
+      const parsed = JSON.parse(json); const next = cleanPages(parsed.pages)
+      if (contentSize(next) >= contentSize(pages)) { title = String(parsed.title_he || title); pages = next }
+    } catch {}
   }
   const out = await repairBooklet(level, title, pages, 2, false)
   out.report.proof = await proofread(childText(out.title, out.pages))
