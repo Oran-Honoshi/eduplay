@@ -186,7 +186,9 @@ function renderVisual(q: any, color = '#4A7FD4', instanceId: number | string = '
   // 1. Use stored visual_data.type if present
   if (q.visual_data?.type) {
     const svg = renderMathVisualSVG(q.visual_data, { color, instanceId })
-    if (svg) return `<div class="math-visual">${svg}</div>`
+    // an empty grid is for the child to draw on — print it large
+    const toDraw = q.visual_data.type === 'coordinate' && !(q.visual_data.points || []).length && !(q.visual_data.polygon || []).length
+    if (svg) return `<div class="math-visual${toDraw ? ' draw-grid' : ''}">${svg}</div>`
   }
 
   // 2. No visual_data or no type — try to infer from prompt text (only for the
@@ -506,6 +508,7 @@ export function generateHTML({ child, topics, questions: questionsIn, difficulty
     /* Math visual SVG */
     .math-visual { display: flex; justify-content: center; padding: 10px 0 8px; }
     .math-visual svg { max-width: 200px; height: auto; }
+    .math-visual.draw-grid svg { max-width: 300px; width: 300px; }
 
     /* Legacy fraction boxes */
     .visual-row { display: flex; gap: 3px; margin: 8px 0; }
@@ -555,6 +558,7 @@ export function generateHTML({ child, topics, questions: questionsIn, difficulty
       body { padding: 14px; }
       .question { page-break-inside: avoid; }
       .math-visual svg { max-width: 160px; }
+      .math-visual.draw-grid svg { max-width: 260px; width: 260px; }
     }
   </style>
 </head>
