@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireParentOnlySession } from '@/lib/session'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { askClaudeJSON } from '@/lib/claude'
-import { bookletPrompt, checkBooklet, cleanPages, type BookletPage } from '@/lib/readingBooklet'
+import { bookletPrompt, cleanPages, repairBooklet, type BookletPage } from '@/lib/readingBooklet'
 import { pictureHint, dotsHint } from '@/lib/readingPictures'
 
 export const maxDuration = 300
@@ -58,28 +58,9 @@ export async function POST(req: NextRequest) {
   let pages: BookletPage[] = cleanPages(ai.data?.pages)
   if (pages.length < 6) return NextResponse.json({ error: 'החוברת יצאה קצרה מדי. נסו שוב.' }, { status: 502 })
 
-  // repair: words outside the level's niqqud get replaced (small answers, fast)
-  let report = checkBooklet(level.level_number, title, pages)
-  for (let round = 0; round < 2 && report.bad.length; round++) {
-    const fix = await askClaudeJSON<any>({
-      system: `You fix an early-reading booklet at niqqud level ${level.level_number} ("${level.label_he}"). ${bookletPrompt(level, null, [], '', '').split('\n')[1]}
-For each word below that breaks the rule, give a replacement that keeps the sentence natural and correct: replace the word with a different word (or rewrite the short sentence around it) that uses only the allowed signs and is fully pointed. Output JSON only: {"replace":[{"old":"exact text to replace (the word, or the whole short sentence)","new":"..."}]}`,
-      content: `Words that break the rule: ${report.bad.join(', ')}\n\nThe booklet:\n${JSON.stringify({ title_he: title, pages })}`,
-      maxTokens: 3000,
-    })
-    if (!fix.ok) break
-    let json = JSON.stringify({ title_he: title, pages })
-    for (const r of Array.isArray(fix.data?.replace) ? fix.data.replace : []) {
-      if (typeof r?.old !== 'string' || typeof r?.new !== 'string' || !r.old) continue
-      const o = JSON.stringify(r.old).slice(1, -1), n = JSON.stringify(r.new).slice(1, -1)
-      json = json.split(o).join(n)
-    }
-    try {
-      const parsed = JSON.parse(json)
-      title = String(parsed.title_he || title); pages = cleanPages(parsed.pages)
-    } catch { break }
-    report = checkBooklet(level.level_number, title, pages)
-  }
+  const fixed = await repairBooklet(level, title, pages)
+  title = fixed.title; pages = fixed.pages
+  const report = fixed.report
 
   const { data: row, error } = await db.from('reading_booklets').insert({
     level_id: level.id, level_number: level.level_number, title_he: title, theme_he: String(ai.data?.theme_he || theme || '').slice(0, 120) || null,

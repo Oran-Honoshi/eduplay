@@ -25,6 +25,7 @@ export default function ReadingPage() {
   const [making, setMaking] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
+  const [fixing, setFixing] = useState<string | null>(null)
 
   async function load(l = level) {
     setItems(null)
@@ -100,6 +101,11 @@ export default function ReadingPage() {
                 </div>
                 <button className={btnGhost} onClick={() => setPreview(b.id)}><Eye size={16} /> עיון</button>
                 <a className={btnGhost} href={`/api/reading/booklets/${b.id}/print`} target="_blank" rel="noopener noreferrer"><Printer size={16} /> להדפסה</a>
+                {admin && b.status === 'draft' && b.check_report?.bad?.length > 0 && (
+                  <button className={btnGhost} disabled={fixing === b.id} onClick={async () => { setFixing(b.id); await fetch(`/api/reading/booklets/${b.id}/fix`, { method: 'POST' }); setFixing(null); await load() }}>
+                    {fixing === b.id ? <><Loader2 size={16} className="animate-spin" /> מתקנים…</> : <><Sparkles size={16} /> לתקן ניקוד</>}
+                  </button>
+                )}
                 {admin && b.status === 'draft' && <>
                   <button className={btnPrimary + ' !min-h-[44px]'} onClick={() => patch(b.id, { status: 'approved' })}><Check size={16} /> לאשר</button>
                   <button className={btnGhost + ' !text-[#DC2626]'} onClick={() => { const reason = prompt('למה לדחות? (לא חובה)') ?? ''; patch(b.id, { status: 'rejected', reason }) }}><X size={16} /> לדחות</button>

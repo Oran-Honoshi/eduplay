@@ -7,6 +7,7 @@
 // instructions are for the adult and are not limited.
 
 import { checkNiqqudDecodability } from '@/lib/readingDecodability'
+import { askClaudeJSON } from '@/lib/claude'
 import { PICTURE_KEYS, DOT_KEYS } from '@/lib/readingPictures'
 
 export type BookletPage =
@@ -114,4 +115,39 @@ export function checkBooklet(levelNumber: number, title: string, pages: BookletP
   const text = childText(title, pages).join('\n')
   const r = checkNiqqudDecodability(text, Math.min(10, Math.max(1, levelNumber)))
   return { pct: r.pct, total: r.totalWords, bad: [...new Set(r.violatingWords)].slice(0, 60) }
+}
+
+/** Replaces every child-read word that breaks the level's niqqud: the model
+ * gets each bad word with the exact line it sits in and returns replacements
+ * for those lines (small answers, so a few rounds stay fast). */
+export async function repairBooklet(level: { level_number: number; label_he: string }, title: string, pages: BookletPage[], rounds = 4) {
+  const g = LEVEL_GUIDE[level.level_number] || LEVEL_GUIDE[10]
+  let report = checkBooklet(level.level_number, title, pages)
+  for (let round = 0; round < rounds && report.bad.length; round++) {
+    const lines = childText(title, pages)
+    const where = report.bad.map(w => ({ word: w, line: lines.find(l => l.includes(w)) || w }))
+    const fix = await askClaudeJSON<any>({
+      system: `You fix an early-reading booklet for Israeli children at niqqud level ${level.level_number} ("${level.label_he}"). Allowed vowel signs: ${g.marks} Good words: ${g.examples}.
+Each item below is a word that uses a forbidden vowel sign (or has no niqqud) and the exact line it appears in. Rewrite each line so it keeps its meaning as far as possible, is natural, correct Hebrew with correct full niqqud, and uses ONLY the allowed signs — choose different words when needed (a single word line gets a single different word that fits the same picture or context). Keep lines short.
+Output JSON only: {"replace":[{"old":"the exact line as given","new":"the fixed line"}]}`,
+      content: JSON.stringify(where),
+      maxTokens: 2500,
+    })
+    if (!fix.ok) continue
+    let json = JSON.stringify({ title_he: title, pages })
+    let changed = false
+    for (const r of Array.isArray(fix.data?.replace) ? fix.data.replace : []) {
+      if (typeof r?.old !== 'string' || typeof r?.new !== 'string' || !r.old || r.old === r.new) continue
+      const o = JSON.stringify(r.old).slice(1, -1), n = JSON.stringify(r.new).slice(1, -1)
+      if (json.includes(o)) { json = json.split(o).join(n); changed = true }
+    }
+    if (!changed) continue
+    try {
+      const parsed = JSON.parse(json)
+      // an answer that was rewritten must still be one of its options
+      title = String(parsed.title_he || title); pages = cleanPages(parsed.pages)
+    } catch { break }
+    report = checkBooklet(level.level_number, title, pages)
+  }
+  return { title, pages, report }
 }
