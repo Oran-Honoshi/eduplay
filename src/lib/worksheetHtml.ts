@@ -189,8 +189,9 @@ function renderVisual(q: any, color = '#4A7FD4', instanceId: number | string = '
     if (svg) return `<div class="math-visual">${svg}</div>`
   }
 
-  // 2. No visual_data or no type — try to infer from prompt text
-  const inferred = inferVisualData(q.prompt_en || '')
+  // 2. No visual_data or no type — try to infer from prompt text (only for the
+  // old ready-made bank: a question written on request has exactly the picture it was given)
+  const inferred = q.created_by_family ? null : inferVisualData(q.prompt_en || '')
   if (inferred) {
     const svg = renderMathVisualSVG(inferred, { color, instanceId })
     if (svg) return `<div class="math-visual">${svg}</div>`
@@ -229,6 +230,19 @@ export function noQuestionsHTML(child: any) {
 const heHTML = (t: any) => {
   const v = String(t ?? '')
   return /[\u0590-\u05FF]/.test(v) ? mathRunsToHTML(v, fractionsToHTML) : (v ? `<bdi dir="ltr">${fractionsToHTML(normalizeFractions(v))}</bdi>` : '')
+}
+
+// A Hebrew question: the instruction reads right to left; an exercise at its
+// end ("חשבו: (+6) − (−4) = ?") goes on its own line, whole and left to right,
+// never split into pieces. Numbers inside a sentence stay inline, isolated.
+function renderHePrompt(promptHe: string): string {
+  const t = normalizeFractions(String(promptHe ?? '')).trim()
+  const m = t.match(/^([\s\S]*?[:\n])\s*([^\u0590-\u05FF]+)$/)
+  if (m && /\d/.test(m[2]) && m[2].trim().length > 2) {
+    const head = m[1].replace(/[\n\s]+$/, '')
+    return `<div class="q-text-he">${heHTML(head)}</div><div class="q-ex" dir="ltr">${fractionsToHTML(m[2].trim())}</div>`
+  }
+  return `<div class="q-text-he">${heHTML(t.replace(/\s*\n\s*/g, ' '))}</div>`
 }
 
 function renderHeTextLines(promptHe: string): string {
@@ -312,7 +326,7 @@ export function generateHTML({ child, topics, questions: questionsIn, difficulty
     // sidesteps inline bidi isolation entirely (no character-level
     // tokenizer needed) since block-level lines don't bidi-interact.
     const heText = !isEnglish && q.prompt_he && (!isBilingual || isDistinctHe(q.prompt_he, q.prompt_en))
-      ? renderHeTextLines(q.prompt_he) : ''
+      ? renderHePrompt(q.prompt_he) : ''
 
     // 55 known rows (confirmed live) have prompt_en set but prompt_he null —
     // in he_only mode that used to render neither enText (gated on
@@ -508,6 +522,7 @@ export function generateHTML({ child, topics, questions: questionsIn, difficulty
     .line { flex: 1; border-bottom: 1.5px solid #9AA5B8; }
     .hint { margin-top: 6px; font-size: 11px; color: #9AA5B8; padding: 5px 9px; background: #FFFBF0; border-left: 3px solid #F5A623; border-radius: 0 5px 5px 0; }
 
+    .q-ex { direction: ltr; text-align: ${isHebrew ? 'right' : 'left'}; white-space: nowrap; font-size: 15px; font-weight: 700; color: #1A2E4A; margin: 2px 0 8px; font-family: 'Nunito', sans-serif; }
     .question.compact { min-height: 0; margin-bottom: 10px; }
     .question.compact .q-left { border-inline-end: 0; }
     .sec { margin: 18px 0 8px; }

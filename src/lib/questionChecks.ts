@@ -30,7 +30,7 @@ export function signature(q: any): string {
   return ans ? `${ans}|${pts}` : ''
 }
 
-export function checkQuestion(q: any, existingNorm: Set<string>, existingSig: Set<string> = new Set()): { ok: boolean; reason?: string; q: any } {
+export function checkQuestion(q: any, existingNorm: Set<string>, existingSig: Set<string> = new Set(), opts: { drawMode?: 'child' | 'ready' } = {}): { ok: boolean; reason?: string; q: any } {
   const prompt = String(q.prompt_he || q.prompt_en || '')
   const n = normQ(prompt)
   if (n && existingNorm.has(n)) return { ok: false, reason: 'repeats an existing question', q }
@@ -60,6 +60,18 @@ export function checkQuestion(q: any, existingNorm: Set<string>, existingSig: Se
     if (Array.isArray(v.marked)) v.marked = v.marked.filter((x: any) => Number(x) !== num)
     if (v.mark != null && Number(v.mark) === num) delete v.mark
     if (Array.isArray(v.jumps)) v.jumps = v.jumps.filter((j: any) => Number(j?.to) !== num)
+  }
+  if (v && v.type === 'coordinate') {
+    // the child draws: points the text already gives by coordinates are left for the child to mark
+    const given = (p: any) => Array.isArray(p) && new RegExp(`\\(\\s*${+p[0]}\\s*[,،]\\s*${+p[1]}\\s*\\)`).test(prompt)
+    if ((opts.drawMode ?? 'child') === 'child' && Array.isArray(v.points) && v.points.some(given)) {
+      v.points = v.points.filter((p: any) => !given(p))
+      delete v.segments; delete v.polygon
+    }
+    // all values non-negative → first quadrant only (four quadrants confuse here)
+    const nums = [...(v.points || []), ...(v.polygon || []), ...((v.segments || []).flat())].flatMap((p: any) => (Array.isArray(p) ? [+p[0], +p[1]] : []))
+      .concat((v.vlines || []).map(Number), (v.hlines || []).map(Number))
+    if (v.quadrant == null && nums.every((x: number) => !(x < 0))) v.quadrant = 1
   }
   // unlabeled points would print their coordinates — give them letters instead
   if (v && Array.isArray(v.points)) {

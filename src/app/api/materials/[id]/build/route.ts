@@ -100,6 +100,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
           : section.kind === 'open' ? ['word_problem', 'multiple_choice'] : ['multiple_choice'],
       } : { q_types: m.plan?.q_types?.length ? m.plan.q_types : ['multiple_choice'] }),
       difficulty, progressive, count: toGenerate, language: m.language,
+      draw_mode: plan.draw_mode === 'ready' ? 'ready' : 'child',
       custom_prompt: focus || undefined,
       note: typeof b.note === 'string' && b.note.trim() ? b.note.trim().slice(0, 600) : undefined,
       avoid_prompts: existingPrompts,
