@@ -97,11 +97,15 @@ export default function ReadingPage() {
                     {b.is_free && <span className="font-bold text-[#16A34A]"> · בספרייה החינמית</span>}
                     {admin && b.check_report && <span className={b.check_report.bad?.length ? 'text-[#DC2626]' : 'text-[#16A34A]'}> · ניקוד: {b.check_report.pct}%{b.check_report.bad?.length ? ` (${b.check_report.bad.length} מילים לבדוק)` : ' תקין'}</span>}
                   </div>
-                  {admin && b.check_report?.bad?.length > 0 && <div className="text-xs text-[#7a8f8b] mt-1">לבדוק: <span className="font-bold">{b.check_report.bad.slice(0, 12).join(' · ')}</span></div>}
+                  {admin && b.check_report?.bad?.length > 0 && <div className="text-xs text-[#7a8f8b] mt-1">ניקוד מחוץ לשלב: <span className="font-bold">{b.check_report.bad.slice(0, 12).join(' · ')}</span></div>}
+                  {admin && b.status === 'draft' && (b.check_report?.proof || []).length > 0 && (
+                    <div className="text-xs text-[#92400E] bg-[#FFFBEB] rounded-lg px-3 py-1.5 mt-1">הבודק השני מציע לבדוק: {b.check_report.proof.slice(0, 6).map((p: any) => `${p.text} (${p.why})`).join(' · ')}</div>
+                  )}
+                  {admin && b.status === 'draft' && b.check_report && !b.check_report.bad?.length && b.check_report.proof && !b.check_report.proof.length && <div className="text-xs text-[#16A34A] mt-1">✓ עבר את שתי הבדיקות</div>}
                 </div>
                 <button className={btnGhost} onClick={() => setPreview(b.id)}><Eye size={16} /> עיון</button>
                 <a className={btnGhost} href={`/api/reading/booklets/${b.id}/print`} target="_blank" rel="noopener noreferrer"><Printer size={16} /> להדפסה</a>
-                {admin && b.status === 'draft' && b.check_report?.bad?.length > 0 && (
+                {admin && b.status === 'draft' && (b.check_report?.bad?.length > 0 || (b.check_report?.proof || []).length > 0) && (
                   <button className={btnGhost} disabled={fixing === b.id} onClick={async () => { setFixing(b.id); await fetch(`/api/reading/booklets/${b.id}/fix`, { method: 'POST' }); setFixing(null); await load() }}>
                     {fixing === b.id ? <><Loader2 size={16} className="animate-spin" /> מתקנים…</> : <><Sparkles size={16} /> לתקן ניקוד</>}
                   </button>
