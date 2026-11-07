@@ -26,6 +26,7 @@ export default function ReadingPage() {
   const [msg, setMsg] = useState<string | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [fixing, setFixing] = useState<string | null>(null)
+  const [notes, setNotes] = useState<Record<string, string>>({})
 
   async function load(l = level) {
     setItems(null)
@@ -112,6 +113,14 @@ export default function ReadingPage() {
                   <button className={btnGhost} disabled={fixing === b.id} onClick={async () => { setFixing(b.id); await fetch(`/api/reading/booklets/${b.id}/fix`, { method: 'POST' }); setFixing(null); await load() }}>
                     {fixing === b.id ? <><Loader2 size={16} className="animate-spin" /> מתקנים…</> : <><Sparkles size={16} /> לתקן ניקוד</>}
                   </button>
+                )}
+                {admin && b.status === 'draft' && (
+                  <form className="basis-full flex gap-2" onSubmit={async e => { e.preventDefault(); const note = (notes[b.id] || '').trim(); if (!note) return
+                    setFixing(b.id); await fetch(`/api/reading/booklets/${b.id}/fix`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ note }) }); setFixing(null); setNotes(n => ({ ...n, [b.id]: '' })); await load() }}>
+                    <input dir="auto" value={notes[b.id] || ''} onChange={e => setNotes(n => ({ ...n, [b.id]: e.target.value }))} placeholder="מה לתקן? למשל: להוריד את המשפט שחוזר פעמיים"
+                      className="flex-1 min-h-[40px] px-3 rounded-xl border border-dashed border-[#cfdcd9] bg-white text-sm" />
+                    <button className={btnGhost} disabled={fixing === b.id || !(notes[b.id] || '').trim()}>{fixing === b.id ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />} לתקן</button>
+                  </form>
                 )}
                 {admin && b.status === 'draft' && <>
                   <button className={btnPrimary + ' !min-h-[44px]'} onClick={() => patch(b.id, { status: 'approved' })}><Check size={16} /> לאשר</button>
