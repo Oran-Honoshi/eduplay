@@ -49,7 +49,7 @@ Write 10 to 12 pages that build up, in this order, using these page types:
 1. "syllables": 4–5 rows of 4–6 single syllables — ONE letter with one vowel sign of this level (e.g. בָּ, מַ, דָ${level.level_number >= 2 ? ', בְּ' : ''}${level.level_number >= 3 ? ', פִּי' : ''}), using the letters of the words in this booklet; each row practises one letter or one vowel. Not whole words.
 2. "words": 8–10 words (with a picture key when one fits).
 3. "match": 4–5 words, each with its picture — the child draws a line from the word to the picture.
-4. "circle": 4 items — a picture and 3 DIFFERENT words that look alike (differ by one letter or one vowel); answer = the word for the picture, exactly as listed for that picture key.
+4. "circle": 4 items — a picture and 3 DIFFERENT REAL words that look alike (e.g. דָּג / דַּף / גַּן), each correctly pointed; answer = the word for the picture, exactly as listed for that picture key. Never a misspelled or wrongly pointed word as a distractor.
 5. "sentences": 5–6 short sentences (2–5 words each) built only from words of this level.
 6. "story": a short story (3–4 short paragraphs, 2–3 sentences each) with "story_title"; optional "picture".
 7. "questions": 3–4 questions about the story whose answers are clearly in the story; options are 2–3 DIFFERENT short answers taken from the story (all pointed, this level only); "answer" = the right option, true to the story.
@@ -160,7 +160,7 @@ Output JSON only: {"problems":[{"text":"the exact wrong word or line as written"
     .map((p: any) => ({ text: p.text.trim(), why: String(p.why || '').slice(0, 120) })).slice(0, 40)
 }
 
-export async function repairBooklet(level: { level_number: number; label_he: string }, title: string, pages: BookletPage[], rounds = 4) {
+export async function repairBooklet(level: { level_number: number; label_he: string }, title: string, pages: BookletPage[], rounds = 4, withProof = true) {
   const g = LEVEL_GUIDE[level.level_number] || LEVEL_GUIDE[10]
   // one repair round: each problem with the exact line it sits in → new lines
   async function fixLines(items: { word: string; problem: string }[]) {
@@ -193,6 +193,7 @@ Output JSON only: {"replace":[{"old":"the exact line as given","new":"the fixed 
   // 1) niqqud of the level
   for (let r = 0; r < rounds; r++) { const bad = niqqudItems(); if (!bad.length) break; await fixLines(bad) }
   // 2) a second reader: real words, correct pointing, natural lines
+  if (!withProof) { const report: any = checkBooklet(level.level_number, title, pages); return { title, pages, report } }
   for (let r = 0; r < 2; r++) {
     const proof = await proofread(childText(title, pages))
     if (!proof.length) break

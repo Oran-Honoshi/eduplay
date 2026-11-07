@@ -59,7 +59,8 @@ export async function POST(req: NextRequest) {
   let pages: BookletPage[] = cleanPages(ai.data?.pages)
   if (pages.length < 6) return NextResponse.json({ error: 'החוברת יצאה קצרה מדי. נסו שוב.' }, { status: 502 })
 
-  const fixed = await repairBooklet(level, title, pages)
+  // niqqud first (fast); the second reader runs in its own request (/fix) so neither step runs out of time
+  const fixed = await repairBooklet(level, title, pages, 3, false)
   title = fixed.title; pages = fixed.pages
   const report = fixed.report
 
