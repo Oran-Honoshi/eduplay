@@ -1,10 +1,11 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import { X, Lightbulb, ChevronRight } from 'lucide-react'
+import AnswerPad, { isNumericAnswer } from '@/components/kid/AnswerPad'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
 import HebrewMathText from '@/components/HebrewMathText'
-import { ThemeDecorations, CelebrationModal, AnimatedBtn, Sparkles, ThemePanel, THEME_CONFIG, CollectionButton } from '@/components/theme'
+import { AnimatedBtn, Sparkles, THEME_CONFIG } from '@/components/theme'
 import { getFontSize } from '@/lib/fontSize'
 import { Pip } from '@/components/Pip'
 import { isDistinctHe, translateOptionLabel } from '@/lib/text'
@@ -78,7 +79,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || "Couldn't submit that answer — try again.")
+        setError(data.error || (isHE ? 'לא הצלחנו לשלוח את התשובה — נסו שוב' : "Couldn't submit that answer — try again."))
         return
       }
 
@@ -95,7 +96,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
         setTimeout(() => setSparkleActive(false), 1200)
       }
     } catch {
-      setError("Couldn't reach the server — check your connection and try again.")
+      setError(isHE ? 'אין חיבור — בדקו את האינטרנט ונסו שוב' : "Couldn't reach the server — check your connection and try again.")
     } finally {
       setSubmitting(false)
     }
@@ -111,41 +112,43 @@ export default function AssignmentClient({ child, assignment, items: initialItem
           : `Assignment complete! ${correctCount} of ${totalItems} correct 🎉`,
         emoji: T.celebrationEmoji || '🎉',
       })
-      setTimeout(() => setCelebration(null), 2500)
     }
     setCurrentIndex(nextIndex)
   }
 
-  // ── Completion screen ──────────────────────────────────────────
+  const F = '"Rubik","Assistant",sans-serif'
+  const R = theme === 'minecraft' ? 4 : 24
+  const dark = theme === 'minecraft'
+  const L = (he: string, en: string) => (isHE ? he : en)
+
+  // ── Completion screen: the celebration ─────────────────────────
   if (done) {
     const correctFirstTry  = items.filter(it => it.status === 'correct_first_try').length
     const correctAfterHint = items.filter(it => it.status === 'correct_after_hint').length
     const revealed         = items.filter(it => it.status === 'revealed_answer').length
-
+    const correct = correctFirstTry + correctAfterHint
+    const great = correct >= Math.ceil(totalItems * 0.7)
     return (
-      <div style={{ minHeight:'100vh', background:T.bg, fontFamily:'"Nunito",sans-serif', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', padding:'20px' }} dir={isHE ? 'rtl' : 'ltr'}>
-        <ThemeDecorations theme={theme}/>
-        <CelebrationModal celebration={celebration} T={T} theme={theme}/>
-        <ThemePanel theme={theme} T={T} style={{ padding:'36px', textAlign:'center', maxWidth:'420px', width:'100%', position:'relative', zIndex:1 }}>
-          <div style={{ fontSize:'44px', marginBottom:'12px' }}>🎓</div>
-          <h2 style={{ fontFamily:T.fontHead, fontSize:theme==='minecraft'?'14px':'20px', color:T.accent1, marginBottom:'14px' }}>
-            {isHE ? 'המטלה הושלמה!' : 'Assignment complete!'}
-          </h2>
-          <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'20px', textAlign:isHE?'right':'left' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:T.text }}>
-              <span>✅ {isHE ? 'נכון בפעם הראשונה' : 'Correct first try'}</span><strong>{correctFirstTry}</strong>
-            </div>
-            <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:T.text }}>
-              <span>💡 {isHE ? 'נכון עם רמז' : 'Correct with hint'}</span><strong>{correctAfterHint}</strong>
-            </div>
-            <div style={{ display:'flex', justifyContent:'space-between', fontSize:'13px', color:T.text }}>
-              <span>👀 {isHE ? 'התשובה נחשפה' : 'Answer revealed'}</span><strong>{revealed}</strong>
-            </div>
+      <div style={{ minHeight:'100vh', background:T.bg, color:T.text, fontFamily:'"Assistant",sans-serif', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} dir={isHE ? 'rtl' : 'ltr'}>
+        <Sparkles active={great} theme={theme}/>
+        <div style={{ background:T.panel, border:`1.5px solid ${T.border}`, borderRadius:R + 8, padding:'28px 22px', maxWidth:420, width:'100%', display:'flex', flexDirection:'column', alignItems:'center', gap:14, textAlign:'center' }}>
+          <Pip theme={theme} pose={great ? 'celebrate' : 'thumbs'} size={150} he={isHE} bounce />
+          <div style={{ fontFamily:F, fontSize:32, fontWeight:800 }}>{great ? L('כל הכבוד!', 'Amazing!') : L('סיימת!', 'You finished!')}</div>
+          <div style={{ fontSize:19, color:T.text2 }}>
+            {L(`ענית נכון על ${correct} מתוך ${totalItems}`, `${correct} of ${totalItems} correct`)}
           </div>
-          <button onClick={goHome} style={{ width:'100%', padding:'12px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'14px', fontWeight:800, cursor:'pointer' }}>
-            {isHE ? 'חזרה הביתה' : 'Back to Home'}
+          <div style={{ width:116, height:116, borderRadius:'50%', background:'radial-gradient(circle at 35% 30%, #FFE08A, #FFC940 60%, #E0A800)', border:'6px solid #FFFFFF', boxShadow:'0 8px 20px rgba(224,168,0,0.35)', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:F, fontSize:34, fontWeight:800, color:'#7A5600' }} dir="ltr">
+            {correct}/{totalItems}
+          </div>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center', fontSize:16 }}>
+            <span style={{ padding:'6px 12px', borderRadius:999, background:dark ? T.panel2 : '#E3F4EF', color:dark ? T.text : '#0B6B58', fontWeight:700 }}>{L(`${correctFirstTry} בפעם הראשונה`, `${correctFirstTry} first try`)}</span>
+            {correctAfterHint > 0 && <span style={{ padding:'6px 12px', borderRadius:999, background:dark ? T.panel2 : '#FFF4D6', color:dark ? T.text : '#7A5600', fontWeight:700 }}>{L(`${correctAfterHint} עם רמז`, `${correctAfterHint} with a hint`)}</span>}
+            {revealed > 0 && <span style={{ padding:'6px 12px', borderRadius:999, background:dark ? T.panel2 : '#F3EFE7', color:T.text2, fontWeight:700 }}>{L(`${revealed} לחזור עליהן`, `${revealed} to practice again`)}</span>}
+          </div>
+          <button onClick={goHome} style={{ width:'100%', minHeight:64, background:T.accent1, border:'none', borderRadius:R - 4, color:'#fff', fontFamily:F, fontSize:22, fontWeight:800, cursor:'pointer' }}>
+            {L('חזרה הביתה', 'Back home')}
           </button>
-        </ThemePanel>
+        </div>
       </div>
     )
   }
@@ -159,183 +162,153 @@ export default function AssignmentClient({ child, assignment, items: initialItem
   const showCorrectFeedback = status === 'correct_first_try' || status === 'correct_after_hint'
   const itemResolved        = isResolved(status)
   const canAnswer           = isOpen(status) && !submitting
+  const optText = (o: any) => isHE ? (o.value_he || o.value_en || '') : (o.value_en || '')
+  const twoCols = options.length === 4 && options.every(o => optText(o).length <= 14)
+  const numeric = options.length === 0 && isNumericAnswer(currentQ?.correct_answer)
+  const qSize = Math.max(22, FS?.question || 0)
+  const explanation = (isHE ? currentQ?.explanation_he : currentQ?.explanation_en) || ''
 
   return (
-    <div style={{ minHeight:'100vh', background:T.bg, color:T.text, fontFamily:'"Nunito",sans-serif', position:'relative' }} dir={isHE ? 'rtl' : 'ltr'}>
-      <ThemeDecorations theme={theme}/>
+    <div style={{ minHeight:'100vh', background:T.bg, color:T.text, fontFamily:'"Assistant",sans-serif', position:'relative' }} dir={isHE ? 'rtl' : 'ltr'}>
       <Sparkles active={sparkleActive} theme={theme}/>
-      <CelebrationModal celebration={celebration} T={T} theme={theme}/>
 
-      {/* Header */}
-      <CollectionButton childId={child.id} token={token} theme={theme} lang={langMode as any} aboveNav={false}/>
-      <header style={{ background:T.panel, borderBottom:`2px solid ${T.border}`, padding:'0 16px', height:'56px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100 }}>
-        <button onClick={goHome} style={{ display:'flex', alignItems:'center', gap:'6px', background:'none', border:'none', color:T.text2, fontWeight:700, fontSize:'13px', cursor:'pointer', padding:'8px' }}>
-          <ArrowLeft size={16} style={isHE ? { transform:'scaleX(-1)' } : undefined}/> {isHE ? 'חזרה' : 'Back'}
+      {/* Top: exit, progress, count */}
+      <header style={{ position:'sticky', top:0, zIndex:100, background:T.bg, padding:'12px 16px', display:'flex', alignItems:'center', gap:12, maxWidth:640, margin:'0 auto' }}>
+        <button onClick={goHome} aria-label={L('יציאה', 'Exit')}
+          style={{ width:48, height:48, flexShrink:0, borderRadius:14, background:T.panel, border:`1.5px solid ${T.border}`, display:'flex', alignItems:'center', justifyContent:'center', color:T.text, cursor:'pointer' }}>
+          <X size={24}/>
         </button>
-        <div style={{ fontFamily:T.fontHead, fontSize:theme==='minecraft'?'11px':'14px', color:T.accent1, fontWeight:800 }}>
-          📋 {assignment.title || (isHE ? 'מטלה' : 'Assignment')}
+        <div style={{ flex:1, height:14, borderRadius:99, background:dark ? T.panel : T.panel2, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:`${Math.max(4, (currentIndex / totalItems) * 100)}%`, background:T.accent2 === '#FFD700' ? T.accent1 : T.accent2, borderRadius:99, transition:'width .3s ease' }}/>
         </div>
-        <div style={{ fontSize:'12px', fontWeight:800, color:T.text2 }}>
-          {currentIndex + 1} / {totalItems}
-        </div>
+        <span style={{ fontFamily:F, fontWeight:800, fontSize:18 }} dir="ltr">{currentIndex + 1}/{totalItems}</span>
       </header>
 
-      {/* Progress bar */}
-      <div style={{ height:'6px', background:T.panel2 }}>
-        <div style={{ height:'100%', width:`${(currentIndex / totalItems) * 100}%`, background:T.accent1, transition:'width 0.3s ease' }}/>
-      </div>
-
-      {/* Topic review link — only present when every question in this assignment came
-          from a single topic (see api/assignments/route.ts); a mixed-topic assignment has
-          no single topic to link to, so assignment.topic is null and this is just absent. */}
-      {assignment.topic && (
-        <div style={{ maxWidth:'640px', margin:'10px auto 0', padding:'0 16px' }}>
+      <div style={{ maxWidth:640, margin:'0 auto', padding:'4px 16px 32px', display:'flex', flexDirection:'column', gap:14 }}>
+        {assignment.topic && currentIndex === 0 && isOpen(status) && (
           <a href={`/lesson?topicId=${assignment.topic_id}&childId=${child.id}${token ? `&token=${token}` : ''}`}
-            style={{ display:'inline-flex', alignItems:'center', gap:'6px', fontSize:'12px', fontWeight:700, color:T.accent1, textDecoration:'none' }}>
-            📘 {isHE
-              ? `סקור את ${assignment.topic.title_he || assignment.topic.title_en} קודם`
-              : `Review ${assignment.topic.title_en} first`}
+            style={{ alignSelf:'flex-start', fontSize:16, fontWeight:700, color:T.accent1, textDecoration:'none' }}>
+            {L(`לחזור קודם על ${assignment.topic.title_he || assignment.topic.title_en}`, `Review ${assignment.topic.title_en} first`)}
           </a>
-        </div>
-      )}
+        )}
 
-      <div style={{ maxWidth:'640px', margin:'0 auto', padding:'20px 16px' }}>
-        <ThemePanel theme={theme} T={T} style={{ padding:'20px' }}>
+        {/* The question */}
+        <div style={{ background:T.panel, border:`1.5px solid ${T.border}`, borderRadius:R + 4, padding:'22px 18px', display:'flex', flexDirection:'column', gap:12 }}>
           {isHE && currentQ?.prompt_he ? (
             <HebrewMathText text={currentQ.prompt_he}
-              style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:'rtl', textAlign:'right' }} />
+              style={{ fontSize:`${qSize}px`, fontWeight:700, color:T.text, margin:0, lineHeight:1.55, direction:'rtl', textAlign:'right' }} />
           ) : (
-            <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:'ltr', textAlign:'left' }}>
+            <p style={{ fontSize:`${qSize}px`, fontWeight:700, color:T.text, margin:0, lineHeight:1.55, direction:'ltr', textAlign:'left' }}>
               <FractionText text={currentQ?.prompt_en} />
             </p>
           )}
           {langMode === 'bilingual' && !isHE && isDistinctHe(currentQ?.prompt_he, currentQ?.prompt_en) && (
-            <p style={{ fontSize:`${FS?.question || 13}px`, color:T.accent1, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 12px', lineHeight:1.6 }}>
-              <FractionText text={currentQ?.prompt_he} />
-            </p>
+            <HebrewMathText text={currentQ?.prompt_he || ''}
+              style={{ fontSize:18, color:T.text2, direction:'rtl', textAlign:'right', margin:0, lineHeight:1.6 }} />
           )}
-
           {currentQ?.visual_data && (
-            <div style={{ display:'flex', justifyContent:'center', padding:'12px', background:T.panel2, border:`2px dashed ${T.border}`, borderRadius:T.radius, marginBottom:'14px' }}>
-              <MathVisual data={currentQ.visual_data} size={200} color={T.accent1} dark={theme === 'minecraft'}/>
+            <div style={{ display:'flex', justifyContent:'center', padding:12, background:T.panel2, borderRadius:R - 6 }}>
+              <MathVisual data={currentQ.visual_data} size={220} color={T.accent1} dark={dark}/>
             </div>
           )}
+        </div>
 
-          <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'14px' }}>
+        {/* Answers */}
+        {options.length > 0 && (
+          <div style={{ display:'grid', gridTemplateColumns: twoCols ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap:10 }}>
             {options.map(opt => {
               const isTriedWrong = wrongLabels.includes(opt.label) && !(itemResolved && opt.isCorrect)
               const isRevealedCorrect = itemResolved && opt.isCorrect
-              const displayVal = isHE ? (opt.value_he || opt.value_en || '') : (opt.value_en || '')
               return (
-                <AnimatedBtn
-                  key={opt.label}
-                  theme={theme}
-                  T={T}
-                  correct={isRevealedCorrect}
-                  wrong={isTriedWrong}
+                <AnimatedBtn key={opt.label} theme={theme} T={T}
+                  correct={isRevealedCorrect} wrong={isTriedWrong}
                   disabled={!canAnswer || wrongLabels.includes(opt.label)}
                   onClick={() => submitAnswer(opt.label)}
                   style={{
-                    background: isRevealedCorrect ? 'rgba(0,200,83,0.15)' : isTriedWrong ? 'rgba(224,48,48,0.15)' : T.panel2,
-                    border: `2px solid ${isRevealedCorrect ? T.accent3 : isTriedWrong ? '#E03030' : T.border}`,
-                    borderRadius: T.radius,
-                    padding: '12px 14px',
-                    fontSize: '15px',
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    color: T.text,
-                    textAlign: isHE ? 'right' : 'left',
-                    direction: isHE ? 'rtl' : 'ltr',
-                    width: '100%',
-                  }}
-                >
-                  <span style={{ width:'22px', height:'22px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', flexShrink:0 }}>{isHE ? translateOptionLabel(opt.label) : opt.label}</span>
-                  <FractionText text={displayVal} />
+                    background: isRevealedCorrect ? (dark ? '#1F4D2E' : '#E3F4EF') : isTriedWrong ? (dark ? '#4D1F1F' : '#FDECE7') : T.panel,
+                    border: `2.5px solid ${isRevealedCorrect ? '#12937A' : isTriedWrong ? '#E85D3F' : T.border}`,
+                    borderRadius: R - 6, minHeight: twoCols ? 84 : 64, padding: '12px 16px',
+                    fontSize: 22, fontWeight: 700, fontFamily: F, color: T.text,
+                    display: 'flex', alignItems: 'center', justifyContent: twoCols ? 'center' : 'flex-start', gap: 12,
+                    textAlign: twoCols ? 'center' : 'start', width: '100%', boxShadow: 'none',
+                    opacity: isTriedWrong ? 0.75 : 1,
+                  }}>
+                  {!twoCols && (
+                    <span style={{ width:34, height:34, borderRadius:10, background:T.panel2, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0, color:T.text2 }}>
+                      {isHE ? translateOptionLabel(opt.label) : opt.label}
+                    </span>
+                  )}
+                  <span style={{ unicodeBidi:'plaintext' }}><FractionText text={optText(opt)} /></span>
                 </AnimatedBtn>
               )
             })}
           </div>
+        )}
 
-          {/* Open question (no options): the child types the answer */}
-          {options.length === 0 && (
-            <form onSubmit={e => { e.preventDefault(); if (typed.trim()) { submitAnswer(typed.trim()); setTyped('') } }}
-              style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'14px' }}>
-              {wrongLabels.length > 0 && (
-                <div style={{ fontSize:'13px', color:'#E03030', fontWeight:700 }}>
-                  {isHE ? 'ניסית:' : 'You tried:'} {wrongLabels.map((w, i) => <bdi key={i} style={{ marginInlineStart:6 }}>{w}</bdi>)}
-                </div>
-              )}
-              {canAnswer && (
-                <div style={{ display:'flex', gap:'8px' }}>
-                  <input value={typed} onChange={e => setTyped(e.target.value)} dir="auto" inputMode="text" autoComplete="off"
-                    placeholder={isHE ? 'כתבו את התשובה' : 'Type your answer'}
-                    aria-label={isHE ? 'התשובה שלך' : 'Your answer'}
-                    style={{ flex:1, minHeight:'52px', padding:'10px 14px', fontSize:'18px', fontWeight:700, background:T.panel2, color:T.text, border:`2px solid ${T.border}`, borderRadius:T.radius }} />
-                  <button type="submit" disabled={!typed.trim()}
-                    style={{ minHeight:'52px', minWidth:'96px', padding:'0 18px', background:T.accent1, color:'#fff', border:'none', borderRadius:T.radius, fontWeight:900, fontSize:'16px', cursor:'pointer', opacity: typed.trim() ? 1 : 0.5 }}>
-                    {isHE ? 'בדיקה' : 'Check'}
-                  </button>
-                </div>
-              )}
-            </form>
-          )}
+        {options.length === 0 && (
+          <>
+            {wrongLabels.length > 0 && !itemResolved && (
+              <div style={{ fontSize:17, color:'#B4432A', fontWeight:700 }}>
+                {L('ניסית:', 'You tried:')} {wrongLabels.map((w, i) => <bdi key={i} style={{ marginInlineStart:6 }}>{w}</bdi>)}
+              </div>
+            )}
+            {canAnswer && (
+              <AnswerPad value={typed} onChange={setTyped} numeric={numeric} expected={currentQ?.correct_answer}
+                onSubmit={() => { const v = typed.trim(); if (v) { submitAnswer(v); setTyped('') } }}
+                T={T} isHE={isHE} disabled={submitting} />
+            )}
+          </>
+        )}
 
-          {showHint && (currentQ?.hint_en || currentQ?.hint_he || isHE) && (
-            <div style={{ background:`${T.accent2}15`, border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'10px 12px', marginBottom:'12px', direction:isHE?'rtl':'ltr' }}>
-              <div style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2, marginBottom:'4px' }}>💡 {isHE ? 'רמז' : 'Hint'}</div>
-              <p style={{ fontSize:'14px', color:T.text2, margin:0 }}>
-                <FractionText text={isHE ? (currentQ?.hint_he || 'קראו את השאלה שוב לאט, ובדקו כל תשובה אחת-אחת.') : currentQ?.hint_en} />
-              </p>
-              <p style={{ fontSize:'12px', color:T.text2, margin:'6px 0 0', fontStyle:'italic' }}>
-                {isHE ? 'נסה שוב!' : 'Give it another try!'}
-              </p>
-            </div>
-          )}
-
-          {showCorrectFeedback && (
-            <div style={{ border:`2px solid ${T.accent3}`, background:'rgba(0,200,83,0.1)', borderRadius:T.radius, padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:'10px', marginBottom:'14px' }}>
-              <Pip theme={theme} he={isHE} size={52} pose="thumbs" bounce style={{ flexShrink:0 }} />
-              <div>
-                <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent3, marginBottom:'3px' }}>
-                  {status === 'correct_first_try'
-                    ? (isHE ? 'נכון בפעם הראשונה!' : 'Correct — first try!')
-                    : (isHE ? 'נכון!' : 'Correct!')}
-                </div>
-                {(isHE ? currentQ?.explanation_he : currentQ?.explanation_en) && (
-                  <div style={{ fontSize:'13px', color:T.text2, lineHeight:1.6 }}><FractionText text={(isHE ? currentQ?.explanation_he : currentQ?.explanation_en) || ''} /></div>
-                )}
+        {/* Feedback */}
+        {showHint && (
+          <div style={{ display:'flex', gap:12, alignItems:'flex-start', background:dark ? T.panel : '#FFF4D6', border:`2px solid ${T.accent2}`, borderRadius:R - 4, padding:14 }}>
+            <Pip theme={theme} pose="think" size={56} he={isHE} style={{ flexShrink:0 }} />
+            <div>
+              <div style={{ fontFamily:F, fontSize:19, fontWeight:800, display:'flex', alignItems:'center', gap:6 }}><Lightbulb size={20}/> {L('כמעט! הנה רמז', 'Almost! Here is a hint')}</div>
+              <div style={{ fontSize:18, lineHeight:1.55, marginTop:4 }}>
+                <FractionText text={isHE ? (currentQ?.hint_he || 'קראו את השאלה שוב לאט, ובדקו כל תשובה אחת-אחת.') : (currentQ?.hint_en || 'Read the question again slowly.')} />
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {showReveal && (
-            <div style={{ border:'2px solid #E03030', background:'rgba(224,48,48,0.08)', borderRadius:T.radius, padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:'10px', marginBottom:'14px' }}>
-              <span style={{ fontSize:'22px' }}>👀</span>
-              <div>
-                <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:'#E03030', marginBottom:'3px' }}>
-                  {isHE ? 'התשובה הנכונה' : 'The correct answer'}: {correctOption
-                    ? <>{isHE ? translateOptionLabel(correctOption.label) : correctOption.label}. <FractionText text={isHE ? (correctOption.value_he || correctOption.value_en) : correctOption.value_en} /></>
-                    : <bdi><FractionText text={currentQ?.correct_answer || ''} /></bdi>}
-                </div>
-                {(isHE ? currentQ?.explanation_he : currentQ?.explanation_en) && (
-                  <div style={{ fontSize:'13px', color:T.text2, lineHeight:1.6 }}><FractionText text={(isHE ? currentQ?.explanation_he : currentQ?.explanation_en) || ''} /></div>
-                )}
+        {showCorrectFeedback && (
+          <div style={{ display:'flex', gap:12, alignItems:'flex-start', background:dark ? '#1F4D2E' : '#E3F4EF', border:'2px solid #12937A', borderRadius:R - 4, padding:14 }}>
+            <Pip theme={theme} pose="thumbs" size={60} he={isHE} bounce style={{ flexShrink:0 }} />
+            <div>
+              <div style={{ fontFamily:F, fontSize:21, fontWeight:800, color:dark ? '#9BE3C9' : '#0B6B58' }}>
+                {status === 'correct_first_try' ? L('נכון! בפעם הראשונה', 'Correct — first try!') : L('נכון!', 'Correct!')}
               </div>
+              {explanation && <div style={{ fontSize:17, lineHeight:1.6, marginTop:4 }}><FractionText text={explanation} /></div>}
             </div>
-          )}
+          </div>
+        )}
 
-          {error && (
-            <div style={{ color:'#E03030', fontSize:'13px', fontWeight:700, marginBottom:'12px' }}>⚠️ {error}</div>
-          )}
+        {showReveal && (
+          <div style={{ display:'flex', gap:12, alignItems:'flex-start', background:dark ? T.panel : '#FDF3EF', border:`2px solid ${dark ? T.border : '#F2C3B5'}`, borderRadius:R - 4, padding:14 }}>
+            <Pip theme={theme} pose="read" size={56} he={isHE} style={{ flexShrink:0 }} />
+            <div>
+              <div style={{ fontFamily:F, fontSize:19, fontWeight:800 }}>
+                {L('התשובה היא', 'The answer is')}{' '}
+                {correctOption
+                  ? <bdi><FractionText text={optText(correctOption)} /></bdi>
+                  : <bdi><FractionText text={currentQ?.correct_answer || ''} /></bdi>}
+              </div>
+              {explanation && <div style={{ fontSize:17, lineHeight:1.6, marginTop:4 }}><FractionText text={explanation} /></div>}
+              <div style={{ fontSize:16, color:T.text2, marginTop:6 }}>{L('זה בסדר — ככה לומדים.', "That's okay — that's how we learn.")}</div>
+            </div>
+          </div>
+        )}
 
-          {itemResolved && (
-            <button onClick={goNext} style={{ width:'100%', padding:'12px 20px', fontFamily:T.fontHead, fontSize:'15px', background:T.accent1, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', fontWeight:800 }}>
-              {currentIndex + 1 >= totalItems ? (isHE ? 'סיום' : 'Finish') : (isHE ? 'הבא' : 'Next')}
-            </button>
-          )}
-        </ThemePanel>
+        {error && <div style={{ color:'#B4432A', fontSize:17, fontWeight:700 }}>{error}</div>}
+
+        {itemResolved && (
+          <button onClick={goNext} style={{ width:'100%', minHeight:64, fontFamily:F, fontSize:22, background:T.accent1, border:'none', color:'#fff', borderRadius:R - 6, cursor:'pointer', fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+            {currentIndex + 1 >= totalItems ? L('סיום', 'Finish') : L('הבא', 'Next')}
+            <ChevronRight size={22} style={isHE ? { transform:'scaleX(-1)' } : undefined}/>
+          </button>
+        )}
       </div>
     </div>
   )
