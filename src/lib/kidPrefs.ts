@@ -41,7 +41,7 @@ export function saveKidLang(lang: KidLang, childId?: string) {
 export const KID_LABELS = {
   home:        { en: 'Today',        he: 'היום' },
   practice:    { en: 'Practice',     he: 'תרגול' },
-  rewards:     { en: 'Collection',   he: 'האוסף' },
+  rewards:     { en: 'Stickers',     he: 'המדבקות שלי' },
   assignments: { en: 'Assignments',  he: 'משימות' },
   parent:      { en: 'Parent',       he: 'הורה' },
   theme:       { en: 'Theme',        he: 'עיצוב' },

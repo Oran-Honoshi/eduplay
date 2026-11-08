@@ -7,6 +7,7 @@ import FractionText from '@/components/FractionText'
 import HebrewMathText from '@/components/HebrewMathText'
 import { AnimatedBtn, Sparkles, THEME_CONFIG } from '@/components/theme'
 import { getFontSize } from '@/lib/fontSize'
+import { announceTokensChanged } from '@/lib/kidPrefs'
 import { Pip } from '@/components/Pip'
 import { isDistinctHe, translateOptionLabel } from '@/lib/text'
 
@@ -54,6 +55,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
   const [sparkleActive, setSparkleActive] = useState(false)
   const [celebration, setCelebration] = useState<{ message: string; emoji: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [stickerEarned, setStickerEarned] = useState(false)
 
   const totalItems = items.length
   const done = currentIndex >= totalItems
@@ -91,6 +93,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
         attempt_2_answer: wasFirstAttempt ? it.attempt_2_answer : label,
       }))
 
+      if (data.stickerEarned) { setStickerEarned(true); announceTokensChanged() }
       if (data.correct) {
         setSparkleActive(true)
         setTimeout(() => setSparkleActive(false), 1200)
@@ -145,7 +148,18 @@ export default function AssignmentClient({ child, assignment, items: initialItem
             {correctAfterHint > 0 && <span style={{ padding:'6px 12px', borderRadius:999, background:dark ? T.panel2 : '#FFF4D6', color:dark ? T.text : '#7A5600', fontWeight:700 }}>{L(`${correctAfterHint} עם רמז`, `${correctAfterHint} with a hint`)}</span>}
             {revealed > 0 && <span style={{ padding:'6px 12px', borderRadius:999, background:dark ? T.panel2 : '#F3EFE7', color:T.text2, fontWeight:700 }}>{L(`${revealed} לחזור עליהן`, `${revealed} to practice again`)}</span>}
           </div>
-          <button onClick={goHome} style={{ width:'100%', minHeight:64, background:T.accent1, border:'none', borderRadius:R - 4, color:'#fff', fontFamily:F, fontSize:22, fontWeight:800, cursor:'pointer' }}>
+          {stickerEarned && (
+            <div style={{ fontSize:19, fontWeight:800, color:dark ? '#FFE08A' : '#7A5600', background:dark ? T.panel2 : '#FFF4D6', borderRadius:16, padding:'10px 14px', width:'100%', boxSizing:'border-box' }}>
+              {L('קיבלת מדבקה חדשה לאלבום!', 'You earned a new sticker for your album!')}
+            </div>
+          )}
+          {stickerEarned && (
+            <button onClick={() => { window.location.href = `/cards?childId=${child.id}${token ? `&token=${token}` : ''}&theme=${theme}&lang=${langMode}` }}
+              style={{ width:'100%', minHeight:64, background:T.accent1, border:'none', borderRadius:R - 4, color:'#fff', fontFamily:F, fontSize:22, fontWeight:800, cursor:'pointer' }}>
+              {L('להדביק באלבום', 'Place it in my album')}
+            </button>
+          )}
+          <button onClick={goHome} style={{ width:'100%', minHeight: stickerEarned ? 52 : 64, background: stickerEarned ? 'transparent' : T.accent1, border:'none', borderRadius:R - 4, color: stickerEarned ? T.accent1 : '#fff', fontFamily:F, fontSize: stickerEarned ? 19 : 22, fontWeight:800, cursor:'pointer' }}>
             {L('חזרה הביתה', 'Back home')}
           </button>
         </div>

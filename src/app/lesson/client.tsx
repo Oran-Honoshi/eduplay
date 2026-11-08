@@ -394,7 +394,7 @@ function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic
         </div>
         {cardEarned && (
           <p style={{ fontSize:'14px', color:T.accent2, fontWeight:800, marginBottom:'8px' }}>
-            🎴 {isHE ? 'קיבלת כרטיס חדש!' : 'You earned a new card!'}
+            {isHE ? 'קיבלת מדבקה חדשה!' : 'You earned a new sticker!'}
           </p>
         )}
         <div style={{ display:'flex', gap:'10px', justifyContent:'center', marginTop:'16px' }}>
@@ -733,7 +733,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
           announceTokensChanged()
           setCompletionInfo({
             message: isHE
-              ? (isBonus ? (cardEarned ? 'תרגיל הבונוס הושלם! קיבלת כרטיס נוסף! 🎴' : 'תרגיל הבונוס הושלם! כל הכבוד! 🎓') : 'כל הכבוד! סיימת את השיעור! 🎓')
+              ? (isBonus ? (cardEarned ? 'תרגיל הבונוס הושלם! קיבלת עוד מדבקה!' : 'תרגיל הבונוס הושלם! כל הכבוד! 🎓') : 'כל הכבוד! סיימת את השיעור! 🎓')
               : (isBonus ? (cardEarned ? 'Bonus complete! Extra card earned! 🎴' : 'Bonus complete! Great practice! 🎓') : 'Lesson complete! Amazing work! 🎓'),
             emoji: isBonus && cardEarned ? '🎴' : '🎉',
             card: cardEarned,
@@ -800,7 +800,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
             {completionInfo?.card && (
               <button onClick={() => { window.location.href = `/cards?childId=${child?.id}${token ? `&token=${token}` : ''}&theme=${theme}&lang=${langMode}` }}
                 style={{ width:'100%', minHeight:52, marginBottom:'14px', padding:'12px', background:'#E0A927', border:'3px solid #B7862F', borderRadius:T.radius, color:'#fff', fontFamily:T.fontHead, fontSize:'15px', fontWeight:900, cursor:'pointer' }}>
-                🎴 {isHE ? 'בואו נגלה את הכרטיס החדש!' : 'Open your new card!'}
+                {isHE ? 'להדביק באלבום' : 'Place it in my album'}
               </button>
             )}
 
@@ -811,7 +811,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                 {isHE ? 'תרגיל בונוס!' : 'BONUS ROUND!'}
               </div>
               <div style={{ fontSize:'13px', color:T.text2, marginBottom:10 }}>
-                {isHE ? 'ענה על 20 שאלות נוספות וקבל עוד כרטיס!' : 'Answer 20 more questions and earn an extra card!'}
+                {isHE ? 'עונים על עוד 20 שאלות ומקבלים עוד מדבקה!' : 'Answer 20 more questions and earn another sticker!'}
               </div>
               <button onClick={() => {
                 window.location.href = `/lesson?childId=${child?.id}&topicId=${topic?.id}&theme=${theme}&lang=${langMode}&bonus=true&token=${token}`
