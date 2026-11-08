@@ -156,13 +156,15 @@ export function checkBooklet(levelNumber: number, title: string, pages: BookletP
 let lastProofError: string | null = null
 /** a second reader: real words, correct standard niqqud, natural sentences */
 export async function proofread(lines: string[]): Promise<{ text: string; why: string }[]> {
-  const r = await askClaudeJSON<any>({
-    system: `You proofread an early-reading booklet for Israeli children (fully pointed Hebrew). Find every problem a careful Hebrew teacher would mark: a word that is not a real Hebrew word, a real word with WRONG niqqud (e.g. "כַּלָּב" instead of "כֶּלֶב", "גָּדָל" instead of "גָּדַל"), or a line that is not natural, meaningful Hebrew. Ignore single syllables (one letter with a vowel). Be strict but do not invent problems.
+  const ask = () => askClaudeJSON<any>({
+    system: `You proofread an early-reading booklet for Israeli children (fully pointed Hebrew). Find every problem a careful Hebrew teacher would mark: a word that is not a real Hebrew word, a real word with WRONG niqqud (e.g. "כַּלָּב" instead of "כֶּלֶב", "גָּדָל" instead of "גָּדַל"), or a line that is not natural, meaningful Hebrew. Ignore single syllables (one letter with a vowel). Also check that each question's answer is really stated in the story, and that verbs agree with their subject (a girl: שָׂמְחָה, not שָׂמַח). Be strict but do not invent problems.
 Output JSON only: {"problems":[{"text":"the exact wrong word or line as written","why":"short Hebrew explanation"}]}`,
     content: lines.map((l, i) => `${i + 1}. ${l}`).join('\n'),
     maxTokens: 2500,
     think: 2500,
   })
+  let r = await ask()
+  if (!r.ok) r = await ask()
   if (!r.ok) { lastProofError = r.error.slice(0, 200); return [] }
   lastProofError = null
   return (Array.isArray(r.data?.problems) ? r.data.problems : [])
