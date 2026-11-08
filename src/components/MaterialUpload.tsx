@@ -149,7 +149,7 @@ export function MaterialUpload({
     }
   }
 
-  const btn = 'inline-flex items-center gap-2 min-h-[44px] px-4 rounded-xl border border-[#0F766E33] bg-white text-[#0F766E] text-sm font-semibold hover:bg-[#E4F3F1] disabled:opacity-50'
+  const btn = 'inline-flex items-center gap-2 min-h-[44px] px-4 rounded-xl border border-[#2F5BE333] bg-white text-[#2F5BE3] text-sm font-semibold hover:bg-[#EAF0FF] disabled:opacity-50'
 
   return (
     <div dir={he ? 'rtl' : 'ltr'}>
@@ -157,10 +157,10 @@ export function MaterialUpload({
         onDragOver={e => { e.preventDefault(); setDrag(true) }}
         onDragLeave={() => setDrag(false)}
         onDrop={e => { e.preventDefault(); setDrag(false); addFiles(e.dataTransfer.files) }}
-        className={`rounded-2xl border-2 border-dashed ${drag ? 'border-[#0F766E] bg-[#E4F3F1]' : 'border-[#0F766E33] bg-[#F7FBFA]'} ${compact ? 'p-3' : 'p-4'}`}
+        className={`rounded-2xl border-2 border-dashed ${drag ? 'border-[#2F5BE3] bg-[#EAF0FF]' : 'border-[#2F5BE333] bg-[#F7F4EE]'} ${compact ? 'p-3' : 'p-4'}`}
       >
         {!compact && (
-          <p className="text-sm text-[#3d4f4b] mb-3 leading-relaxed">
+          <p className="text-sm text-[#33415F] mb-3 leading-relaxed">
             {L('Add the child\'s own material: workbook or textbook pages, a worksheet, an exam material list. Photos, PDF, Word or text, up to ' + max + ' files.',
                'הוסיפו חומר של הילד/ה: עמודים מחוברת העבודה או מהספר, דף עבודה, רשימת חומר למבחן. תמונות, PDF, וורד או טקסט, עד ' + max + ' קבצים.')}
           </p>
@@ -172,13 +172,13 @@ export function MaterialUpload({
           <button type="button" className={`${btn} md:hidden`} disabled={busy || value.length >= max} onClick={() => camRef.current?.click()}>
             <Camera size={16} /> {L('Take a photo', 'צילום')}
           </button>
-          <span className="hidden md:inline-flex items-center text-xs text-[#7a8f8b]">{L('or drag files here', 'או גררו קבצים לכאן')}</span>
+          <span className="hidden md:inline-flex items-center text-xs text-[#5E6B85]">{L('or drag files here', 'או גררו קבצים לכאן')}</span>
         </div>
         {busy && (
-          <div className="mt-3 rounded-xl bg-white border border-[#e3ebe9] px-3 py-2 text-sm text-[#0F766E] font-semibold flex items-center gap-2">
+          <div className="mt-3 rounded-xl bg-white border border-[#E8E2D6] px-3 py-2 text-sm text-[#2F5BE3] font-semibold flex items-center gap-2">
             <Loader2 size={16} className="animate-spin" />
             {he ? <FunLine kind="upload" /> : 'Uploading…'}
-            {progress && <span className="ms-auto text-xs text-[#5b6b68]" dir="ltr">{progress.done}/{progress.total}</span>}
+            {progress && <span className="ms-auto text-xs text-[#4A5672]" dir="ltr">{progress.done}/{progress.total}</span>}
           </div>
         )}
         <input ref={fileRef} type="file" multiple accept={UPLOAD_ACCEPT} className="hidden" onChange={e => addFiles(e.target.files)} />
@@ -187,18 +187,18 @@ export function MaterialUpload({
         {value.length > 0 && (
           <ul className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
             {value.map((m, i) => (
-              <li key={m.id} className="relative rounded-xl border border-[#e3ebe9] bg-white overflow-hidden">
+              <li key={m.id} className="relative rounded-xl border border-[#E8E2D6] bg-white overflow-hidden">
                 {m.preview
                   ? <img src={m.preview} alt={m.name} className="w-full h-24 object-cover" />
-                  : <div className="h-24 flex items-center justify-center text-[#0F766E]"><FileText size={30} /></div>}
-                <div className="px-2 py-1 text-[11px] text-[#3d4f4b] truncate" title={m.name}>{i + 1}. {m.name}</div>
+                  : <div className="h-24 flex items-center justify-center text-[#2F5BE3]"><FileText size={30} /></div>}
+                <div className="px-2 py-1 text-[11px] text-[#33415F] truncate" title={m.name}>{i + 1}. {m.name}</div>
                 {autoRead && readState[m.id] && (
-                  <div className={`px-2 pb-1 text-[10px] font-bold ${readState[m.id] === 'ready' ? 'text-[#16A34A]' : readState[m.id] === 'failed' ? 'text-[#B45309]' : 'text-[#0F766E]'}`}>
+                  <div className={`px-2 pb-1 text-[10px] font-bold ${readState[m.id] === 'ready' ? 'text-[#16A34A]' : readState[m.id] === 'failed' ? 'text-[#B45309]' : 'text-[#2F5BE3]'}`}>
                     {readState[m.id] === 'ready' ? (he ? 'נקרא ✓' : 'Read ✓') : readState[m.id] === 'failed' ? (he ? 'ננסה שוב בתכנון' : 'Will retry') : (he ? 'פיפ קורא…' : 'Reading…')}
                   </div>
                 )}
                 <button type="button" aria-label={L('Remove', 'הסרה')} onClick={() => onChange(value.filter(x => x.id !== m.id))}
-                  className="absolute top-1 end-1 w-7 h-7 rounded-full bg-white/90 border border-[#e3ebe9] flex items-center justify-center text-[#7a8f8b] hover:text-[#DC2626]">
+                  className="absolute top-1 end-1 w-7 h-7 rounded-full bg-white/90 border border-[#E8E2D6] flex items-center justify-center text-[#5E6B85] hover:text-[#DC2626]">
                   <X size={14} />
                 </button>
               </li>

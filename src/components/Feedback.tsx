@@ -9,7 +9,7 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
   return (
     <div role="dialog" aria-modal="true" dir="rtl" className="fixed inset-0 z-[600] bg-black/40 flex items-end sm:items-center justify-center p-3" onClick={onClose}>
       <div className="bg-white rounded-3xl w-full max-w-[420px] p-5 relative" style={{ fontFamily: "'Assistant','Nunito',sans-serif" }} onClick={e => e.stopPropagation()}>
-        <button aria-label="סגירה" onClick={onClose} className="absolute top-3 end-3 w-9 h-9 rounded-full flex items-center justify-center text-[#7a8f8b] hover:bg-[#F1F5F9]"><X size={18} /></button>
+        <button aria-label="סגירה" onClick={onClose} className="absolute top-3 end-3 w-9 h-9 rounded-full flex items-center justify-center text-[#5E6B85] hover:bg-[#F1F5F9]"><X size={18} /></button>
         {children}
       </div>
     </div>
@@ -31,8 +31,8 @@ function Form({ mode, materialId, onDone }: { mode: 'rating' | 'suggestion'; mat
       <div className="flex items-center gap-3">
         <Pip pose={mode === 'rating' ? 'wave' : 'think'} size={64} he />
         <div>
-          <div className="font-black text-lg text-[#1f2a28]">{mode === 'rating' ? 'איך היה עד עכשיו?' : 'יש לכם הצעה?'}</div>
-          <div className="text-sm text-[#5b6b68]">הדעה שלכם חשובה לנו ועוזרת לנו לשפר.</div>
+          <div className="font-black text-lg text-[#16213E]">{mode === 'rating' ? 'איך היה עד עכשיו?' : 'יש לכם הצעה?'}</div>
+          <div className="text-sm text-[#4A5672]">הדעה שלכם חשובה לנו ועוזרת לנו לשפר.</div>
         </div>
       </div>
       {mode === 'rating' && (
@@ -42,9 +42,9 @@ function Form({ mode, materialId, onDone }: { mode: 'rating' | 'suggestion'; mat
       )}
       <textarea value={msg} onChange={e => setMsg(e.target.value)} rows={3} dir="auto"
         placeholder={mode === 'rating' ? 'משהו שאהבתם, או שהיה קשה? (לא חובה)' : 'מה הייתם רוצים שנוסיף או נשפר? איך היה התהליך?'}
-        className="w-full px-3 py-2 rounded-xl border border-[rgba(15,118,110,.2)] text-[15px]" />
+        className="w-full px-3 py-2 rounded-xl border border-[#D9D2C4] text-[15px]" />
       <button onClick={send} disabled={mode === 'rating' ? !stars && !msg.trim() : !msg.trim()}
-        className="min-h-[48px] rounded-xl bg-[#0F766E] text-white font-bold disabled:opacity-50">שליחה</button>
+        className="min-h-[48px] rounded-xl bg-[#2F5BE3] text-white font-bold disabled:opacity-50">שליחה</button>
     </div>
   )
 }
@@ -64,7 +64,7 @@ export function SuggestionsButton({ label = 'הצעות לשיפור' }: { label
   const [open, setOpen] = useState(false)
   return (
     <>
-      <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full border border-[rgba(15,118,110,.2)] bg-white text-[#0F766E] text-xs font-bold hover:bg-[#E4F3F1]">
+      <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-full border border-[#D9D2C4] bg-white text-[#2F5BE3] text-xs font-bold hover:bg-[#EAF0FF]">
         <MessageSquareHeart size={14} /> {label}
       </button>
       {open && <Modal onClose={() => setOpen(false)}><Form mode="suggestion" onDone={() => setOpen(false)} /></Modal>}

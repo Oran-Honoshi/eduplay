@@ -36,6 +36,9 @@ export default async function DashboardPage({ searchParams }: Props) {
     supabase.from('families').select('*').eq('id', familyId).single(),
     supabase.from('subjects').select('*').order('sort_order'),
   ])
+  // the signed-in parent's name (else the family's first parent)
+  const { data: parentRows } = await supabase.from('family_parents').select('id, name').eq('family_id', familyId).order('created_at')
+  const parentRow = (parentRows || []).find(p => p.id === auth.parent.parentId) || (parentRows || [])[0]
 
   const childIds = children?.map(c => c.id) || []
 
@@ -64,7 +67,7 @@ export default async function DashboardPage({ searchParams }: Props) {
         subjects:        subjects || [],
         progress:        allProgress || [],
         recommendations: allRecommendations || [],
-        parentName:      'Hila',
+        parentName:      parentRow?.name || '',
         isDemo:          false,
       }}
       error={searchParams.error}

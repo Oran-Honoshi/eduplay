@@ -46,8 +46,8 @@ export function FunLoader({ kind, pose = 'read', size = 96, sub }: { kind: keyof
   return (
     <div className="flex flex-col items-center text-center gap-2" dir="rtl" aria-live="polite">
       <div className="animate-bounce" style={{ animationDuration: '1.8s' }}><Pip pose={pose} size={size} he /></div>
-      <div key={i} className="text-base font-bold text-[#1f2a28] transition-opacity" style={{ animation: 'funIn .4s ease-out' }}>{lines[i]}</div>
-      {sub && <div className="text-sm text-[#5b6b68]">{sub}</div>}
+      <div key={i} className="text-base font-bold text-[#16213E] transition-opacity" style={{ animation: 'funIn .4s ease-out' }}>{lines[i]}</div>
+      {sub && <div className="text-sm text-[#4A5672]">{sub}</div>}
       <style>{`@keyframes funIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}`}</style>
     </div>
   )
