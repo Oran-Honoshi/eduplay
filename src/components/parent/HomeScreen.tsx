@@ -59,7 +59,7 @@ export default function HomeScreen({ children, progress, parentName, onProgress 
       {toReview > 0 && (
         <section aria-labelledby="h-wait" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <h2 id="h-wait" style={h2}>מחכה לבדיקה שלך</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 14 }}>
             {waiting.map(m => {
               const sc = SUBJECT_COLORS[m.subject_slug] || SUBJECT_COLORS.math
               return (

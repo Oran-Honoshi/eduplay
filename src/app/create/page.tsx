@@ -36,17 +36,17 @@ const SUBJECTS = [
   { slug: 'hebrew', he: 'עברית' },
   { slug: 'english', he: 'אנגלית' },
 ]
-const KINDS: { id: Kind; he: string; desc: string; Icon: any }[] = [
-  { id: 'practice', he: 'תרגול', desc: 'נושא אחד או שניים, הרבה שאלות מהקל לקשה, עם רמזים ופתרונות.', Icon: Target },
-  { id: 'exam', he: 'מבחן', desc: 'הרבה נושאים, רמות מעורבות, זמן מוגבל ודף תשובות.', Icon: ClipboardList },
-  { id: 'explanation', he: 'דפי הסבר', desc: 'דף לימוד לכל נושא: הסבר, דוגמאות פתורות, טעויות נפוצות.', Icon: BookOpen },
+const KINDS: { id: Kind; he: string; desc: string; Icon: any; tint: string }[] = [
+  { id: 'practice', he: 'תרגול', desc: 'נושא אחד או שניים, הרבה שאלות מהקל לקשה, עם רמזים ופתרונות.', Icon: Target, tint: 'bg-[#EAF0FF] text-[#2148C0]' },
+  { id: 'exam', he: 'מבחן', desc: 'הרבה נושאים, רמות מעורבות, זמן מוגבל ודף תשובות.', Icon: ClipboardList, tint: 'bg-[#F0EDFF] text-[#5B4BD1]' },
+  { id: 'explanation', he: 'דפי הסבר', desc: 'דף לימוד לכל נושא: הסבר, דוגמאות פתורות, טעויות נפוצות.', Icon: BookOpen, tint: 'bg-[#E3F5EF] text-[#0B6B58]' },
 ]
 const DIFF_LABEL: Record<string, string> = { progressive: 'מהקל לקשה', mixed: 'מעורב', easy: 'קל', medium: 'בינוני', hard: 'קשה' }
 const gradeHe = (g: number) => (g === 0 ? 'גן' : `כיתה ${['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'י״א', 'י״ב'][g - 1]}${g <= 10 ? '׳' : ''}`)
 
-const card = 'bg-white rounded-2xl border border-[#E8E2D6] shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
-const btnPrimary = 'inline-flex items-center justify-center gap-2 min-h-[48px] px-5 rounded-xl bg-[#2F5BE3] text-white font-bold text-[15px] hover:bg-[#2148C0] disabled:opacity-50'
-const btnGhost = 'inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl border border-[#D9D2C4] bg-white text-[#2F5BE3] font-semibold text-sm hover:bg-[#EAF0FF] disabled:opacity-50'
+const card = 'bg-white rounded-3xl border border-[#E8E2D6]'
+const btnPrimary = 'inline-flex items-center justify-center gap-2 min-h-[52px] px-6 rounded-[14px] bg-[#2F5BE3] text-white font-bold text-[16px] hover:bg-[#2148C0] disabled:opacity-50'
+const btnGhost = 'inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl border-[1.5px] border-[#D9D2C4] bg-white text-[#16213E] font-bold text-[15px] hover:bg-[#F7F4EE] disabled:opacity-50'
 
 export default function CreatePage() {
   return <Suspense fallback={null}><CreateInner /></Suspense>
@@ -369,7 +369,7 @@ function CreateInner() {
       <div className="max-w-[920px] mx-auto px-4 py-6">
         <div className="flex items-center justify-between gap-3 mb-5">
           <div>
-            <h1 className="text-2xl font-black text-[#16213E] m-0">יצירה</h1>
+            <h1 className="text-[32px] font-extrabold text-[#16213E] m-0">יצירה</h1>
             <p className="text-sm text-[#4A5672] mt-1 mb-0">תרגול, מבחן או דפי הסבר — להדפסה, לאפליקציה, או לשניהם.</p>
           </div>
           <div className="flex gap-2">
@@ -411,10 +411,10 @@ function CreateInner() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {KINDS.map(k => (
                   <button key={k.id} onClick={() => { setKind(k.id); go('details') }}
-                    className={`${card} p-5 text-start hover:border-[#2F5BE3] hover:shadow-md transition`}>
-                    <div className="w-12 h-12 rounded-xl bg-[#EAF0FF] text-[#2F5BE3] flex items-center justify-center mb-3"><k.Icon size={24} /></div>
-                    <div className="text-lg font-black text-[#16213E]">{k.he}</div>
-                    <div className="text-sm text-[#4A5672] mt-1 leading-relaxed">{k.desc}</div>
+                    className={`${card} p-6 text-start border-[1.5px] hover:border-[#2F5BE3] hover:shadow-[0_6px_20px_rgba(47,91,227,0.12)] transition`}>
+                    <div className={`w-14 h-14 rounded-2xl ${k.tint} flex items-center justify-center mb-4`}><k.Icon size={28} /></div>
+                    <div className="text-[22px] font-bold text-[#16213E]" style={{ fontFamily: "'Rubik', sans-serif" }}>{k.he}</div>
+                    <div className="text-[16px] text-[#4A5672] mt-1.5 leading-relaxed">{k.desc}</div>
                   </button>
                 ))}
                 <a href="/reading" className={`${card} md:col-span-3 p-4 flex items-center gap-4 text-start hover:border-[#2F5BE3] hover:shadow-md transition no-underline`}>
@@ -512,12 +512,13 @@ function CreateInner() {
                   {editing && questions.length > 0 && <p className="text-xs text-[#5E6B85] mt-2 mb-0">שיניתם את התוכנית? לחצו "דוגמה אחרת" כדי לראות שאלות לפי השינויים.</p>}
                 </div>
               )}
-              <div className="flex flex-wrap gap-2 justify-between mt-3" dir="rtl">
+              <ActionBar>
                 <button className={btnGhost} onClick={() => go('details')}><ArrowLeft size={16} className="rotate-180" /> לפרטים ולקבצים</button>
+                <span className="flex-1" />
                 <button className={btnPrimary} disabled={sampling || !mat.plan.topics.length} onClick={build}>
                   <Sparkles size={18} /> {mat.kind === 'explanation' ? 'לכתוב את הדפים' : questions.length ? `נראה טוב — ליצור את כל ${plannedCount(mat.plan, mat.kind)} השאלות` : 'ליצור את השאלות'}
                 </button>
-              </div>
+              </ActionBar>
               </>
             )}
 
@@ -538,18 +539,18 @@ function CreateInner() {
                 ? <ExplanationReview mat={mat} onDone={async () => { await savePlan(mat.plan, { status: 'ready' }); go('done') }} />
                 : (
                   <div className="flex flex-col gap-3">
-                    <div className={`${card} p-4 flex flex-wrap items-center justify-between gap-3`}>
-                      <div>
-                        <div className="font-black text-[#16213E]">{mat.title}</div>
-                        <div className="text-sm text-[#4A5672]">{questions.length} שאלות{questions.length ? ` · ${pending ? `${pending} מחכות לאישור שלכם` : 'הכול אושר'}` : ''}</div>
+                    <div className={`${card} p-5 flex flex-wrap items-center gap-4`}>
+                      <div className="flex-[1_1_300px] min-w-0">
+                        <h2 className="text-2xl font-extrabold text-[#16213E] m-0"><bdi>{mat.title}</bdi></h2>
+                        <div className="text-[15px] text-[#4A5672] mt-1">רק שאלות שאישרתם יגיעו לילד/ה. אפשר לערוך או להסיר כל שאלה.</div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button className={btnGhost} onClick={() => go('plan')}><ArrowLeft size={16} className="rotate-180" /> לתוכנית</button>
-                        {failed.length > 0 && <button className={btnGhost} onClick={retryFailed}><Sparkles size={16} /> להשלים את החסר</button>}
-                        {pending > 0
-                          ? <button className={btnPrimary} disabled={approving} onClick={approveAll}>{approving ? <><Loader2 size={18} className="animate-spin" /> מאשרים…</> : <><Check size={18} /> לאשר את כל {pending} השאלות ולהמשיך</>}</button>
-                          : <button className={btnPrimary} disabled={questions.length === 0} onClick={finishReview}>סיימתי — להדפסה ולאפליקציה ←</button>}
-                      </div>
+                      {questions.length > 0 && (
+                        <div className="flex-[0_1_240px] flex flex-col gap-1.5">
+                          <div className="flex justify-between text-[15px]"><span>אושרו</span><b>{questions.length - pending} מתוך {questions.length}</b></div>
+                          <div className="h-2.5 rounded-full bg-[#EEEAE2]"><div className="h-2.5 rounded-full bg-[#12937A] transition-all" style={{ width: `${Math.round(((questions.length - pending) / Math.max(1, questions.length)) * 100)}%` }} /></div>
+                        </div>
+                      )}
+                      {failed.length > 0 && <button className={btnGhost} onClick={retryFailed}><Sparkles size={16} /> להשלים את החסר</button>}
                     </div>
                     {questions.length === 0 ? (
                       <div className={`${card} p-6 text-center`}>
@@ -569,13 +570,22 @@ function CreateInner() {
                       if (!qs.length) return null
                       return (
                         <div key={t.key}>
-                          <h3 className="text-base font-black text-[#2F5BE3] mt-3 mb-2">{t.title_he || t.title_en} <span className="text-xs font-semibold text-[#5E6B85]">· {qs.length}</span></h3>
+                          <h3 className="text-lg font-bold text-[#2148C0] mt-4 mb-2">{t.title_he || t.title_en} <span className="text-xs font-semibold text-[#5E6B85]">· {qs.length}</span></h3>
                           <div className="flex flex-col gap-2">
                             {qs.map((q, i) => <QuestionCard key={q.id} q={q} n={i + 1} lang={mat.language} onApprove={() => act(q, 'approve')} onRemove={() => act(q, 'reject')} onSaved={reload} />)}
                           </div>
                         </div>
                       )
                     })}
+                    {questions.length > 0 && (
+                      <ActionBar>
+                        <button className={btnGhost} onClick={() => go('plan')}><ArrowLeft size={16} className="rotate-180" /> לתוכנית</button>
+                        <span className="flex-1" />
+                        {pending > 0
+                          ? <button className={btnPrimary} disabled={approving} onClick={approveAll}>{approving ? <><Loader2 size={18} className="animate-spin" /> מאשרים…</> : <><Check size={18} /> לאשר את {pending === questions.length ? `כל ${pending} השאלות` : `${pending} הנותרות`} ולהמשיך</>}</button>
+                          : <button className={btnPrimary} onClick={finishReview}>סיימתי — להדפסה ולאפליקציה ←</button>}
+                      </ActionBar>
+                    )}
                   </div>
                 )
             )}
@@ -592,23 +602,38 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <div><div className="text-xs font-bold text-[#4A5672] mb-1.5">{label}</div>{children}</div>
 }
 
+// Four steps the parent sees; "build" belongs to the plan step and "done" completes review.
 function Steps({ step, canGo, onGo }: { step: Step; canGo: (s: Step) => boolean; onGo: (s: Step) => void }) {
-  const order: Step[] = ['kind', 'details', 'plan', 'build', 'review', 'done']
-  const labels = ['מה', 'פרטים', 'תוכנית', 'בנייה', 'בדיקה', 'מוכן']
-  const at = order.indexOf(step)
+  const items: { s: Step; l: string }[] = [{ s: 'kind', l: 'מה ליצור' }, { s: 'details', l: 'פרטים' }, { s: 'plan', l: 'תוכנית' }, { s: 'review', l: 'בדיקה' }]
+  const at = { kind: 0, details: 1, plan: 2, build: 2, review: 3, done: 4 }[step]
   return (
-    <ol className="flex gap-1 mb-4 overflow-x-auto p-0 list-none" dir="rtl">
-      {labels.map((l, i) => {
-        const s = order[i]
-        const clickable = s !== step && s !== 'build' && canGo(s)
-        const cls = `w-full text-center text-xs font-bold py-1.5 rounded-full ${i <= at ? 'bg-[#2F5BE3] text-white' : 'bg-white text-[#6B7690] border border-[#E8E2D6]'} ${clickable ? 'cursor-pointer hover:opacity-80 underline-offset-2 hover:underline' : ''}`
+    <ol aria-label="שלבים" className="flex flex-wrap items-center gap-2.5 mb-5 p-0 list-none" dir="rtl">
+      {items.map((it, i) => {
+        const done = i < at, cur = i === at
+        const clickable = !cur && step !== 'build' && canGo(it.s)
+        const dot = (
+          <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-extrabold shrink-0 ${done || cur ? 'bg-[#2F5BE3] text-white' : 'bg-white border-[1.5px] border-[#D9D2C4] text-[#4A5672]'}`}>{done ? <Check size={16} /> : i + 1}</span>
+        )
+        const label = <span className={`text-[15px] ${done || cur ? 'font-bold text-[#16213E]' : 'text-[#4A5672]'}`}>{it.l}</span>
         return (
-          <li key={l} className="flex-1 min-w-[60px]">
-            {clickable ? <button className={cls} onClick={() => onGo(s)}>{i + 1}. {l}</button> : <div className={cls} aria-current={s === step ? 'step' : undefined}>{i + 1}. {l}</div>}
+          <li key={it.s} className="flex items-center gap-2.5" aria-current={cur ? 'step' : undefined}>
+            {clickable
+              ? <button type="button" onClick={() => onGo(it.s)} className="flex items-center gap-2 min-h-[44px] rounded-xl hover:opacity-80">{dot}{label}</button>
+              : <span className="flex items-center gap-2 min-h-[44px]">{dot}{label}</span>}
+            {i < items.length - 1 && <span aria-hidden className={`w-8 sm:w-10 h-0.5 ${i < at ? 'bg-[#2F5BE3]' : 'bg-[#D9D2C4]'}`} />}
           </li>
         )
       })}
     </ol>
+  )
+}
+
+// The main action of a step lives in one bar that stays at the bottom of the screen.
+function ActionBar({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="sticky bottom-0 z-[400] -mx-4 mt-4 bg-white/95 backdrop-blur border-t border-[#E8E2D6] shadow-[0_-6px_20px_rgba(22,33,62,0.06)]" dir="rtl">
+      <div className="max-w-[920px] mx-auto px-4 py-3 flex flex-wrap items-center gap-3">{children}</div>
+    </div>
   )
 }
 
