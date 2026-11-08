@@ -9,7 +9,7 @@
 import { checkNiqqudDecodability } from '@/lib/readingDecodability'
 import { askClaudeJSON } from '@/lib/claude'
 import { bankRules, outsideBank, wordBank } from '@/lib/readingWordBank'
-import { PICTURE_KEYS, DOT_KEYS, pictureWord } from '@/lib/readingPictures'
+import { PICTURE_KEYS, DOT_KEYS, pictureWord, allPicturesHint } from '@/lib/readingPictures'
 
 export type BookletPage =
   | { type: 'syllables'; title: string; instructions?: string; rows: string[][] }
@@ -46,14 +46,16 @@ The fields "title" and "instructions" are read by the ADULT — plain Hebrew wit
 ${theme ? `Theme of the booklet: ${theme}.` : 'Pick one warm everyday theme (family, the park, animals, the sea, a holiday, the kitchen…).'}${avoidTitles.length ? ` Booklets that already exist at this level (choose a different theme and different words): ${avoidTitles.join('; ')}.` : ''}
 Pictures you may use — key and the exact word it shows: ${pictureHint}. A picture goes ONLY with exactly that word (a picture never stands for another word). Words without a picture are fine.
 Connect-the-dots shapes: ${dotsHint}.
-Write 10 to 12 pages that build up, in this order, using these page types:
+PICTURES INSIDE SENTENCES: when a sentence needs a word the child cannot read at this level (an animal, a ball, a slide, the sun…), write a picture token instead of the word: [[key]] with a key from this list: ${allPicturesHint()}. E.g. "דָּן רָאָה [[lion]]." At most ONE picture per sentence (about one picture every one or two sentences). The child "reads" the picture as the word.
+SHORT: every sentence the child reads has at most 5 words (a picture counts as a word). The whole booklet has 10–12 sentences in total: 5–6 on the sentences page and 5–6 in the story.
+Write 9 to 11 pages that build up, in this order, using these page types:
 1. "syllables": 4–5 rows of 4–6 single syllables — ONE letter with one vowel sign of this level (e.g. בָּ, מַ, דָ${level.level_number >= 2 ? ', בְּ' : ''}${level.level_number >= 3 ? ', פִּי' : ''}), using the letters of the words in this booklet; each row practises one letter or one vowel. Not whole words.
 2. "words": 8–10 words (with a picture key when one fits).
 3. "match": 4–5 words, each with its picture — the child draws a line from the word to the picture.
 4. "circle": 4 items — a picture and 3 DIFFERENT REAL words that look alike (e.g. דָּג / דַּף / גַּן), each correctly pointed; answer = the word for the picture, exactly as listed for that picture key. Never a misspelled or wrongly pointed word as a distractor.
-5. "sentences": 5–6 short sentences (2–5 words each) built only from words of this level.
-6. "story": a short story (3–4 short paragraphs, 2–3 sentences each) with "story_title"; optional "picture".
-7. "questions": 3–4 questions about the story whose answers are clearly in the story; options are 2–3 DIFFERENT short answers taken from the story (all pointed, this level only); "answer" = the right option, true to the story.
+5. "sentences": 5–6 short sentences (2–5 words each) built only from words of this level and picture tokens.
+6. "story": a short story of 5–6 short sentences (2–5 words each) in 2–3 paragraphs, with "story_title"; optional "picture".
+7. "questions": 3 questions about the story whose answers are clearly in the story (a picture token may be an option); options are 2–3 DIFFERENT short answers taken from the story (all pointed, this level only); "answer" = the right option, true to the story.
 8. "dots": a connect-the-dots shape linked to the story, with a one-line "caption" the child reads (pointed).
 9. "draw": one sentence from the story's world to read and draw (very easy to draw).
 10. "color": a picture key and a sentence that contains that picture's word, to read, then color the picture.
@@ -72,7 +74,7 @@ OUTPUT JSON only: {"title_he":"short booklet title (pointed, this level)","theme
 {"type":"color","title":"…","instructions":"…","picture":"key","sentence":"…"}`
 }
 
-const str = (x: any, n = 300) => (typeof x === 'string' ? x.trim().slice(0, n) : '')
+const str = (x: any, n = 300) => (typeof x === 'string' ? cleanTokens(x.trim().slice(0, n)) : '')
 const pic = (x: any) => (typeof x === 'string' && PICTURE_KEYS.includes(x) ? x : undefined)
 const bare = (t: string) => t.replace(/[\u0591-\u05C7]/g, '').replace(/[^\u05D0-\u05EA]/g, '')
 /** a picture belongs to a word only if the word IS that thing (ה/ו/ב/ל prefix allowed) */
@@ -83,6 +85,10 @@ const picFor = (word: string, key: any) => {
 }
 /** the picture that shows exactly this word, if there is one */
 const autoPic = (word: string) => PICTURE_KEYS.find(k => picFor(word, k))
+/** [[key]] picture tokens: unknown keys are dropped */
+export const TOKEN = /\[\[([a-z_]+)\]\]/g
+const cleanTokens = (t: string) => t.replace(TOKEN, (m, k) => (PICTURE_KEYS.includes(k) ? `[[${k}]]` : '')).replace(/\s{2,}/g, ' ').trim()
+const wordCount = (t: string) => t.replace(/[.,!?:]/g, ' ').split(/\s+/).filter(Boolean).length
 const uniq = (a: string[]) => a.filter((x, i) => a.indexOf(x) === i)
 
 /** keeps only well-formed pages with known pictures / shapes */
@@ -108,7 +114,7 @@ export function cleanPages(raw: any): BookletPage[] {
           .filter((it: any) => it.picture && it.options.length >= 2 && it.options.includes(it.answer) && picFor(it.answer, it.picture)).slice(0, 6) as any
         if (items.length) out.push({ type: 'circle', ...base, items }); break
       }
-      case 'sentences': { const sentences = (p.sentences || []).map((x: any) => str(x, 120)).filter(Boolean).slice(0, 10); if (sentences.length) out.push({ type: 'sentences', ...base, sentences }); break }
+      case 'sentences': { const sentences = (p.sentences || []).map((x: any) => str(x, 120)).filter((x: string) => x && wordCount(x) <= 6).slice(0, 8); if (sentences.length) out.push({ type: 'sentences', ...base, sentences }); break }
       case 'story': { const paragraphs = (p.paragraphs || []).map((x: any) => str(x, 500)).filter(Boolean).slice(0, 6); if (paragraphs.length) out.push({ type: 'story', ...base, story_title: str(p.story_title, 60), paragraphs, picture: pic(p.picture) }); break }
       case 'questions': { const items = (p.items || []).map((it: any) => ({ q: str(it?.q, 160), options: uniq((it?.options || []).map((o: any) => str(o, 60)).filter(Boolean)).slice(0, 4), answer: str(it?.answer, 60) })).filter((it: any) => it.q && it.options.length >= 2 && it.options.includes(it.answer)).slice(0, 6); if (items.length) out.push({ type: 'questions', ...base, items }); break }
       case 'dots': if (DOT_KEYS.includes(p.shape)) out.push({ type: 'dots', ...base, shape: p.shape, caption: str(p.caption, 120) }); break
@@ -143,10 +149,10 @@ export function childText(title: string, pages: BookletPage[]): string[] {
 }
 
 export function checkBooklet(levelNumber: number, title: string, pages: BookletPage[]) {
-  const text = childText(title, pages).join('\n')
+  const text = childText(title, pages).join('\n').replace(TOKEN, ' ')
   const r = checkNiqqudDecodability(text, Math.min(10, Math.max(1, levelNumber)))
   // the earliest levels: words outside the closed bank count too (the syllables page is exempt)
-  const offBank = outsideBank(levelNumber, childText(title, pages.filter(p => p.type !== 'syllables')))
+  const offBank = outsideBank(levelNumber, childText(title, pages.filter(p => p.type !== 'syllables')).map(l => l.replace(TOKEN, ' ')))
   return { pct: r.pct, total: r.totalWords, bad: [...new Set([...r.violatingWords, ...offBank])].slice(0, 60) }
 }
 
@@ -157,7 +163,7 @@ let lastProofError: string | null = null
 /** a second reader: real words, correct standard niqqud, natural sentences */
 export async function proofread(lines: string[]): Promise<{ text: string; why: string }[]> {
   const ask = () => askClaudeJSON<any>({
-    system: `You proofread an early-reading booklet for Israeli children (fully pointed Hebrew). Find every problem a careful Hebrew teacher would mark: a word that is not a real Hebrew word, a real word with WRONG niqqud (e.g. "כַּלָּב" instead of "כֶּלֶב", "גָּדָל" instead of "גָּדַל"), or a line that is not natural, meaningful Hebrew. Ignore single syllables (one letter with a vowel). Also check that each question's answer is really stated in the story, and that verbs agree with their subject (a girl: שָׂמְחָה, not שָׂמַח). Be strict but do not invent problems.
+    system: `You proofread an early-reading booklet for Israeli children (fully pointed Hebrew). Find every problem a careful Hebrew teacher would mark: a word that is not a real Hebrew word, a real word with WRONG niqqud (e.g. "כַּלָּב" instead of "כֶּלֶב", "גָּדָל" instead of "גָּדַל"), or a line that is not natural, meaningful Hebrew. Ignore single syllables (one letter with a vowel). A token like [[lion]] is a small picture that stands for that word (lion = אריה) — read it as the word; it is not a mistake. Also check that each question's answer is really stated in the story, and that verbs agree with their subject (a girl: שָׂמְחָה, not שָׂמַח). Be strict but do not invent problems.
 Output JSON only: {"problems":[{"text":"the exact wrong word or line as written","why":"short Hebrew explanation"}]}`,
     content: lines.map((l, i) => `${i + 1}. ${l}`).join('\n'),
     maxTokens: 2500,
@@ -180,7 +186,7 @@ export async function repairBooklet(level: { level_number: number; label_he: str
     const where = items.map(it => ({ ...it, line: lines.find(l => l.includes(it.word)) || it.word }))
     const fix = await askClaudeJSON<any>({
       system: `You fix an early-reading booklet for Israeli children at niqqud level ${level.level_number} ("${level.label_he}"). Allowed vowel signs: ${g.marks} Good words: ${g.examples}.
-${wordBank(level.level_number) ? `Use ONLY words from this closed bank (exactly as pointed, prefixes הַ/בַּ/לַ${level.level_number === 2 ? '/וְ/בְּ/לְ/כְּ' : ''} allowed, plus אֶת, שֶׁל, הוּא, הִיא, לֹא, זֶה, יֵשׁ, אֵין, גַּם, רַק, כָּל, אֵיפֹה): ${wordBank(level.level_number)!.join(', ')}. ${bankRules(level.level_number)}\n` : ''}Each item below is a problem (a forbidden vowel sign, a word outside the bank, a wrong word, wrong niqqud or an unnatural line) and the exact line it appears in. Rewrite each line so it keeps its meaning as far as possible, is natural, correct Hebrew with correct full niqqud, and uses ONLY the allowed signs — choose different real words when needed (never change a word's correct niqqud to fit the rule). A single-word line gets a single different word that fits the same picture or context. Never shorten or invent a word (קָטָן must never become "קָט"); if no real word fits, rewrite the sentence with other real words. Keep every answer of a question true to the story. Keep lines short.
+${wordBank(level.level_number) ? `Use ONLY words from this closed bank (exactly as pointed, prefixes הַ/בַּ/לַ${level.level_number === 2 ? '/וְ/בְּ/לְ/כְּ' : ''} allowed, plus אֶת, שֶׁל, הוּא, הִיא, לֹא, זֶה, יֵשׁ, אֵין, גַּם, רַק, כָּל, אֵיפֹה): ${wordBank(level.level_number)!.join(', ')}. ${bankRules(level.level_number)}\n` : ''}Each item below is a problem (a forbidden vowel sign, a word outside the bank, a wrong word, wrong niqqud or an unnatural line) and the exact line it appears in. Rewrite each line so it keeps its meaning as far as possible, is natural, correct Hebrew with correct full niqqud, and uses ONLY the allowed signs — choose different real words when needed (never change a word's correct niqqud to fit the rule). A word the child cannot read may be replaced by a picture token [[key]] (keys: ${allPicturesHint()}), at most one per sentence; sentences stay at 5 words or fewer. A single-word line gets a single different word that fits the same picture or context. Never shorten or invent a word (קָטָן must never become "קָט"); if no real word fits, rewrite the sentence with other real words. Keep every answer of a question true to the story. Keep lines short.
 Output JSON only: {"replace":[{"old":"the exact line as given","new":"the fixed line"}]}`,
       content: JSON.stringify(where),
       maxTokens: 2500,
