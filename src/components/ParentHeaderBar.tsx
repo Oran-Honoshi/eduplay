@@ -72,7 +72,7 @@ export function ParentTabBar({ active }: { active?: ParentSection }) {
     return () => document.body.classList.remove('ep-tabbar')
   }, [])
   return (
-    <nav aria-label="ניווט ראשי" dir="rtl" className="md:hidden" style={{ position: 'fixed', insetInline: 0, bottom: 0, zIndex: 450, background: '#fff', borderTop: `1px solid ${PARENT_COLORS.border}`, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    <nav aria-label="ניווט ראשי" dir="rtl" className="grid md:hidden grid-cols-4" style={{ position: 'fixed', insetInline: 0, bottom: 0, zIndex: 450, background: '#fff', borderTop: `1px solid ${PARENT_COLORS.border}`, paddingBottom: 'env(safe-area-inset-bottom)' }}>
       {SECTIONS.map(({ key, he, href, Icon }) => {
         const on = key === active
         return (
