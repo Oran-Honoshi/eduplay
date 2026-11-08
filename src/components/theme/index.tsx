@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Home, Trophy, LogOut, Dumbbell, Map as MapIcon } from 'lucide-react'
+import { Home, Trophy, LogOut, Dumbbell, Sticker as MapIcon } from 'lucide-react'
 import { kidLabel, type KidLang, TOKENS_CHANGED_EVENT } from '@/lib/kidPrefs'
 
 // ── Theme config (single source of truth across all screens) ──
@@ -540,7 +540,7 @@ export function CollectionButton({
   const href = `/cards?childId=${childId}${token ? `&token=${token}` : ''}&theme=${theme}&lang=${lang}`
   const hasTokens = (tokens ?? 0) > 0
   return (
-    <Link href={href} aria-label={isHE ? 'האוסף שלי' : 'My collection'}
+    <Link href={href} aria-label={isHE ? 'המדבקות שלי' : 'My stickers'}
       style={{
         position: 'fixed', zIndex: 210, insetInlineEnd: compact ? 10 : 16, bottom: aboveNav ? 82 : (compact ? 10 : 18),
         width: size, height: size, borderRadius: theme === 'minecraft' ? 6 : 999,

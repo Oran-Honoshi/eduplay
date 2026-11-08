@@ -120,8 +120,29 @@ export async function POST(
     })
   }
 
+  // Finishing a whole task earns one sticker for the album (approved in the kids'
+  // design: "every finished task = a sticker"). Each item resolves exactly once
+  // (status guard above), so only the request that resolves the last open item
+  // sees zero remaining and awards it.
+  let stickerEarned = false
+  if (updated.status !== 'attempt_1_wrong') {
+    const { count } = await supabase
+      .from('assignment_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('assignment_id', params.id)
+      .in('status', ['not_started', 'attempt_1_wrong'])
+    if (count === 0) {
+      const { data: kid } = await supabase.from('children').select('card_tokens').eq('id', childId).single()
+      if (kid) {
+        const { error: tokErr } = await supabase.from('children').update({ card_tokens: (kid.card_tokens || 0) + 1 }).eq('id', childId)
+        stickerEarned = !tokErr
+      }
+    }
+  }
+
   return NextResponse.json({
     correct: isCorrect,
+    stickerEarned,
     status: updated.status,
     hint: !isCorrect && isFirstAttempt
       ? { hint_en: question?.hint_en, hint_he: question?.hint_he }

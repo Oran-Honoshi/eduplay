@@ -1,8 +1,7 @@
 'use client'
 import { Pip } from '@/components/Pip'
 import { useState, useEffect, useCallback } from 'react'
-import { Check, X, ChevronRight, Gift, Target, BookOpen, CreditCard, Globe, MapPin, PartyPopper, Zap, Trophy } from 'lucide-react'
-import WorldMapComponent from '@/components/WorldMap'
+import { Check, X, ChevronRight, Target, BookOpen, Globe, MapPin, Zap, Lock, Gift, CreditCard } from 'lucide-react'
 import { KidNavBar, THEME_CONFIG } from '@/components/theme'
 import { readKidLang, announceTokensChanged, type KidLang } from '@/lib/kidPrefs'
 
@@ -263,7 +262,7 @@ function CardReveal({ card, region, he, theme, onClose }: {
       {stage === 'card' ? (
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:18, maxWidth:340, width:'100%' }}>
           <div style={{ color:'#fff', fontWeight:900, fontSize:22, textAlign:'center', minHeight:30 }}>
-            {flipped ? (he ? 'חיה חדשה באוסף!' : 'New animal in your collection!') : (he ? 'מה יש בכרטיס?…' : "What's on the card?…")}
+            {flipped ? (he ? 'מדבקה חדשה באלבום!' : 'A new sticker for your album!') : (he ? 'מה יש במדבקה?…' : "What's on the sticker?…")}
           </div>
           <div style={{ perspective:1000, width:260, height:340 }}>
             <div className="cr-anim" style={{ position:'relative', width:'100%', height:'100%', transformStyle:'preserve-3d', transition:'transform .8s cubic-bezier(.3,1.4,.5,1)', transform: flipped ? 'rotateY(180deg)' : 'none' }}>
@@ -298,13 +297,13 @@ function CardReveal({ card, region, he, theme, onClose }: {
             <span style={{ fontSize:44 }} aria-hidden>{region?.emoji || '🌍'}</span>
           </div>
           <div style={{ fontWeight:900, fontSize:22, color:'#065F46', fontFamily:'"Baloo 2",sans-serif' }}>
-            {he ? `השלמת את ${region?.name}!` : `${region?.name} complete!`}
+            {he ? `העמוד "${region?.name}" מלא!` : `"${region?.name}" page full!`}
           </div>
           <div style={{ fontSize:14, color:'#374151', margin:'8px 0 18px', lineHeight:1.5 }}>
-            {he ? 'אספת את כל החיות באזור. הוא יישאר מואר במפה לתמיד!' : 'You collected every animal here. It stays lit on your map forever!'}
+            {he ? 'מילאת עמוד שלם באלבום — העמוד הבא נפתח!' : 'You filled a whole album page — the next page is open!'}
           </div>
           <button onClick={onClose} style={{ minHeight:52, padding:'12px 30px', borderRadius:999, border:'none', background:'#10B981', color:'#fff', fontWeight:900, fontSize:17, cursor:'pointer' }}>
-            {he ? 'לראות במפה' : 'See it on the map'}
+            {he ? 'יופי!' : 'Great!'}
           </button>
         </div>
       )}
@@ -380,13 +379,13 @@ export default function CardsPage() {
       const regionCards = cards.filter(c=>c.phase_id===card.phase_id)
       const regionDone = !!phase && regionCards.length>0 && regionCards.every(c=>nowOwned.has(c.id))
       setReveal({ card, region: regionDone && phase ? { name: he ? (phase.name_he||phase.name_en) : phase.name_en, emoji: phase.emoji } : null })
-    } else { showToast(data.error||'Could not collect card') }
+    } else { showToast(he ? 'לא הצלחנו להדביק — נסו שוב' : 'Could not place the sticker — try again') }
     setCollecting(false)
   }
 
   if(loading) return (
     <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'"Nunito",sans-serif',background:'#F7F5F0'}}>
-      <div style={{textAlign:'center',color:'#6B7280'}}><div style={{marginBottom:12,display:'flex',justifyContent:'center'}}><Globe size={40}/></div><div style={{fontWeight:700,fontFamily:'"Baloo 2",sans-serif'}}>{he ? 'טוען את האוסף...' : 'Loading collection...'}</div></div>
+      <div style={{textAlign:'center',color:'#6B7280'}}><div style={{marginBottom:12,display:'flex',justifyContent:'center'}}><Globe size={40}/></div><div style={{fontWeight:700,fontFamily:'"Baloo 2",sans-serif'}}>{he ? 'פותחים את האלבום...' : 'Opening your album...'}</div></div>
     </div>
   )
 
@@ -399,106 +398,129 @@ export default function CardsPage() {
   const T = THEME_CONFIG[themeKey] || THEME_CONFIG.plain
   const completedRegions = phases.filter(p=>{const pc=cards.filter(c=>c.phase_id===p.id);return pc.length>0&&pc.every(c=>ownedIds.has(c.id))}).length
 
+  // ── Sticker album ──────────────────────────────────────────
+  // Each region is a page of the album. A page opens when the page before it
+  // is full (or the child already has a sticker on it, so nothing they own is
+  // ever hidden). Every finished lesson or task gives one sticker to place.
+  const F = '"Rubik","Assistant",sans-serif'
+  const dark = themeKey === 'minecraft'
+  const L = (h: string, e: string) => (he ? h : e)
+  const pageInfo = phases.map(p => {
+    const pc = cards.filter(c => c.phase_id === p.id)
+    const owned = pc.filter(c => ownedIds.has(c.id)).length
+    return { phase: p, cards: pc, owned, full: pc.length > 0 && owned === pc.length }
+  })
+  const isOpenPage = (i: number) => i === 0 || !!pageInfo[i - 1]?.full || pageInfo[i].owned > 0
+  const activeIdx = Math.max(0, pageInfo.findIndex(x => x.phase.slug === activePhase))
+  const page = pageInfo[activeIdx]
+  const pageOpen = page ? isOpenPage(activeIdx) : false
+  const tokens = child?.card_tokens ?? 0
+  const nextPage = pageInfo[activeIdx + 1]
+  const tilt = (i: number) => [-6, 4, -2, 7, -4, 3, -7, 5][i % 8]
+  const prevPage = pageInfo[activeIdx - 1]
+  const leftOnPrev = prevPage ? prevPage.cards.length - prevPage.owned : 0
+
+  function tapSlot(card: Card) {
+    if (ownedIds.has(card.id)) { setOpenCard(card); return }
+    if (!pageOpen) return
+    if (tokens < 1) { showToast(L('סיימו שיעור או משימה כדי לקבל מדבקה', 'Finish a lesson or task to earn a sticker')); return }
+    collectCard(card)
+  }
+
   return (
-    <div dir={he?'rtl':'ltr'} style={{minHeight:'100vh',background:T.bg,fontFamily:'"Nunito",sans-serif'}}>
-      {toast&&<div style={{position:'fixed',bottom:84,right:20,zIndex:300,padding:'12px 18px',borderRadius:14,background:'#F0FDF4',border:'1px solid #86EFAC',color:'#166534',fontWeight:700,fontSize:13,boxShadow:'0 8px 24px rgba(0,0,0,0.1)',display:'flex',alignItems:'center',gap:6}}><PartyPopper size={15}/> {toast}</div>}
+    <div dir={he?'rtl':'ltr'} style={{minHeight:'100vh',background:T.bg,color:T.text,fontFamily:'"Assistant",sans-serif'}}>
+      <style>{`@keyframes st-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}@media (prefers-reduced-motion: reduce){.st-pulse{animation:none!important}}`}</style>
+      {toast&&<div role="status" style={{position:'fixed',bottom:96,left:'50%',transform:'translateX(-50%)',zIndex:300,padding:'12px 18px',borderRadius:16,background:'#16213E',color:'#fff',fontWeight:700,fontSize:16,maxWidth:'90vw',textAlign:'center'}}>{toast}</div>}
       {reveal&&<CardReveal card={reveal.card} region={reveal.region} he={he} theme={themeKey} onClose={()=>setReveal(null)}/>}
       {openCard&&<CardModal card={openCard} onClose={()=>setOpenCard(null)} initialHe={he}/>}
 
-      {/* Header */}
-      <header style={{background:T.panel,borderBottom:`2px solid ${T.border}`,padding:'0 20px',height:58,display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:100,boxShadow:'0 2px 12px rgba(0,0,0,0.04)'}}>
+      <div style={{maxWidth:720,margin:'0 auto',padding:'20px 18px 110px',display:'flex',flexDirection:'column',gap:16}}>
         <div style={{display:'flex',alignItems:'center',gap:12}}>
-          <div>
-            <div style={{fontWeight:800,fontSize:17,color:T.text,letterSpacing:'-0.02em',fontFamily:T.fontHead}}>{he ? 'אוסף החיות' : 'Animal Collection'}</div>
-            <div style={{fontSize:11,color:'#9aa6a3',fontWeight:600}}>{he ? `${ownedIds.size}/${cards.length} כרטיסים · ${completedRegions} אזורים הושלמו` : `${ownedIds.size}/${cards.length} cards · ${completedRegions} region${completedRegions!==1?'s':''} complete`}</div>
+          <Pip theme={themeKey} pose="wave" size={64} he={he}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontFamily:F,fontSize:26,fontWeight:800}}>{L('המדבקות שלי','My stickers')}</div>
+            <div style={{fontSize:16,color:T.text2}}>{L(`${ownedIds.size} מתוך ${cards.length} באלבום`,`${ownedIds.size} of ${cards.length} in the album`)}</div>
           </div>
         </div>
-        {/* Token bank pill */}
-        <div style={{display:'flex',alignItems:'center',gap:6,padding:'6px 16px',borderRadius:50,background:'#FFF3D6',border:'1.5px solid #E0A92750'}}>
-          <CreditCard size={16} color="#B7862F"/>
-          <span style={{fontWeight:900,fontSize:20,color:'#B7862F'}}>{child?.card_tokens??0}</span>
-          <span style={{fontSize:11,fontWeight:700,color:'#B7862F'}}>{he ? 'כרטיסים' : 'cards'}</span>
+
+        {/* Stickers waiting to be placed */}
+        <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderRadius:dark?4:20,background:tokens>0?(dark?'#3A3A1E':'#FFF4D6'):T.panel,border:`2px solid ${tokens>0?'#FFC940':T.border}`}}>
+          <span className={tokens>0?'st-pulse':''} style={{width:52,height:52,flexShrink:0,borderRadius:'50%',background:'radial-gradient(circle at 35% 30%, #FFE08A, #FFC940 60%, #E0A800)',border:'4px solid #fff',boxShadow:'0 4px 10px rgba(224,168,0,.3)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:F,fontSize:20,fontWeight:800,color:'#7A5600',animation:tokens>0?'st-pulse 1.8s ease-in-out infinite':'none'}}>{tokens}</span>
+          <div style={{fontSize:17,fontWeight:700,lineHeight:1.4}}>
+            {tokens>0
+              ? L(`יש לך ${tokens === 1 ? 'מדבקה אחת' : `${tokens} מדבקות`} להדביק! בחרו מקום ריק בעמוד.`,`You have ${tokens} sticker${tokens===1?'':'s'} to place! Tap an empty spot.`)
+              : L('כל שיעור או משימה שמסיימים = מדבקה חדשה','Every lesson or task you finish = a new sticker')}
+          </div>
         </div>
-      </header>
 
-      <div style={{padding:'16px 20px 84px',maxWidth:900,margin:'0 auto',display:'flex',flexDirection:'column',gap:16}}>
-        {/* Real in-progress-topic step progress */}
-        <InProgressBar topic={inProgress} he={he}/>
-
-        {/* World map — real geographic map */}
-        <WorldMapComponent
-          activePhase={activePhase}
-          completedPhases={phases.filter(p => {
-            const pc = cards.filter(c => c.phase_id === p.id)
-            return pc.length > 0 && pc.every(c => ownedIds.has(c.id))
-          }).map(p => p.slug)}
-          onSelect={setActive}
-          he={he}
-        />
-
-        {/* Region tabs */}
-        <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:4}}>
-          {phases.map(phase=>{
-            const pc=cards.filter(c=>c.phase_id===phase.id)
-            const po=pc.filter(c=>ownedIds.has(c.id)).length
-            const done=po===pc.length&&pc.length>0
+        {/* Album pages */}
+        <div role="tablist" style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:4}}>
+          {pageInfo.map((x,i)=>{
+            const on = i===activeIdx, open = isOpenPage(i)
             return (
-              <button key={phase.id} onClick={()=>setActive(phase.slug)}
-                style={{display:'flex',alignItems:'center',gap:7,whiteSpace:'nowrap',padding:'8px 14px',borderRadius:50,border:'1.5px solid',
-                  borderColor:activePhase===phase.slug?phase.color:'#E5E7EB',
-                  background:activePhase===phase.slug?`${phase.color}15`:'white',
-                  color:activePhase===phase.slug?phase.color:'#374151',fontWeight:700,fontSize:12,cursor:'pointer',flexShrink:0}}>
-                <span style={{fontSize:15}}>{phase.emoji}</span>
-                {he ? (phase.name_he || phase.name_en) : phase.name_en}
-                <span style={{fontSize:11,fontWeight:600,color:done?'#10B981':activePhase===phase.slug?phase.color:'#9CA3AF',display:'inline-flex',alignItems:'center'}}>
-                  {done?<Check size={11}/>:`${po}/${pc.length}`}
-                </span>
+              <button key={x.phase.id} role="tab" aria-selected={on} onClick={()=>setActive(x.phase.slug)}
+                style={{display:'flex',alignItems:'center',gap:6,whiteSpace:'nowrap',minHeight:48,padding:'0 16px',borderRadius:999,flexShrink:0,cursor:'pointer',
+                  border:`2px solid ${on?T.accent1:T.border}`,background:on?T.accent1:T.panel,color:on?'#fff':T.text,fontFamily:F,fontWeight:700,fontSize:16,opacity:open?1:.6}}>
+                {open ? null : <Lock size={14}/>}
+                {he ? (x.phase.name_he||x.phase.name_en) : x.phase.name_en}
+                {x.full ? <Check size={16}/> : open ? <span style={{fontSize:13,opacity:.8}} dir="ltr">{x.owned}/{x.cards.length}</span> : null}
               </button>
             )
           })}
         </div>
 
-        {/* Region header */}
-        {currentPhase&&(
-          <div style={{display:'flex',alignItems:'center',gap:14,background:`${currentPhase.color}10`,borderRadius:14,padding:'14px 18px',border:`1px solid ${currentPhase.color}25`}}>
-            <div style={{fontSize:36}}>{currentPhase.emoji}</div>
-            <div>
-              <div style={{fontWeight:800,fontSize:18,color:'#111827',marginBottom:2,fontFamily:'"Baloo 2",sans-serif'}}>{he ? (currentPhase.name_he || currentPhase.name_en) : currentPhase.name_en}</div>
-              <div style={{fontSize:13,color:'#6B7280'}}>{he ? (currentPhase.description_he || currentPhase.description_en) : currentPhase.description_en}</div>
+        {/* The page */}
+        {page && (
+          <div style={{background:dark?T.panel:'#FFFFFF',border:`1.5px solid ${T.border}`,borderRadius:dark?4:28,padding:'18px 16px 22px',position:'relative'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+              <div style={{fontFamily:F,fontSize:22,fontWeight:800}}>{he ? (page.phase.name_he||page.phase.name_en) : page.phase.name_en}</div>
+              <div style={{fontFamily:F,fontWeight:800,color:T.text2}} dir="ltr">{page.owned}/{page.cards.length}</div>
             </div>
-            <div style={{marginLeft:'auto',textAlign:'right',flexShrink:0}}>
-              <div style={{fontWeight:800,fontSize:20,color:currentPhase.color}}>
-                {phaseOwned}<span style={{fontSize:14,color:'#9CA3AF'}}>/{phaseCards.length}</span>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3, minmax(0, 1fr))',gap:14,filter:pageOpen?'none':'grayscale(1)',opacity:pageOpen?1:.45}}>
+              {page.cards.map((card,i)=>{
+                const owned = ownedIds.has(card.id)
+                const name = he ? (card.name_he||card.name_en) : card.name_en
+                const canPlace = pageOpen && !owned && tokens>0
+                return (
+                  <button key={card.id} onClick={()=>tapSlot(card)} disabled={collecting || (!pageOpen && !owned)}
+                    aria-label={owned ? name : L('מקום ריק למדבקה','Empty sticker spot')}
+                    style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,background:'none',border:'none',padding:0,cursor:owned||canPlace?'pointer':'default',fontFamily:'inherit',color:T.text}}>
+                    {owned ? (
+                      <span style={{width:'100%',aspectRatio:'1',borderRadius:'50%',overflow:'hidden',border:'5px solid #fff',boxShadow:'0 4px 12px rgba(0,0,0,.18)',transform:`rotate(${tilt(i)}deg)`,background:'#EEE',display:'block',position:'relative'}}>
+                        {card.image_url
+                          ? <img src={card.image_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+                          : <span style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:40}}>{card.emoji}</span>}
+                      </span>
+                    ) : (
+                      <span className={canPlace?'st-pulse':''} style={{width:'100%',aspectRatio:'1',borderRadius:'50%',border:`3px dashed ${canPlace?'#E0A800':T.border}`,background:canPlace?(dark?'#3A3A1E':'#FFF9E8'):'transparent',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:F,fontSize:30,fontWeight:800,color:canPlace?'#B7862F':T.text2,animation:canPlace?'st-pulse 2s ease-in-out infinite':'none',boxSizing:'border-box'}}>
+                        {canPlace ? '+' : '?'}
+                      </span>
+                    )}
+                    <span style={{fontSize:15,fontWeight:700,minHeight:20,textAlign:'center'}}>{owned ? name : ''}</span>
+                  </button>
+                )
+              })}
+            </div>
+            {!pageOpen && (
+              <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+                <div style={{background:T.panel,border:`1.5px solid ${T.border}`,borderRadius:20,padding:'16px 18px',textAlign:'center',maxWidth:280,boxShadow:'0 8px 24px rgba(0,0,0,.12)'}}>
+                  <Lock size={28} color={T.accent1}/>
+                  <div style={{fontFamily:F,fontSize:18,fontWeight:800,marginTop:6}}>{L('העמוד הזה עוד נעול','This page is locked')}</div>
+                  <div style={{fontSize:16,color:T.text2,marginTop:4}}>
+                    {L(`עוד ${leftOnPrev} מדבקות בעמוד "${prevPage?.phase.name_he||prevPage?.phase.name_en}" והוא נפתח`, `${leftOnPrev} more sticker${leftOnPrev===1?'':'s'} on "${prevPage?.phase.name_en}" to open it`)}
+                  </div>
+                </div>
               </div>
-              <div style={{fontSize:11,color:'#9CA3AF',fontWeight:600}}>{he ? 'נאספו' : 'collected'}</div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* Cards grid */}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(175px,1fr))',gap:14}}>
-          {phaseCards.map(card=>(
-            <AnimalCard key={card.id} card={card}
-              owned={ownedIds.has(card.id)}
-              canCollect={canCollect&&!ownedIds.has(card.id)}
-              onCollect={()=>collectCard(card)}
-              onOpen={()=>setOpenCard(card)} he={he}/>
-          ))}
-        </div>
-
-        {/* Region complete banner */}
-        {currentPhase&&phaseComplete&&(
-          <div style={{textAlign:'center',padding:20,background:'linear-gradient(135deg,#ECFDF5,#D1FAE5)',borderRadius:16,border:'1px solid #6EE7B7'}}>
-            <div style={{marginBottom:6,display:'flex',justifyContent:'center'}}><Trophy size={32} color="#065F46"/></div>
-            <div style={{fontWeight:800,fontSize:16,color:'#065F46',marginBottom:4,fontFamily:'"Baloo 2",sans-serif'}}>{he ? `${currentPhase.name_he || currentPhase.name_en} הושלם!` : `${currentPhase.name_en} complete!`}</div>
-            <div style={{fontSize:13,color:'#047857',marginBottom:12}}>{he ? `כל ${phaseCards.length} החיות נאספו — האזור הזה יישאר מואר במפה לתמיד!` : `All ${phaseCards.length} animals collected — this region stays lit on the map forever!`}</div>
-            {phases.find(p=>p.sort_order===currentPhase.sort_order+1)&&(
-              <button onClick={()=>{const next=phases.find(p=>p.sort_order===currentPhase.sort_order+1);if(next)setActive(next.slug)}}
-                style={{padding:'9px 20px',borderRadius:50,background:'#10B981',border:'none',color:'white',fontWeight:700,fontSize:13,cursor:'pointer',display:'inline-flex',alignItems:'center',gap:6}}>
-                {he ? 'לאזור הבא' : 'Next region'} <ChevronRight size={14}/>
-              </button>
-            )}
-          </div>
+        {page && page.full && nextPage && (
+          <button onClick={()=>setActive(nextPage.phase.slug)}
+            style={{minHeight:64,border:'none',borderRadius:dark?4:18,background:'#12937A',color:'#fff',fontFamily:F,fontSize:20,fontWeight:800,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+            {L(`העמוד מלא! לעמוד הבא: ${nextPage.phase.name_he||nextPage.phase.name_en}`, `Page full! Next: ${nextPage.phase.name_en}`)}
+            <ChevronRight size={20} style={he?{transform:'scaleX(-1)'}:undefined}/>
+          </button>
         )}
       </div>
 
