@@ -190,3 +190,13 @@ body {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; overflow: visible !important; max-height: none !important; }
   .flex-1 { height: auto !important; }
 }
+
+/* ── Parent area (2026-11 redesign) ─────────────────────────────
+   Hebrew-first: pages are right-to-left; headings in Rubik.
+   Mixed text: anything a user typed (names, titles) is isolated with <bdi>
+   or dir="auto"; typed input follows the first strong letter, so English
+   flows left to right inside a Hebrew page; math always runs left to right
+   as one unit (.ep-ltr / FractionText). */
+.ep-parent h1, .ep-parent h2, .ep-parent h3 { font-family: 'Rubik', 'Assistant', system-ui, sans-serif; }
+.ep-parent input[type="text"], .ep-parent input:not([type]), .ep-parent textarea { unicode-bidi: plaintext; text-align: start; }
+.ep-ltr { direction: ltr; unicode-bidi: isolate; white-space: nowrap; }

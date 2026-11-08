@@ -123,17 +123,17 @@ function StyleControl() {
   if (!loaded) return null
 
   return (
-    <div className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-4 flex items-center gap-2">
-      <label className="text-xs text-[#9aa6a3] font-semibold shrink-0">Preferred style</label>
+    <div className="bg-white rounded-2xl border border-[#E8E2D6] p-4 flex items-center gap-2">
+      <label className="text-xs text-[#6B7690] font-semibold shrink-0">Preferred style</label>
       <input
         type="text"
         value={style}
         onChange={e => setStyle(e.target.value)}
         placeholder="e.g. use real-world sports examples, keep wording short..."
-        className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]"
+        className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333]"
       />
       <button onClick={save} disabled={saving}
-        className="shrink-0 px-3 py-1.5 text-xs font-semibold text-[#7a8f8b] border border-[rgba(15,118,110,.14)] rounded-lg hover:bg-[#F7F5F0] disabled:opacity-50 whitespace-nowrap">
+        className="shrink-0 px-3 py-1.5 text-xs font-semibold text-[#5E6B85] border border-[#E8E2D6] rounded-lg hover:bg-[#FAF7F2] disabled:opacity-50 whitespace-nowrap">
         {saving ? 'Saving…' : saved ? '✅ Saved' : 'Save style'}
       </button>
     </div>
@@ -323,16 +323,16 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#0F766E33] p-5">
+    <div className="bg-white rounded-2xl border border-[#2F5BE333] p-5">
       <div className="flex items-center gap-2 mb-4">
         <Sparkles size={16} color={PARENT_COLORS.primary} />
-        <h2 className="text-sm font-black text-[#1f2a28]">Generate New Questions</h2>
-        <span className="text-xs bg-[#E4F3F1] text-[#0F766E] px-2 py-0.5 rounded-full font-semibold">AI</span>
+        <h2 className="text-sm font-black text-[#16213E]">Generate New Questions</h2>
+        <span className="text-xs bg-[#EAF0FF] text-[#2F5BE3] px-2 py-0.5 rounded-full font-semibold">AI</span>
       </div>
 
       <div className="flex flex-wrap gap-3 items-end mb-4">
         <div>
-          <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Subject</label>
+          <label className="text-xs text-[#6B7690] font-semibold block mb-1">Subject</label>
           <select value={subjectSlug} onChange={e => {
             const newSlug = e.target.value
             const s = subjects.find(x => x.slug === newSlug)
@@ -340,21 +340,21 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
             setTopicSlug('')
             if (s && (grade < s.min_grade || grade > s.max_grade)) setGrade(s.min_grade)
           }}
-            className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]">
+            className="px-3 py-2 text-sm rounded-xl border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333]">
             {subjects.map(s => <option key={s.slug} value={s.slug}>{s.label_en}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Grade</label>
+          <label className="text-xs text-[#6B7690] font-semibold block mb-1">Grade</label>
           <select value={grade} onChange={e => { setGrade(parseInt(e.target.value)); setTopicSlug('') }}
-            className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]">
+            className="px-3 py-2 text-sm rounded-xl border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333]">
             {gradeOptions.map(g => <option key={g} value={g}>{g === 0 ? 'KG' : `Grade ${g}`}</option>)}
           </select>
         </div>
         <div className="min-w-48">
-          <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Topic</label>
+          <label className="text-xs text-[#6B7690] font-semibold block mb-1">Topic</label>
           <select value={topicSlug} onChange={e => setTopicSlug(e.target.value)} disabled={topics.length === 0 && !onRequest}
-            className="w-full px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33] disabled:bg-[#F7F5F0] disabled:text-[#9aa6a3]">
+            className="w-full px-3 py-2 text-sm rounded-xl border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333] disabled:bg-[#FAF7F2] disabled:text-[#6B7690]">
             <option value="">{topicsLoading ? 'Loading topics…' : topics.length === 0 ? (onRequest ? 'Pick or add a topic...' : 'No topics for this grade') : 'Select a topic...'}</option>
             {topics.map(t => <option key={t.slug} value={t.slug}>{onRequest && t.title_he ? `${t.title_he} · ${t.title_en}` : t.title_en}</option>)}
             {onRequest && <option value="__new__">+ New topic…</option>}
@@ -362,29 +362,29 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
           {onRequest && topicSlug === '__new__' && (
             <input value={newTopicName} onChange={e => setNewTopicName(e.target.value)} dir="auto"
               placeholder="e.g. מספרים מכוונים / Positive and negative numbers"
-              className="mt-2 w-full px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]" />
+              className="mt-2 w-full px-3 py-2 text-sm rounded-xl border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333]" />
           )}
         </div>
         <div>
-          <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Difficulty</label>
+          <label className="text-xs text-[#6B7690] font-semibold block mb-1">Difficulty</label>
           <select value={difficulty} onChange={e => setDifficulty(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]">
+            className="px-3 py-2 text-sm rounded-xl border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333]">
             <option value="easy">Easy</option>
             <option value="medium">Medium</option>
             <option value="hard">Hard</option>
           </select>
         </div>
         <div>
-          <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Count</label>
+          <label className="text-xs text-[#6B7690] font-semibold block mb-1">Count</label>
           <input type="number" min={1} max={MAX_COUNT} value={count}
             onChange={e => setCount(Math.max(1, Math.min(MAX_COUNT, parseInt(e.target.value) || 1)))}
-            className="w-20 px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]"
+            className="w-20 px-3 py-2 text-sm rounded-xl border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333]"
           />
         </div>
         <div>
-          <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Language</label>
+          <label className="text-xs text-[#6B7690] font-semibold block mb-1">Language</label>
           <select value={language} onChange={e => { languageTouched.current = true; setLanguage(e.target.value as 'en_only' | 'he_only' | 'bilingual') }}
-            className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]">
+            className="px-3 py-2 text-sm rounded-xl border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333]">
             <option value="en_only">English</option>
             <option value="he_only">Hebrew</option>
             <option value="bilingual">Both</option>
@@ -394,49 +394,49 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
 
       <div className="flex flex-wrap gap-4 items-center mb-4">
         <div className="flex items-center gap-3">
-          <span className="text-xs text-[#9aa6a3] font-semibold">Question types</span>
+          <span className="text-xs text-[#6B7690] font-semibold">Question types</span>
           {Q_TYPE_OPTIONS.map(opt => (
-            <label key={opt.value} className="flex items-center gap-1.5 text-sm text-[#1f2a28] cursor-pointer">
+            <label key={opt.value} className="flex items-center gap-1.5 text-sm text-[#16213E] cursor-pointer">
               <input type="checkbox" checked={qTypes.includes(opt.value)} onChange={() => toggleQType(opt.value)} />
               {opt.label}
             </label>
           ))}
         </div>
-        <label className="flex items-center gap-1.5 text-sm text-[#1f2a28] cursor-pointer">
+        <label className="flex items-center gap-1.5 text-sm text-[#16213E] cursor-pointer">
           <input type="checkbox" checked={progressive} onChange={e => setProgressive(e.target.checked)} />
           Progressive difficulty
         </label>
       </div>
 
       <div className="mb-4">
-        <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Custom instructions (optional)</label>
+        <label className="text-xs text-[#6B7690] font-semibold block mb-1">Custom instructions (optional)</label>
         <textarea value={customPrompt} onChange={e => setCustomPrompt(e.target.value)}
           rows={2} placeholder="e.g. focus on word problems involving money..." dir="auto"
-          className="w-full px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]"
+          className="w-full px-3 py-2 text-sm rounded-xl border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333]"
         />
       </div>
 
       <div className="mb-4">
-        <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Your own material (optional)</label>
+        <label className="text-xs text-[#6B7690] font-semibold block mb-1">Your own material (optional)</label>
         <MaterialUpload value={materials} onChange={setMaterials} />
         {onRequest && (materials.length > 0 || customPrompt.trim()) && (
           <div className="mt-3">
             <button type="button" onClick={findTopics} disabled={suggesting}
-              className="inline-flex items-center gap-2 min-h-[40px] px-4 rounded-xl bg-[#E4F3F1] text-[#0F766E] text-sm font-semibold hover:bg-[#0F766E22] disabled:opacity-60">
+              className="inline-flex items-center gap-2 min-h-[40px] px-4 rounded-xl bg-[#EAF0FF] text-[#2F5BE3] text-sm font-semibold hover:bg-[#2F5BE322] disabled:opacity-60">
               <Sparkles size={15} /> {suggesting ? 'Reading your material…' : 'Find the topics in this material'}
             </button>
             {suggestError && <p className="text-xs text-[#DC2626] mt-1">{suggestError}</p>}
             {suggested && (
               <div className="mt-2 flex flex-col gap-2" dir="rtl">
-                {suggested.length === 0 && <p className="text-xs text-[#7a8f8b]" dir="ltr">No topics found — try clearer photos or add a note.</p>}
+                {suggested.length === 0 && <p className="text-xs text-[#5E6B85]" dir="ltr">No topics found — try clearer photos or add a note.</p>}
                 {suggested.map(t => (
                   <button key={t.slug} type="button" onClick={() => pickSuggested(t)}
-                    className={`text-start rounded-xl border px-3 py-2 ${(topicSlug === t.slug || newTopicName.includes(t.title_en)) ? 'border-[#0F766E] bg-[#E4F3F1]' : 'border-[rgba(15,118,110,.14)] bg-white hover:bg-[#F7FBFA]'}`}>
-                    <div className="text-sm font-bold text-[#1f2a28]">{t.title_he || t.title_en} <span className="font-normal text-[#7a8f8b]" dir="ltr">· {t.title_en}</span></div>
-                    {t.subtopics_he.length > 0 && <div className="text-xs text-[#5b6b68] mt-0.5">{t.subtopics_he.join(' · ')}</div>}
+                    className={`text-start rounded-xl border px-3 py-2 ${(topicSlug === t.slug || newTopicName.includes(t.title_en)) ? 'border-[#2F5BE3] bg-[#EAF0FF]' : 'border-[#E8E2D6] bg-white hover:bg-[#F7F4EE]'}`}>
+                    <div className="text-sm font-bold text-[#16213E]">{t.title_he || t.title_en} <span className="font-normal text-[#5E6B85]" dir="ltr">· {t.title_en}</span></div>
+                    {t.subtopics_he.length > 0 && <div className="text-xs text-[#4A5672] mt-0.5">{t.subtopics_he.join(' · ')}</div>}
                   </button>
                 ))}
-                {suggested.length > 0 && <p className="text-xs text-[#7a8f8b]" dir="ltr">Pick a topic, then Generate. Do the next topic after.</p>}
+                {suggested.length > 0 && <p className="text-xs text-[#5E6B85]" dir="ltr">Pick a topic, then Generate. Do the next topic after.</p>}
               </div>
             )}
           </div>
@@ -444,13 +444,13 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
       </div>
 
       {!!existingCount && (
-        <div className="mb-4 bg-[#E4F3F1] border border-[#0F766E33] rounded-2xl p-4 flex items-center justify-between gap-4">
-          <div className="text-sm text-[#0B5C56]">
+        <div className="mb-4 bg-[#EAF0FF] border border-[#2F5BE333] rounded-2xl p-4 flex items-center justify-between gap-4">
+          <div className="text-sm text-[#2148C0]">
             <strong>{existingCount}</strong> similar question{existingCount === 1 ? '' : 's'} already
             exist{existingCount === 1 ? 's' : ''} in the Library for this topic and difficulty.
           </div>
           <button onClick={() => onViewExisting({ subjectSlug, grade, topicSlug, difficulty })}
-            className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-white bg-[#0F766E] hover:bg-[#0B5C56] rounded-lg px-3 py-1.5">
+            className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-white bg-[#2F5BE3] hover:bg-[#2148C0] rounded-lg px-3 py-1.5">
             View them <BookOpen size={12} />
           </button>
         </div>
@@ -458,7 +458,7 @@ function GeneratorPanel({ prefill, onGenerated, onViewExisting }: {
 
       <button onClick={generate} disabled={generating || !topicSlug || (topicSlug === '__new__' && !newTopicName.trim()) || qTypes.length === 0}
         className={`px-5 py-2 text-white font-bold text-sm rounded-xl transition-colors inline-flex items-center gap-2 ${
-          generating ? 'bg-[#0F766E] cursor-wait' : 'bg-[#0F766E] hover:bg-[#0B5C56] disabled:bg-[#f0efe9] disabled:text-[#9aa6a3]'
+          generating ? 'bg-[#2F5BE3] cursor-wait' : 'bg-[#2F5BE3] hover:bg-[#2148C0] disabled:bg-[#f0efe9] disabled:text-[#6B7690]'
         }`}>
         {generating
           ? <><Loader2 size={14} className="animate-spin" /> Generating…</>
@@ -480,8 +480,8 @@ function HistoryList({ rows, onReuse }: { rows: GenerationRow[]; onReuse: (row: 
   if (rows.length === 0) return null
 
   return (
-    <div className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-5">
-      <h2 className="text-sm font-black text-[#1f2a28] mb-3">Recent Generations</h2>
+    <div className="bg-white rounded-2xl border border-[#E8E2D6] p-5">
+      <h2 className="text-sm font-black text-[#16213E] mb-3">Recent Generations</h2>
       <div className="flex flex-col divide-y divide-[#f0efe9]">
         {rows.map(row => (
           <div key={row.id} className="flex items-center justify-between gap-3 py-3">
@@ -489,13 +489,13 @@ function HistoryList({ rows, onReuse }: { rows: GenerationRow[]; onReuse: (row: 
               <p className="text-sm font-semibold text-[#374151] truncate">
                 {row.topic_slug} · Grade {row.grade} · {row.difficulty} · {row.q_types.join(', ')}
               </p>
-              <p className="text-xs text-[#9aa6a3] mt-0.5">
+              <p className="text-xs text-[#6B7690] mt-0.5">
                 {new Date(row.created_at).toLocaleString()} · {row.question_ids.length}/{row.count} saved
                 {row.error && <span className="text-[#B7862F]"> · {row.error}</span>}
               </p>
             </div>
             <button onClick={() => onReuse(row)}
-              className="shrink-0 text-xs font-semibold text-[#0F766E] border border-[#0F766E33] rounded-lg px-3 py-1.5 hover:bg-[#E4F3F1]">
+              className="shrink-0 text-xs font-semibold text-[#2F5BE3] border border-[#2F5BE333] rounded-lg px-3 py-1.5 hover:bg-[#EAF0FF]">
               Make more like this
             </button>
           </div>
@@ -559,20 +559,20 @@ function BulkApproveModal({
               {questions.length} question{questions.length === 1 ? '' : 's'}
             </span>
           </div>
-          <h3 className="font-extrabold text-[16px] text-[#1f2a28] m-0 mb-1">Approve everything in this queue?</h3>
-          <p className="text-[12.5px] text-[#9aa6a3] m-0">Scroll to review each one before approving</p>
+          <h3 className="font-extrabold text-[16px] text-[#16213E] m-0 mb-1">Approve everything in this queue?</h3>
+          <p className="text-[12.5px] text-[#6B7690] m-0">Scroll to review each one before approving</p>
         </div>
 
         <div ref={listRef} onScroll={checkScroll} className="overflow-y-auto px-6 py-1.5 flex-1">
           {questions.map(q => (
             <div key={q.id} className="py-3 border-b border-[#e9e6dd] last:border-b-0">
-              <div className="text-[10.5px] text-[#9aa6a3] font-bold uppercase tracking-wide mb-1">
+              <div className="text-[10.5px] text-[#6B7690] font-bold uppercase tracking-wide mb-1">
                 {q.topics?.subjects?.label_en || '—'} · {q.topics?.title_en || '—'} · Grade {q.topics?.grade ?? '—'} · {q.difficulty}
               </div>
-              <div className="text-[13px] text-[#1f2a28] leading-snug"><FractionText text={q.prompt_en} /></div>
+              <div className="text-[13px] text-[#16213E] leading-snug"><FractionText text={q.prompt_en} /></div>
             </div>
           ))}
-          <div className="text-center text-[11px] text-[#9aa6a3] italic py-2.5">— end of queue —</div>
+          <div className="text-center text-[11px] text-[#6B7690] italic py-2.5">— end of queue —</div>
         </div>
 
         <div className="px-6 pt-4 pb-[22px] border-t border-[#e9e6dd]">
@@ -583,12 +583,12 @@ function BulkApproveModal({
           )}
           <div className="flex gap-2.5">
             <button onClick={confirm} disabled={!scrolledToEnd || approving}
-              className="flex-1 flex items-center justify-center gap-1.5 py-[11px] rounded-full bg-[#0F766E] disabled:opacity-40 text-white font-extrabold text-[13px] transition-opacity">
+              className="flex-1 flex items-center justify-center gap-1.5 py-[11px] rounded-full bg-[#2F5BE3] disabled:opacity-40 text-white font-extrabold text-[13px] transition-opacity">
               {approving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
               {approving ? 'Approving…' : `Approve All (${questions.length})`}
             </button>
             <button onClick={onCancel} disabled={approving}
-              className="flex-1 py-[11px] rounded-full border border-[rgba(15,118,110,.14)] text-[#7a8f8b] font-extrabold text-[13px] disabled:opacity-40">
+              className="flex-1 py-[11px] rounded-full border border-[#E8E2D6] text-[#5E6B85] font-extrabold text-[13px] disabled:opacity-40">
               Cancel
             </button>
           </div>
@@ -601,7 +601,7 @@ function BulkApproveModal({
 // ── Undo toast ───────────────────────────────────────────────
 function UndoToast({ text, onUndo }: { text: string; onUndo: () => void }) {
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] bg-[#1f2a28] text-white rounded-xl px-4 py-3.5 text-[13px] font-bold shadow-[0_24px_60px_rgba(15,30,26,0.22)] flex items-center gap-3 max-w-[340px]">
+    <div className="fixed bottom-6 right-6 z-[9999] bg-[#16213E] text-white rounded-xl px-4 py-3.5 text-[13px] font-bold shadow-[0_24px_60px_rgba(15,30,26,0.22)] flex items-center gap-3 max-w-[340px]">
       <span className="text-lg">✅</span>
       <span className="flex-1">{text}</span>
       <button onClick={onUndo} className="text-[#3FCDBB] font-extrabold text-[12.5px] underline whitespace-nowrap">Undo</button>
@@ -683,9 +683,9 @@ function PendingReviewList({ active }: { active: boolean }) {
     undoTimer.current = setTimeout(() => setUndo(null), 10000)
   }
 
-  if (loading) return <p className="text-sm text-[#9aa6a3]">Loading…</p>
+  if (loading) return <p className="text-sm text-[#6B7690]">Loading…</p>
   if (questions.length === 0) {
-    return <p className="text-sm text-[#9aa6a3]">No pending questions — everything's been reviewed.</p>
+    return <p className="text-sm text-[#6B7690]">No pending questions — everything's been reviewed.</p>
   }
 
   return (
@@ -705,22 +705,22 @@ function PendingReviewList({ active }: { active: boolean }) {
       )}
       <div className="flex justify-end">
         <button onClick={() => setReviewOpen(true)} disabled={busyId !== null}
-          className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+          className="flex items-center gap-1.5 px-4 py-1.5 bg-[#2F5BE3] hover:bg-[#2148C0] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
           <Check size={12} /> {`Approve All (${questions.length})`}
         </button>
       </div>
       {questions.map(q => (
-        <div key={q.id} className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-5">
+        <div key={q.id} className="bg-white rounded-2xl border border-[#E8E2D6] p-5">
           <div className="flex items-center justify-between gap-3 mb-2">
-            <p className="text-xs text-[#9aa6a3] font-semibold">
+            <p className="text-xs text-[#6B7690] font-semibold">
               {q.topics?.subjects?.label_en || '—'} · {q.topics?.title_en || '—'} · Grade {q.topics?.grade ?? '—'} · {q.difficulty}{isDistinctHe(q.prompt_he, q.prompt_en) ? ` (${translateDifficulty(q.difficulty)})` : ''} · {q.q_type}
             </p>
-            <p className="text-xs text-[#9aa6a3] shrink-0">{new Date(q.created_at).toLocaleString()}</p>
+            <p className="text-xs text-[#6B7690] shrink-0">{new Date(q.created_at).toLocaleString()}</p>
           </div>
 
-          <p className="text-sm font-semibold text-[#1f2a28] mb-1"><FractionText text={q.prompt_en} /></p>
+          <p className="text-sm font-semibold text-[#16213E] mb-1"><FractionText text={q.prompt_en} /></p>
           {isDistinctHe(q.prompt_he, q.prompt_en) && (
-            <HebrewMathText text={q.prompt_he} className="text-sm text-[#7a8f8b] mb-2" style={{ direction:'rtl', textAlign:'right' }} />
+            <HebrewMathText text={q.prompt_he} className="text-sm text-[#5E6B85] mb-2" style={{ direction:'rtl', textAlign:'right' }} />
           )}
 
           {(() => {
@@ -730,22 +730,22 @@ function PendingReviewList({ active }: { active: boolean }) {
                 {q.options ? (
                   <ul className="text-sm text-[#374151] mb-2 flex flex-col gap-0.5">
                     {q.options.map((opt, i) => (
-                      <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-[#0F766E]' : ''}>
+                      <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-[#2F5BE3]' : ''}>
                         {opt.label}. <FractionText text={opt.value_en} />
-                        {isDistinctHe(q.prompt_he, q.prompt_en) && <span className="text-[#9aa6a3]"> · <bdi dir="rtl">{translateOptionLabel(opt.label)}. <FractionText text={opt.value_he || opt.value_en} /></bdi></span>}
+                        {isDistinctHe(q.prompt_he, q.prompt_en) && <span className="text-[#6B7690]"> · <bdi dir="rtl">{translateOptionLabel(opt.label)}. <FractionText text={opt.value_he || opt.value_en} /></bdi></span>}
                         {isRevealed && opt.isCorrect ? ' ✓' : ''}
                       </li>
                     ))}
                   </ul>
                 ) : (
                   <p className="text-sm text-[#374151] mb-2">
-                    <span className="text-[#9aa6a3]">Answer:</span>{' '}
+                    <span className="text-[#6B7690]">Answer:</span>{' '}
                     {isRevealed ? <FractionText text={q.correct_answer} /> : <span className="text-[#c9cfc9] italic">hidden</span>}
                   </p>
                 )}
 
                 {isRevealed && (q.hint_en || q.hint_he) && (
-                  <p className="text-xs text-[#9aa6a3] mb-1">
+                  <p className="text-xs text-[#6B7690] mb-1">
                     Hint:{' '}
                     {q.hint_en && <FractionText text={q.hint_en} />}
                     {(q.hint_en ? isDistinctHe(q.hint_he, q.hint_en) : !!q.hint_he) && (
@@ -754,7 +754,7 @@ function PendingReviewList({ active }: { active: boolean }) {
                   </p>
                 )}
                 {isRevealed && q.explanation_en && (
-                  <p className="text-xs text-[#9aa6a3] mb-3">Explanation: <FractionText text={q.explanation_en} /></p>
+                  <p className="text-xs text-[#6B7690] mb-3">Explanation: <FractionText text={q.explanation_en} /></p>
                 )}
 
                 <button onClick={() => toggleReveal(q.id)}
@@ -767,7 +767,7 @@ function PendingReviewList({ active }: { active: boolean }) {
 
           <div className="flex gap-2">
             <button onClick={() => act(q.id, 'approve')} disabled={busyId === q.id || reviewOpen}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#2F5BE3] hover:bg-[#2148C0] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
               <Check size={12} /> Approve
             </button>
             <button onClick={() => reject(q.id)} disabled={busyId === q.id || reviewOpen}
@@ -1033,39 +1033,39 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="bg-white rounded-2xl border border-[rgba(15,118,110,.14)] p-5">
+      <div className="bg-white rounded-2xl border border-[#E8E2D6] p-5">
         <div className="flex flex-wrap gap-3 items-end">
           <div>
-            <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Subject</label>
+            <label className="text-xs text-[#6B7690] font-semibold block mb-1">Subject</label>
             <select value={subjectSlug} onChange={e => {
               const newSlug = e.target.value
               const s = subjects.find(x => x.slug === newSlug)
               setSubjectSlug(newSlug)
               if (s && (grade < s.min_grade || grade > s.max_grade)) setGrade(s.min_grade)
             }}
-              className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
+              className="px-3 py-2 text-sm rounded-xl border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
               {subjects.map(s => <option key={s.slug} value={s.slug}>{s.label_en}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Grade</label>
+            <label className="text-xs text-[#6B7690] font-semibold block mb-1">Grade</label>
             <select value={grade} onChange={e => setGrade(parseInt(e.target.value))}
-              className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
+              className="px-3 py-2 text-sm rounded-xl border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
               {gradeOptions.map(g => <option key={g} value={g}>{g === 0 ? 'KG' : `Grade ${g}`}</option>)}
             </select>
           </div>
           <div className="min-w-48">
-            <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Topic</label>
+            <label className="text-xs text-[#6B7690] font-semibold block mb-1">Topic</label>
             <select value={topicSlug} onChange={e => setTopicSlug(e.target.value)} disabled={topics.length === 0}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33] disabled:bg-[#F7F5F0] disabled:text-[#9aa6a3]">
+              className="w-full px-3 py-2 text-sm rounded-xl border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33] disabled:bg-[#FAF7F2] disabled:text-[#6B7690]">
               <option value="">All topics</option>
               {topics.map(t => <option key={t.slug} value={t.slug}>{t.title_en}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-[#9aa6a3] font-semibold block mb-1">Difficulty</label>
+            <label className="text-xs text-[#6B7690] font-semibold block mb-1">Difficulty</label>
             <select value={difficulty} onChange={e => setDifficulty(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
+              className="px-3 py-2 text-sm rounded-xl border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
               <option value="">All</option>
               <option value="easy">Easy</option>
               <option value="medium">Medium</option>
@@ -1076,20 +1076,20 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
       </div>
 
       {loading ? (
-        <p className="text-sm text-[#9aa6a3]">Loading…</p>
+        <p className="text-sm text-[#6B7690]">Loading…</p>
       ) : questions.length === 0 ? (
-        <p className="text-sm text-[#9aa6a3]">No approved questions match these filters yet.</p>
+        <p className="text-sm text-[#6B7690]">No approved questions match these filters yet.</p>
       ) : (
         <>
           <div className="flex justify-between items-center">
-            <span className="text-xs text-[#9aa6a3] font-semibold">{questions.length} question{questions.length === 1 ? '' : 's'}</span>
+            <span className="text-xs text-[#6B7690] font-semibold">{questions.length} question{questions.length === 1 ? '' : 's'}</span>
             <div className="flex gap-2">
               <button onClick={() => { showAssignResult(null); setSelected(new Set(questions.map(q => q.id))) }}
                 className="text-xs font-semibold text-[#7C6BAE] border border-[#7C6BAE33] rounded-lg px-3 py-1.5 hover:bg-[#EFE9FA]">
                 Select all shown
               </button>
               <button onClick={() => { showAssignResult(null); setSelected(new Set()) }} disabled={selected.size === 0}
-                className="text-xs font-semibold text-[#7a8f8b] border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-1.5 hover:bg-[#F7F5F0] disabled:opacity-50">
+                className="text-xs font-semibold text-[#5E6B85] border border-[#E8E2D6] rounded-lg px-3 py-1.5 hover:bg-[#FAF7F2] disabled:opacity-50">
                 Clear selection
               </button>
             </div>
@@ -1100,39 +1100,39 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
               const isRevealed = revealed.has(q.id)
               const isSelected = selected.has(q.id)
               return (
-                <div key={q.id} className={`bg-white rounded-2xl border p-5 ${isSelected ? 'border-[#7C6BAE99] ring-1 ring-[#7C6BAE33]' : 'border-[rgba(15,118,110,.14)]'}`}>
+                <div key={q.id} className={`bg-white rounded-2xl border p-5 ${isSelected ? 'border-[#7C6BAE99] ring-1 ring-[#7C6BAE33]' : 'border-[#E8E2D6]'}`}>
                   <div className="flex items-start gap-3">
                     <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(q.id)}
                       className="mt-1 w-4 h-4 accent-[#7C6BAE] cursor-pointer shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-[#9aa6a3] font-semibold mb-2">
+                      <p className="text-xs text-[#6B7690] font-semibold mb-2">
                         {q.topics?.subjects?.label_en || '—'} · {q.topics?.title_en || '—'} · Grade {q.topics?.grade ?? '—'} · {q.difficulty}{isDistinctHe(q.prompt_he, q.prompt_en) ? ` (${translateDifficulty(q.difficulty)})` : ''} · {q.q_type}
                       </p>
 
-                      <p className="text-sm font-semibold text-[#1f2a28] mb-1"><FractionText text={q.prompt_en} /></p>
+                      <p className="text-sm font-semibold text-[#16213E] mb-1"><FractionText text={q.prompt_en} /></p>
                       {isDistinctHe(q.prompt_he, q.prompt_en) && (
-            <HebrewMathText text={q.prompt_he} className="text-sm text-[#7a8f8b] mb-2" style={{ direction:'rtl', textAlign:'right' }} />
+            <HebrewMathText text={q.prompt_he} className="text-sm text-[#5E6B85] mb-2" style={{ direction:'rtl', textAlign:'right' }} />
           )}
 
                       {q.options ? (
                         <ul className="text-sm text-[#374151] mb-2 flex flex-col gap-0.5">
                           {q.options.map((opt, i) => (
-                            <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-[#0F766E]' : ''}>
+                            <li key={i} className={isRevealed && opt.isCorrect ? 'font-bold text-[#2F5BE3]' : ''}>
                               {opt.label}. <FractionText text={opt.value_en} />
-                              {isDistinctHe(q.prompt_he, q.prompt_en) && <span className="text-[#9aa6a3]"> · <bdi dir="rtl">{translateOptionLabel(opt.label)}. <FractionText text={opt.value_he || opt.value_en} /></bdi></span>}
+                              {isDistinctHe(q.prompt_he, q.prompt_en) && <span className="text-[#6B7690]"> · <bdi dir="rtl">{translateOptionLabel(opt.label)}. <FractionText text={opt.value_he || opt.value_en} /></bdi></span>}
                               {isRevealed && opt.isCorrect ? ' ✓' : ''}
                             </li>
                           ))}
                         </ul>
                       ) : (
                         <p className="text-sm text-[#374151] mb-2">
-                          <span className="text-[#9aa6a3]">Answer:</span>{' '}
+                          <span className="text-[#6B7690]">Answer:</span>{' '}
                           {isRevealed ? <FractionText text={q.correct_answer} /> : <span className="text-[#c9cfc9] italic">hidden</span>}
                         </p>
                       )}
 
                       {isRevealed && (q.hint_en || q.hint_he) && (
-                        <p className="text-xs text-[#9aa6a3] mb-1">
+                        <p className="text-xs text-[#6B7690] mb-1">
                           Hint:{' '}
                           {q.hint_en && <FractionText text={q.hint_en} />}
                           {(q.hint_en ? isDistinctHe(q.hint_he, q.hint_en) : !!q.hint_he) && (
@@ -1141,7 +1141,7 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
                         </p>
                       )}
                       {isRevealed && q.explanation_en && (
-                        <p className="text-xs text-[#9aa6a3] mb-1">Explanation: <FractionText text={q.explanation_en} /></p>
+                        <p className="text-xs text-[#6B7690] mb-1">Explanation: <FractionText text={q.explanation_en} /></p>
                       )}
 
                       <button onClick={() => toggleReveal(q.id)}
@@ -1159,22 +1159,22 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
 
       {selected.size > 0 && (
         <div className="sticky bottom-4 bg-white rounded-2xl border border-[#7C6BAE4d] shadow-lg p-4 flex flex-wrap items-center gap-3">
-          <span className="text-sm font-black text-[#1f2a28] shrink-0">{selected.size} selected</span>
+          <span className="text-sm font-black text-[#16213E] shrink-0">{selected.size} selected</span>
 
           <select value={childId} onChange={e => setChildId(e.target.value)}
-            className="px-3 py-1.5 text-xs rounded-lg border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
+            className="px-3 py-1.5 text-xs rounded-lg border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
             {children.map(c => <option key={c.id} value={c.id}>{c.display_name} (Grade {c.grade === 0 ? 'K' : c.grade})</option>)}
           </select>
 
           <select value={wsType} onChange={e => setWsType(e.target.value as any)}
-            className="px-3 py-1.5 text-xs rounded-lg border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
+            className="px-3 py-1.5 text-xs rounded-lg border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
             <option value="practice">Practice</option>
             <option value="quiz">Quiz</option>
             <option value="exam">Exam</option>
           </select>
 
           <select value={langMode} onChange={e => setLangMode(e.target.value as any)}
-            className="px-3 py-1.5 text-xs rounded-lg border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
+            className="px-3 py-1.5 text-xs rounded-lg border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#7C6BAE33]">
             <option value="en_only">English</option>
             <option value="bilingual">Both</option>
             <option value="he_only">Hebrew</option>
@@ -1198,7 +1198,7 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
 
           <div className="ml-auto flex gap-2 shrink-0">
             <button onClick={assignToChild} disabled={!childId || assigning}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#2F5BE3] hover:bg-[#2148C0] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
               <UserPlus size={12} /> {assigning ? 'Assigning…' : `Assign to Child`}
             </button>
             <button onClick={createWorksheet} disabled={!childId}
@@ -1206,24 +1206,24 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
               <FileText size={12} /> Create Worksheet from {selected.size} Selected
             </button>
             <button onClick={() => setShowNotebookPicker(v => !v)}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#0F766E] hover:bg-[#0B5C56] text-white font-bold text-xs rounded-lg transition-colors">
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-[#2F5BE3] hover:bg-[#2148C0] text-white font-bold text-xs rounded-lg transition-colors">
               <NotebookIcon size={12} /> Add to Notebook Section
             </button>
           </div>
 
           {showNotebookPicker && (
-            <div className="basis-full flex flex-wrap items-center gap-2 bg-[#E4F3F1] border border-[#0F766E33] rounded-lg p-3">
+            <div className="basis-full flex flex-wrap items-center gap-2 bg-[#EAF0FF] border border-[#2F5BE333] rounded-lg p-3">
               <select value={notebookSectionId} onChange={e => { setNotebookSectionId(e.target.value); setNewSectionTitle('') }}
-                className="px-3 py-1.5 text-xs rounded-lg border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]">
+                className="px-3 py-1.5 text-xs rounded-lg border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333]">
                 <option value="">— choose a section —</option>
                 {notebookSections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
               </select>
-              <span className="text-xs text-[#9aa6a3]">or</span>
+              <span className="text-xs text-[#6B7690]">or</span>
               <input value={newSectionTitle} onChange={e => { setNewSectionTitle(e.target.value); setNotebookSectionId('') }}
                 placeholder="New section title"
-                className="px-3 py-1.5 text-xs rounded-lg border border-[rgba(15,118,110,.14)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]" />
+                className="px-3 py-1.5 text-xs rounded-lg border border-[#E8E2D6] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333]" />
               <button onClick={addToNotebookSection} disabled={addingToNotebook || (!notebookSectionId && !newSectionTitle.trim())}
-                className="px-4 py-1.5 bg-[#0F766E] hover:bg-[#0B5C56] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
+                className="px-4 py-1.5 bg-[#2F5BE3] hover:bg-[#2148C0] disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
                 {addingToNotebook ? 'Adding…' : `Add ${selected.size} Question${selected.size === 1 ? '' : 's'}`}
               </button>
             </div>
@@ -1232,7 +1232,7 @@ function LibraryPanel({ active, initialFilter }: { active: boolean; initialFilte
       )}
 
       {assignResult && (
-        <div className={`sticky bottom-4 rounded-xl border p-3 text-xs font-semibold ${assignResult.ok ? 'bg-[#E4F3F1] border-[#0F766E33] text-[#0F766E]' : 'bg-[#FFF5F5] border-[#FEE2E2] text-[#DC2626]'}`}>
+        <div className={`sticky bottom-4 rounded-xl border p-3 text-xs font-semibold ${assignResult.ok ? 'bg-[#EAF0FF] border-[#2F5BE333] text-[#2F5BE3]' : 'bg-[#FFF5F5] border-[#FEE2E2] text-[#DC2626]'}`}>
           <ApiErrorText text={assignResult.message} />
         </div>
       )}
@@ -1261,31 +1261,31 @@ export default function QuestionsPage() {
   useEffect(() => { loadHistory() }, [loadHistory])
 
   return (
-    <div className="min-h-screen bg-[#F7F5F0] font-[Manrope]">
+    <div className="min-h-screen bg-[#FAF7F2] font-[Manrope]">
       <ParentHeaderBar
-        center={<span className="text-sm font-semibold text-[#9aa6a3]">/ AI Questions</span>}
+        center={<span className="text-sm font-semibold text-[#6B7690]">/ AI Questions</span>}
         right={
           <button onClick={() => window.location.href = '/dashboard'}
-            className="flex items-center gap-1.5 text-xs font-semibold text-[#7a8f8b] border border-[rgba(15,118,110,.14)] rounded-lg px-3 py-1.5 hover:bg-[#F7F5F0]">
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#5E6B85] border border-[#E8E2D6] rounded-lg px-3 py-1.5 hover:bg-[#FAF7F2]">
             <ArrowLeft size={12} /> Dashboard
           </button>
         }
       />
-      <div className="bg-white border-b border-[rgba(15,118,110,.14)] px-6 py-4 sticky top-16 z-10">
+      <div className="bg-white border-b border-[#E8E2D6] px-6 py-4 sticky top-16 z-10">
         <div className="max-w-4xl mx-auto flex items-center gap-2">
-          <h1 className="flex items-center gap-2 text-xl font-extrabold text-[#1f2a28] mr-2">
+          <h1 className="flex items-center gap-2 text-xl font-extrabold text-[#16213E] mr-2">
             <Sparkles size={18} color={PARENT_COLORS.primary} /> AI Questions
           </h1>
           <button onClick={() => setTab('generate')}
-            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'generate' ? 'bg-[#0F766E] text-white' : 'text-[#7a8f8b] hover:bg-[#F7F5F0]'}`}>
+            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'generate' ? 'bg-[#2F5BE3] text-white' : 'text-[#5E6B85] hover:bg-[#FAF7F2]'}`}>
             Generate
           </button>
           <button onClick={() => setTab('pending')}
-            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'pending' ? 'bg-[#0F766E] text-white' : 'text-[#7a8f8b] hover:bg-[#F7F5F0]'}`}>
+            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'pending' ? 'bg-[#2F5BE3] text-white' : 'text-[#5E6B85] hover:bg-[#FAF7F2]'}`}>
             Pending Review
           </button>
           <button onClick={() => setTab('library')}
-            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'library' ? 'bg-[#0F766E] text-white' : 'text-[#7a8f8b] hover:bg-[#F7F5F0]'}`}>
+            className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'library' ? 'bg-[#2F5BE3] text-white' : 'text-[#5E6B85] hover:bg-[#FAF7F2]'}`}>
             <BookOpen size={12} /> Library
           </button>
         </div>

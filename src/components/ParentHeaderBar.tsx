@@ -16,7 +16,7 @@ const SECTIONS: { key: ParentSection; he: string; href: string; Icon: any }[] = 
 
 export function ParentNav({ active }: { active?: ParentSection }) {
   return (
-    <nav aria-label="ניווט ראשי" dir="rtl" style={{ display: 'flex', gap: 4, background: '#F1F5F4', padding: 4, borderRadius: 999 }}>
+    <nav aria-label="ניווט ראשי" dir="rtl" style={{ display: 'flex', gap: 4 }}>
       {SECTIONS.map(({ key, he, href, Icon }) => {
         const on = key === active
         return (
@@ -38,7 +38,7 @@ export function ParentNav({ active }: { active?: ParentSection }) {
 // `active` section to show the shared four-section nav.
 export default function ParentHeaderBar({ center, right, active }: { center?: React.ReactNode; right?: React.ReactNode; active?: ParentSection }) {
   return (
-    <header style={{
+    <header dir="rtl" style={{
       background: PARENT_COLORS.card,
       borderBottom: `1px solid ${PARENT_COLORS.border}`,
       padding: '0 16px',
@@ -54,7 +54,7 @@ export default function ParentHeaderBar({ center, right, active }: { center?: Re
       <a href="/dashboard" aria-label="EduPlay — לדף הבית" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, textDecoration: 'none' }}>
         <EduPlayLogo showName={false} size={32} iconRadius={8} iconShadow="none" />
         <span className="hidden sm:inline" style={{ fontFamily: PARENT_FONTS.heading, fontWeight: 800, fontSize: '17px', color: PARENT_COLORS.text, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
-          Edu<span style={{ color: PARENT_COLORS.primary }}>Play</span>
+          <bdi>Edu<span style={{ color: PARENT_COLORS.primary }}>Play</span></bdi>
         </span>
       </a>
       {center ?? (active ? <ParentNav active={active} /> : null)}

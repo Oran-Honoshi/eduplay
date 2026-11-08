@@ -9,6 +9,7 @@ import {
 import ParentHeaderBar from '@/components/ParentHeaderBar'
 import { PARENT_COLORS, PARENT_FONTS, CHILD_AVATAR_COLORS } from '@/lib/parentTheme'
 import { ParentModal, ParentModalFooter } from '@/components/ParentModal'
+import HomeScreen from '@/components/parent/HomeScreen'
 import { apiErrorText, isSessionExpiredStatus } from '@/lib/apiError'
 
 // Shared error-toast helper for requireParentOnlySession()-gated calls, used
@@ -460,14 +461,14 @@ function LibraryHub() {
 
 // Approved structure (Nov 2026): four parent sections instead of ten tabs.
 const TABS = [
-  { key:'home',    label:'Home',    icon:Home },
-  { key:'create',  label:'Create',  icon:Sparkles },
-  { key:'library', label:'Library', icon:BookOpen },
-  { key:'family',  label:'Family',  icon:Users },
+  { key:'home',    label:'בית',     icon:Home },
+  { key:'create',  label:'יצירה',   icon:Sparkles },
+  { key:'library', label:'ספרייה',  icon:BookOpen },
+  { key:'family',  label:'משפחה',   icon:Users },
 ]
 // Old tab keys (bookmarks, ?tab= links) → the section that now holds them.
 const LEGACY_TAB: Record<string, string> = {
-  overview:'home', progress:'home', assignments:'home',
+  overview:'home', progress:'progress', assignments:'progress',
   worksheets:'create', questions:'create', passages:'library',
   notebook:'library', curriculum:'library', parents:'family', account:'family',
 }
@@ -477,7 +478,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
   const [screen, setScreen]         = useState('home')
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get('tab')
-    if (t) setScreen(TABS.some(x => x.key === t) ? t : (LEGACY_TAB[t] || 'home'))
+    if (t) setScreen(TABS.some(x => x.key === t) || t === 'progress' ? t : (LEGACY_TAB[t] || 'home'))
   }, [])
   const [toast, setToast]           = useState<{ icon:string; text:string; link?: string }|null>(null)
   const [errorBanner, setErrorBanner]   = useState(error)
@@ -534,7 +535,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
   `
 
   return (
-    <div style={{ minHeight:'100vh', background:PARENT_COLORS.pageBg, fontFamily:PARENT_FONTS.body }}>
+    <div dir="rtl" lang="he" className="ep-parent" style={{ minHeight:'100vh', background:PARENT_COLORS.pageBg, fontFamily:PARENT_FONTS.body }}>
       <style>{dashStyles}</style>
 
       {/* Toast */}
@@ -556,7 +557,8 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
               const active = screen === tab.key
               return (
                 <button key={tab.key} onClick={() => setScreen(tab.key)}
-                  style={{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 12px', borderRadius:'8px', border:'none', fontFamily:PARENT_FONTS.body, fontWeight:700, fontSize:'12px', cursor:'pointer', background:active?PARENT_COLORS.primary:'transparent', color:active?'white':PARENT_COLORS.text, whiteSpace:'nowrap', flexShrink:0 }}>
+                  aria-current={active ? 'page' : undefined}
+                  style={{ display:'flex', alignItems:'center', gap:'6px', minHeight:'40px', padding:'0 16px', borderRadius:'12px', border:'none', fontFamily:PARENT_FONTS.body, fontWeight:active?800:600, fontSize:'15px', cursor:'pointer', background:active?PARENT_COLORS.primaryLight:'transparent', color:active?PARENT_COLORS.primaryHover:PARENT_COLORS.text, whiteSpace:'nowrap', flexShrink:0 }}>
                   <Icon size={14} />
                   {tab.label}
                 </button>
@@ -567,9 +569,9 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
         right={
           <div className="header-right" style={{ display:'flex', alignItems:'center', gap:'10px', flexShrink:0 }}>
             {isDemo && <span style={{ background:PARENT_COLORS.primaryLight, color:PARENT_COLORS.primary, borderRadius:'50px', padding:'4px 10px', fontSize:'11px', fontWeight:800 }}>🧪 Demo</span>}
-            <span className="days-badge" style={{ background:PARENT_COLORS.amberLight, border:`1px solid ${PARENT_COLORS.amber}`, color:PARENT_COLORS.amberText, borderRadius:'50px', padding:'4px 10px', fontSize:'12px', fontWeight:800 }}>{daysLeft} days left</span>
-            <div style={{ width:'34px', height:'34px', background:PARENT_COLORS.primary, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'13px', flexShrink:0 }}>
-              {parentName.split(' ').map((n: string) => n[0]).join('').slice(0,2)}
+            <span className="days-badge" style={{ background:PARENT_COLORS.amberLight, color:PARENT_COLORS.amberText, borderRadius:'50px', padding:'6px 12px', fontSize:'13px', fontWeight:700 }}>ניסיון חינם · עוד {daysLeft} ימים</span>
+            <div style={{ width:'38px', height:'38px', background:PARENT_COLORS.text, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:'13px', flexShrink:0 }}>
+              {(parentName || 'E').split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()}
             </div>
           </div>
         }
@@ -586,7 +588,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
       <div style={{ display:'flex', minHeight:'calc(100vh - 64px)' }}>
 
         {/* Sidebar */}
-        <aside className="dashboard-sidebar" style={{ width:'216px', background:PARENT_COLORS.card, borderRight:`1px solid ${PARENT_COLORS.border}`, padding:'14px 0', flexShrink:0, display:'flex', flexDirection:'column' }}>
+        <aside className="dashboard-sidebar" style={{ display:'none', width:'216px', background:PARENT_COLORS.card, borderRight:`1px solid ${PARENT_COLORS.border}`, padding:'14px 0', flexShrink:0, flexDirection:'column' }}>
           <div style={{ padding:'0 16px', marginBottom:'8px', fontSize:'10px', fontWeight:800, letterSpacing:'1.5px', textTransform:'uppercase', color:PARENT_COLORS.textMuted }}>Family</div>
           {(children || []).map((child: any, i: number) => {
             const avatarColor = CHILD_AVATAR_COLORS[i % CHILD_AVATAR_COLORS.length]
@@ -618,10 +620,11 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
         </aside>
 
         {/* Main */}
-        <main className="dashboard-main" style={{ flex:1, padding:'24px', overflowY:'auto', maxHeight:'calc(100vh - 64px)' }}>
+        <main className="dashboard-main" style={{ flex:1, padding:'28px 24px 64px', overflowY:'auto', maxHeight:'calc(100vh - 64px)' }}>
+          <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
 
           {/* ── OVERVIEW ── */}
-          {screen === 'home' && (
+          {screen === 'progress' && (
             <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
                 <div>
@@ -707,7 +710,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
           )}
 
           {/* ── PROGRESS ── */}
-          {screen === 'home' && (
+          {screen === 'progress' && (
             <div id="progress-section" style={{ display:'flex', flexDirection:'column', gap:'18px', marginTop:'28px' }}>
               <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
                 <BarChart2 size={18} color={PARENT_COLORS.primary} /> Progress Reports
@@ -794,8 +797,13 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
           )}
 
           {/* ── ASSIGNMENTS (part of Home) ── */}
-          {screen === 'home' && (
+          {screen === 'progress' && (
             <div style={{ marginTop:'28px' }}><AssignmentsScreen children={children} showToast={showToast} /></div>
+          )}
+
+          {/* ── HOME (redesign) ── */}
+          {screen === 'home' && (
+            <HomeScreen children={children} progress={progress} parentName={parentName} onProgress={() => setScreen('progress')} />
           )}
 
           {/* ── CREATE ── */}
@@ -1012,6 +1020,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
             </div>
           )}
 
+          </div>
         </main>
       </div>
 
@@ -1024,7 +1033,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
             <button key={tab.key} onClick={() => setScreen(tab.key)}
               style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', background:'none', border:'none', cursor:'pointer', padding:'6px 4px' }}>
               <Icon size={18} color={active?PARENT_COLORS.primary:PARENT_COLORS.textMuted} />
-              <span style={{ fontSize:'9px', fontWeight:700, color:active?PARENT_COLORS.primary:PARENT_COLORS.textMuted }}>
+              <span style={{ fontSize:'12px', fontWeight:active?800:600, color:active?PARENT_COLORS.primaryHover:PARENT_COLORS.textMuted }}>
                 {tab.label}
               </span>
               {active && <div style={{ width:'4px', height:'4px', borderRadius:'50%', background:PARENT_COLORS.primary }}/>}

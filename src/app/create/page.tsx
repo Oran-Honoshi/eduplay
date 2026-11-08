@@ -44,9 +44,9 @@ const KINDS: { id: Kind; he: string; desc: string; Icon: any }[] = [
 const DIFF_LABEL: Record<string, string> = { progressive: 'מהקל לקשה', mixed: 'מעורב', easy: 'קל', medium: 'בינוני', hard: 'קשה' }
 const gradeHe = (g: number) => (g === 0 ? 'גן' : `כיתה ${['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'י״א', 'י״ב'][g - 1]}${g <= 10 ? '׳' : ''}`)
 
-const card = 'bg-white rounded-2xl border border-[rgba(15,118,110,.14)] shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
-const btnPrimary = 'inline-flex items-center justify-center gap-2 min-h-[48px] px-5 rounded-xl bg-[#0F766E] text-white font-bold text-[15px] hover:bg-[#0d665f] disabled:opacity-50'
-const btnGhost = 'inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl border border-[rgba(15,118,110,.2)] bg-white text-[#0F766E] font-semibold text-sm hover:bg-[#E4F3F1] disabled:opacity-50'
+const card = 'bg-white rounded-2xl border border-[#E8E2D6] shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
+const btnPrimary = 'inline-flex items-center justify-center gap-2 min-h-[48px] px-5 rounded-xl bg-[#2F5BE3] text-white font-bold text-[15px] hover:bg-[#2148C0] disabled:opacity-50'
+const btnGhost = 'inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl border border-[#D9D2C4] bg-white text-[#2F5BE3] font-semibold text-sm hover:bg-[#EAF0FF] disabled:opacity-50'
 
 export default function CreatePage() {
   return <Suspense fallback={null}><CreateInner /></Suspense>
@@ -67,7 +67,7 @@ function CreateInner() {
   const [lang, setLang] = useState<Lang>('he_only')
   const [request, setRequest] = useState(sp.get('prompt') || '')
   const [materials, setMaterials] = useState<UploadedMaterial[]>([])
-  const [mirror, setMirror] = useState(false)   // "make one just like the sheet I uploaded"
+  const [mirror, setMirror] = useState(sp.get('mirror') === '1')   // "make one just like the sheet I uploaded"
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -352,11 +352,11 @@ function CreateInner() {
     await build()
   }
   const MissingBanner = () => step === 'review' && missing >= Math.max(3, Math.ceil(planned * 0.3)) ? (
-    <div className="mb-3 rounded-2xl border-2 border-[#0F766E] bg-[#E4F3F1] p-4 flex flex-wrap items-center gap-3" dir="rtl">
+    <div className="mb-3 rounded-2xl border-2 border-[#2F5BE3] bg-[#EAF0FF] p-4 flex flex-wrap items-center gap-3" dir="rtl">
       <Pip pose="wave" size={48} he />
       <div className="flex-1 min-w-[200px]">
-        <div className="font-black text-[#0F3D3A]">נוצרו {questions.length} מתוך {planned} שאלות</div>
-        <div className="text-sm text-[#3d4f4b]">אלה היו הדוגמאות. ליצור עכשיו את {missing} השאלות הנוספות לפי התוכנית?</div>
+        <div className="font-black text-[#16213E]">נוצרו {questions.length} מתוך {planned} שאלות</div>
+        <div className="text-sm text-[#33415F]">אלה היו הדוגמאות. ליצור עכשיו את {missing} השאלות הנוספות לפי התוכנית?</div>
       </div>
       <button className={btnPrimary} onClick={makeTheRest}><Sparkles size={18} /> ליצור עוד {missing} שאלות</button>
     </div>
@@ -364,13 +364,13 @@ function CreateInner() {
 
   // ── render ──
   return (
-    <div className="min-h-screen bg-[#F7F5F0]" dir="rtl" lang="he" style={{ fontFamily: "'Assistant', 'Nunito', system-ui, sans-serif" }}>
+    <div className="ep-parent min-h-screen bg-[#FAF7F2]" dir="rtl" lang="he" style={{ fontFamily: "'Assistant', 'Rubik', system-ui, sans-serif" }}>
       <ParentHeaderBar active="create" />
       <div className="max-w-[920px] mx-auto px-4 py-6">
         <div className="flex items-center justify-between gap-3 mb-5">
           <div>
-            <h1 className="text-2xl font-black text-[#1f2a28] m-0">יצירה</h1>
-            <p className="text-sm text-[#5b6b68] mt-1 mb-0">תרגול, מבחן או דפי הסבר — להדפסה, לאפליקציה, או לשניהם.</p>
+            <h1 className="text-2xl font-black text-[#16213E] m-0">יצירה</h1>
+            <p className="text-sm text-[#4A5672] mt-1 mb-0">תרגול, מבחן או דפי הסבר — להדפסה, לאפליקציה, או לשניהם.</p>
           </div>
           <div className="flex gap-2">
             <button className={btnGhost} onClick={() => (view === 'make' ? setView('history') : startNew())}>
@@ -384,7 +384,7 @@ function CreateInner() {
         {previewUrl && (
           <div role="dialog" aria-modal="true" className="fixed inset-0 z-[700] bg-black/50 flex items-center justify-center p-3" onClick={() => setPreviewUrl(null)}>
             <div className="bg-white rounded-2xl w-full max-w-[900px] h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between px-4 py-2 border-b border-[#e3ebe9]">
+              <div className="flex items-center justify-between px-4 py-2 border-b border-[#E8E2D6]">
                 <span className="font-bold text-sm">תצוגה מקדימה — כך ייראה הדף המודפס (עם הדוגמאות)</span>
                 <button aria-label="סגירה" className="w-9 h-9 rounded-full hover:bg-[#F1F5F9] flex items-center justify-center" onClick={() => setPreviewUrl(null)}><X size={18} /></button>
               </div>
@@ -395,7 +395,7 @@ function CreateInner() {
         {view === 'history' ? <HistoryList kidsList={children} onMore={(m: any) => { window.location.href = `/create?from=${m.id}` }} /> : (
           <>
             {step !== 'kind' && step !== 'build' && (
-              <button className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0F766E] mb-2 min-h-[36px]"
+              <button className="inline-flex items-center gap-1.5 text-sm font-bold text-[#2F5BE3] mb-2 min-h-[36px]"
                 onClick={() => { const order: Step[] = ['kind', 'details', 'plan', 'review', 'done']; const i = order.indexOf(step); go(order[Math.max(0, i - 1)]) }}>
                 <ArrowLeft size={16} className="rotate-180" /> חזרה
               </button>
@@ -411,17 +411,17 @@ function CreateInner() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {KINDS.map(k => (
                   <button key={k.id} onClick={() => { setKind(k.id); go('details') }}
-                    className={`${card} p-5 text-start hover:border-[#0F766E] hover:shadow-md transition`}>
-                    <div className="w-12 h-12 rounded-xl bg-[#E4F3F1] text-[#0F766E] flex items-center justify-center mb-3"><k.Icon size={24} /></div>
-                    <div className="text-lg font-black text-[#1f2a28]">{k.he}</div>
-                    <div className="text-sm text-[#5b6b68] mt-1 leading-relaxed">{k.desc}</div>
+                    className={`${card} p-5 text-start hover:border-[#2F5BE3] hover:shadow-md transition`}>
+                    <div className="w-12 h-12 rounded-xl bg-[#EAF0FF] text-[#2F5BE3] flex items-center justify-center mb-3"><k.Icon size={24} /></div>
+                    <div className="text-lg font-black text-[#16213E]">{k.he}</div>
+                    <div className="text-sm text-[#4A5672] mt-1 leading-relaxed">{k.desc}</div>
                   </button>
                 ))}
-                <a href="/reading" className={`${card} md:col-span-3 p-4 flex items-center gap-4 text-start hover:border-[#0F766E] hover:shadow-md transition no-underline`}>
+                <a href="/reading" className={`${card} md:col-span-3 p-4 flex items-center gap-4 text-start hover:border-[#2F5BE3] hover:shadow-md transition no-underline`}>
                   <div className="w-12 h-12 rounded-xl bg-[#FFF4D6] text-[#8a5a00] flex items-center justify-center shrink-0"><BookOpen size={24} /></div>
-                  <div><div className="text-lg font-black text-[#1f2a28]">חוברות קריאה (גן–א׳)</div><div className="text-sm text-[#5b6b68]">קמץ, שווא, חיריק ועוד: הברות, מילים, משפטים וסיפור, עם התאמה לתמונות, חיבור נקודות וציור.</div></div>
+                  <div><div className="text-lg font-black text-[#16213E]">חוברות קריאה (גן–א׳)</div><div className="text-sm text-[#4A5672]">קמץ, שווא, חיריק ועוד: הברות, מילים, משפטים וסיפור, עם התאמה לתמונות, חיבור נקודות וציור.</div></div>
                 </a>
-                <a href="/worksheets" className="md:col-span-3 text-sm text-[#0F766E] font-semibold underline-offset-2 hover:underline">
+                <a href="/worksheets" className="md:col-span-3 text-sm text-[#2F5BE3] font-semibold underline-offset-2 hover:underline">
                   רק להדפיס דף עבודה מהמאגר המוכן (גן–ו׳)? לבונה דפי העבודה ←
                 </a>
               </div>
@@ -436,11 +436,11 @@ function CreateInner() {
                   <div className="flex flex-wrap gap-2">
                     {children.map(c => (
                       <button key={c.id} onClick={() => pickChild(c)}
-                        className={`min-h-[44px] px-4 rounded-full border-2 font-bold text-sm ${child?.id === c.id ? 'border-[#0F766E] bg-[#E4F3F1] text-[#0F766E]' : 'border-[#e3ebe9] bg-white text-[#3d4f4b]'}`}>
+                        className={`min-h-[44px] px-4 rounded-full border-2 font-bold text-sm ${child?.id === c.id ? 'border-[#2F5BE3] bg-[#EAF0FF] text-[#2F5BE3]' : 'border-[#E8E2D6] bg-white text-[#33415F]'}`}>
                         {c.name} · {gradeHe(c.grade)}
                       </button>
                     ))}
-                    {loaded && children.length === 0 && <span className="text-sm text-[#7a8f8b]">עוד אין ילדים בחשבון — אפשר להוסיף במשפחה.</span>}
+                    {loaded && children.length === 0 && <span className="text-sm text-[#5E6B85]">עוד אין ילדים בחשבון — אפשר להוסיף במשפחה.</span>}
                   </div>
                 </Field>
                 <div className="flex flex-wrap gap-4">
@@ -448,17 +448,17 @@ function CreateInner() {
                     <div className="flex flex-wrap gap-2">
                       {SUBJECTS.map(s => (
                         <button key={s.slug} onClick={() => { setSubject(s.slug); setLang(s.slug === 'english' ? 'bilingual' : 'he_only') }}
-                          className={`min-h-[44px] px-4 rounded-full border-2 font-bold text-sm ${subject === s.slug ? 'border-[#0F766E] bg-[#E4F3F1] text-[#0F766E]' : 'border-[#e3ebe9] bg-white text-[#3d4f4b]'}`}>{s.he}</button>
+                          className={`min-h-[44px] px-4 rounded-full border-2 font-bold text-sm ${subject === s.slug ? 'border-[#2F5BE3] bg-[#EAF0FF] text-[#2F5BE3]' : 'border-[#E8E2D6] bg-white text-[#33415F]'}`}>{s.he}</button>
                       ))}
                     </div>
                   </Field>
                   <Field label="כיתה">
-                    <select value={grade} onChange={e => setGrade(parseInt(e.target.value))} className="min-h-[44px] px-3 rounded-xl border border-[rgba(15,118,110,.2)] bg-white text-sm">
+                    <select value={grade} onChange={e => setGrade(parseInt(e.target.value))} className="min-h-[44px] px-3 rounded-xl border border-[#D9D2C4] bg-white text-sm">
                       {Array.from({ length: 13 }, (_, g) => <option key={g} value={g}>{gradeHe(g)}</option>)}
                     </select>
                   </Field>
                   <Field label="שפת השאלות">
-                    <select value={lang} onChange={e => setLang(e.target.value as Lang)} className="min-h-[44px] px-3 rounded-xl border border-[rgba(15,118,110,.2)] bg-white text-sm">
+                    <select value={lang} onChange={e => setLang(e.target.value as Lang)} className="min-h-[44px] px-3 rounded-xl border border-[#D9D2C4] bg-white text-sm">
                       <option value="he_only">עברית</option>
                       <option value="bilingual">עברית + אנגלית</option>
                       <option value="en_only">אנגלית</option>
@@ -468,17 +468,17 @@ function CreateInner() {
                 <Field label="מה צריך? (במילים שלכם)">
                   <textarea value={request} onChange={e => setRequest(e.target.value)} rows={3} dir="auto"
                     placeholder={kind === 'exam' ? 'לדוגמה: מבחן ב-18.11 על מערכת צירים, מספרים מכוונים ומבוא לזוויות' : kind === 'explanation' ? 'לדוגמה: היא לא מבינה איך מחסרים מספרים שליליים' : 'לדוגמה: תרגול שברים עם הרבה בעיות מילוליות'}
-                    className="w-full px-3 py-2 text-[15px] rounded-xl border border-[rgba(15,118,110,.2)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]" />
+                    className="w-full px-3 py-2 text-[15px] rounded-xl border border-[#D9D2C4] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333]" />
                 </Field>
                 <Field label="חומר של הילד/ה (לא חובה)">
                   <MaterialUpload value={materials} onChange={setMaterials} he autoRead />
                 </Field>
                 {materials.length > 0 && kind !== 'explanation' && (
-                  <label className={`flex items-start gap-3 rounded-2xl border-2 p-3 cursor-pointer ${mirror ? 'border-[#0F766E] bg-[#E4F3F1]' : 'border-[#e3ebe9] bg-white'}`}>
-                    <input type="checkbox" className="mt-1 w-5 h-5 accent-[#0F766E]" checked={mirror} onChange={e => setMirror(e.target.checked)} />
+                  <label className={`flex items-start gap-3 rounded-2xl border-2 p-3 cursor-pointer ${mirror ? 'border-[#2F5BE3] bg-[#EAF0FF]' : 'border-[#E8E2D6] bg-white'}`}>
+                    <input type="checkbox" className="mt-1 w-5 h-5 accent-[#2F5BE3]" checked={mirror} onChange={e => setMirror(e.target.checked)} />
                     <span>
-                      <span className="font-bold block text-[#1f2a28]">ליצור {kind === 'exam' ? 'מבחן' : 'דף'} דומה למה שהעליתי</span>
-                      <span className="text-xs text-[#5b6b68]">אותו מבנה, אותו סדר, אותה רמה ואותם סוגי שאלות — רק מספרים ובעיות אחרים</span>
+                      <span className="font-bold block text-[#16213E]">ליצור {kind === 'exam' ? 'מבחן' : 'דף'} דומה למה שהעליתי</span>
+                      <span className="text-xs text-[#4A5672]">אותו מבנה, אותו סדר, אותה רמה ואותם סוגי שאלות — רק מספרים ובעיות אחרים</span>
                     </span>
                   </label>
                 )}
@@ -498,7 +498,7 @@ function CreateInner() {
               {mat.kind !== 'explanation' && (
                 <div className={`${card} p-5 mt-3`} dir="rtl">
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                    <h3 className="text-base font-black text-[#1f2a28] m-0">כך ייראו השאלות</h3>
+                    <h3 className="text-base font-black text-[#16213E] m-0">כך ייראו השאלות</h3>
                     <div className="flex gap-2">
                       <button className={btnGhost} disabled={!questions.length || sampling} onClick={openPreview}><Printer size={16} /> תצוגה מקדימה של הדף</button>
                       <button className={btnGhost} disabled={sampling} onClick={newSamples}><Sparkles size={16} /> {questions.length ? 'דוגמה אחרת' : 'ליצור דוגמה'}</button>
@@ -508,8 +508,8 @@ function CreateInner() {
                     ? <div className="py-4"><FunLoader kind="build" pose="read" size={84} /></div>
                     : questions.length
                       ? <div className="flex flex-col gap-2">{questions.slice(0, 3).map((q, i) => <QuestionCard key={q.id} q={q} n={i + 1} lang={mat.language} onApprove={() => act(q, 'approve')} onRemove={() => act(q, 'reject')} onSaved={() => reload()} />)}</div>
-                      : <p className="text-sm text-[#5b6b68] m-0">עוד אין דוגמה. לחצו "ליצור דוגמה".</p>}
-                  {editing && questions.length > 0 && <p className="text-xs text-[#7a8f8b] mt-2 mb-0">שיניתם את התוכנית? לחצו "דוגמה אחרת" כדי לראות שאלות לפי השינויים.</p>}
+                      : <p className="text-sm text-[#4A5672] m-0">עוד אין דוגמה. לחצו "ליצור דוגמה".</p>}
+                  {editing && questions.length > 0 && <p className="text-xs text-[#5E6B85] mt-2 mb-0">שיניתם את התוכנית? לחצו "דוגמה אחרת" כדי לראות שאלות לפי השינויים.</p>}
                 </div>
               )}
               <div className="flex flex-wrap gap-2 justify-between mt-3" dir="rtl">
@@ -525,10 +525,10 @@ function CreateInner() {
               <div className={`${card} p-8`}>
                 <FunLoader kind={mat?.kind === 'explanation' ? 'explain' : 'build'} pose="read" size={120}
                   sub={progress.label ? `עכשיו: ${progress.label}` : undefined} />
-                <div className="h-2 rounded-full bg-[#E4F3F1] mt-5 overflow-hidden">
-                  <div className="h-full bg-[#0F766E] transition-all duration-700" style={{ width: `${progress.total ? Math.max(6, (progress.done / progress.total) * 100) : 6}%` }} />
+                <div className="h-2 rounded-full bg-[#EAF0FF] mt-5 overflow-hidden">
+                  <div className="h-full bg-[#2F5BE3] transition-all duration-700" style={{ width: `${progress.total ? Math.max(6, (progress.done / progress.total) * 100) : 6}%` }} />
                 </div>
-                <div className="text-xs text-[#7a8f8b] mt-2 text-center">אפשר להשאיר את המסך פתוח ולחזור בעוד דקה</div>
+                <div className="text-xs text-[#5E6B85] mt-2 text-center">אפשר להשאיר את המסך פתוח ולחזור בעוד דקה</div>
               </div>
             )}
 
@@ -540,8 +540,8 @@ function CreateInner() {
                   <div className="flex flex-col gap-3">
                     <div className={`${card} p-4 flex flex-wrap items-center justify-between gap-3`}>
                       <div>
-                        <div className="font-black text-[#1f2a28]">{mat.title}</div>
-                        <div className="text-sm text-[#5b6b68]">{questions.length} שאלות{questions.length ? ` · ${pending ? `${pending} מחכות לאישור שלכם` : 'הכול אושר'}` : ''}</div>
+                        <div className="font-black text-[#16213E]">{mat.title}</div>
+                        <div className="text-sm text-[#4A5672]">{questions.length} שאלות{questions.length ? ` · ${pending ? `${pending} מחכות לאישור שלכם` : 'הכול אושר'}` : ''}</div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <button className={btnGhost} onClick={() => go('plan')}><ArrowLeft size={16} className="rotate-180" /> לתוכנית</button>
@@ -555,13 +555,13 @@ function CreateInner() {
                       <div className={`${card} p-6 text-center`}>
                         <Pip pose="think" size={90} he style={{ margin: '0 auto' }} />
                         <div className="font-bold mt-2">עוד לא נוצרו שאלות</div>
-                        <div className="text-sm text-[#5b6b68] mb-3">זה קורה לפעמים כשהשרת עמוס. אפשר לנסות שוב, או לחזור לתוכנית ולשנות.</div>
+                        <div className="text-sm text-[#4A5672] mb-3">זה קורה לפעמים כשהשרת עמוס. אפשר לנסות שוב, או לחזור לתוכנית ולשנות.</div>
                         <div className="flex justify-center gap-2">
                           <button className={btnPrimary} onClick={failed.length ? retryFailed : build}><Sparkles size={16} /> לנסות שוב</button>
                           <button className={btnGhost} onClick={() => go('plan')}>לתוכנית</button>
                         </div>
                       </div>
-                    ) : <p className="text-xs text-[#7a8f8b] m-0">רק שאלות שאישרתם יגיעו לילד/ה. אפשר לערוך שאלה, או להסיר אותה.</p>}
+                    ) : <p className="text-xs text-[#5E6B85] m-0">רק שאלות שאישרתם יגיעו לילד/ה. אפשר לערוך שאלה, או להסיר אותה.</p>}
                     {questions.length > 0 && <AddMorePanel topics={hasSections(mat.plan) ? questionSections(mat.plan).filter(x => x.kind !== 'translate_words') : (mat.plan?.topics || [])} onAdd={addMore} />}
                     {hasSections(mat.plan) && <SectionReview mat={mat} questions={questions} act={act} reload={reload} />}
                     {!hasSections(mat.plan) && (mat.plan?.topics || []).map((t: any) => {
@@ -569,7 +569,7 @@ function CreateInner() {
                       if (!qs.length) return null
                       return (
                         <div key={t.key}>
-                          <h3 className="text-base font-black text-[#0F766E] mt-3 mb-2">{t.title_he || t.title_en} <span className="text-xs font-semibold text-[#7a8f8b]">· {qs.length}</span></h3>
+                          <h3 className="text-base font-black text-[#2F5BE3] mt-3 mb-2">{t.title_he || t.title_en} <span className="text-xs font-semibold text-[#5E6B85]">· {qs.length}</span></h3>
                           <div className="flex flex-col gap-2">
                             {qs.map((q, i) => <QuestionCard key={q.id} q={q} n={i + 1} lang={mat.language} onApprove={() => act(q, 'approve')} onRemove={() => act(q, 'reject')} onSaved={reload} />)}
                           </div>
@@ -589,7 +589,7 @@ function CreateInner() {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><div className="text-xs font-bold text-[#5b6b68] mb-1.5">{label}</div>{children}</div>
+  return <div><div className="text-xs font-bold text-[#4A5672] mb-1.5">{label}</div>{children}</div>
 }
 
 function Steps({ step, canGo, onGo }: { step: Step; canGo: (s: Step) => boolean; onGo: (s: Step) => void }) {
@@ -601,7 +601,7 @@ function Steps({ step, canGo, onGo }: { step: Step; canGo: (s: Step) => boolean;
       {labels.map((l, i) => {
         const s = order[i]
         const clickable = s !== step && s !== 'build' && canGo(s)
-        const cls = `w-full text-center text-xs font-bold py-1.5 rounded-full ${i <= at ? 'bg-[#0F766E] text-white' : 'bg-white text-[#9aa6a3] border border-[#e3ebe9]'} ${clickable ? 'cursor-pointer hover:opacity-80 underline-offset-2 hover:underline' : ''}`
+        const cls = `w-full text-center text-xs font-bold py-1.5 rounded-full ${i <= at ? 'bg-[#2F5BE3] text-white' : 'bg-white text-[#6B7690] border border-[#E8E2D6]'} ${clickable ? 'cursor-pointer hover:opacity-80 underline-offset-2 hover:underline' : ''}`
         return (
           <li key={l} className="flex-1 min-w-[60px]">
             {clickable ? <button className={cls} onClick={() => onGo(s)}>{i + 1}. {l}</button> : <div className={cls} aria-current={s === step ? 'step' : undefined}>{i + 1}. {l}</div>}
@@ -615,9 +615,9 @@ function Steps({ step, canGo, onGo }: { step: Step; canGo: (s: Step) => boolean;
 // ── Plan: organised by issue, every part editable, the request always visible ──
 function Section({ title, children, hint }: { title: string; children: React.ReactNode; hint?: string }) {
   return (
-    <section className="rounded-2xl border border-[#e3ebe9] p-4" dir="rtl">
-      <h3 className="text-sm font-black text-[#0F766E] m-0 mb-2">{title}</h3>
-      {hint && <p className="text-xs text-[#7a8f8b] mt-0 mb-2">{hint}</p>}
+    <section className="rounded-2xl border border-[#E8E2D6] p-4" dir="rtl">
+      <h3 className="text-sm font-black text-[#2F5BE3] m-0 mb-2">{title}</h3>
+      {hint && <p className="text-xs text-[#5E6B85] mt-0 mb-2">{hint}</p>}
       {children}
     </section>
   )
@@ -630,18 +630,18 @@ function BulletList({ items, onChange, placeholder }: { items: string[]; onChang
       <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
         {items.map((x, i) => (
           <li key={i} className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0F766E] shrink-0" aria-hidden />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#2F5BE3] shrink-0" aria-hidden />
             <input dir="auto" value={x} onChange={e => onChange(items.map((y, j) => j === i ? e.target.value : y))}
-              className="flex-1 min-h-[38px] px-2 rounded-lg border border-transparent hover:border-[#e3ebe9] focus:border-[#0F766E] focus:outline-none bg-transparent text-[15px]" />
-            <button aria-label="הסרה" onClick={() => onChange(items.filter((_, j) => j !== i))} className="w-8 h-8 rounded-lg text-[#9aa6a3] hover:text-[#DC2626] flex items-center justify-center"><X size={15} /></button>
+              className="flex-1 min-h-[38px] px-2 rounded-lg border border-transparent hover:border-[#E8E2D6] focus:border-[#2F5BE3] focus:outline-none bg-transparent text-[15px]" />
+            <button aria-label="הסרה" onClick={() => onChange(items.filter((_, j) => j !== i))} className="w-8 h-8 rounded-lg text-[#6B7690] hover:text-[#DC2626] flex items-center justify-center"><X size={15} /></button>
           </li>
         ))}
       </ul>
       <form className="flex items-center gap-2" onSubmit={e => { e.preventDefault(); if (draft.trim()) { onChange([...items, draft.trim()]); setDraft('') } }}>
-        <Plus size={15} className="text-[#0F766E] shrink-0" />
+        <Plus size={15} className="text-[#2F5BE3] shrink-0" />
         <input dir="auto" value={draft} onChange={e => setDraft(e.target.value)} placeholder={placeholder}
-          className="flex-1 min-h-[38px] px-2 rounded-lg border border-dashed border-[#cfdcd9] focus:border-[#0F766E] focus:outline-none bg-white text-sm" />
-        {draft.trim() && <button className="text-sm font-bold text-[#0F766E] px-2">הוספה</button>}
+          className="flex-1 min-h-[38px] px-2 rounded-lg border border-dashed border-[#D9D2C4] focus:border-[#2F5BE3] focus:outline-none bg-white text-sm" />
+        {draft.trim() && <button className="text-sm font-bold text-[#2F5BE3] px-2">הוספה</button>}
       </form>
     </div>
   )
@@ -657,7 +657,7 @@ function Chips({ options, value, onChange, multi = false }: { options: [string, 
           const cur = value as string[]
           const next = on(v) ? cur.filter(x => x !== v) : [...cur, v]
           if (next.length) onChange(next)
-        }} className={`min-h-[40px] px-4 rounded-full border-2 text-sm font-bold ${on(v) ? 'border-[#0F766E] bg-[#E4F3F1] text-[#0F766E]' : 'border-[#e3ebe9] bg-white text-[#3d4f4b]'}`}>{l}</button>
+        }} className={`min-h-[40px] px-4 rounded-full border-2 text-sm font-bold ${on(v) ? 'border-[#2F5BE3] bg-[#EAF0FF] text-[#2F5BE3]' : 'border-[#E8E2D6] bg-white text-[#33415F]'}`}>{l}</button>
       ))}
     </div>
   )
@@ -679,31 +679,31 @@ function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, on
     <div className={`${card} p-5 flex flex-col gap-4`} dir="rtl">
       <div className="flex items-start gap-3">
         <div className="flex-1">
-          <div className="text-xs font-bold text-[#5b6b68] mb-1">שם</div>
+          <div className="text-xs font-bold text-[#4A5672] mb-1">שם</div>
           <input dir="auto" aria-label="שם" value={mat.title} onChange={e => setMat({ ...mat, title: e.target.value })}
-            className="w-full text-xl font-black text-[#1f2a28] bg-transparent border-b border-dashed border-[#cfdcd9] focus:outline-none focus:border-[#0F766E]" />
+            className="w-full text-xl font-black text-[#16213E] bg-transparent border-b border-dashed border-[#D9D2C4] focus:outline-none focus:border-[#2F5BE3]" />
         </div>
       </div>
 
       <Section title="הבקשה שלכם" hint={files ? `${files} קבצים מצורפים` : undefined}>
         <textarea dir="auto" rows={3} value={request} onChange={e => setRequest(e.target.value)}
-          className="w-full px-3 py-2 text-[15px] rounded-xl border border-[rgba(15,118,110,.2)] bg-white focus:outline-none focus:ring-2 focus:ring-[#0F766E33]" />
+          className="w-full px-3 py-2 text-[15px] rounded-xl border border-[#D9D2C4] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333]" />
         <button className={btnGhost + ' mt-2'} onClick={onReplan}><Sparkles size={16} /> לתכנן מחדש לפי הבקשה</button>
       </Section>
 
       {plan.digest && (
         <Section title="מה הבנו מהחומר" hint="כך נכתוב את השאלות. אפשר לתקן או להוסיף.">
           {showDigest
-            ? <textarea dir="auto" rows={10} value={plan.digest} onChange={e => set({ digest: e.target.value })} className="w-full px-3 py-2 text-sm leading-relaxed rounded-xl border border-[rgba(15,118,110,.2)] bg-white" />
-            : <><p className="text-sm text-[#3d4f4b] m-0 leading-relaxed line-clamp-3 whitespace-pre-line">{plan.digest}</p>
-               <button className="text-sm font-bold text-[#0F766E] mt-1" onClick={() => setShowDigest(true)}>להציג הכול ולערוך</button></>}
+            ? <textarea dir="auto" rows={10} value={plan.digest} onChange={e => set({ digest: e.target.value })} className="w-full px-3 py-2 text-sm leading-relaxed rounded-xl border border-[#D9D2C4] bg-white" />
+            : <><p className="text-sm text-[#33415F] m-0 leading-relaxed line-clamp-3 whitespace-pre-line">{plan.digest}</p>
+               <button className="text-sm font-bold text-[#2F5BE3] mt-1" onClick={() => setShowDigest(true)}>להציג הכול ולערוך</button></>}
         </Section>
       )}
 
       {plan.missing_he?.length > 0 && (
         <Section title="כדאי לבדוק">
           <BulletList items={plan.missing_he} onChange={v => set({ missing_he: v })} placeholder="הערה נוספת…" />
-          <p className="text-xs text-[#7a8f8b] mb-0">אפשר לענות בבקשה למעלה ולתכנן מחדש, או להמשיך כמו שזה.</p>
+          <p className="text-xs text-[#5E6B85] mb-0">אפשר לענות בבקשה למעלה ולתכנן מחדש, או להמשיך כמו שזה.</p>
         </Section>
       )}
 
@@ -717,22 +717,22 @@ function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, on
       {!hasSections(plan) && <Section title="נושאים">
         <div className="flex flex-col gap-3">
           {plan.topics.map((t: any, idx: number) => (
-            <div key={t.key} className="rounded-xl bg-[#F7FBFA] border border-[#e3ebe9] p-3">
+            <div key={t.key} className="rounded-xl bg-[#F7F4EE] border border-[#E8E2D6] p-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-black text-[#0F766E] w-5">{idx + 1}.</span>
+                <span className="text-sm font-black text-[#2F5BE3] w-5">{idx + 1}.</span>
                 <input dir="auto" aria-label="שם הנושא" value={t.title_he || t.title_en} onChange={e => setTopic(t.key, { title_he: e.target.value })}
-                  className="flex-1 min-h-[40px] px-2 rounded-lg border border-transparent hover:border-[#e3ebe9] focus:border-[#0F766E] focus:outline-none bg-transparent font-bold text-[15px]" />
+                  className="flex-1 min-h-[40px] px-2 rounded-lg border border-transparent hover:border-[#E8E2D6] focus:border-[#2F5BE3] focus:outline-none bg-transparent font-bold text-[15px]" />
                 {!isExpl && (
                   <div className="flex items-center gap-1" aria-label="כמות שאלות">
-                    <button aria-label="פחות" className="w-9 h-9 rounded-lg border border-[#e3ebe9] bg-white flex items-center justify-center" onClick={() => setTopic(t.key, { count: Math.max(1, t.count - 1) })}><Minus size={14} /></button>
+                    <button aria-label="פחות" className="w-9 h-9 rounded-lg border border-[#E8E2D6] bg-white flex items-center justify-center" onClick={() => setTopic(t.key, { count: Math.max(1, t.count - 1) })}><Minus size={14} /></button>
                     <span className="w-14 text-center text-sm"><b>{t.count}</b> שאלות</span>
-                    <button aria-label="יותר" className="w-9 h-9 rounded-lg border border-[#e3ebe9] bg-white flex items-center justify-center" onClick={() => setTopic(t.key, { count: Math.min(30, t.count + 1) })}><Plus size={14} /></button>
+                    <button aria-label="יותר" className="w-9 h-9 rounded-lg border border-[#E8E2D6] bg-white flex items-center justify-center" onClick={() => setTopic(t.key, { count: Math.min(30, t.count + 1) })}><Plus size={14} /></button>
                   </div>
                 )}
-                <button aria-label="הסרת נושא" className="w-9 h-9 rounded-lg text-[#9aa6a3] hover:text-[#DC2626] flex items-center justify-center" onClick={() => set({ topics: plan.topics.filter((x: any) => x.key !== t.key) })}><Trash2 size={16} /></button>
+                <button aria-label="הסרת נושא" className="w-9 h-9 rounded-lg text-[#6B7690] hover:text-[#DC2626] flex items-center justify-center" onClick={() => set({ topics: plan.topics.filter((x: any) => x.key !== t.key) })}><Trash2 size={16} /></button>
               </div>
               <div className="ps-7 mt-2">
-                <div className="text-xs font-bold text-[#5b6b68] mb-1">במה להתמקד</div>
+                <div className="text-xs font-bold text-[#4A5672] mb-1">במה להתמקד</div>
                 <BulletList items={t.subtopics_he || []} onChange={v => setTopic(t.key, { subtopics_he: v })} placeholder="להוסיף נקודה למיקוד…" />
               </div>
             </div>
@@ -740,7 +740,7 @@ function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, on
           <form className="flex gap-2" onSubmit={e => { e.preventDefault(); if (!newTopic.trim()) return
             set({ topics: [...plan.topics, { key: `t${Date.now()}`, title_he: newTopic.trim(), title_en: newTopic.trim(), subtopics_he: [], topic_slug: null, topic_id: null, is_new: true, bank_count: 0, count: isExpl ? 0 : 8 }] }); setNewTopic('') }}>
             <input dir="auto" value={newTopic} onChange={e => setNewTopic(e.target.value)} placeholder="להוסיף נושא…"
-              className="flex-1 min-h-[44px] px-3 rounded-xl border border-dashed border-[#cfdcd9] bg-white text-sm" />
+              className="flex-1 min-h-[44px] px-3 rounded-xl border border-dashed border-[#D9D2C4] bg-white text-sm" />
             <button className={btnGhost} disabled={!newTopic.trim()}><Plus size={16} /> נושא</button>
           </form>
         </div>
@@ -768,7 +768,7 @@ function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, on
             {mat.kind === 'exam' && (
               <label className="flex items-center gap-2">זמן המבחן:
                 <input type="number" min={5} max={300} value={plan.time_minutes || 45} onChange={e => set({ time_minutes: parseInt(e.target.value) || 45 })}
-                  className="w-20 min-h-[40px] px-2 rounded-lg border border-[rgba(15,118,110,.2)] bg-white" /> דקות
+                  className="w-20 min-h-[40px] px-2 rounded-lg border border-[#D9D2C4] bg-white" /> דקות
               </label>
             )}
           </div>
@@ -790,27 +790,27 @@ function PlanSummary({ mat, editing, onEdit }: { mat: any; editing: boolean; onE
       <div className="flex items-start gap-3">
         <Pip pose="thumbs" size={60} he />
         <div className="flex-1 min-w-0">
-          <h2 className="text-xl font-black text-[#1f2a28] m-0">{mat.title}</h2>
-          {plan.summary_he && <p className="text-sm text-[#3d4f4b] mt-1 mb-0">{plan.summary_he}</p>}
+          <h2 className="text-xl font-black text-[#16213E] m-0">{mat.title}</h2>
+          {plan.summary_he && <p className="text-sm text-[#33415F] mt-1 mb-0">{plan.summary_he}</p>}
           {plan.mirror && <div className="inline-flex items-center gap-1.5 mt-2 text-xs font-bold px-3 py-1 rounded-full bg-[#FFF4D6] text-[#8a5a00]"><Copy size={13} /> דומה לדף שהעליתם — אותו מבנה, מספרים אחרים</div>}
           {secMode ? (
             <ol className="mt-3 mb-0 p-0 list-none flex flex-col gap-1">
               {plan.sections.map((sc: Section, i: number) => (
                 <li key={sc.key} className="flex items-center gap-2 text-sm">
-                  <span className="w-6 h-6 rounded-full bg-[#E4F3F1] text-[#0F766E] font-black flex items-center justify-center text-xs shrink-0">{i + 1}</span>
-                  <b className="text-[#1f2a28]">{sc.title_he}</b>
-                  <span className="text-[#7a8f8b]">· {SECTION_KINDS[sc.kind].q === 'none' ? `${(sc.words || []).length || sc.count} מילים` : sc.kind === 'word_bank' ? `${sc.count} משפטים, מחסן של ${(sc.words || []).length} מילים` : `${sc.count}`}</span>
+                  <span className="w-6 h-6 rounded-full bg-[#EAF0FF] text-[#2F5BE3] font-black flex items-center justify-center text-xs shrink-0">{i + 1}</span>
+                  <b className="text-[#16213E]">{sc.title_he}</b>
+                  <span className="text-[#5E6B85]">· {SECTION_KINDS[sc.kind].q === 'none' ? `${(sc.words || []).length || sc.count} מילים` : sc.kind === 'word_bank' ? `${sc.count} משפטים, מחסן של ${(sc.words || []).length} מילים` : `${sc.count}`}</span>
                 </li>
               ))}
             </ol>
           ) : <div className="flex flex-wrap gap-1.5 mt-3">
             {plan.topics.map((t: any) => (
-              <span key={t.key} className="text-sm font-bold px-3 py-1 rounded-full bg-[#E4F3F1] text-[#0F766E]">
+              <span key={t.key} className="text-sm font-bold px-3 py-1 rounded-full bg-[#EAF0FF] text-[#2F5BE3]">
                 {t.title_he || t.title_en}{mat.kind !== 'explanation' ? ` · ${t.count}` : ''}
               </span>
             ))}
           </div>}
-          <div className="text-sm text-[#5b6b68] mt-2">
+          <div className="text-sm text-[#4A5672] mt-2">
             {mat.kind === 'explanation' ? `${plan.topics.length} דפי הסבר` : secMode ? <>{(plan.words || []).length} מילים לתרגול · {total} שאלות · {plan.sections.length} חלקים</> : <>{total} שאלות · {DIFF_LABEL[plan.difficulty] || ''} · {types}{mat.kind === 'exam' && plan.time_minutes ? ` · ${plan.time_minutes} דקות` : ''}</>}
           </div>
           {(plan.missing_he || []).slice(0, 2).map((x: string, i: number) => (
@@ -846,7 +846,7 @@ function QuestionCard({ q, n, lang, onApprove, onRemove, onSaved }: any) {
   return (
     <div className={`${card} p-4 ${q.approved ? 'border-[#16A34A55]' : ''}`}>
       <div className="flex items-center gap-2 mb-2 text-xs">
-        <span className="font-black text-[#0F766E]">#{n}</span>
+        <span className="font-black text-[#2F5BE3]">#{n}</span>
         <span className="px-2 py-0.5 rounded-full font-bold" style={{ background: `${diffColor}18`, color: diffColor }}>{({ easy: 'קל', medium: 'בינוני', hard: 'קשה' } as any)[q.difficulty]}</span>
         <span className="px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#475569] font-bold">{q.options ? (q.options.length === 2 ? 'נכון / לא נכון' : 'אמריקאית') : 'פתוחה'}</span>
         {q.approved && <span className="ms-auto inline-flex items-center gap-1 text-[#16A34A] font-bold"><Check size={14} /> אושרה</span>}
@@ -854,36 +854,36 @@ function QuestionCard({ q, n, lang, onApprove, onRemove, onSaved }: any) {
       {!edit ? (
         <>
           {lang === 'bilingual' && q.prompt_he && q.prompt_en && !isHeText(q.prompt_en) && !q.prompt_he.includes(q.prompt_en) && (
-            <div className="text-[15px] text-[#1f2a28] leading-relaxed mb-1" dir="ltr"><FractionText text={q.prompt_en} /></div>
+            <div className="text-[15px] text-[#16213E] leading-relaxed mb-1" dir="ltr"><FractionText text={q.prompt_en} /></div>
           )}
-          <div className="text-[15px] font-bold text-[#1f2a28] leading-relaxed text-start" dir={isHeText(prompt) ? 'rtl' : 'ltr'}><FractionText text={prompt} /></div>
-          {q.visual_data && <div className="flex justify-center my-2"><MathVisual data={q.visual_data} size={180} color="#0F766E" /></div>}
+          <div className="text-[15px] font-bold text-[#16213E] leading-relaxed text-start" dir={isHeText(prompt) ? 'rtl' : 'ltr'}><FractionText text={prompt} /></div>
+          {q.visual_data && <div className="flex justify-center my-2"><MathVisual data={q.visual_data} size={180} color="#2F5BE3" /></div>}
           {q.options ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2">
               {q.options.map((o: any) => (
-                <div key={o.label} className={`rounded-lg px-3 py-2 text-sm border ${o.isCorrect ? 'border-[#16A34A] bg-[#F0FDF4] font-bold' : 'border-[#e3ebe9]'}`} dir={isHeText(visibleOption(o, q.options, lang)) ? 'rtl' : 'ltr'}>
+                <div key={o.label} className={`rounded-lg px-3 py-2 text-sm border ${o.isCorrect ? 'border-[#16A34A] bg-[#F0FDF4] font-bold' : 'border-[#E8E2D6]'}`} dir={isHeText(visibleOption(o, q.options, lang)) ? 'rtl' : 'ltr'}>
                   <FractionText text={visibleOption(o, q.options, lang)} />{o.isCorrect && ' ✓'}
                 </div>
               ))}
             </div>
-          ) : <div className="mt-2 text-sm"><span className="text-[#5b6b68]">תשובה: </span><bdi className="font-bold"><FractionText text={q.correct_answer} /></bdi></div>}
+          ) : <div className="mt-2 text-sm"><span className="text-[#4A5672]">תשובה: </span><bdi className="font-bold"><FractionText text={q.correct_answer} /></bdi></div>}
           {hint && <div className="mt-2 text-sm text-[#7c4a03] bg-[#FFFBEB] rounded-lg px-3 py-2">💡 <FractionText text={hint} /></div>}
-          {expl && <details className="mt-2 text-sm text-[#3d4f4b]"><summary className="cursor-pointer font-semibold text-[#0F766E]">פתרון צעד אחר צעד</summary><div className="mt-1 leading-relaxed whitespace-pre-line"><FractionText text={expl} /></div></details>}
+          {expl && <details className="mt-2 text-sm text-[#33415F]"><summary className="cursor-pointer font-semibold text-[#2F5BE3]">פתרון צעד אחר צעד</summary><div className="mt-1 leading-relaxed whitespace-pre-line"><FractionText text={expl} /></div></details>}
         </>
       ) : (
         <div className="flex flex-col gap-2 text-sm">
-          <textarea dir="auto" rows={2} value={draft.prompt} onChange={e => setDraft({ ...draft, prompt: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-[#cfdcd9]" />
+          <textarea dir="auto" rows={2} value={draft.prompt} onChange={e => setDraft({ ...draft, prompt: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-[#D9D2C4]" />
           {q.options ? draft.options.map((o: any, i: number) => (
             <label key={i} className="flex items-center gap-2">
               <input type="radio" name={`c${q.id}`} checked={o.isCorrect} onChange={() => setDraft({ ...draft, options: draft.options.map((x: any, j: number) => ({ ...x, isCorrect: j === i })) })} />
               <input dir="auto" value={he ? (o.value_he ?? o.value_en) : o.value_en} onChange={e => setDraft({ ...draft, options: draft.options.map((x: any, j: number) => j === i ? { ...x, [he ? 'value_he' : 'value_en']: e.target.value } : x) })}
-                className="flex-1 px-3 py-1.5 rounded-lg border border-[#cfdcd9]" />
+                className="flex-1 px-3 py-1.5 rounded-lg border border-[#D9D2C4]" />
             </label>
           )) : (
-            <input dir="auto" value={draft.correct_answer} onChange={e => setDraft({ ...draft, correct_answer: e.target.value })} placeholder="התשובה הנכונה" className="px-3 py-1.5 rounded-lg border border-[#cfdcd9]" />
+            <input dir="auto" value={draft.correct_answer} onChange={e => setDraft({ ...draft, correct_answer: e.target.value })} placeholder="התשובה הנכונה" className="px-3 py-1.5 rounded-lg border border-[#D9D2C4]" />
           )}
-          <input dir="auto" value={draft.hint} onChange={e => setDraft({ ...draft, hint: e.target.value })} placeholder="רמז" className="px-3 py-1.5 rounded-lg border border-[#cfdcd9]" />
-          <textarea dir="auto" rows={3} value={draft.expl} onChange={e => setDraft({ ...draft, expl: e.target.value })} placeholder="פתרון צעד אחר צעד" className="px-3 py-2 rounded-lg border border-[#cfdcd9]" />
+          <input dir="auto" value={draft.hint} onChange={e => setDraft({ ...draft, hint: e.target.value })} placeholder="רמז" className="px-3 py-1.5 rounded-lg border border-[#D9D2C4]" />
+          <textarea dir="auto" rows={3} value={draft.expl} onChange={e => setDraft({ ...draft, expl: e.target.value })} placeholder="פתרון צעד אחר צעד" className="px-3 py-2 rounded-lg border border-[#D9D2C4]" />
         </div>
       )}
       <div className="flex flex-wrap gap-2 mt-3">
@@ -910,13 +910,13 @@ function ExplanationReview({ mat, onDone }: any) {
       {pages.length === 0 && <div className={`${card} p-5 text-sm`}>לא נכתבו דפים. אפשר לחזור ולנסות שוב.</div>}
       {pages.map(({ t, page }: any) => (
         <div key={t.key} className={`${card} p-5`} dir={he ? 'rtl' : 'ltr'}>
-          <h2 className="text-xl font-black text-[#0F766E] mt-0 mb-2">{L(page, 'title') || t.title_he}</h2>
-          <p className="text-[15px] text-[#1f2a28] leading-relaxed">{L(page, 'intro')}</p>
+          <h2 className="text-xl font-black text-[#2F5BE3] mt-0 mb-2">{L(page, 'title') || t.title_he}</h2>
+          <p className="text-[15px] text-[#16213E] leading-relaxed">{L(page, 'intro')}</p>
           <ul className="ps-5 text-[15px] leading-relaxed">{(L(page, 'key_points') || []).map((x: string, i: number) => <li key={i}><FractionText text={x} /></li>)}</ul>
           {(page.examples || []).map((ex: any, i: number) => (
-            <div key={i} className="rounded-xl bg-[#F7FBFA] border border-[#e3ebe9] p-3 my-2">
+            <div key={i} className="rounded-xl bg-[#F7F4EE] border border-[#E8E2D6] p-3 my-2">
               <div className="font-bold"><FractionText text={L(ex, 'question')} /></div>
-              {ex.visual_data && <div className="flex justify-center my-2"><MathVisual data={ex.visual_data} size={180} color="#0F766E" /></div>}
+              {ex.visual_data && <div className="flex justify-center my-2"><MathVisual data={ex.visual_data} size={180} color="#2F5BE3" /></div>}
               <ol className="ps-5 my-1 text-sm leading-relaxed">{(L(ex, 'steps') || []).map((s: string, j: number) => <li key={j}><FractionText text={s} /></li>)}</ol>
               <div className="text-sm font-bold text-[#16A34A]"><FractionText text={L(ex, 'answer')} /></div>
             </div>
@@ -987,42 +987,42 @@ function DonePanel({ mat, setMat, child, questions }: any) {
       <div className="flex items-center gap-4">
         <Pip pose="celebrate" size={96} he bounce />
         <div>
-          <div className="text-xl font-black text-[#1f2a28]">{mat.title} מוכן!</div>
-          <div className="text-sm text-[#5b6b68]">{isExpl ? `${Object.keys(mat.explanation || {}).length} דפי הסבר` : `${approvedIds.length} שאלות מאושרות`}{mat.kind === 'exam' && mat.time_minutes ? ` · ${mat.time_minutes} דקות` : ''}</div>
+          <div className="text-xl font-black text-[#16213E]">{mat.title} מוכן!</div>
+          <div className="text-sm text-[#4A5672]">{isExpl ? `${Object.keys(mat.explanation || {}).length} דפי הסבר` : `${approvedIds.length} שאלות מאושרות`}{mat.kind === 'exam' && mat.time_minutes ? ` · ${mat.time_minutes} דקות` : ''}</div>
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <button className={`${card} p-4 text-start hover:border-[#0F766E]`} onClick={() => (isExpl ? print() : setPrintOpen(true))}>
-          <Printer className="text-[#0F766E]" /><div className="font-bold mt-2">להדפסה</div><div className="text-xs text-[#5b6b68]">{isExpl ? 'דפי הסבר ממותגים' : 'בוחרים: רמזים, פתרונות, תשובות בסוף'}</div>
+        <button className={`${card} p-4 text-start hover:border-[#2F5BE3]`} onClick={() => (isExpl ? print() : setPrintOpen(true))}>
+          <Printer className="text-[#2F5BE3]" /><div className="font-bold mt-2">להדפסה</div><div className="text-xs text-[#4A5672]">{isExpl ? 'דפי הסבר ממותגים' : 'בוחרים: רמזים, פתרונות, תשובות בסוף'}</div>
         </button>
         {!isExpl && (
-          <button className={`${card} p-4 text-start hover:border-[#0F766E] disabled:opacity-60`} disabled={sending || !!sent || !(mat.child_id || child?.id)} onClick={sendToApp}>
-            <Smartphone className="text-[#0F766E]" /><div className="font-bold mt-2">{sent ? 'נשלח לאפליקציה ✓' : 'לשלוח לאפליקציה'}</div>
-            <div className="text-xs text-[#5b6b68]">{child ? `יופיע ל${child.name} ב"היום"` : 'בחרו ילד/ה'}{paperOnly.size ? ' · משימות הציור רק בדף' : ''}</div>
+          <button className={`${card} p-4 text-start hover:border-[#2F5BE3] disabled:opacity-60`} disabled={sending || !!sent || !(mat.child_id || child?.id)} onClick={sendToApp}>
+            <Smartphone className="text-[#2F5BE3]" /><div className="font-bold mt-2">{sent ? 'נשלח לאפליקציה ✓' : 'לשלוח לאפליקציה'}</div>
+            <div className="text-xs text-[#4A5672]">{child ? `יופיע ל${child.name} ב"היום"` : 'בחרו ילד/ה'}{paperOnly.size ? ' · משימות הציור רק בדף' : ''}</div>
           </button>
         )}
       </div>
       {err && <div className="text-sm text-[#DC2626]">{err}</div>}
 
-      <div className="border-t border-[#e3ebe9] pt-4 flex flex-col gap-3">
+      <div className="border-t border-[#E8E2D6] pt-4 flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-bold text-[#3d4f4b]">לשתף:</span>
+          <span className="text-sm font-bold text-[#33415F]">לשתף:</span>
           <button className="inline-flex items-center gap-2 min-h-[44px] px-4 rounded-xl bg-[#25D366] text-white font-bold text-sm" onClick={shareWhatsApp}><Share2 size={16} /> בוואטסאפ</button>
           <button className={btnGhost} onClick={async () => { const s = share || await makeShare(); if (s) { try { await navigator.clipboard.writeText(s.url) } catch {} } }}>העתקת קישור</button>
-          {share && <a href={share.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#0F766E] underline" dir="ltr">{share.url.replace(/^https?:\/\//, '')}</a>}
+          {share && <a href={share.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#2F5BE3] underline" dir="ltr">{share.url.replace(/^https?:\/\//, '')}</a>}
         </div>
-        <p className="text-xs text-[#7a8f8b] m-0">בקישור רואים רק את הדף עצמו, בלי שם הילד/ה ובלי פרטים על המשפחה.</p>
-        <label className="flex items-center gap-2 text-sm text-[#3d4f4b]">
+        <p className="text-xs text-[#5E6B85] m-0">בקישור רואים רק את הדף עצמו, בלי שם הילד/ה ובלי פרטים על המשפחה.</p>
+        <label className="flex items-center gap-2 text-sm text-[#33415F]">
           <input type="checkbox" checked={!!share && share.library_status !== 'none'} onChange={e => makeShare(e.target.checked)} />
-          <Library size={15} className="text-[#0F766E]" /> להציע לספרייה החינמית של EduPlay, כדי שהורים אחרים ייהנו (נבדק לפני שמתפרסם)
+          <Library size={15} className="text-[#2F5BE3]" /> להציע לספרייה החינמית של EduPlay, כדי שהורים אחרים ייהנו (נבדק לפני שמתפרסם)
           {share?.library_status === 'listed' && <span className="text-xs font-bold text-[#16A34A]">· מופיע בספרייה</span>}
         </label>
       </div>
 
-      <div className="border-t border-[#e3ebe9] pt-4 flex flex-wrap items-center gap-4">
-        <span className="text-sm font-bold text-[#3d4f4b]">איך יצא?</span>
+      <div className="border-t border-[#E8E2D6] pt-4 flex flex-wrap items-center gap-4">
+        <span className="text-sm font-bold text-[#33415F]">איך יצא?</span>
         <button aria-pressed={!!mat.liked} onClick={() => rate({ liked: mat.liked ? null : true })}
-          className={`inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-full border ${mat.liked ? 'bg-[#0F766E] text-white border-[#0F766E]' : 'border-[#e3ebe9] text-[#3d4f4b]'}`}><ThumbsUp size={16} /> אהבתי</button>
+          className={`inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-full border ${mat.liked ? 'bg-[#2F5BE3] text-white border-[#2F5BE3]' : 'border-[#E8E2D6] text-[#33415F]'}`}><ThumbsUp size={16} /> אהבתי</button>
         <div className="flex" dir="ltr" aria-label="דירוג">
           {[1, 2, 3, 4, 5].map(s => (
             <button key={s} aria-label={`${s} כוכבים`} onClick={() => rate({ rating: s })} className="p-1">
@@ -1036,15 +1036,15 @@ function DonePanel({ mat, setMat, child, questions }: any) {
       {printOpen && (
         <div role="dialog" aria-modal="true" dir="rtl" className="fixed inset-0 z-[700] bg-black/40 flex items-end sm:items-center justify-center p-3" onClick={() => setPrintOpen(false)}>
           <div className="bg-white rounded-3xl w-full max-w-[420px] p-5" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-4"><Printer className="text-[#0F766E]" /><div className="font-black text-lg">מה להדפיס?</div></div>
+            <div className="flex items-center gap-3 mb-4"><Printer className="text-[#2F5BE3]" /><div className="font-black text-lg">מה להדפיס?</div></div>
             {([
               ['hints', 'רמזים ליד כל שאלה', 'עזרה קטנה שלא מגלה את התשובה'],
               ['solutions', 'פתרון מלא צעד אחר צעד', 'בעמודים נפרדים בסוף'],
               ['answers', 'דף תשובות', 'בעמוד האחרון, כדי לבדוק אחר כך'],
             ] as const).filter(([k]) => !(k === 'hints' && mat.kind === 'exam')).map(([k, l, d]) => (
-              <label key={k} className="flex items-start gap-3 py-2.5 border-b border-[#f0f3f2] cursor-pointer">
-                <input type="checkbox" className="mt-1 w-5 h-5 accent-[#0F766E]" checked={(opts as any)[k]} onChange={e => setOpts(o => ({ ...o, [k]: e.target.checked }))} />
-                <span><span className="font-bold block">{l}</span><span className="text-xs text-[#5b6b68]">{d}</span></span>
+              <label key={k} className="flex items-start gap-3 py-2.5 border-b border-[#F0EBE1] cursor-pointer">
+                <input type="checkbox" className="mt-1 w-5 h-5 accent-[#2F5BE3]" checked={(opts as any)[k]} onChange={e => setOpts(o => ({ ...o, [k]: e.target.checked }))} />
+                <span><span className="font-bold block">{l}</span><span className="text-xs text-[#4A5672]">{d}</span></span>
               </label>
             ))}
             <div className="flex gap-2 justify-between mt-4">
@@ -1065,8 +1065,8 @@ function HistoryList({ onMore, kidsList: children }: any) {
   const [confirm, setConfirm] = useState<any>(null)
   const [moreTags, setMoreTags] = useState(false)
   useEffect(() => { fetch('/api/materials').then(r => r.json()).then(d => setItems(d.materials || [])) }, [])
-  if (!items) return <div className="text-sm text-[#7a8f8b]">טוען…</div>
-  if (!items.length) return <div className={`${card} p-6 text-sm text-[#5b6b68]`}>עוד לא יצרתם כלום. בואו נתחיל!</div>
+  if (!items) return <div className="text-sm text-[#5E6B85]">טוען…</div>
+  if (!items.length) return <div className={`${card} p-6 text-sm text-[#4A5672]`}>עוד לא יצרתם כלום. בואו נתחיל!</div>
   const kindHe: any = { practice: 'תרגול', exam: 'מבחן', explanation: 'דפי הסבר' }
   const subjHe = (sl: string) => SUBJECTS.find(x => x.slug === sl)?.he || sl
   const childName = (id: string) => (children || []).find((c: any) => c.id === id)?.name
@@ -1087,8 +1087,8 @@ function HistoryList({ onMore, kidsList: children }: any) {
     if (r.ok) setItems(xs => (xs || []).filter(x => x.id !== m.id))
     setConfirm(null)
   }
-  const sel = 'min-h-[40px] px-3 rounded-xl border border-[rgba(15,118,110,.2)] bg-white text-sm'
-  const pill = (on: boolean) => `min-h-[36px] px-3 rounded-full border-2 text-sm font-bold ${on ? 'border-[#0F766E] bg-[#E4F3F1] text-[#0F766E]' : 'border-[#e3ebe9] bg-white text-[#3d4f4b]'}`
+  const sel = 'min-h-[40px] px-3 rounded-xl border border-[#D9D2C4] bg-white text-sm'
+  const pill = (on: boolean) => `min-h-[36px] px-3 rounded-full border-2 text-sm font-bold ${on ? 'border-[#2F5BE3] bg-[#EAF0FF] text-[#2F5BE3]' : 'border-[#E8E2D6] bg-white text-[#33415F]'}`
   return (
     <div className="flex flex-col gap-2" dir="rtl">
       <div className={`${card} p-3 flex flex-col gap-2`}>
@@ -1108,16 +1108,16 @@ function HistoryList({ onMore, kidsList: children }: any) {
           <div className="flex flex-wrap gap-1.5">
             <button className={pill(f.tag === 'all') + ' !min-h-[30px] !text-xs'} onClick={() => setF({ ...f, tag: 'all' })}># הכול</button>
             {tags.map(t => <button key={t} className={pill(f.tag === t) + ' !min-h-[30px] !text-xs'} onClick={() => setF({ ...f, tag: f.tag === t ? 'all' : t })}># {t}</button>)}
-            {allTags.length > 10 && <button className="text-xs font-bold text-[#0F766E] px-2" onClick={() => setMoreTags(v => !v)}>{moreTags ? 'פחות' : `עוד ${allTags.length - 10}`}</button>}
+            {allTags.length > 10 && <button className="text-xs font-bold text-[#2F5BE3] px-2" onClick={() => setMoreTags(v => !v)}>{moreTags ? 'פחות' : `עוד ${allTags.length - 10}`}</button>}
           </div>
         )}
       </div>
-      {shown.length === 0 && <div className={`${card} p-5 text-sm text-[#5b6b68]`}>אין כאן כלום עם הסינון הזה.</div>}
+      {shown.length === 0 && <div className={`${card} p-5 text-sm text-[#4A5672]`}>אין כאן כלום עם הסינון הזה.</div>}
       {shown.map(m => (
         <div key={m.id} className={`${card} p-4 flex flex-wrap items-center gap-3`}>
           <div className="flex-1 min-w-[200px]">
-            <div className="font-bold text-[#1f2a28]">{m.title} {m.liked && <ThumbsUp size={14} className="inline text-[#0F766E]" />}</div>
-            <div className="text-xs text-[#5b6b68]">{kindHe[m.kind]} · {subjHe(m.subject_slug)} · {gradeHe(m.grade)}{childName(m.child_id) ? ` · ${childName(m.child_id)}` : ''} · {m.question_ids?.length || 0} שאלות · {new Date(m.created_at).toLocaleDateString('he-IL')}{m.status === 'draft' ? ' · טיוטה' : ''}</div>
+            <div className="font-bold text-[#16213E]">{m.title} {m.liked && <ThumbsUp size={14} className="inline text-[#2F5BE3]" />}</div>
+            <div className="text-xs text-[#4A5672]">{kindHe[m.kind]} · {subjHe(m.subject_slug)} · {gradeHe(m.grade)}{childName(m.child_id) ? ` · ${childName(m.child_id)}` : ''} · {m.question_ids?.length || 0} שאלות · {new Date(m.created_at).toLocaleDateString('he-IL')}{m.status === 'draft' ? ' · טיוטה' : ''}</div>
             {(m.tags || []).length > 0 && <div className="flex flex-wrap gap-1 mt-1">{m.tags.slice(0, 5).map((t: string) => <span key={t} className="text-[11px] px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#475569]">#{t}</span>)}</div>}
           </div>
           {m.rating && <div className="text-xs text-[#B7862F]" dir="ltr">{'★'.repeat(m.rating)}</div>}
@@ -1130,7 +1130,7 @@ function HistoryList({ onMore, kidsList: children }: any) {
         <div role="dialog" aria-modal="true" dir="rtl" className="fixed inset-0 z-[700] bg-black/40 flex items-end sm:items-center justify-center p-3" onClick={() => setConfirm(null)}>
           <div className="bg-white rounded-3xl w-full max-w-[400px] p-5" onClick={e => e.stopPropagation()}>
             <div className="font-black text-lg mb-1">למחוק את "{confirm.title}"?</div>
-            <div className="text-sm text-[#5b6b68] mb-4">הוא ייעלם מהרשימה{confirm.library_status === 'listed' ? ' ומהספרייה החינמית' : ''}. מה שכבר נשלח לאפליקציה נשאר אצל הילד/ה.</div>
+            <div className="text-sm text-[#4A5672] mb-4">הוא ייעלם מהרשימה{confirm.library_status === 'listed' ? ' ומהספרייה החינמית' : ''}. מה שכבר נשלח לאפליקציה נשאר אצל הילד/ה.</div>
             <div className="flex gap-2 justify-between">
               <button className={btnGhost} onClick={() => setConfirm(null)}>ביטול</button>
               <button className={btnPrimary + ' !bg-[#DC2626]'} onClick={() => remove(confirm)}><Trash2 size={16} /> למחוק</button>
@@ -1153,18 +1153,18 @@ function WordsEditor({ words, onChange }: { words: { en: string; he: string }[];
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
         {shown.map((w, i) => (
           <div key={i} className="flex items-center gap-1.5">
-            <input dir="ltr" aria-label="מילה באנגלית" value={w.en} onChange={e => upd(i, 'en', e.target.value)} className="w-[42%] min-h-[36px] px-2 rounded-lg border border-[#e3ebe9] bg-white font-bold text-sm" />
-            <input dir="rtl" aria-label="תרגום" value={w.he} onChange={e => upd(i, 'he', e.target.value)} className="flex-1 min-h-[36px] px-2 rounded-lg border border-[#e3ebe9] bg-white text-sm" />
-            <button aria-label="הסרה" onClick={() => onChange(words.filter((_, j) => j !== i))} className="w-8 h-8 rounded-lg text-[#9aa6a3] hover:text-[#DC2626] flex items-center justify-center shrink-0"><X size={15} /></button>
+            <input dir="ltr" aria-label="מילה באנגלית" value={w.en} onChange={e => upd(i, 'en', e.target.value)} className="w-[42%] min-h-[36px] px-2 rounded-lg border border-[#E8E2D6] bg-white font-bold text-sm" />
+            <input dir="rtl" aria-label="תרגום" value={w.he} onChange={e => upd(i, 'he', e.target.value)} className="flex-1 min-h-[36px] px-2 rounded-lg border border-[#E8E2D6] bg-white text-sm" />
+            <button aria-label="הסרה" onClick={() => onChange(words.filter((_, j) => j !== i))} className="w-8 h-8 rounded-lg text-[#6B7690] hover:text-[#DC2626] flex items-center justify-center shrink-0"><X size={15} /></button>
           </div>
         ))}
       </div>
-      {words.length > 24 && <button className="text-sm font-bold text-[#0F766E] mt-2" onClick={() => setAll(a => !a)}>{all ? 'להציג פחות' : `להציג את כל ${words.length} המילים`}</button>}
+      {words.length > 24 && <button className="text-sm font-bold text-[#2F5BE3] mt-2" onClick={() => setAll(a => !a)}>{all ? 'להציג פחות' : `להציג את כל ${words.length} המילים`}</button>}
       <form className="flex items-center gap-1.5 mt-2" onSubmit={e => { e.preventDefault(); if (!en.trim()) return; onChange([...words, { en: en.trim(), he: he.trim() }]); setEn(''); setHe('') }}>
-        <Plus size={15} className="text-[#0F766E] shrink-0" />
-        <input dir="ltr" value={en} onChange={e => setEn(e.target.value)} placeholder="word" className="w-[38%] min-h-[38px] px-2 rounded-lg border border-dashed border-[#cfdcd9] bg-white text-sm" />
-        <input dir="rtl" value={he} onChange={e => setHe(e.target.value)} placeholder="תרגום" className="flex-1 min-h-[38px] px-2 rounded-lg border border-dashed border-[#cfdcd9] bg-white text-sm" />
-        <button className="text-sm font-bold text-[#0F766E] px-2" disabled={!en.trim()}>הוספה</button>
+        <Plus size={15} className="text-[#2F5BE3] shrink-0" />
+        <input dir="ltr" value={en} onChange={e => setEn(e.target.value)} placeholder="word" className="w-[38%] min-h-[38px] px-2 rounded-lg border border-dashed border-[#D9D2C4] bg-white text-sm" />
+        <input dir="rtl" value={he} onChange={e => setHe(e.target.value)} placeholder="תרגום" className="flex-1 min-h-[38px] px-2 rounded-lg border border-dashed border-[#D9D2C4] bg-white text-sm" />
+        <button className="text-sm font-bold text-[#2F5BE3] px-2" disabled={!en.trim()}>הוספה</button>
       </form>
     </Section>
   )
@@ -1180,25 +1180,25 @@ function SectionsEditor({ sections, onChange }: { sections: Section[]; onChange:
     <Section title="חלקי החוברת" hint="בסדר הזה הם יודפסו. אפשר לשנות כמות, לשנות סדר, להסיר או להוסיף חלק.">
       <div className="flex flex-col gap-2">
         {sections.map((sc, i) => (
-          <div key={sc.key} className="rounded-xl bg-[#F7FBFA] border border-[#e3ebe9] p-3">
+          <div key={sc.key} className="rounded-xl bg-[#F7F4EE] border border-[#E8E2D6] p-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-black text-[#0F766E] w-5">{i + 1}.</span>
+              <span className="text-sm font-black text-[#2F5BE3] w-5">{i + 1}.</span>
               <input dir="auto" aria-label="שם החלק" value={sc.title_he} onChange={e => upd(sc.key, { title_he: e.target.value })}
-                className="flex-1 min-w-[140px] min-h-[40px] px-2 rounded-lg border border-transparent hover:border-[#e3ebe9] focus:border-[#0F766E] focus:outline-none bg-transparent font-bold text-[15px]" />
+                className="flex-1 min-w-[140px] min-h-[40px] px-2 rounded-lg border border-transparent hover:border-[#E8E2D6] focus:border-[#2F5BE3] focus:outline-none bg-transparent font-bold text-[15px]" />
               <div className="flex items-center gap-1">
-                <button aria-label="פחות" className="w-9 h-9 rounded-lg border border-[#e3ebe9] bg-white flex items-center justify-center" onClick={() => upd(sc.key, { count: Math.max(1, sc.count - 1) })}><Minus size={14} /></button>
+                <button aria-label="פחות" className="w-9 h-9 rounded-lg border border-[#E8E2D6] bg-white flex items-center justify-center" onClick={() => upd(sc.key, { count: Math.max(1, sc.count - 1) })}><Minus size={14} /></button>
                 <span className="w-20 text-center text-sm"><b>{sc.count}</b> {unit(sc.kind)}</span>
-                <button aria-label="יותר" className="w-9 h-9 rounded-lg border border-[#e3ebe9] bg-white flex items-center justify-center" onClick={() => upd(sc.key, { count: Math.min(sc.kind === 'word_bank' ? 10 : 30, sc.count + 1) })}><Plus size={14} /></button>
+                <button aria-label="יותר" className="w-9 h-9 rounded-lg border border-[#E8E2D6] bg-white flex items-center justify-center" onClick={() => upd(sc.key, { count: Math.min(sc.kind === 'word_bank' ? 10 : 30, sc.count + 1) })}><Plus size={14} /></button>
               </div>
-              <button aria-label="למעלה" disabled={i === 0} className="w-8 h-8 rounded-lg text-[#5b6b68] disabled:opacity-30 flex items-center justify-center" onClick={() => move(i, -1)}><ArrowUp size={15} /></button>
-              <button aria-label="הסרת חלק" className="w-8 h-8 rounded-lg text-[#9aa6a3] hover:text-[#DC2626] flex items-center justify-center" onClick={() => onChange(sections.filter(x => x.key !== sc.key))}><Trash2 size={16} /></button>
+              <button aria-label="למעלה" disabled={i === 0} className="w-8 h-8 rounded-lg text-[#4A5672] disabled:opacity-30 flex items-center justify-center" onClick={() => move(i, -1)}><ArrowUp size={15} /></button>
+              <button aria-label="הסרת חלק" className="w-8 h-8 rounded-lg text-[#6B7690] hover:text-[#DC2626] flex items-center justify-center" onClick={() => onChange(sections.filter(x => x.key !== sc.key))}><Trash2 size={16} /></button>
             </div>
             <input dir="auto" aria-label="ההוראה לילד/ה" value={sc.instructions_he} onChange={e => upd(sc.key, { instructions_he: e.target.value })}
-              className="w-full mt-1 ps-7 min-h-[34px] px-2 rounded-lg border border-transparent hover:border-[#e3ebe9] focus:border-[#0F766E] focus:outline-none bg-transparent text-sm text-[#5b6b68]" />
+              className="w-full mt-1 ps-7 min-h-[34px] px-2 rounded-lg border border-transparent hover:border-[#E8E2D6] focus:border-[#2F5BE3] focus:outline-none bg-transparent text-sm text-[#4A5672]" />
           </div>
         ))}
         <div className="flex gap-2">
-          <select aria-label="להוסיף חלק" value={add} onChange={e => setAdd(e.target.value as any)} className="flex-1 min-h-[44px] px-3 rounded-xl border border-dashed border-[#cfdcd9] bg-white text-sm">
+          <select aria-label="להוסיף חלק" value={add} onChange={e => setAdd(e.target.value as any)} className="flex-1 min-h-[44px] px-3 rounded-xl border border-dashed border-[#D9D2C4] bg-white text-sm">
             <option value="">להוסיף חלק…</option>
             {SECTION_ORDER.map(k => <option key={k} value={k}>{SECTION_KINDS[k].he}</option>)}
           </select>
@@ -1221,14 +1221,14 @@ function SectionReview({ mat, questions, act, reload }: any) {
         const qs = (((mat.section_q || {})[sc.key] || []) as string[]).map(id => byId.get(id)).filter(Boolean) as any[]
         const head = (
           <div className="mt-3 mb-2">
-            <h3 className="text-base font-black text-[#0F766E] m-0">{si + 1}. {sc.title_he} <span className="text-xs font-semibold text-[#7a8f8b]">{SECTION_KINDS[sc.kind].q === 'none' ? '' : `· ${qs.length}`}</span></h3>
-            <div className="text-xs text-[#5b6b68]">{sc.instructions_he}{!SECTION_KINDS[sc.kind].appOk ? ' · רק בדף המודפס' : ''}</div>
+            <h3 className="text-base font-black text-[#2F5BE3] m-0">{si + 1}. {sc.title_he} <span className="text-xs font-semibold text-[#5E6B85]">{SECTION_KINDS[sc.kind].q === 'none' ? '' : `· ${qs.length}`}</span></h3>
+            <div className="text-xs text-[#4A5672]">{sc.instructions_he}{!SECTION_KINDS[sc.kind].appOk ? ' · רק בדף המודפס' : ''}</div>
           </div>
         )
         if (sc.kind === 'word_list') return (
           <div key={sc.key}>{head}
             <div className={`${card} p-3 grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-sm`}>
-              {(sc.words || []).map(en => <div key={en} className="flex justify-between gap-2 border-b border-[#f0f3f2] py-1"><b dir="ltr">{en}</b><span>{words.find(w => w.en === en)?.he}</span></div>)}
+              {(sc.words || []).map(en => <div key={en} className="flex justify-between gap-2 border-b border-[#F0EBE1] py-1"><b dir="ltr">{en}</b><span>{words.find(w => w.en === en)?.he}</span></div>)}
             </div>
           </div>
         )
@@ -1236,8 +1236,8 @@ function SectionReview({ mat, questions, act, reload }: any) {
         return (
           <div key={sc.key}>{head}
             {sc.kind === 'word_bank' && (sc.words || []).length > 0 && (
-              <div className="flex flex-wrap justify-center gap-2 border-2 border-dashed border-[#0F766E55] rounded-2xl p-3 mb-2" dir="ltr">
-                {(sc.words || []).map(w => <span key={w} className="px-3 py-1 rounded-lg bg-[#E4F3F1] font-bold text-sm">{w}</span>)}
+              <div className="flex flex-wrap justify-center gap-2 border-2 border-dashed border-[#2F5BE355] rounded-2xl p-3 mb-2" dir="ltr">
+                {(sc.words || []).map(w => <span key={w} className="px-3 py-1 rounded-lg bg-[#EAF0FF] font-bold text-sm">{w}</span>)}
               </div>
             )}
             <div className="flex flex-col gap-2">
@@ -1264,18 +1264,18 @@ function RemoveModal({ q, onCancel, onRemove }: any) {
           <Pip pose="think" size={56} he />
           <div>
             <div className="font-black text-lg">למה להסיר?</div>
-            <div className="text-sm text-[#5b6b68]">זה עוזר לנו לכתוב שאלות טובות יותר בהמשך. לא חובה.</div>
+            <div className="text-sm text-[#4A5672]">זה עוזר לנו לכתוב שאלות טובות יותר בהמשך. לא חובה.</div>
           </div>
         </div>
-        <div className="text-sm text-[#3d4f4b] bg-[#F7FBFA] rounded-xl px-3 py-2 mb-3 line-clamp-2"><FractionText text={q.prompt_he || q.prompt_en} /></div>
+        <div className="text-sm text-[#33415F] bg-[#F7F4EE] rounded-xl px-3 py-2 mb-3 line-clamp-2"><FractionText text={q.prompt_he || q.prompt_en} /></div>
         <div className="flex flex-wrap gap-2 mb-3">
           {REMOVE_REASONS.map(r => (
             <button key={r} aria-pressed={picked.includes(r)} onClick={() => setPicked(p => p.includes(r) ? p.filter(x => x !== r) : [...p, r])}
-              className={`min-h-[38px] px-3 rounded-full border-2 text-sm font-bold ${picked.includes(r) ? 'border-[#0F766E] bg-[#E4F3F1] text-[#0F766E]' : 'border-[#e3ebe9] text-[#3d4f4b]'}`}>{r}</button>
+              className={`min-h-[38px] px-3 rounded-full border-2 text-sm font-bold ${picked.includes(r) ? 'border-[#2F5BE3] bg-[#EAF0FF] text-[#2F5BE3]' : 'border-[#E8E2D6] text-[#33415F]'}`}>{r}</button>
           ))}
         </div>
         <textarea dir="auto" rows={2} value={note} onChange={e => setNote(e.target.value)} placeholder="משהו נוסף? למשל: לשאול על היקף ולא על שטח"
-          className="w-full px-3 py-2 rounded-xl border border-[rgba(15,118,110,.2)] text-[15px] mb-3" />
+          className="w-full px-3 py-2 rounded-xl border border-[#D9D2C4] text-[15px] mb-3" />
         <div className="flex flex-wrap gap-2 justify-between">
           <button className={btnGhost} onClick={onCancel}>ביטול</button>
           <div className="flex gap-2">
@@ -1299,19 +1299,19 @@ function AddMorePanel({ topics, onAdd }: { topics: any[]; onAdd: (count: number,
   )
   return (
     <div className={`${card} p-4 flex flex-col gap-3`} dir="rtl">
-      <div className="font-black text-[#1f2a28]">להוסיף שאלות</div>
+      <div className="font-black text-[#16213E]">להוסיף שאלות</div>
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <span>כמה?</span>
-        {[3, 5, 10].map(n => <button key={n} aria-pressed={count === n} onClick={() => setCount(n)} className={`min-h-[38px] px-4 rounded-full border-2 font-bold ${count === n ? 'border-[#0F766E] bg-[#E4F3F1] text-[#0F766E]' : 'border-[#e3ebe9]'}`}>{n}</button>)}
+        {[3, 5, 10].map(n => <button key={n} aria-pressed={count === n} onClick={() => setCount(n)} className={`min-h-[38px] px-4 rounded-full border-2 font-bold ${count === n ? 'border-[#2F5BE3] bg-[#EAF0FF] text-[#2F5BE3]' : 'border-[#E8E2D6]'}`}>{n}</button>)}
         {topics.length > 1 && (
-          <select value={topic} onChange={e => setTopic(e.target.value)} className="min-h-[40px] px-3 rounded-xl border border-[rgba(15,118,110,.2)] bg-white">
+          <select value={topic} onChange={e => setTopic(e.target.value)} className="min-h-[40px] px-3 rounded-xl border border-[#D9D2C4] bg-white">
             <option value="all">כל הנושאים</option>
             {topics.map(t => <option key={t.key} value={t.key}>{t.title_he || t.title_en}</option>)}
           </select>
         )}
       </div>
       <input dir="auto" value={note} onChange={e => setNote(e.target.value)} placeholder="על מה? למשל: עוד שאלות קשות על היקף ושטח"
-        className="min-h-[44px] px-3 rounded-xl border border-[rgba(15,118,110,.2)] bg-white text-[15px]" />
+        className="min-h-[44px] px-3 rounded-xl border border-[#D9D2C4] bg-white text-[15px]" />
       <div className="flex gap-2">
         <button className={btnPrimary} onClick={() => { setOpen(false); onAdd(count, topic, note) }}><Sparkles size={16} /> ליצור {count} שאלות</button>
         <button className={btnGhost} onClick={() => setOpen(false)}>ביטול</button>
@@ -1331,7 +1331,7 @@ function BackToTop() {
   if (!show) return null
   return (
     <button aria-label="לראש הדף" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      className="fixed bottom-5 left-5 z-[500] w-12 h-12 rounded-full bg-[#0F766E] text-white shadow-lg flex items-center justify-center hover:bg-[#0d665f]">
+      className="fixed bottom-5 left-5 z-[500] w-12 h-12 rounded-full bg-[#2F5BE3] text-white shadow-lg flex items-center justify-center hover:bg-[#2148C0]">
       <ArrowUp size={22} />
     </button>
   )
