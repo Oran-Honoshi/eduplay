@@ -6,7 +6,7 @@
 
 const L1 = [
   // people
-  'אַבָּא', 'סַבָּא', 'דָּן', 'טַל', 'חַנָּה', 'גַּד',
+  'אַבָּא', 'סַבָּא', 'דָּן', 'חַנָּה', 'גַּד',
   // things & animals
   'דָּג', 'יָד', 'גַּן', 'סַל', 'כַּד', 'כַּף', 'צָב', 'גָּמָל', 'בָּנָנָה', 'עָנָן', 'חַג', 'בַּת', 'דַּף', 'פַּח', 'יָם', 'חָלָב', 'קַשׁ', 'שַׁבָּת', 'מַפָּה', 'חַלָּה', 'נָחָשׁ', 'גַּל', 'קַן', 'שָׁעָה', 'חָתָן', 'כַּלָּה', 'מַתָּנָה', 'שָׁנָה', 'פָּרָה',
   // describing
@@ -51,4 +51,11 @@ export function outsideBank(level: number, lines: string[]): string[] {
     }
   }
   return [...bad]
+}
+
+/** extra writing rules for a level with a closed bank */
+export function bankRules(level: number): string {
+  if (level === 1) return 'Grammar at this level: verbs about a girl or woman (חַנָּה, הִיא) may only be בָּאָה, רָצָה, נָחָה, שָׁרָה, קָמָה, שָׂמָה; every other verb needs a boy or man (דָּן, גַּד, אַבָּא, סַבָּא, הוּא). A name never takes הַ/לַ/בַּ (no "לַדָּן"). Never "מַן" for "who" — ask with מָה / אֵיפֹה only. Every question must have its answer stated in the story.'
+  if (level === 2) return 'Grammar: verbs agree with the subject in gender (a girl: אָכְלָה, הָלְכָה, יָשְׁבָה…). A name never takes הַ/בַּ; "to Dan" is לְדָן. Every question must have its answer stated in the story.'
+  return ''
 }
