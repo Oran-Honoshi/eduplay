@@ -144,7 +144,9 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
 
 
   // Calm look for the plain theme (older kids); themed worlds keep a soft wash.
-  const H = { fontFamily: theme === 'plain' ? '"Rubik","Assistant",sans-serif' : T.fontHead }
+  // Rubik everywhere for readability; the theme's display font only on the greeting.
+  const H = { fontFamily: '"Rubik","Assistant",sans-serif' }
+  const HG = { fontFamily: theme === 'plain' || theme === 'minecraft' ? H.fontFamily : T.fontHead }
   const L = (he: string, en: string) => (isHE ? he : en)
   const dark = theme === 'minecraft'
   const card: React.CSSProperties = { background:T.panel, border:`1.5px solid ${T.border}`, borderRadius: theme === 'minecraft' ? 4 : 24, boxShadow: dark ? T.shadow : 'none' }
@@ -168,7 +170,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <Pip theme={theme} pose="wave" size={theme === 'plain' ? 56 : 76} he={isHE} />
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ ...H, fontSize:28, fontWeight:800, lineHeight:1.2 }}>{L(`היי ${child.display_name}!`, `Hi ${child.display_name}!`)}</div>
+            <div style={{ ...HG, fontSize:28, fontWeight:800, lineHeight:1.2 }}>{L(`היי ${child.display_name}!`, `Hi ${child.display_name}!`)}</div>
             <div style={{ fontSize:17, color:T.text2 }}>
               {child.streak_current > 0
                 ? L(`${child.streak_current} ימים ברצף · ${xpDisplay.toLocaleString()} נקודות`, `${child.streak_current}-day streak · ${xpDisplay.toLocaleString()} XP`)
