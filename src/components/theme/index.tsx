@@ -64,19 +64,19 @@ export const THEME_CONFIG: Record<string, any> = {
     floaters: ['🌸','✨','🦋','💫','🌺','👑','🌈','💖'],
   },
   plain: {
-    bg: '#F8F9FB',
+    bg: '#FAF7F2',
     panel: '#FFFFFF',
-    panel2: '#F8F9FB',
-    border: '#EEF1F6',
-    accent1: '#4A7FD4',
-    accent2: '#F0A500',
-    accent3: '#27AE60',
+    panel2: '#F3EFE7',
+    border: '#E8E2D6',
+    accent1: '#2F5BE3',
+    accent2: '#FFC940',
+    accent3: '#12937A',
     accent4: '#E67E22',
-    xp: '#27AE60',
-    text: '#1E2D4E',
-    text2: '#6B7280',
-    radius: '12px',
-    fontHead: '"Nunito",sans-serif',
+    xp: '#12937A',
+    text: '#16213E',
+    text2: '#4A5672',
+    radius: '20px',
+    fontHead: '"Rubik","Assistant",sans-serif',
     shadow: '0 2px 12px rgba(0,0,0,0.08)',
     btnShadow: '0 2px 8px rgba(0,0,0,0.12)',
     mascot: '🦉',
@@ -86,7 +86,7 @@ export const THEME_CONFIG: Record<string, any> = {
     corners: [],
     celebrationEmoji: '🌟',
     celebrationBg: 'linear-gradient(135deg,#F0F8FF,#E8F5E9)',
-    celebrationBorder: '#4A7FD4',
+    celebrationBorder: '#2F5BE3',
     floaters: ['⭐','🌟','✨','🎯','📚','💡','🚀','🎉'],
   },
   // Per design_handoff_eduplay_redesign/README.md: pageBg, radius, accent (orange),
@@ -429,7 +429,7 @@ export function KidNavBar({
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
     textDecoration: 'none', color: isActive ? T.accent1 : T.text,
     opacity: isActive ? 1 : 0.6, fontFamily: T.fontHead,
-    fontSize: '11px', fontWeight: 800, padding: '6px 14px', flex: 1, minHeight: 48,
+    fontSize: '14px', fontWeight: 800, padding: '6px 10px', flex: 1, minHeight: 64,
     cursor: isActive ? 'default' : 'pointer', background: 'none', border: 'none',
   })
 
@@ -447,7 +447,9 @@ export function KidNavBar({
             <Link key={key} href={href}
               onClick={e => { if (isActive) e.preventDefault() }}
               style={linkStyle(isActive)}>
-              <Icon size={22} strokeWidth={isActive ? 2.5 : 2}/>
+              <span style={{ width: 56, height: 32, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? `${T.accent1}1F` : 'transparent' }}>
+                <Icon size={24} strokeWidth={isActive ? 2.5 : 2}/>
+              </span>
               <span>{kidLabel(key, lang)}</span>
             </Link>
           )
