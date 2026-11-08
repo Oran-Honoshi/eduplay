@@ -61,20 +61,25 @@ export async function POST(req: NextRequest) {
   if (pin) {
     const key = clientKey(req, 'pin')
     if (await tooManyAttempts(supabase, key, LIMITS.pin)) return tooMany()
-    const { data: children } = await supabase
+    // From the family link (/f/<familyId>) the child picks their picture first,
+    // so the code is checked against that one child only.
+    const famId = typeof body.familyId === 'string' && /^[0-9a-f-]{36}$/i.test(body.familyId) ? body.familyId : FAMILY_ID
+    let q = supabase
       .from('children')
-      .select('id, display_name, access_token, pin_code, grade, theme')
-      .eq('family_id', FAMILY_ID)
+      .select('id, family_id, display_name, access_token, pin_code, grade, theme')
+      .eq('family_id', famId)
+    if (typeof body.childId === 'string' && body.childId) q = q.eq('id', body.childId)
+    const { data: children } = await q
 
-    const child = (children || []).find((c: any) => c.pin_code === pin)
+    const child = (children || []).find((c: any) => c.pin_code && c.pin_code === String(pin))
 
     if (!child) {
       await recordFailure(supabase, key)
-      return NextResponse.json({ error: 'Wrong PIN — try again! 🔢' }, { status: 401 })
+      return NextResponse.json({ error: body.childId ? 'הקוד לא נכון — נסו שוב' : 'Wrong PIN — try again! 🔢' }, { status: 401 })
     }
     await clearFailures(supabase, key)
 
-    await createChildSession(child.id, FAMILY_ID)
+    await createChildSession(child.id, child.family_id)
 
     return NextResponse.json({
       success: true,

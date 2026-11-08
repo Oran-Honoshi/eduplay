@@ -406,7 +406,12 @@ export function KidNavBar({
   const [gate, setGate] = useState<{ a: number, b: number } | null>(null)
   const [answer, setAnswer] = useState('')
   const [gateError, setGateError] = useState(false)
+  const [parentHere, setParentHere] = useState(false)
   const isHE = lang === 'he_only'
+  // A parent who opened this screen from their own account gets a clear way back.
+  useEffect(() => {
+    fetch('/api/session/whoami').then(r => r.ok ? r.json() : null).then(d => setParentHere(!!d?.parent)).catch(() => {})
+  }, [])
 
   const items: Array<{ key: 'home' | 'practice' | 'rewards', Icon: any, href: string }> = [
     { key: 'home',     Icon: Home,     href: token ? `/play/${token}?lang=${lang}` : '/dashboard' },
@@ -421,8 +426,16 @@ export function KidNavBar({
   function submitGate() {
     if (!gate) return
     if (answer.trim() === '') { setGateError(true); return }
-    if (Number(answer) === gate.a * gate.b) window.location.href = '/login'
+    if (Number(answer) === gate.a * gate.b) {
+      if (parentHere) backToParent()
+      else window.location.href = '/login'
+    }
     else { setGateError(true); setAnswer('') }
+  }
+
+  async function backToParent() {
+    await fetch('/api/session/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope: 'child' }) }).catch(() => {})
+    window.location.href = '/dashboard'
   }
 
   const linkStyle = (isActive: boolean): React.CSSProperties => ({
@@ -457,10 +470,10 @@ export function KidNavBar({
         {/* The only exit from kid mode back to the parent login. It sits
             behind a quick grown-ups question so a young child doesn't land on
             the parent password screen by accident. */}
-        <button onClick={openGate} aria-label={isHE ? 'כניסת הורים' : 'Parent login'}
-          style={{ ...linkStyle(false), opacity: 0.35, flex: 0.6 }}>
+        <button onClick={openGate} aria-label={parentHere ? (isHE ? 'חזרה לחשבון ההורה' : 'Back to parent account') : (isHE ? 'כניסת הורים' : 'Parent login')}
+          style={{ ...linkStyle(false), opacity: parentHere ? 0.85 : 0.35, flex: 0.6 }}>
           <LogOut size={18} strokeWidth={2}/>
-          <span style={{ fontSize: '9px' }}>{kidLabel('parent', lang)}</span>
+          <span style={{ fontSize: parentHere ? '12px' : '10px' }}>{parentHere ? (isHE ? 'חזרה להורה' : 'Back to parent') : kidLabel('parent', lang)}</span>
         </button>
       </nav>
 

@@ -91,7 +91,10 @@ export default function HomeScreen({ children, progress, parentName, onProgress 
       <section aria-labelledby="h-kids" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <h2 id="h-kids" style={h2}>הילדים</h2>
-          <button type="button" onClick={onProgress} style={{ border: 0, background: 'transparent', color: C.primary, fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit', minHeight: 44 }}>התקדמות מפורטת ←</button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            {kids.length > 0 && <a href="/kids" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 14px', borderRadius: 12, background: C.primary, color: '#fff', fontWeight: 700, fontSize: 15, textDecoration: 'none' }}>מי לומד עכשיו?</a>}
+            <button type="button" onClick={onProgress} style={{ border: 0, background: 'transparent', color: C.primary, fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit', minHeight: 44 }}>התקדמות מפורטת ←</button>
+          </div>
         </div>
         {kids.length === 0 ? (
           <div style={{ ...card, padding: 24, color: C.textSecondary }}>עוד אין ילדים בחשבון. <a href="/dashboard?tab=family" style={{ color: C.primary, fontWeight: 700 }}>להוספת ילד/ה</a></div>
