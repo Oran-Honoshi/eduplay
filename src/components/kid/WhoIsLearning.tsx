@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Delete, Loader2 } from 'lucide-react'
 import { Pip } from '@/components/Pip'
 import { CHILD_AVATAR_COLORS } from '@/lib/parentTheme'
@@ -57,6 +57,17 @@ export default function WhoIsLearning({ kids, mode, familyId }: { kids: Kid[]; m
     setPin(next)
     if (next.length === 4) submit(next)
   }
+
+  // A real keyboard works on the code pad too (digits, Backspace).
+  useEffect(() => {
+    if (!picked) return
+    const onKey = (e: KeyboardEvent) => {
+      if (/^[0-9]$/.test(e.key)) { press(e.key); e.preventDefault() }
+      else if (e.key === 'Backspace') { press('⌫'); e.preventDefault() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
 
   const shell = (inner: React.ReactNode) => (
     <main dir="rtl" style={{ minHeight: '100vh', background: C.bg, color: C.ink, fontFamily: '"Assistant",sans-serif', display: 'flex', justifyContent: 'center', padding: '36px 20px' }}>

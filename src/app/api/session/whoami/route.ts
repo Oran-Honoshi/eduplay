@@ -7,5 +7,8 @@ export const dynamic = 'force-dynamic'
 // signed in on this device, so they can offer "back to the parent account".
 export async function GET() {
   const [parent, child] = await Promise.all([requireParentSession(), requireChildSession()])
-  return NextResponse.json({ parent: !!parent, childId: child?.childId || null })
+  // Only a parent of this same family counts — a parent signed in to another
+  // family on a shared computer shouldn't get a "back to parent" button here.
+  const sameFamily = !!parent && (!child || child.familyId === parent.familyId)
+  return NextResponse.json({ parent: sameFamily, childId: child?.childId || null })
 }
