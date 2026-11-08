@@ -48,6 +48,15 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
     action()
   }
 
+  const [parentHere, setParentHere] = useState(false)
+  useEffect(() => {
+    fetch('/api/session/whoami').then(r => r.ok ? r.json() : null).then(d => setParentHere(!!d?.parent)).catch(() => {})
+  }, [])
+  async function backToParent() {
+    await fetch('/api/session/logout', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ scope:'child' }) }).catch(() => {})
+    window.location.href = '/dashboard'
+  }
+
   const [selectedSubject, setSelectedSubject] = useState<string|null>(null)
   const [langMode, setLangModeState]          = useState<KidLang>((child.lang_screen || 'bilingual') as KidLang)
   // Read the device-saved choice after mount (not in the initializer) so the
@@ -169,6 +178,14 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
     <div style={{ minHeight:'100vh', background:T.bg, fontFamily:'"Assistant","Nunito",sans-serif', color:T.text, overflowX:'hidden', position:'relative' }} dir={isHE ? 'rtl' : 'ltr'}>
       {T.pattern !== 'none' && <div style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:0, backgroundImage:T.pattern }}/>}
 
+      {parentHere && (child.grade ?? 0) >= 4 && (
+        <div style={{ position:'relative', zIndex:2, background:'#16213E', color:'#fff', display:'flex', alignItems:'center', gap:10, padding:'10px 16px', fontSize:16 }}>
+          <span style={{ flex:1 }}>{L(`את/ה צופה במסך של ${child.display_name}`, `You're viewing ${child.display_name}'s screen`)}</span>
+          <button onClick={backToParent} style={{ minHeight:40, padding:'0 14px', borderRadius:10, border:'none', background:'#fff', color:'#16213E', fontWeight:800, fontSize:15, cursor:'pointer', fontFamily:'inherit' }}>
+            {L('חזרה להורה', 'Back to parent')}
+          </button>
+        </div>
+      )}
       <div style={{ position:'relative', zIndex:1, maxWidth:'720px', margin:'0 auto', padding:'20px 18px 110px', display:'flex', flexDirection:'column', gap:18 }}>
 
         {/* Greeting */}

@@ -973,6 +973,21 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                   <Link2 size={16} color={PARENT_COLORS.primary} /> קישורים לילדים
                 </h3>
                 <p style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px' }}>כל קישור פותח לילד/ה את המרחב האישי באפליקציה.</p>
+                {(() => {
+                  const famLink = `${typeof window !== 'undefined' ? window.location.origin : 'https://eduplay-tau.vercel.app'}/f/${family?.id || ''}`
+                  return family?.id ? (
+                    <div style={{ display:'flex', alignItems:'center', gap:'12px', padding:'12px 14px', background:PARENT_COLORS.primaryLight || '#EAF0FF', borderRadius:'10px', marginBottom:'14px', flexWrap:'wrap' }}>
+                      <div style={{ flex:'1 1 220px', minWidth:0 }}>
+                        <div style={{ fontWeight:800, fontSize:'14px', color:PARENT_COLORS.text }}>קישור משפחתי לילדים הגדולים</div>
+                        <div style={{ fontSize:'12px', color:PARENT_COLORS.textSecondary }}>הילד/ה בוחר/ת את התמונה ומקליד/ה את הקוד האישי (קוד נקבע בטבלה למעלה).</div>
+                      </div>
+                      <button onClick={() => { navigator.clipboard.writeText(famLink); showToast('🔗', 'הקישור המשפחתי הועתק') }}
+                        style={{ display:'flex', alignItems:'center', gap:'5px', padding:'8px 14px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'12px', cursor:'pointer' }}>
+                        <Copy size={12} /> העתקת הקישור
+                      </button>
+                    </div>
+                  ) : null
+                })()}
                 <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
                   {(children || []).map((child: any, i: number) => {
                     const avatarColor = CHILD_AVATAR_COLORS[i % CHILD_AVATAR_COLORS.length]
