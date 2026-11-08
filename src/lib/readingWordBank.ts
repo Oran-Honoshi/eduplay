@@ -11,18 +11,19 @@
 // a vowel. The one exception is the hero's name (גָּד), as in those books.
 const L1_NAMES_CLOSED = ['גָּד']
 const L1 = [
-  // people
-  'אַבָּא', 'סַבָּא', 'חַנָּה', 'דָּנָה', 'הֲדַסָּה', 'שָׂרָה', 'רָנָה', ...L1_NAMES_CLOSED,
+  // people (names) — mostly from Oran's list of level-1 words
+  'אַבָּא', 'סַבָּא', 'חַנָּה', 'דָּנָה', 'הֲדַסָּה', 'שָׂרָה', 'רָנָה', 'נַעֲמָה', 'לָנָה', 'אַיָּלָה', ...L1_NAMES_CLOSED,
   // things
-  'מַתָּנָה', 'בָּנָנָה', 'מַפָּה', 'חַלָּה', 'כַּלָּה', 'שָׁנָה', 'שָׁעָה', 'פָּרָה', 'גַּנָּה', 'חַמָּה', 'בָּמָה', 'סַפָּה', 'עֲגָלָה', 'בַּקָּשָׁה', 'צָבָא', 'אַהֲבָה',
+  'מַתָּנָה', 'בָּנָנָה', 'מַפָּה', 'מַצָּה', 'חַלָּה', 'כַּלָּה', 'שָׁנָה', 'שָׁעָה', 'פָּרָה', 'גַּנָּה', 'בָּמָה', 'סַפָּה', 'עֲגָלָה', 'בַּקָּשָׁה', 'צָבָא', 'אַהֲבָה',
+  'צָרָה', 'אֲדָמָה', 'גָּדָה', 'מָנָה', 'אַוָּזָה', 'סַכָּנָה', 'חֲזָרָה', 'חַסָּה', 'רָמָה',
   // describing (she / it)
-  'יָפָה', 'נָאָה', 'חֲדָשָׁה', 'חַמָּה', 'קָרָה', 'רַכָּה',
+  'יָפָה', 'נָאָה', 'חֲדָשָׁה', 'חַמָּה', 'קָרָה', 'רַכָּה', 'קָשָׁה', 'רַעֲנַנָּה',
   // doing — he
-  'בָּא', 'קָנָה', 'שָׁתָה', 'רָאָה', 'קָרָא', 'זָכָה', 'בָּנָה', 'עָנָה', 'הָיָה', 'שָׂחָה', 'רָצָה', 'שָׁמַע', 'יָדַע',
+  'בָּא', 'קָנָה', 'שָׁתָה', 'רָאָה', 'קָרָא', 'מָצָא', 'זָכָה', 'עָלָה', 'בָּנָה', 'עָנָה', 'הָיָה', 'שָׂחָה', 'רָצָה', 'נָמָה', 'מָנָה', 'שָׁמַע', 'יָדַע',
   // doing — she
-  'בָּאָה', 'נָחָה', 'שָׁרָה', 'קָמָה', 'שָׂמָה', 'צָחֲקָה', 'שָׁאֲלָה', 'לָחֲשָׁה', 'רָאֲתָה', 'אָהֲבָה',
-  // little words
-  'מָה', 'מַה', 'לָמָּה', 'שָׁמָּה', 'כָּכָה', 'אַתָּה',
+  'בָּאָה', 'נָחָה', 'שָׁרָה', 'קָמָה', 'שָׂמָה', 'לָנָה', 'שָׁטָה', 'צָחֲקָה', 'שָׁאֲלָה', 'לָחֲשָׁה', 'רָאֲתָה', 'אָהֲבָה', 'פָּחֲדָה', 'טָעֲמָה', 'כָּעֲסָה', 'טָעֲתָה',
+  // calls & little words
+  'גַּע', 'מָה', 'מַה', 'לָמָּה', 'כַּמָּה', 'שָׁמָּה', 'כָּכָה', 'אַתָּה',
 ]
 const L1_OLD = [
   'דָּן', 'דָּג', 'יָד', 'גַּן', 'סַל', 'כַּד', 'כַּף', 'צָב', 'גָּמָל', 'עָנָן', 'חַג', 'בַּת', 'דַּף', 'פַּח', 'יָם', 'חָלָב', 'קַשׁ', 'שַׁבָּת', 'נָחָשׁ', 'גַּל', 'קַן', 'חָתָן',
@@ -91,7 +92,7 @@ export function closedEndings(level: number, lines: string[]): string[] {
 
 /** extra writing rules for a level with a closed bank */
 export function bankRules(level: number): string {
-  if (level === 1) return 'LEVEL 1 RULE, as in published first readers: every word ENDS on an open "a" sound — a silent א or ה (סַבָּא, מַתָּנָה, קָנָה) a silent final ע (שָׁמַע, יָדַע), or a lone prefix before a picture (בַּ[[book]]). Words like שָׂמַח, לָקַח, גַּן, דָּן end on a sounded consonant and are NOT allowed. No word may end on a bare consonant. The only exception is the hero גָּד. Use NO other words (no הוּא, הִיא, אֶת, לֹא…). Grammar: verbs about a girl or woman (חַנָּה, דָּנָה, הֲדַסָּה, שָׂרָה, רָנָה) may only be בָּאָה, נָחָה, שָׁרָה, קָמָה, שָׂמָה, רָצָה (ran), צָחֲקָה, שָׁאֲלָה, לָחֲשָׁה, רָאֲתָה, אָהֲבָה; the "he" verbs need גָּד, אַבָּא or סַבָּא. A name never takes הַ/לַ/בַּ. Repetition is good and natural at this level ("סַבָּא בָּא! סַבָּא בָּא!"). A picture token with a prefix is great for things the child cannot read ("גָּד קָרָא בַּ[[book]]."). Objects are indefinite ("סַבָּא קָנָה מַתָּנָה", never "רָאָה סַבָּא" — that would need אֶת, which this level cannot use). Verbs are past tense only, never orders. QUESTIONS at this level are only of the form "מָה [name] [verb]?" or "מָה בַּ…?" (מָה סַבָּא קָנָה? → מַתָּנָה), or a sentence to finish ("הַמַּתָּנָה…" → יָפָה); the options are things or describing words from the story, and the answer is written in the story.'
+  if (level === 1) return 'LEVEL 1 RULE, as in published first readers: every word ENDS on an open "a" sound — a silent א or ה (סַבָּא, מַתָּנָה, קָנָה) a silent final ע (שָׁמַע, יָדַע), or a lone prefix before a picture (בַּ[[book]]). Words like שָׂמַח, לָקַח, גַּן, דָּן end on a sounded consonant and are NOT allowed. No word may end on a bare consonant. The only exception is the hero גָּד. Use NO other words (no הוּא, הִיא, אֶת, לֹא…). Grammar: verbs about a girl or woman (חַנָּה, דָּנָה, הֲדַסָּה, שָׂרָה, רָנָה, נַעֲמָה, לָנָה, אַיָּלָה, הָאַוָּזָה, הַפָּרָה) may only be the "she" verbs: בָּאָה, נָחָה, שָׁרָה, קָמָה, שָׂמָה, לָנָה, שָׁטָה, רָצָה (ran), צָחֲקָה, שָׁאֲלָה, לָחֲשָׁה, רָאֲתָה, אָהֲבָה, פָּחֲדָה, טָעֲמָה, כָּעֲסָה, טָעֲתָה; the "he" verbs need גָּד, אַבָּא or סַבָּא. The describing words are feminine, so they describe feminine nouns (הַמַּצָּה קָשָׁה, הַחַסָּה רַעֲנַנָּה, הָעֲגָלָה יָפָה). A name never takes הַ/לַ/בַּ. Repetition is good and natural at this level ("סַבָּא בָּא! סַבָּא בָּא!"). A picture token with a prefix is great for things the child cannot read ("גָּד קָרָא בַּ[[book]]."). Objects are indefinite ("סַבָּא קָנָה מַתָּנָה", never "רָאָה סַבָּא" — that would need אֶת, which this level cannot use). Verbs are past tense only; the one call allowed is "גַּע!" (touch!). QUESTIONS at this level are only of the form "מָה [name] [verb]?" or "מָה בַּ…?" (מָה סַבָּא קָנָה? → מַתָּנָה), or a sentence to finish ("הַמַּתָּנָה…" → יָפָה); the options are things or describing words from the story, and the answer is written in the story.'
   if (level === 2) return 'Grammar: verbs agree with the subject in gender (a girl: אָכְלָה, הָלְכָה, יָשְׁבָה…). A name never takes הַ/בַּ; "to Dan" is לְדָן. Every question must have its answer stated in the story.'
   return ''
 }
