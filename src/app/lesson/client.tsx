@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import AnswerPad, { isNumericAnswer } from '@/components/kid/AnswerPad'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
 import HebrewMathText from '@/components/HebrewMathText'
@@ -1035,22 +1036,17 @@ export default function LessonClient({ child, topic, questions, passage, passage
 
                   {/* Word problems have no options: a big answer box + Check */}
                   {(!Array.isArray(currentQ.options) || currentQ.options.length === 0) && (
-                    <form onSubmit={e => { e.preventDefault(); const v = typedAnswer.trim(); if (!v) { setTypedError(true); return } checkAnswer({ label: v, isCorrect: answersMatch(v, String(currentQ.correct_answer ?? '')) }) }}
-                      style={{ display:'flex', gap:'8px', marginBottom:'12px', flexWrap:'wrap' }} dir={isHE ? 'rtl' : 'ltr'}>
-                      <input value={typedAnswer} disabled={answered} inputMode="text" autoComplete="off"
-                        onChange={e => { setTypedAnswer(e.target.value); setTypedError(false) }}
-                        placeholder={isHE ? 'כתבו כאן את התשובה' : 'Type your answer'}
-                        aria-label={isHE ? 'התשובה שלך' : 'Your answer'}
-                        style={{ flex:'1 1 180px', minHeight:'52px', fontSize:'20px', padding:'10px 14px', borderRadius:T.radius, border:`2px solid ${typedError ? '#E03030' : T.border}`, background:T.panel, color:T.text, fontFamily:'inherit' }}/>
-                      <button type="submit" disabled={answered}
-                        style={{ minHeight:'52px', padding:'10px 22px', borderRadius:T.radius, border:'none', background:T.accent1, color:'#fff', fontFamily:T.fontHead, fontSize:'15px', cursor:answered?'default':'pointer' }}>
-                        {isHE ? 'בדיקה' : 'Check'}
-                      </button>
-                      {typedError && <div style={{ width:'100%', color:'#E03030', fontSize:'13px' }}>{isHE ? 'כתבו תשובה קודם' : 'Type an answer first'}</div>}
-                      {answered && feedback && !feedback.correct && currentQ.correct_answer && (
-                        <div style={{ width:'100%', fontSize:'15px', color:T.text, fontWeight:700 }}>{isHE ? 'התשובה הנכונה: ' : 'The answer: '}<FractionText text={String(currentQ.correct_answer)} /></div>
+                    <div style={{ marginBottom:'12px' }} dir={isHE ? 'rtl' : 'ltr'}>
+                      {!answered && (
+                        <AnswerPad value={typedAnswer} onChange={v => { setTypedAnswer(v); setTypedError(false) }}
+                          numeric={isNumericAnswer(currentQ.correct_answer)} expected={currentQ.correct_answer}
+                          onSubmit={() => { const v = typedAnswer.trim(); if (!v) { setTypedError(true); return } checkAnswer({ label: v, isCorrect: answersMatch(v, String(currentQ.correct_answer ?? '')) }) }}
+                          T={T} isHE={isHE} error={typedError} />
                       )}
-                    </form>
+                      {answered && feedback && !feedback.correct && currentQ.correct_answer && (
+                        <div style={{ fontSize:'19px', color:T.text, fontWeight:700 }}>{isHE ? 'התשובה הנכונה: ' : 'The answer: '}<bdi><FractionText text={String(currentQ.correct_answer)} /></bdi></div>
+                      )}
+                    </div>
                   )}
 
                   {currentQ.options && (
@@ -1064,7 +1060,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                         const isRTLAnswer  = isHE
                         return (
                           <button className="answer-btn" key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
-                            style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'11px 12px', cursor:answered?'default':'pointer', fontFamily:isRTLAnswer?'"Times New Roman",serif':'Georgia,serif', fontSize:`${FS?.question || 14}px`, fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>
+                            style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'12px 14px', minHeight:'64px', cursor:answered?'default':'pointer', fontFamily:'"Rubik","Assistant",sans-serif', fontSize:`${Math.max(20, FS?.question || 0)}px`, fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>
                             <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'12px', flexShrink:0 }}>{isHE ? translateOptionLabel(opt.label) : opt.label}</span>
                             <FractionText text={displayVal} />
                           </button>

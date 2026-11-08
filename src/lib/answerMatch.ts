@@ -22,7 +22,7 @@ function stripUnits(s: string): string {
 
 // Parses "3", "-2.5", "3/4", "2 1/2", "1,000" into a number; null if not numeric.
 export function parseNumeric(raw: string): number | null {
-  const s = stripUnits(String(raw ?? '')).replace(/[‎‏⁦-⁩]/g, '').replace(/,(?=\d{3}\b)/g, '').trim()
+  const s = stripUnits(String(raw ?? '')).replace(/[−–]/g, '-').replace(/[‎‏⁦-⁩]/g, '').replace(/,(?=\d{3}\b)/g, '').trim()
   if (!s) return null
   const mixed = s.match(/^(-?\d+)\s+(\d+)\s*\/\s*(\d+)$/)
   if (mixed) {
