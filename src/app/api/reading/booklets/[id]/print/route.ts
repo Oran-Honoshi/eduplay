@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { brandBits, brandFooter, brandHeader, BRAND_CSS } from '@/lib/printBrand'
-import { pictureSVG, dotsSVG } from '@/lib/readingPictures'
+import { pictureSVG, dotsSVG, inlinePicture } from '@/lib/readingPictures'
 import { cleanPages, type BookletPage } from '@/lib/readingBooklet'
 
-const esc = (t: any) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+const esc0 = (t: any) => String(t ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+// text the child reads: [[key]] becomes a small picture in the line
+const esc = (t: any) => esc0(t).replace(/\[\[([a-z_]+)\]\]/g, (_m, k) => inlinePicture(k))
 
 // a stable shuffle so the matching column is mixed but the same on every print
 function mix<T>(a: T[], seed: number): T[] {
@@ -72,7 +74,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const { data: level } = await db.from('reading_levels').select('label_he').eq('id', bk.level_id).maybeSingle()
   const brand = await brandBits(new URL(req.url).origin)
   const pages: BookletPage[] = cleanPages(bk.pages || [])
-  const html = `<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="utf-8"/><title>${esc(bk.title_he)} — EduPlay</title>
+  const html = `<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="utf-8"/><title>${esc0(bk.title_he)} — EduPlay</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@400;600;700;800&family=Nunito:wght@700;900&display=swap');
 * { box-sizing: border-box; margin: 0; padding: 0; }
