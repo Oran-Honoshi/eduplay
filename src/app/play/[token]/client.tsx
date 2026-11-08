@@ -154,7 +154,12 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
   const task = pendingAssignments && pendingAssignments.length > 0 ? pendingAssignments[0] : null
   const lastP = lastTopic ? progressMap[lastTopic.id] : null
   const showContinue = lastTopic && lastP && lastP.status !== 'completed'
-  const goAssignments = () => withSession(() => { window.location.href = `/assignments?childId=${child.id}&token=${token}&theme=${theme}&lang=${langMode}` })
+  const goAssignments = () => withSession(() => {
+    // One task waiting → straight into it; several → the list to choose from.
+    window.location.href = pendingAssignments.length === 1
+      ? `/assignment?id=${pendingAssignments[0].id}&childId=${child.id}&token=${token}&theme=${theme}&lang=${langMode}`
+      : `/assignments?childId=${child.id}&token=${token}&theme=${theme}&lang=${langMode}`
+  })
   const subjLabel = (s: any) => isHE ? (s?.label_he || s?.label_en) : s?.label_en
   const topicTitle = (t: any) => isHE ? (t?.title_he || t?.title_en) : t?.title_en
   const SUBJ_MARK: any = { math:'1+2', hebrew:'אב', english:'Ab' }
