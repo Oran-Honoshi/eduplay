@@ -178,7 +178,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
           style={{ width:48, height:48, flexShrink:0, borderRadius:14, background:T.panel, border:`1.5px solid ${T.border}`, display:'flex', alignItems:'center', justifyContent:'center', color:T.text, cursor:'pointer' }}>
           <X size={24}/>
         </button>
-        <div style={{ flex:1, height:14, borderRadius:99, background:dark ? T.panel : T.panel2, overflow:'hidden' }}>
+        <div style={{ flex:1, height:14, borderRadius:99, background:T.border, overflow:'hidden' }}>
           <div style={{ height:'100%', width:`${Math.max(4, (currentIndex / totalItems) * 100)}%`, background:T.accent2 === '#FFD700' ? T.accent1 : T.accent2, borderRadius:99, transition:'width .3s ease' }}/>
         </div>
         <span style={{ fontFamily:F, fontWeight:800, fontSize:18 }} dir="ltr">{currentIndex + 1}/{totalItems}</span>
