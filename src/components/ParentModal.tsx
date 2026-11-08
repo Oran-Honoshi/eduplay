@@ -12,7 +12,7 @@ export type ParentModalVariant = 'info' | 'danger' | 'review'
 
 const VARIANT_TOKENS: Record<ParentModalVariant, { eyebrowColor: string; confirmBg: string; confirmHoverBg: string }> = {
   info:   { eyebrowColor: PARENT_COLORS.primary, confirmBg: PARENT_COLORS.primary, confirmHoverBg: PARENT_COLORS.primaryHover },
-  danger: { eyebrowColor: PARENT_COLORS.danger,  confirmBg: PARENT_COLORS.danger,  confirmHoverBg: '#B91C1C' },
+  danger: { eyebrowColor: PARENT_COLORS.danger,  confirmBg: PARENT_COLORS.danger,  confirmHoverBg: '#A32D15' },
   review: { eyebrowColor: PARENT_COLORS.accent,  confirmBg: PARENT_COLORS.primary, confirmHoverBg: PARENT_COLORS.primaryHover },
 }
 
@@ -29,17 +29,17 @@ export function ParentModal({
 }) {
   const tokens = VARIANT_TOKENS[variant]
   return (
-    <div className="fixed inset-0 z-[999] bg-black/55 flex items-center justify-center p-5" onClick={onCancel}>
-      <div className="bg-white rounded-[20px] shadow-[0_24px_60px_rgba(15,30,26,0.22)] w-full max-w-[460px] max-h-[520px] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="px-6 pt-[22px] pb-3.5 border-b border-[#e9e6dd]">
+    <div dir="rtl" className="fixed inset-0 z-[999] bg-[rgba(22,33,62,0.45)] flex items-end sm:items-center justify-center sm:p-5" onClick={onCancel}>
+      <div className="bg-white rounded-t-[28px] sm:rounded-[28px] shadow-[0_24px_60px_rgba(22,33,62,0.25)] w-full sm:max-w-[460px] max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="px-6 pt-6 pb-3.5">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10.5px] font-bold uppercase tracking-wide" style={{ color: tokens.eyebrowColor }}>
+            <span className="text-[13px] font-bold" style={{ color: tokens.eyebrowColor }}>
               {eyebrowText}
             </span>
             {badge}
           </div>
-          <h3 className="font-extrabold text-[16px] text-[#1f2a28] m-0 mb-1">{title}</h3>
-          {description && <p className="text-[12.5px] text-[#9aa6a3] m-0">{description}</p>}
+          <h3 className="font-extrabold text-[22px] text-[#16213E] m-0 mb-1">{title}</h3>
+          {description && <p className="text-[15px] text-[#4A5672] m-0">{description}</p>}
         </div>
         {children}
       </div>
@@ -64,16 +64,16 @@ export function ParentModalFooter({
 }) {
   const tokens = VARIANT_TOKENS[variant]
   return (
-    <div className="px-6 pt-4 pb-[22px] border-t border-[#e9e6dd] flex gap-2.5">
+    <div className="px-6 pt-3 pb-6 flex gap-2.5">
       <button onClick={onConfirm} disabled={confirming || disabled}
         style={{ background: tokens.confirmBg }}
-        className="flex-1 flex items-center justify-center gap-1.5 py-[11px] rounded-full disabled:opacity-40 text-white font-extrabold text-[13px] transition-opacity">
+        className="flex-1 flex items-center justify-center gap-1.5 min-h-[52px] rounded-[14px] disabled:opacity-40 text-white font-bold text-[16px] transition-opacity">
         {confirming && <Loader2 size={14} className="animate-spin" />}
         {confirming ? (confirmingLabel || confirmLabel) : confirmLabel}
       </button>
       <button onClick={onCancel} disabled={confirming}
-        className="flex-1 py-[11px] rounded-full border border-[rgba(15,118,110,.14)] text-[#7a8f8b] font-extrabold text-[13px] disabled:opacity-40">
-        Cancel
+        className="min-h-[52px] px-5 rounded-[14px] border-[1.5px] border-[#D9D2C4] text-[#16213E] font-bold text-[16px] disabled:opacity-40">
+        ביטול
       </button>
     </div>
   )

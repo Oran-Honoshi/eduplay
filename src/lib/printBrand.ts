@@ -12,7 +12,7 @@ export function siteUrl(origin: string) {
 export async function brandBits(origin: string) {
   const site = siteUrl(origin)
   const link = `${site}/?utm_source=printable`
-  const qrSvg = await QRCode.toString(link, { type: 'svg', margin: 0, width: 84, color: { dark: '#0F3D3A', light: '#FFFFFF' } })
+  const qrSvg = await QRCode.toString(link, { type: 'svg', margin: 0, width: 84, color: { dark: '#16213E', light: '#FFFFFF' } })
   return {
     site, link, qrSvg,
     host: site.replace(/^https?:\/\//, ''),
@@ -24,18 +24,18 @@ export type Brand = Awaited<ReturnType<typeof brandBits>>
 
 export const BRAND_CSS = `
   .brand-head { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:10px 14px; border-radius:14px;
-    background:linear-gradient(135deg,#E4F3F1,#F1ECFA); margin-bottom:14px; }
+    background:linear-gradient(135deg,#EAF0FF,#FFF4D1); margin-bottom:14px; }
   .brand-left { display:flex; align-items:center; gap:10px; }
   .brand-icon { width:40px; height:40px; border-radius:10px; }
-  .brand-word { font-family:'Nunito',sans-serif; font-weight:900; font-size:20px; color:#0F3D3A; letter-spacing:-.01em; }
-  .brand-word span { color:#0F766E; }
-  .brand-tag { font-size:10px; color:#4B6B66; margin-top:1px; }
+  .brand-word { font-family:'Nunito',sans-serif; font-weight:900; font-size:20px; color:#16213E; letter-spacing:-.01em; }
+  .brand-word span { color:#2F5BE3; }
+  .brand-tag { font-size:10px; color:#4A5672; margin-top:1px; }
   .brand-pip { width:62px; height:62px; object-fit:contain; }
-  .brand-foot { display:flex; align-items:center; gap:14px; margin-top:22px; padding:10px 14px; border:1.5px solid #E4F3F1; border-radius:14px; page-break-inside:avoid; }
+  .brand-foot { display:flex; align-items:center; gap:14px; margin-top:22px; padding:10px 14px; border:1.5px solid #E8E2D6; border-radius:14px; page-break-inside:avoid; }
   .brand-foot .qr svg { width:72px; height:72px; display:block; }
   .brand-foot .txt { flex:1; font-size:11px; color:#3d4f4b; line-height:1.6; }
-  .brand-foot .txt b { color:#0F3D3A; font-size:12px; }
-  .brand-foot .url { font-weight:800; color:#0F766E; direction:ltr; unicode-bidi:isolate; }
+  .brand-foot .txt b { color:#16213E; font-size:12px; }
+  .brand-foot .url { font-weight:800; color:#2F5BE3; direction:ltr; unicode-bidi:isolate; }
   .brand-foot .pip-s { width:46px; height:46px; object-fit:contain; }
   @media print { .brand-head { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
 `

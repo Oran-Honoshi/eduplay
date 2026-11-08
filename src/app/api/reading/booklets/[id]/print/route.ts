@@ -92,8 +92,8 @@ ${BRAND_CSS}
 .cover .pip { width: 190px; height: 190px; object-fit: contain; }
 .cover .name { font-size: 22px; margin-top: 20px; }
 .cover .name span { display:inline-block; width: 260px; border-bottom: 2px solid #9AA5B8; }
-.ph { display:flex; gap: 12px; align-items:center; border-bottom: 3px solid #2EC4B6; padding-bottom: 10px; margin-bottom: 22px; }
-.pn { width: 40px; height: 40px; border-radius: 50%; background: #2EC4B6; color: #fff; font: 900 18px Nunito, sans-serif; display:flex; align-items:center; justify-content:center; flex-shrink: 0; }
+.ph { display:flex; gap: 12px; align-items:center; border-bottom: 3px solid #2F5BE3; padding-bottom: 10px; margin-bottom: 22px; }
+.pn { width: 40px; height: 40px; border-radius: 50%; background: #2F5BE3; color: #fff; font: 900 18px Nunito, sans-serif; display:flex; align-items:center; justify-content:center; flex-shrink: 0; }
 .pt { font-size: 22px; font-weight: 800; }
 .pi { font-size: 15px; color: #4A5568; margin-top: 2px; }
 .syl .row { display:flex; flex-wrap:wrap; gap: 14px; justify-content:flex-start; margin-bottom: 18px; }
@@ -111,7 +111,7 @@ ${BRAND_CSS}
 .opts span { font-size: 38px; font-weight: 700; }
 .sent { list-style: none; counter-reset: s; }
 .sent li { font-size: 36px; font-weight: 600; line-height: 1.9; border-bottom: 1.5px solid #EEF1F6; counter-increment: s; }
-.sent li::before { content: counter(s) "."; color: #2EC4B6; font: 900 22px Nunito, sans-serif; margin-inline-end: 12px; }
+.sent li::before { content: counter(s) "."; color: #2F5BE3; font: 900 22px Nunito, sans-serif; margin-inline-end: 12px; }
 .story h2 { font-size: 40px; text-align: center; margin-bottom: 14px; }
 .story p { font-size: 32px; line-height: 2; margin-bottom: 10px; }
 .spic { text-align: center; margin-bottom: 8px; }
@@ -127,7 +127,7 @@ ${BRAND_CSS}
 .answers .pt { font-size: 15px; }
 @media print { .no-print { display:none } body { padding: 10px 14px; } .page { min-height: 0; } }
 </style></head><body>
-<div class="no-print"><button style="background:#2EC4B6;color:#fff" onclick="window.print()">🖨️ הדפסה / שמירה כ-PDF</button><button style="background:#F3F4F6" onclick="window.close()">סגירה</button></div>
+<div class="no-print"><button style="background:#2F5BE3;color:#fff" onclick="window.print()">🖨️ הדפסה / שמירה כ-PDF</button><button style="background:#F3F4F6" onclick="window.close()">סגירה</button></div>
 <section class="page cover">
   ${brandHeader(brand, true, 'read')}
   <div class="lvl">חוברת קריאה · ${esc(level?.label_he || '')}</div>

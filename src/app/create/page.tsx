@@ -20,6 +20,7 @@ import FractionText from '@/components/FractionText'
 import { Pip } from '@/components/Pip'
 import { FeedbackPrompt } from '@/components/Feedback'
 import { FunLoader, FunLine } from '@/components/FunLoader'
+import { Sheet, sheetPrimary, sheetDanger, sheetSecondary } from '@/components/ui/Sheet'
 import { useFamilyChildren, type FamilyChild } from '@/lib/useFamilyChildren'
 import { PARENT_COLORS } from '@/lib/parentTheme'
 import { SECTION_KINDS, SECTION_ORDER, assignSectionWords, hasSections, plannedCount, questionSections, visibleOption, type Section, type SectionKind } from '@/lib/workbook'
@@ -631,7 +632,7 @@ function Steps({ step, canGo, onGo }: { step: Step; canGo: (s: Step) => boolean;
 // The main action of a step lives in one bar that stays at the bottom of the screen.
 function ActionBar({ children }: { children: React.ReactNode }) {
   return (
-    <div className="sticky bottom-0 z-[400] -mx-4 mt-4 bg-white/95 backdrop-blur border-t border-[#E8E2D6] shadow-[0_-6px_20px_rgba(22,33,62,0.06)]" dir="rtl">
+    <div className="sticky bottom-[64px] md:bottom-0 z-[400] -mx-4 mt-4 bg-white/95 backdrop-blur border-t border-[#E8E2D6] shadow-[0_-6px_20px_rgba(22,33,62,0.06)]" dir="rtl">
       <div className="max-w-[920px] mx-auto px-4 py-3 flex flex-wrap items-center gap-3">{children}</div>
     </div>
   )
@@ -1059,25 +1060,19 @@ function DonePanel({ mat, setMat, child, questions }: any) {
       </div>
       <FeedbackPrompt materialId={mat.id} />
       {printOpen && (
-        <div role="dialog" aria-modal="true" dir="rtl" className="fixed inset-0 z-[700] bg-black/40 flex items-end sm:items-center justify-center p-3" onClick={() => setPrintOpen(false)}>
-          <div className="bg-white rounded-3xl w-full max-w-[420px] p-5" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-4"><Printer className="text-[#2F5BE3]" /><div className="font-black text-lg">מה להדפיס?</div></div>
-            {([
-              ['hints', 'רמזים ליד כל שאלה', 'עזרה קטנה שלא מגלה את התשובה'],
-              ['solutions', 'פתרון מלא צעד אחר צעד', 'בעמודים נפרדים בסוף'],
-              ['answers', 'דף תשובות', 'בעמוד האחרון, כדי לבדוק אחר כך'],
-            ] as const).filter(([k]) => !(k === 'hints' && mat.kind === 'exam')).map(([k, l, d]) => (
-              <label key={k} className="flex items-start gap-3 py-2.5 border-b border-[#F0EBE1] cursor-pointer">
-                <input type="checkbox" className="mt-1 w-5 h-5 accent-[#2F5BE3]" checked={(opts as any)[k]} onChange={e => setOpts(o => ({ ...o, [k]: e.target.checked }))} />
-                <span><span className="font-bold block">{l}</span><span className="text-xs text-[#4A5672]">{d}</span></span>
-              </label>
-            ))}
-            <div className="flex gap-2 justify-between mt-4">
-              <button className={btnGhost} onClick={() => setPrintOpen(false)}>ביטול</button>
-              <button className={btnPrimary} onClick={() => { setPrintOpen(false); print() }}><Printer size={16} /> להדפסה</button>
-            </div>
-          </div>
-        </div>
+        <Sheet title="מה להדפיס?" subtitle={<><bdi>{mat.title}</bdi> · {approvedIds.length} שאלות</>} icon={<Printer size={24} />} onClose={() => setPrintOpen(false)}
+          footer={<><button className={sheetPrimary} onClick={() => { setPrintOpen(false); print() }}><Printer size={18} /> להדפסה</button><button className={sheetSecondary} onClick={() => setPrintOpen(false)}>ביטול</button></>}>
+          {([
+            ['hints', 'רמזים ליד כל שאלה', 'עזרה קטנה שלא מגלה את התשובה'],
+            ['solutions', 'פתרון מלא צעד אחר צעד', 'בעמודים נפרדים בסוף'],
+            ['answers', 'דף תשובות', 'בעמוד האחרון, כדי לבדוק אחר כך'],
+          ] as const).filter(([k]) => !(k === 'hints' && mat.kind === 'exam')).map(([k, l, d]) => (
+            <label key={k} className="flex items-start gap-3.5 py-3.5 border-b border-[#F0EBE1] last:border-0 cursor-pointer">
+              <input type="checkbox" className="mt-0.5 w-6 h-6 accent-[#2F5BE3] shrink-0" checked={(opts as any)[k]} onChange={e => setOpts(o => ({ ...o, [k]: e.target.checked }))} />
+              <span><span className="font-bold block text-[17px]">{l}</span><span className="text-sm text-[#4A5672]">{d}</span></span>
+            </label>
+          ))}
+        </Sheet>
       )}
     </div>
   )
@@ -1152,16 +1147,10 @@ function HistoryList({ onMore, kidsList: children }: any) {
         </div>
       ))}
       {confirm && (
-        <div role="dialog" aria-modal="true" dir="rtl" className="fixed inset-0 z-[700] bg-black/40 flex items-end sm:items-center justify-center p-3" onClick={() => setConfirm(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-[400px] p-5" onClick={e => e.stopPropagation()}>
-            <div className="font-black text-lg mb-1">למחוק את "{confirm.title}"?</div>
-            <div className="text-sm text-[#4A5672] mb-4">הוא ייעלם מהרשימה{confirm.library_status === 'listed' ? ' ומהספרייה החינמית' : ''}. מה שכבר נשלח לאפליקציה נשאר אצל הילד/ה.</div>
-            <div className="flex gap-2 justify-between">
-              <button className={btnGhost} onClick={() => setConfirm(null)}>ביטול</button>
-              <button className={btnPrimary + ' !bg-[#DC2626]'} onClick={() => remove(confirm)}><Trash2 size={16} /> למחוק</button>
-            </div>
-          </div>
-        </div>
+        <Sheet tone="red" icon={<Trash2 size={22} />} title={<>למחוק את "<bdi>{confirm.title}</bdi>"?</>} onClose={() => setConfirm(null)}
+          footer={<><button className={sheetDanger} onClick={() => remove(confirm)}><Trash2 size={18} /> למחוק</button><button className={sheetSecondary} onClick={() => setConfirm(null)}>ביטול</button></>}>
+          <p className="m-0 text-[15px] text-[#4A5672] leading-relaxed">הוא ייעלם מהרשימה{confirm.library_status === 'listed' ? ' ומהספרייה החינמית' : ''}. מה שכבר נשלח לאפליקציה נשאר אצל הילד/ה.</p>
+        </Sheet>
       )}
     </div>
   )
@@ -1283,33 +1272,21 @@ function RemoveModal({ q, onCancel, onRemove }: any) {
   const [busy, setBusy] = useState(false)
   const go = async (withReason: boolean) => { setBusy(true); await onRemove(withReason ? picked : [], withReason ? note : '') }
   return (
-    <div role="dialog" aria-modal="true" dir="rtl" className="fixed inset-0 z-[700] bg-black/40 flex items-end sm:items-center justify-center p-3" onClick={onCancel}>
-      <div className="bg-white rounded-3xl w-full max-w-[480px] p-5" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-3 mb-3">
-          <Pip pose="think" size={56} he />
-          <div>
-            <div className="font-black text-lg">למה להסיר?</div>
-            <div className="text-sm text-[#4A5672]">זה עוזר לנו לכתוב שאלות טובות יותר בהמשך. לא חובה.</div>
-          </div>
-        </div>
-        <div className="text-sm text-[#33415F] bg-[#F7F4EE] rounded-xl px-3 py-2 mb-3 line-clamp-2"><FractionText text={q.prompt_he || q.prompt_en} /></div>
-        <div className="flex flex-wrap gap-2 mb-3">
-          {REMOVE_REASONS.map(r => (
-            <button key={r} aria-pressed={picked.includes(r)} onClick={() => setPicked(p => p.includes(r) ? p.filter(x => x !== r) : [...p, r])}
-              className={`min-h-[38px] px-3 rounded-full border-2 text-sm font-bold ${picked.includes(r) ? 'border-[#2F5BE3] bg-[#EAF0FF] text-[#2F5BE3]' : 'border-[#E8E2D6] text-[#33415F]'}`}>{r}</button>
-          ))}
-        </div>
-        <textarea dir="auto" rows={2} value={note} onChange={e => setNote(e.target.value)} placeholder="משהו נוסף? למשל: לשאול על היקף ולא על שטח"
-          className="w-full px-3 py-2 rounded-xl border border-[#D9D2C4] text-[15px] mb-3" />
-        <div className="flex flex-wrap gap-2 justify-between">
-          <button className={btnGhost} onClick={onCancel}>ביטול</button>
-          <div className="flex gap-2">
-            <button className={btnGhost} disabled={busy} onClick={() => go(false)}>להסיר בלי לפרט</button>
-            <button className={btnPrimary} disabled={busy || (!picked.length && !note.trim())} onClick={() => go(true)}><X size={16} /> להסיר</button>
-          </div>
-        </div>
+    <Sheet wide tone="yellow" icon={<Pip pose="think" size={40} he />} title="למה להסיר?" subtitle="עוזר לנו לכתוב שאלות טובות יותר בהמשך. לא חובה." onClose={onCancel}
+      footer={<>
+        <button className={sheetPrimary} disabled={busy || (!picked.length && !note.trim())} onClick={() => go(true)}><X size={18} /> להסיר</button>
+        <button className={sheetSecondary} disabled={busy} onClick={() => go(false)}>להסיר בלי לפרט</button>
+      </>}>
+      <div className="text-[15px] text-[#33415F] bg-[#F7F4EE] rounded-xl px-3 py-2 mb-3 line-clamp-2"><FractionText text={q.prompt_he || q.prompt_en} /></div>
+      <div className="flex flex-wrap gap-2 mb-3">
+        {REMOVE_REASONS.map(r => (
+          <button key={r} type="button" aria-pressed={picked.includes(r)} onClick={() => setPicked(p => p.includes(r) ? p.filter(x => x !== r) : [...p, r])}
+            className={`min-h-[40px] px-3.5 rounded-full border-[1.5px] text-[15px] ${picked.includes(r) ? 'border-[#16213E] bg-[#16213E] text-white font-bold' : 'border-[#D9D2C4] text-[#16213E] font-semibold'}`}>{r}</button>
+        ))}
       </div>
-    </div>
+      <textarea dir="auto" rows={2} value={note} onChange={e => setNote(e.target.value)} placeholder="משהו נוסף? למשל: לשאול על היקף ולא על שטח"
+        className="w-full px-3 py-2 rounded-xl border-[1.5px] border-[#D9D2C4] text-[15px] mb-1" />
+    </Sheet>
   )
 }
 

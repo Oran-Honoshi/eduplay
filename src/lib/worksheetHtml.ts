@@ -281,7 +281,7 @@ export function generateHTML({ child, topics, questions: questionsIn, difficulty
   const typeEmoji      = wsType === 'practice' ? '📝' : wsType === 'quiz' ? '✅' : '🎓'
   const typeLabel      = wsType === 'practice' ? 'Practice' : wsType === 'quiz' ? 'Quiz' : 'Exam'
   const showHints      = includeHints && wsType !== 'quiz' && wsType !== 'exam'
-  const subjectColor   = subject?.slug === 'math' ? '#4A7FD4' : subject?.slug === 'english' ? '#2EC4B6' : '#EF4444'
+  const subjectColor   = subject?.slug === 'math' ? '#2F5BE3' : subject?.slug === 'english' ? '#12937A' : '#E85D3F'
 
   const renderQ = (q: any, i: number, sec?: any) => {
     const visualHTML = renderVisual(q, subjectColor, i)

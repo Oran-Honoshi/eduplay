@@ -1,4 +1,5 @@
 'use client'
+import { useEffect } from 'react'
 import { Home, Sparkles, BookOpen, Users } from 'lucide-react'
 import EduPlayLogo from './EduPlayLogo'
 import { SuggestionsButton } from './Feedback'
@@ -57,8 +58,31 @@ export default function ParentHeaderBar({ center, right, active }: { center?: Re
           <bdi>Edu<span style={{ color: PARENT_COLORS.primary }}>Play</span></bdi>
         </span>
       </a>
-      {center ?? (active ? <ParentNav active={active} /> : null)}
+      {center ?? (active ? <span className="hidden md:flex"><ParentNav active={active} /></span> : null)}
+      {!center && active && <ParentTabBar active={active} />}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}><span className="hidden md:inline-flex"><SuggestionsButton /></span>{right}</div>
     </header>
+  )
+}
+
+// Phone: the four sections as a bottom tab bar (the top bar keeps only the logo).
+export function ParentTabBar({ active }: { active?: ParentSection }) {
+  useEffect(() => {
+    document.body.classList.add('ep-tabbar')
+    return () => document.body.classList.remove('ep-tabbar')
+  }, [])
+  return (
+    <nav aria-label="ניווט ראשי" dir="rtl" className="md:hidden" style={{ position: 'fixed', insetInline: 0, bottom: 0, zIndex: 450, background: '#fff', borderTop: `1px solid ${PARENT_COLORS.border}`, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      {SECTIONS.map(({ key, he, href, Icon }) => {
+        const on = key === active
+        return (
+          <a key={key} href={href} aria-current={on ? 'page' : undefined}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, minHeight: 64, textDecoration: 'none', fontSize: 13, fontWeight: on ? 800 : 600, color: on ? PARENT_COLORS.primaryHover : PARENT_COLORS.textMuted, fontFamily: "'Assistant', sans-serif" }}>
+            <span style={{ width: 48, height: 28, borderRadius: 999, background: on ? PARENT_COLORS.primaryLight : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon size={20} aria-hidden /></span>
+            {he}
+          </a>
+        )
+      })}
+    </nav>
   )
 }
