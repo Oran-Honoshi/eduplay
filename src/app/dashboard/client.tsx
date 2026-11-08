@@ -70,7 +70,7 @@ function ParentsScreen({ familyId, showToast }: any) {
         setShowAdd(false)
         loadParents()
       } else {
-        showApiErrorToast(showToast, res.status, data.error, 'Error adding parent')
+        showApiErrorToast(showToast, res.status, data.error, 'לא הצלחנו להוסיף הורה')
       }
     } catch {}
     setSaving(false)
@@ -96,23 +96,23 @@ function ParentsScreen({ familyId, showToast }: any) {
     showToast('🔑', `${name}'s password updated!`)
   }
 
-  if (loading) return <div style={{ padding:'40px', textAlign:'center', color:PARENT_COLORS.textMuted }}>Loading...</div>
+  if (loading) return <div style={{ padding:'40px', textAlign:'center', color:PARENT_COLORS.textMuted }}>טוען…</div>
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
-          <Users size={18} color={PARENT_COLORS.primary} /> Parent Profiles
+          <Users size={18} color={PARENT_COLORS.primary} /> ההורים במשפחה
         </h1>
         {parents.length < 3 && (
           <button onClick={() => setShowAdd(!showAdd)}
             style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 18px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
-            <UserPlus size={14} /> Add Parent
+            <UserPlus size={14} /> הוספת הורה
           </button>
         )}
       </div>
       <p style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, margin:0 }}>
-        Up to 3 parents or guardians can share oversight of this family account. Each has their own password.
+        עד 3 הורים או אפוטרופוסים יכולים לנהל יחד את חשבון המשפחה, לכל אחד סיסמה משלו.
       </p>
       <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
         {parents.map((parent, i) => (
@@ -125,29 +125,29 @@ function ParentsScreen({ familyId, showToast }: any) {
                 <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'2px' }}>
                   <div style={{ fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text }}>{parent.name}</div>
                   {parent.role === 'admin' ? (
-                    <span style={{ fontSize:'10px', fontWeight:800, padding:'2px 9px', borderRadius:'50px', background:PARENT_COLORS.primary, color:'white' }}>Admin</span>
+                    <span style={{ fontSize:'10px', fontWeight:800, padding:'2px 9px', borderRadius:'50px', background:PARENT_COLORS.primary, color:'white' }}>מנהל/ת</span>
                   ) : (
-                    <span style={{ fontSize:'10px', fontWeight:800, padding:'1px 8px', borderRadius:'50px', border:`1.5px solid ${PARENT_COLORS.primary}`, color:PARENT_COLORS.primary }}>Parent</span>
+                    <span style={{ fontSize:'10px', fontWeight:800, padding:'1px 8px', borderRadius:'50px', border:`1.5px solid ${PARENT_COLORS.primary}`, color:PARENT_COLORS.primary }}>הורה</span>
                   )}
                 </div>
-                <div style={{ fontSize:'12px', color:PARENT_COLORS.textMuted }}>{parent.email || 'No email set'}</div>
+                <div style={{ fontSize:'12px', color:PARENT_COLORS.textMuted }}>{parent.email || 'אין אימייל'}</div>
               </div>
               {i > 0 && (
                 <button onClick={() => setRemoveTarget({ id: parent.id, name: parent.name })}
                   style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 12px', borderRadius:'50px', border:`1px solid ${PARENT_COLORS.dangerBorder}`, background:PARENT_COLORS.dangerLight, color:PARENT_COLORS.danger, fontWeight:700, fontSize:'12px', cursor:'pointer' }}>
-                  <Trash2 size={12} /> Remove
+                  <Trash2 size={12} /> הסרה
                 </button>
               )}
             </div>
             <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
-              <input type="password" placeholder="New password" id={`pwd-${parent.id}`}
+              <input type="password" placeholder="סיסמה חדשה" id={`pwd-${parent.id}`}
                 style={{ flex:1, padding:'8px 12px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, fontSize:'13px', outline:'none' }}/>
               <button onClick={() => {
                 const input = document.getElementById(`pwd-${parent.id}`) as HTMLInputElement
                 updatePassword(parent.id, input.value, parent.name)
                 input.value = ''
               }} style={{ display:'flex', alignItems:'center', gap:'5px', padding:'8px 14px', borderRadius:'8px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:700, fontSize:'12px', cursor:'pointer' }}>
-                <Key size={12} /> Update Password
+                <Key size={12} /> עדכון סיסמה
               </button>
             </div>
           </div>
@@ -155,9 +155,9 @@ function ParentsScreen({ familyId, showToast }: any) {
       </div>
       {showAdd && (
         <div style={{ background:PARENT_COLORS.card, border:`2px solid ${PARENT_COLORS.primary}`, borderRadius:'14px', padding:'20px' }}>
-          <h3 style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, margin:'0 0 16px' }}>Add New Parent / Guardian</h3>
+          <h3 style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, margin:'0 0 16px' }}>הוספת הורה או אפוטרופוס</h3>
           <div style={{ marginBottom:'14px' }}>
-            <div style={{ fontSize:'12px', fontWeight:700, color:PARENT_COLORS.textSecondary, marginBottom:'8px' }}>Avatar</div>
+            <div style={{ fontSize:'12px', fontWeight:700, color:PARENT_COLORS.textSecondary, marginBottom:'8px' }}>תמונה</div>
             <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
               {PARENT_EMOJIS.map(e => (
                 <button key={e} onClick={() => setNewEmoji(e)}
@@ -168,11 +168,11 @@ function ParentsScreen({ familyId, showToast }: any) {
             </div>
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'16px' }}>
-            <input placeholder="Full name *" value={newName} onChange={e => setNewName(e.target.value)}
+            <input placeholder="שם מלא *" value={newName} onChange={e => setNewName(e.target.value)}
               style={{ padding:'10px 14px', borderRadius:'10px', border:`1px solid ${PARENT_COLORS.border}`, fontSize:'14px', outline:'none' }}/>
-            <input placeholder="Email (optional)" value={newEmail} onChange={e => setNewEmail(e.target.value)}
+            <input placeholder="אימייל (לא חובה)" value={newEmail} onChange={e => setNewEmail(e.target.value)}
               style={{ padding:'10px 14px', borderRadius:'10px', border:`1px solid ${PARENT_COLORS.border}`, fontSize:'14px', outline:'none' }}/>
-            <input type="password" placeholder="Password *" value={newPass} onChange={e => setNewPass(e.target.value)}
+            <input type="password" placeholder="סיסמה *" value={newPass} onChange={e => setNewPass(e.target.value)}
               style={{ padding:'10px 14px', borderRadius:'10px', border:`1px solid ${PARENT_COLORS.border}`, fontSize:'14px', outline:'none' }}/>
           </div>
           <div style={{ display:'flex', gap:'10px' }}>
@@ -182,7 +182,7 @@ function ParentsScreen({ familyId, showToast }: any) {
             </button>
             <button onClick={addParent} disabled={saving || !newName || !newPass}
               style={{ flex:2, display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', padding:'10px', borderRadius:'10px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer', opacity:saving||!newName||!newPass?0.6:1 }}>
-              <UserPlus size={14} /> {saving ? 'Adding...' : 'Add Parent'}
+              <UserPlus size={14} /> {saving ? 'מוסיפים…' : 'הוספת הורה'}
             </button>
           </div>
         </div>
@@ -190,15 +190,15 @@ function ParentsScreen({ familyId, showToast }: any) {
       {removeTarget && (
         <ParentModal
           variant="danger"
-          eyebrowText="Remove parent"
-          title={`Remove ${removeTarget.name} as a parent?`}
-          description="They'll lose access to this family account. This cannot be undone."
+          eyebrowText="הסרת הורה"
+          title={`להסיר את ${removeTarget.name} מהמשפחה?`}
+          description="לא תהיה לו/ה עוד גישה לחשבון המשפחה. אי אפשר לבטל."
           onCancel={() => setRemoveTarget(null)}
         >
           <ParentModalFooter
             variant="danger"
-            confirmLabel="Remove"
-            confirmingLabel="Removing…"
+            confirmLabel="להסיר"
+            confirmingLabel="מסירים…"
             confirming={removing}
             onConfirm={confirmRemoveParent}
             onCancel={() => setRemoveTarget(null)}
@@ -245,7 +245,7 @@ function AssignmentsScreen({ children, showToast }: any) {
       const detail     = await detailRes.json()
       const questionIds = (detail.items || []).map((it: any) => it.question?.id).filter(Boolean)
       if (questionIds.length === 0) {
-        showToast('❌', 'Nothing to reassign')
+        showToast('❌', 'אין מה לשלוח שוב')
         return
       }
       const res  = await fetch('/api/assignments', {
@@ -260,15 +260,15 @@ function AssignmentsScreen({ children, showToast }: any) {
         setPickerChildId('')
         loadAssignments()
       } else {
-        showApiErrorToast(showToast, res.status, data.error, 'Could not reassign')
+        showApiErrorToast(showToast, res.status, data.error, 'לא הצלחנו לשלוח שוב')
       }
     } catch {
-      showToast('❌', 'Could not reassign')
+      showToast('❌', 'לא הצלחנו לשלוח שוב')
     }
     setBusyId(null)
   }
 
-  if (loading) return <div style={{ padding:'40px', textAlign:'center', color:PARENT_COLORS.textMuted }}>Loading...</div>
+  if (loading) return <div style={{ padding:'40px', textAlign:'center', color:PARENT_COLORS.textMuted }}>טוען…</div>
 
   const STATUS_META: any = {
     correctFirstTry:  '✅',
@@ -279,7 +279,7 @@ function AssignmentsScreen({ children, showToast }: any) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'18px' }}>
       <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
-        <ClipboardList size={18} color={PARENT_COLORS.primary} /> Assignment History
+        <ClipboardList size={18} color={PARENT_COLORS.primary} /> היסטוריית משימות
       </h1>
 
       {(children || []).map((child: any, i: number) => {
@@ -295,7 +295,7 @@ function AssignmentsScreen({ children, showToast }: any) {
             </div>
 
             {list.length === 0 ? (
-              <div style={{ textAlign:'center', padding:'20px', color:PARENT_COLORS.textMuted, fontSize:'13px' }}>No assignments yet.</div>
+              <div style={{ textAlign:'center', padding:'20px', color:PARENT_COLORS.textMuted, fontSize:'13px' }}>עוד אין משימות.</div>
             ) : (
               <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
                 {list.map((a: any) => {
@@ -305,8 +305,8 @@ function AssignmentsScreen({ children, showToast }: any) {
                     <div key={a.id} style={{ background:PARENT_COLORS.pageBg, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'10px', padding:'14px' }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:'10px', marginBottom:'8px', flexWrap:'wrap' }}>
                         <div>
-                          <div style={{ fontWeight:800, fontSize:'13px', color:PARENT_COLORS.text }}>{a.title || 'Untitled assignment'}</div>
-                          <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted }}>{new Date(a.created_at).toLocaleDateString()} · {a.completedItems}/{a.totalItems} done ({pct}%)</div>
+                          <div style={{ fontWeight:800, fontSize:'13px', color:PARENT_COLORS.text }}>{a.title || 'משימה ללא שם'}</div>
+                          <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted }}>{new Date(a.created_at).toLocaleDateString('he-IL')} · {a.completedItems} מתוך {a.totalItems} ({pct}%)</div>
                         </div>
                         <div style={{ display:'flex', gap:'8px', fontSize:'11px', color:PARENT_COLORS.textSecondary }}>
                           {(['correctFirstTry', 'correctAfterHint', 'revealedAnswer'] as const).map(k => (
@@ -318,14 +318,14 @@ function AssignmentsScreen({ children, showToast }: any) {
                       <div style={{ display:'flex', gap:'8px', flexWrap:'wrap', alignItems:'center' }}>
                         <button disabled={isBusy} onClick={() => reassign(a.id, child.id, child.display_name)}
                           style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 12px', borderRadius:'50px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, color:PARENT_COLORS.primary, fontWeight:700, fontSize:'11px', cursor:'pointer', opacity:isBusy?0.6:1 }}>
-                          <RefreshCw size={11} /> Retry with {child.display_name}
+                          <RefreshCw size={11} /> שוב ל<bdi>{child.display_name}</bdi>
                         </button>
 
                         {pickerFor === a.id ? (
                           <>
                             <select value={pickerChildId} onChange={e => setPickerChildId(e.target.value)}
                               style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, fontSize:'11px' }}>
-                              <option value="">Choose a child…</option>
+                              <option value="">לבחור ילד/ה…</option>
                               {(children || []).filter((c: any) => c.id !== child.id).map((c: any) => (
                                 <option key={c.id} value={c.id}>{c.display_name}</option>
                               ))}
@@ -344,7 +344,7 @@ function AssignmentsScreen({ children, showToast }: any) {
                           (children || []).length > 1 && (
                             <button disabled={isBusy} onClick={() => { setPickerFor(a.id); setPickerChildId('') }}
                               style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 12px', borderRadius:'50px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, color:PARENT_COLORS.textSecondary, fontWeight:700, fontSize:'11px', cursor:'pointer', opacity:isBusy?0.6:1 }}>
-                              <UserPlus size={11} /> Assign to a different child
+                              <UserPlus size={11} /> לשלוח לילד/ה אחר/ת
                             </button>
                           )
                         )}
@@ -383,7 +383,7 @@ function HubGrid({ items }: { items: HubItem[] }) {
             <div style={{ width:'40px', height:'40px', borderRadius:'12px', background:bg, display:'flex', alignItems:'center', justifyContent:'center' }}><Icon size={20} color={fg}/></div>
             <div style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'15px', color:PARENT_COLORS.text }}>{it.title}</div>
             <div style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, lineHeight:1.5 }}>{it.desc}</div>
-            <div style={{ marginTop:'auto', display:'flex', alignItems:'center', gap:'4px', fontSize:'13px', fontWeight:700, color:PARENT_COLORS.primary }}>Open <ChevronRight size={14}/></div>
+            <div style={{ marginTop:'auto', display:'flex', alignItems:'center', gap:'4px', fontSize:'13px', fontWeight:700, color:PARENT_COLORS.primary }}>לפתיחה <ChevronRight size={14}/></div>
           </a>
         )
       })}
@@ -412,32 +412,32 @@ function CreateHub({ children }: any) {
   const names = (children || []).map((c: any) => c.display_name).filter(Boolean)
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
-      <SectionTitle icon={Sparkles} title="Create" subtitle="Make practice for your child — printable, playable in the app, or both." />
+      <SectionTitle icon={Sparkles} title="יצירה" subtitle="תרגול לילד/ה — להדפסה, לאפליקציה, או לשניהם." />
       <div style={{ background:`linear-gradient(135deg, ${PARENT_COLORS.headerGradTeal}, ${PARENT_COLORS.headerGradLavender})`, borderRadius:'16px', padding:'20px' }}>
-        <label htmlFor="create-prompt" style={{ display:'block', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'8px' }}>What would you like to make?</label>
+        <label htmlFor="create-prompt" style={{ display:'block', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'8px' }}>מה תרצו להכין?</label>
         <textarea id="create-prompt" value={prompt} onChange={e => { setPrompt(e.target.value); setErr(false) }} rows={3}
-          placeholder={`e.g. "English vocabulary practice for ${names[0] || 'my daughter'} from this word list, 15 questions, fill-in and multiple choice"`}
+          placeholder={`לדוגמה: תרגול אוצר מילים באנגלית ל${names[0] || 'בת שלי'} מרשימת המילים, 15 שאלות`}
           style={{ width:'100%', boxSizing:'border-box', borderRadius:'12px', border:`1.5px solid ${err ? PARENT_COLORS.danger : PARENT_COLORS.border}`, padding:'12px 14px', fontSize:'14px', fontFamily:PARENT_FONTS.body, resize:'vertical', background:'#fff' }}/>
-        {err && <div style={{ color:PARENT_COLORS.danger, fontSize:'13px', marginTop:'6px' }}>Describe what you need first.</div>}
+        {err && <div style={{ color:PARENT_COLORS.danger, fontSize:'13px', marginTop:'6px' }}>כתבו קודם מה צריך.</div>}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap', marginTop:'10px' }}>
-          <span style={{ fontSize:'12px', color:PARENT_COLORS.textSecondary }}>Next you choose practice, exam or explanation pages, and can attach photos, PDFs or documents.</span>
+          <span style={{ fontSize:'12px', color:PARENT_COLORS.textSecondary }}>בשלב הבא בוחרים תרגול, מבחן או דפי הסבר, ואפשר לצרף תמונות, PDF או מסמכים.</span>
           <button onClick={go} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'10px 22px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'#fff', fontWeight:800, fontSize:'14px', cursor:'pointer' }}>
-            Continue <ChevronRight size={15}/>
+            המשך <ChevronRight size={15}/>
           </button>
         </div>
       </div>
       <HubGrid items={[
-        { icon:Sparkles, title:'Practice · תרגול', desc:'One or two topics, easy to hard, with hints and step-by-step solutions. Print, app, or both.', href:'/create?kind=practice', tone:'accent' },
-        { icon:Printer,  title:'Exam · מבחן', desc:'Many topics, mixed difficulty, a time limit and an answer key — great before a test.', href:'/create?kind=exam' },
-        { icon:FileText, title:'Explanation pages · דפי הסבר', desc:'A learning page per topic: what it is, worked examples, common mistakes.', href:'/create?kind=explanation', tone:'amber' },
-        { icon:BookOpen, title:'What I made · מה יצרתי', desc:'Everything you created, liked first. Reprint, resend, or make more like it.', href:'/create?view=history' },
+        { icon:Sparkles, title:'תרגול', desc:'נושא אחד או שניים, מהקל לקשה, עם רמזים ופתרונות. להדפסה, לאפליקציה, או לשניהם.', href:'/create?kind=practice', tone:'accent' },
+        { icon:Printer,  title:'מבחן', desc:'כמה נושאים, רמות מעורבות, זמן מוגבל ודף תשובות — לפני מבחן.', href:'/create?kind=exam' },
+        { icon:FileText, title:'דפי הסבר', desc:'דף לימוד לכל נושא: הסבר, דוגמאות פתורות, טעויות נפוצות.', href:'/create?kind=explanation', tone:'amber' },
+        { icon:BookOpen, title:'מה כבר יצרתי', desc:'כל מה שיצרתם, האהובים קודם. להדפיס שוב, לשלוח, או עוד כזה.', href:'/create?view=history' },
       ]}/>
-      <div style={{ fontSize:'12px', fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:PARENT_COLORS.textMuted }}>More tools</div>
+      <div style={{ fontSize:'12px', fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:PARENT_COLORS.textMuted }}>עוד כלים</div>
       <HubGrid items={[
-        { icon:Printer,  title:'Quick worksheet from the bank', desc:'Print ready-made K–6 practice by topic and difficulty, with an answer key.', href:'/worksheets' },
-        { icon:Sparkles, title:'AI question generator', desc:'The detailed generator: one topic at a time, every setting by hand.', href:'/questions' },
-        { icon:BookOpen, title:'Reading passage', desc:'A short story at the right reading level, with comprehension questions.', href:'/passages', tone:'amber' },
-        { icon:FileText, title:'Explanation booklet', desc:'Printable topic explanations with worked examples and pictures.', href:'/booklet' },
+        { icon:Printer,  title:'דף עבודה מהמאגר', desc:'תרגול מוכן לגן–ו׳ לפי נושא ורמה, עם דף תשובות.', href:'/worksheets' },
+        { icon:Sparkles, title:'מחולל שאלות מפורט', desc:'נושא אחד בכל פעם, כל ההגדרות ידנית.', href:'/questions' },
+        { icon:BookOpen, title:'קטע קריאה', desc:'סיפור קצר ברמת הקריאה המתאימה, עם שאלות הבנה.', href:'/passages', tone:'amber' },
+        { icon:FileText, title:'חוברת הסברים', desc:'הסברים להדפסה עם דוגמאות פתורות ותמונות.', href:'/booklet' },
       ]}/>
     </div>
   )
@@ -446,14 +446,14 @@ function CreateHub({ children }: any) {
 function LibraryHub() {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
-      <SectionTitle icon={BookOpen} title="Library" subtitle="Everything that's ready to use: the curriculum, saved questions, passages and past worksheets." />
+      <SectionTitle icon={BookOpen} title="ספרייה" subtitle="כל מה שמוכן לשימוש: תוכנית הלימודים, שאלות שמורות, קטעי קריאה ודפים קודמים." />
       <HubGrid items={[
-        { icon:Map,      title:'Curriculum', desc:'All topics by grade and subject, K–6 in Math, English and Hebrew.', href:'/curriculum' },
-        { icon:Sparkles, title:'Question library', desc:'Approved questions by topic; the review queue for new ones.', href:'/questions?tab=library', tone:'accent' },
-        { icon:BookOpen, title:'Reading passages', desc:'Stories with comprehension questions, by level.', href:'/passages', tone:'amber' },
-        { icon:Printer,  title:'Past worksheets', desc:'Worksheets and exams you already generated; print again anytime.', href:'/worksheets?view=history' },
-        { icon:Notebook, title:'Notebook', desc:'Your saved sections: files, linked questions and generation recipes.', href:'/notebook' },
-        { icon:Map, title:'Free library · ספרייה חינמית', desc:'Free worksheets and explanation pages other parents shared — and where yours appear once approved.', href:'/free', tone:'accent' },
+        { icon:Map,      title:'תוכנית הלימודים', desc:'כל הנושאים לפי כיתה ומקצוע, גן–ו׳ בחשבון, אנגלית ועברית.', href:'/curriculum' },
+        { icon:Sparkles, title:'מאגר השאלות', desc:'שאלות מאושרות לפי נושא, ותור הבדיקה לשאלות חדשות.', href:'/questions?tab=library', tone:'accent' },
+        { icon:BookOpen, title:'קטעי קריאה', desc:'סיפורים עם שאלות הבנה, לפי רמה.', href:'/passages', tone:'amber' },
+        { icon:Printer,  title:'דפים קודמים', desc:'דפי עבודה ומבחנים שכבר הדפסתם — אפשר להדפיס שוב.', href:'/worksheets?view=history' },
+        { icon:Notebook, title:'מחברת', desc:'הפרקים השמורים: קבצים, שאלות מקושרות ומתכונים.', href:'/notebook' },
+        { icon:Map, title:'ספרייה חינמית', desc:'דפים חינם שהורים שיתפו — וכאן יופיעו גם שלכם אחרי אישור.', href:'/free', tone:'accent' },
       ]}/>
     </div>
   )
@@ -543,7 +543,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
         <div style={{ position:'fixed', bottom:'24px', right:'24px', zIndex:9999, background:PARENT_COLORS.text, color:'white', borderRadius:'12px', padding:'12px 20px', fontSize:'13px', fontWeight:700, boxShadow:'0 8px 32px rgba(0,0,0,0.2)', display:'flex', alignItems:'center', gap:'10px' }}>
           <span style={{ fontSize:'20px' }}>{toast.icon}</span>{toast.text}
           {toast.link && (
-            <a href={toast.link} style={{ color:'white', textDecoration:'underline', fontWeight:800 }}>Log in</a>
+            <a href={toast.link} style={{ color:'white', textDecoration:'underline', fontWeight:800 }}>להתחברות</a>
           )}
         </div>
       )}
@@ -580,7 +580,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
       {/* Error banner */}
       {errorBanner === 'lesson_access_denied' && (
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', background:'#FFF5F5', borderBottom:'1px solid #FEE2E2', color:'#DC2626', fontSize:'13px', fontWeight:700, padding:'10px 16px' }}>
-          <span>⚠️ That lesson isn't available. Please pick another one.</span>
+          <span>⚠️ השיעור הזה לא זמין. בחרו שיעור אחר.</span>
           <button onClick={() => setErrorBanner(undefined)} style={{ border:'none', background:'transparent', color:'#DC2626', fontWeight:800, cursor:'pointer', fontSize:'14px', lineHeight:1 }}>✕</button>
         </div>
       )}
@@ -599,7 +599,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                 </div>
                 <div>
                   <div style={{ fontWeight:700, fontSize:'13px', color:PARENT_COLORS.text }}>{child.display_name}</div>
-                  <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted }}>Grade {child.grade === 0 ? 'K' : child.grade} · {child.card_tokens || 0} tokens</div>
+                  <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted }}>{child.grade === 0 ? 'גן' : `כיתה ${child.grade}`} · {child.card_tokens || 0} אסימונים</div>
                 </div>
                 {child.streak_current > 0 && (
                   <span style={{ display:'flex', alignItems:'center', gap:'2px', fontSize:'12px', fontWeight:800, color:PARENT_COLORS.coralText, marginLeft:'auto' }}>
@@ -629,25 +629,25 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'10px' }}>
                 <div>
                   <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
-                    <h1 style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'22px', color:PARENT_COLORS.text, margin:0 }}>Good morning, {parentName.split(' ')[0]} 👋</h1>
+                    <h1 style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'22px', color:PARENT_COLORS.text, margin:0 }}>התקדמות</h1>
                     <button onClick={() => window.location.reload()}
                       style={{ display:'flex', alignItems:'center', gap:'6px', padding:'6px 14px', borderRadius:'50px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:700, fontSize:'12px', cursor:'pointer', color:PARENT_COLORS.textSecondary }}>
-                      <RefreshCw size={13} /> Refresh
+                      <RefreshCw size={13} /> רענון
                     </button>
                   </div>
-                  <p style={{ color:PARENT_COLORS.textSecondary, margin:'3px 0 0', fontSize:'13px' }}>Here's how your family is doing today</p>
+                  <p style={{ color:PARENT_COLORS.textSecondary, margin:'3px 0 0', fontSize:'13px' }}>התקדמות מפורטת של כל ילד</p>
                 </div>
                 <button onClick={() => window.location.href='/worksheets'} style={{ display:'flex', alignItems:'center', gap:'7px', padding:'8px 16px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
-                  <Printer size={14} /> Worksheet Builder
+                  <Printer size={14} /> דף עבודה מהמאגר
                 </button>
               </div>
 
               <div className="stat-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'12px' }}>
                 {[
-                  { label:'Total XP',       value:(children||[]).reduce((s: number,c: any) => s+(c.xp_total||0),0).toLocaleString(), color:PARENT_COLORS.primary, bg:PARENT_COLORS.primaryLight, icon:Zap },
-                  { label:'Active Streaks', value:`${(children||[]).filter((c: any) => c.streak_current>0).length}`, color:PARENT_COLORS.coralText, bg:PARENT_COLORS.coralLight, icon:Flame },
-                  { label:'Lessons Done',   value:(progress||[]).filter((p: any) => p.status==='completed').length, color:PARENT_COLORS.accent, bg:PARENT_COLORS.accentLight, icon:CheckCircle2 },
-                  { label:'Downloads',      value:`${family?.trial_dl_used||0} / ∞`, color:PARENT_COLORS.amberText, bg:PARENT_COLORS.amberLight, icon:Download },
+                  { label:'נקודות XP',       value:(children||[]).reduce((s: number,c: any) => s+(c.xp_total||0),0).toLocaleString(), color:PARENT_COLORS.primary, bg:PARENT_COLORS.primaryLight, icon:Zap },
+                  { label:'רצפים פעילים', value:`${(children||[]).filter((c: any) => c.streak_current>0).length}`, color:PARENT_COLORS.coralText, bg:PARENT_COLORS.coralLight, icon:Flame },
+                  { label:'שיעורים שהושלמו',   value:(progress||[]).filter((p: any) => p.status==='completed').length, color:PARENT_COLORS.accent, bg:PARENT_COLORS.accentLight, icon:CheckCircle2 },
+                  { label:'הורדות',      value:`${family?.trial_dl_used||0} / ∞`, color:PARENT_COLORS.amberText, bg:PARENT_COLORS.amberLight, icon:Download },
                 ].map(s => (
                   <div key={s.label} style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'16px', display:'flex', flexDirection:'column', gap:'10px' }}>
                     <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:s.bg, display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -676,7 +676,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                         </div>
                         <div>
                           <div style={{ fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'15px', color:PARENT_COLORS.text }}>{child.display_name}</div>
-                          <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted }}>Grade {child.grade === 0 ? 'K' : child.grade} · {(child.xp_total||0)} XP</div>
+                          <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted }}>{child.grade === 0 ? 'גן' : `כיתה ${child.grade}`} · {(child.xp_total||0)} XP</div>
                         </div>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:'7px', marginBottom:'12px' }}>
@@ -696,11 +696,11 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                       </div>
                       <div style={{ background:highPri?PARENT_COLORS.coralLight:PARENT_COLORS.primaryLight, borderRadius:'8px', padding:'8px 10px', fontSize:'11px', color:highPri?PARENT_COLORS.coralText:PARENT_COLORS.primary, fontWeight:700, display:'flex', gap:'6px', marginBottom:'10px' }}>
                         <span>{highPri?'⚠️':'🌟'}</span>
-                        <span>{highPri?<><strong>Focus: </strong>{highPri.topic?.title_en}</>:'Doing great!'}</span>
+                        <span>{highPri?<><strong>להתמקד: </strong>{highPri.topic?.title_en}</>:'מצוין!'}</span>
                       </div>
                       <button onClick={e => { e.stopPropagation(); window.location.href=`/lesson?childId=${child.id}` }}
                         style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', padding:'9px', borderRadius:'50px', border:`1.5px solid ${PARENT_COLORS.primary}`, background:'transparent', color:PARENT_COLORS.primary, fontWeight:800, fontSize:'12px', cursor:'pointer' }}>
-                        Continue Lesson <ChevronRight size={13} />
+                        להמשך השיעור <ChevronRight size={13} className="rotate-180" />
                       </button>
                     </div>
                   )
@@ -713,7 +713,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
           {screen === 'progress' && (
             <div id="progress-section" style={{ display:'flex', flexDirection:'column', gap:'18px', marginTop:'28px' }}>
               <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
-                <BarChart2 size={18} color={PARENT_COLORS.primary} /> Progress Reports
+                <BarChart2 size={18} color={PARENT_COLORS.primary} /> דוחות התקדמות
               </h1>
               {(children||[]).map((child: any, i: number) => {
                 const avatarColor = CHILD_AVATAR_COLORS[i % CHILD_AVATAR_COLORS.length]
@@ -732,13 +732,13 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                         </div>
                       </div>
                       <button onClick={() => window.location.href=`/lesson?childId=${child.id}`} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'9px 18px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer' }}>
-                        <Play size={13} /> Start Lesson
+                        <Play size={13} /> לשיעור
                       </button>
                     </div>
                     {recs.length > 0 && (
                       <div style={{ background:PARENT_COLORS.coralLight, border:`1px solid ${PARENT_COLORS.coral}30`, borderRadius:'12px', padding:'14px', marginBottom:'14px' }}>
                         <div style={{ display:'flex', alignItems:'center', gap:'6px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'14px', color:PARENT_COLORS.coralText, marginBottom:'10px' }}>
-                          <Target size={14} /> Focus Recommendations
+                          <Target size={14} /> כדאי להתמקד
                         </div>
                         {recs.slice(0,2).map((rec: any) => (
                           <div key={rec.id} style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.coral}20`, borderRadius:'10px', padding:'12px', marginBottom:'8px', display:'flex', gap:'12px' }}>
@@ -756,7 +756,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                         <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px', minWidth:'400px' }}>
                           <thead>
                             <tr style={{ borderBottom:`2px solid ${PARENT_COLORS.border}` }}>
-                              {['Topic','Status','Progress'].map(h => (
+                              {['נושא','מצב','התקדמות'].map(h => (
                                 <th key={h} style={{ textAlign:'left', padding:'8px 10px', fontSize:'11px', fontWeight:800, color:PARENT_COLORS.textMuted, textTransform:'uppercase' }}>{h}</th>
                               ))}
                             </tr>
@@ -766,7 +766,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                               const pct = Math.round((p.steps_completed/(p.steps_total||5))*100)
                               const statusColors: any = { completed:PARENT_COLORS.primary, in_progress:PARENT_COLORS.accent, needs_review:PARENT_COLORS.coralText, not_started:PARENT_COLORS.textMuted }
                               const statusBg: any     = { completed:PARENT_COLORS.primaryLight, in_progress:PARENT_COLORS.accentLight, needs_review:PARENT_COLORS.coralLight, not_started:PARENT_COLORS.borderLight }
-                              const statusLabels: any = { completed:'Done', in_progress:'In Progress', needs_review:'Needs Work', not_started:'Not Started' }
+                              const statusLabels: any = { completed:'Done', in_progress:'בתהליך', needs_review:'צריך חיזוק', not_started:'לא התחיל' }
                               return (
                                 <tr key={p.id} style={{ borderBottom:`1px solid ${PARENT_COLORS.border}` }}>
                                   <td style={{ padding:'10px', fontWeight:700, color:PARENT_COLORS.text }}>{p.topic?.title_en}</td>
@@ -821,23 +821,23 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
           {screen === 'family' && (
             <div style={{ display:'flex', flexDirection:'column', gap:'18px', marginTop:'28px' }}>
               <h1 style={{ display:'flex', alignItems:'center', gap:'8px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'20px', color:PARENT_COLORS.text, margin:0 }}>
-                <Settings size={18} color={PARENT_COLORS.primary} /> Account
+                <Settings size={18} color={PARENT_COLORS.primary} /> החשבון
               </h1>
 
               {/* Manage Children */}
               <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'20px' }}>
                 <h3 style={{ display:'flex', alignItems:'center', gap:'7px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'4px' }}>
-                  <GraduationCap size={16} color={PARENT_COLORS.primary} /> Manage Children
+                  <GraduationCap size={16} color={PARENT_COLORS.primary} /> הילדים
                 </h3>
-                <p style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px' }}>Manage grade, font size, break settings and PIN for each child.</p>
+                <p style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px' }}>כיתה, גודל טקסט, הפסקות וקוד כניסה לכל ילד/ה.</p>
 
                 {/* Column headers */}
                 <div className="manage-headers" style={{ display:'grid', gridTemplateColumns:'1fr 110px 110px 110px 120px 80px', gap:'8px', padding:'0 14px', marginBottom:'6px' }}>
                   {[
-                    { label:'Child', tip:'' },
-                    { label:'Grade', tip:'School year' },
-                    { label:'Font Size', tip:'Text display size' },
-                    { label:'Break', tip:'When to show activity breaks' },
+                    { label:'ילד/ה', tip:'' },
+                    { label:'כיתה', tip:'שנת לימודים' },
+                    { label:'גודל טקסט', tip:'גודל הכתב במסך' },
+                    { label:'הפסקות', tip:'מתי להציע הפסקה' },
                     { label:'PIN', tip:'4-digit login code' },
                   ].map(h => (
                     <div key={h.label} style={{ fontSize:'10px', fontWeight:800, color:PARENT_COLORS.textMuted, letterSpacing:'0.06em', textTransform:'uppercase' }} title={h.tip}>
@@ -859,7 +859,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                           </div>
                           <div>
                             <div style={{ fontWeight:800, fontSize:'14px', color:PARENT_COLORS.text }}>{child.display_name}</div>
-                            <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted }}>Grade {child.grade === 0 ? 'K' : child.grade} · {child.card_tokens || 0} tokens</div>
+                            <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted }}>{child.grade === 0 ? 'גן' : `כיתה ${child.grade}`} · {child.card_tokens || 0} אסימונים</div>
                           </div>
                         </div>
 
@@ -870,26 +870,26 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                             const res = await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, grade:newGrade }) })
                             if (!res.ok) {
                               const data = await res.json().catch(() => ({}))
-                              showApiErrorToast(showToast, res.status, data.error, 'Could not update grade')
+                              showApiErrorToast(showToast, res.status, data.error, 'לא הצלחנו לעדכן כיתה')
                               return
                             }
                             showToast('🎓', `${child.display_name} moved to Grade ${newGrade === 0 ? 'K' : newGrade}!`)
                             setTimeout(() => window.location.reload(), 1000)
                           }}
                           style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:700, fontSize:'12px', color:PARENT_COLORS.text, cursor:'pointer', width:'100%' }}>
-                          <option value={0}>Kindergarten</option>
-                          <option value={1}>Grade 1</option>
-                          <option value={2}>Grade 2</option>
-                          <option value={3}>Grade 3</option>
-                          <option value={4}>Grade 4</option>
-                          <option value={5}>Grade 5</option>
-                          <option value={6}>Grade 6</option>
-                          <option value={7}>Grade 7</option>
-                          <option value={8}>Grade 8</option>
-                          <option value={9}>Grade 9</option>
-                          <option value={10}>Grade 10</option>
-                          <option value={11}>Grade 11</option>
-                          <option value={12}>Grade 12</option>
+                          <option value={0}>גן</option>
+                          <option value={1}>כיתה א׳</option>
+                          <option value={2}>כיתה ב׳</option>
+                          <option value={3}>כיתה ג׳</option>
+                          <option value={4}>כיתה ד׳</option>
+                          <option value={5}>כיתה ה׳</option>
+                          <option value={6}>כיתה ו׳</option>
+                          <option value={7}>כיתה ז׳</option>
+                          <option value={8}>כיתה ח׳</option>
+                          <option value={9}>כיתה ט׳</option>
+                          <option value={10}>כיתה י׳</option>
+                          <option value={11}>כיתה י״א</option>
+                          <option value={12}>כיתה י״ב</option>
                         </select>
 
                         {/* Theme */}
@@ -898,15 +898,15 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                             const res = await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, theme:e.target.value }) })
                             if (!res.ok) {
                               const data = await res.json().catch(() => ({}))
-                              showApiErrorToast(showToast, res.status, data.error, 'Could not update theme')
+                              showApiErrorToast(showToast, res.status, data.error, 'לא הצלחנו לעדכן עיצוב')
                               return
                             }
                             showToast('🎨', `${child.display_name}'s theme updated!`)
                           }}
                           style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:700, fontSize:'12px', color:PARENT_COLORS.text, cursor:'pointer', width:'100%' }}>
-                          <option value="plain">📚 Classic</option>
-                          <option value="minecraft">⛏️ Minecraft</option>
-                          <option value="princesses">👑 Princesses</option>
+                          <option value="plain">רגיל</option>
+                          <option value="minecraft">מיינקראפט</option>
+                          <option value="princesses">נסיכות</option>
                         </select>
 
                         {/* Font size */}
@@ -915,15 +915,15 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                             const res = await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, font_size:e.target.value }) })
                             if (!res.ok) {
                               const data = await res.json().catch(() => ({}))
-                              showApiErrorToast(showToast, res.status, data.error, 'Could not update font size')
+                              showApiErrorToast(showToast, res.status, data.error, 'לא הצלחנו לעדכן גודל טקסט')
                               return
                             }
                             showToast('🔤', `${child.display_name}'s font size updated!`)
                           }}
                           style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:700, fontSize:'12px', color:PARENT_COLORS.text, cursor:'pointer', width:'100%' }}>
-                          <option value="small">A− Small</option>
-                          <option value="medium">A Medium</option>
-                          <option value="large">A+ Large</option>
+                          <option value="small">קטן</option>
+                          <option value="medium">בינוני</option>
+                          <option value="large">גדול</option>
                           <option value="xl">A++ XL</option>
                         </select>
 
@@ -933,27 +933,27 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                             const res = await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, relief_trigger:e.target.value }) })
                             if (!res.ok) {
                               const data = await res.json().catch(() => ({}))
-                              showApiErrorToast(showToast, res.status, data.error, 'Could not update break setting')
+                              showApiErrorToast(showToast, res.status, data.error, 'לא הצלחנו לעדכן הפסקות')
                               return
                             }
                             showToast('🎉', `${child.display_name}'s break updated!`)
                           }}
                           style={{ padding:'6px 8px', borderRadius:'8px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, fontWeight:700, fontSize:'12px', color:PARENT_COLORS.text, cursor:'pointer', width:'100%' }}>
-                          <option value="off">Off</option>
-                          <option value="lesson">Per Lesson</option>
-                          <option value="topic">Per Topic</option>
-                          <option value="both">Both</option>
+                          <option value="off">בלי</option>
+                          <option value="lesson">בכל שיעור</option>
+                          <option value="topic">בכל נושא</option>
+                          <option value="both">שניהם</option>
                         </select>
 
                         {/* PIN */}
-                        <input type="text" maxLength={4} defaultValue={child.pin_code || ''} placeholder="PIN"
+                        <input type="text" maxLength={4} defaultValue={child.pin_code || ''} placeholder="קוד"
                           onBlur={async (e) => {
                             const newPin = e.target.value.trim()
                             if (newPin.length === 4 && /^\d{4}$/.test(newPin)) {
                               const res = await fetch('/api/children', { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ childId:child.id, pin_code:newPin }) })
                               if (!res.ok) {
                                 const data = await res.json().catch(() => ({}))
-                                showApiErrorToast(showToast, res.status, data.error, 'Could not update PIN')
+                                showApiErrorToast(showToast, res.status, data.error, 'לא הצלחנו לעדכן קוד')
                                 return
                               }
                               showToast('🔢', `${child.display_name}'s PIN updated!`)
@@ -970,9 +970,9 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
               {/* Child links */}
               <div style={{ background:PARENT_COLORS.card, border:`1px solid ${PARENT_COLORS.border}`, borderRadius:'12px', padding:'20px' }}>
                 <h3 style={{ display:'flex', alignItems:'center', gap:'7px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'4px' }}>
-                  <Link2 size={16} color={PARENT_COLORS.primary} /> Child Links
+                  <Link2 size={16} color={PARENT_COLORS.primary} /> קישורים לילדים
                 </h3>
-                <p style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px' }}>Share these links — each opens a child's personal learning portal.</p>
+                <p style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px' }}>כל קישור פותח לילד/ה את המרחב האישי באפליקציה.</p>
                 <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
                   {(children || []).map((child: any, i: number) => {
                     const avatarColor = CHILD_AVATAR_COLORS[i % CHILD_AVATAR_COLORS.length]
@@ -983,17 +983,17 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                           {child.display_name?.[0]?.toUpperCase()}
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontWeight:800, fontSize:'13px', color:PARENT_COLORS.text, marginBottom:'2px' }}>{child.display_name} — Grade {child.grade === 0 ? 'K' : child.grade}</div>
+                          <div style={{ fontWeight:800, fontSize:'13px', color:PARENT_COLORS.text, marginBottom:'2px' }}><bdi>{child.display_name}</bdi> — {child.grade === 0 ? 'גן' : `כיתה ${child.grade}`}</div>
                           <div style={{ fontSize:'11px', color:PARENT_COLORS.textMuted, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{link}</div>
                         </div>
                         <div style={{ display:'flex', gap:'6px', flexShrink:0 }}>
-                          <button onClick={() => { navigator.clipboard.writeText(link); showToast('🔗', `${child.display_name}'s link copied!`) }}
+                          <button onClick={() => { navigator.clipboard.writeText(link); showToast('🔗', `הקישור של ${child.display_name} הועתק`) }}
                             style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 12px', borderRadius:'50px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'11px', cursor:'pointer' }}>
-                            <Copy size={11} /> Copy
+                            <Copy size={11} /> העתקה
                           </button>
                           <button onClick={() => window.open(link, '_blank')}
                             style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 12px', borderRadius:'50px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, color:PARENT_COLORS.textSecondary, fontWeight:800, fontSize:'11px', cursor:'pointer' }}>
-                            <ExternalLink size={11} /> Open
+                            <ExternalLink size={11} /> פתיחה
                           </button>
                         </div>
                       </div>
@@ -1007,14 +1007,14 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'12px' }}>
                   <div>
                     <div style={{ display:'flex', alignItems:'center', gap:'7px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', marginBottom:'4px' }}>
-                      <Rocket size={16} /> EduPlay Family Plan
+                      <Rocket size={16} /> מנוי משפחתי EduPlay
                     </div>
-                    <div style={{ fontSize:'13px', opacity:.85 }}>Trial — {family?.trial_days_left ?? daysLeft} days remaining</div>
+                    <div style={{ fontSize:'13px', opacity:.85 }}>ניסיון — עוד {family?.trial_days_left ?? daysLeft} ימים</div>
                   </div>
-                  <div style={{ background:'rgba(255,255,255,0.2)', borderRadius:'8px', padding:'6px 12px', fontSize:'12px', fontWeight:800 }}>TRIAL</div>
+                  <div style={{ background:'rgba(255,255,255,0.2)', borderRadius:'8px', padding:'6px 12px', fontSize:'12px', fontWeight:800 }}>ניסיון</div>
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:'6px', fontSize:'12px', opacity:.9 }}>
-                  <Check size={13} /> Unlimited lessons &nbsp;·&nbsp; <Check size={13} /> All subjects &nbsp;·&nbsp; <Check size={13} /> 3 children &nbsp;·&nbsp; <Check size={13} /> Worksheets
+                  <Check size={13} /> שיעורים ללא הגבלה &nbsp;·&nbsp; <Check size={13} /> כל המקצועות &nbsp;·&nbsp; <Check size={13} /> 3 ילדים &nbsp;·&nbsp; <Check size={13} /> דפי עבודה
                 </div>
               </div>
             </div>

@@ -16,7 +16,7 @@ export function renderExplanationHTML(m: any, b: Brand): string {
   let n = 0
   const vis = (d: any) => {
     if (!d?.type) return ''
-    try { return `<div class="vis">${renderMathVisualSVG(d, { width: 200, height: 200, color: '#0F766E', instanceId: `e${n++}` })}</div>` } catch { return '' }
+    try { return `<div class="vis">${renderMathVisualSVG(d, { width: 200, height: 200, color: '#2F5BE3', instanceId: `e${n++}` })}</div>` } catch { return '' }
   }
 
   const pages = (m.plan?.topics || []).map((t: any) => ({ t, p: m.explanation?.[t.key] })).filter((x: any) => x.p).map(({ t, p }: any, i: number) => `
@@ -44,11 +44,11 @@ export function renderExplanationHTML(m: any, b: Brand): string {
 ${BRAND_CSS}
 .no-print{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
 .no-print button{padding:9px 20px;border-radius:999px;border:none;font-weight:800;cursor:pointer;font-family:inherit}
-.p{background:#0F766E;color:#fff}.c{background:#F1F5F9;color:#334155}
-h1{font-size:26px;color:#0F3D3A;margin:6px 0 4px} h2{font-size:15px;margin:0 0 6px;color:#0F766E}
+.p{background:#2F5BE3;color:#fff}.c{background:#F1F5F9;color:#334155}
+h1{font-size:26px;color:#16213E;margin:6px 0 4px} h2{font-size:15px;margin:0 0 6px;color:#2F5BE3}
 .intro{font-size:16px;margin:0 0 10px}
 .box{border-radius:12px;padding:12px 16px;margin:10px 0;page-break-inside:avoid}
-.key{background:#E4F3F1}.ex{border:1.5px solid #D6E7E4}.warn{background:#FFF7ED}.warn h2{color:#B45309}.chk{border:1.5px dashed #0F766E}
+.key{background:#EAF0FF}.ex{border:1.5px solid #D6E7E4}.warn{background:#FFF7ED}.warn h2{color:#B45309}.chk{border:1.5px dashed #2F5BE3}
 .q{font-weight:800;margin:0 0 4px}.ans{font-weight:800;color:#15803D;margin:4px 0 0}
 .vis{display:flex;justify-content:center;margin:6px 0}.vis svg{max-width:200px;height:auto}
 .line{border-bottom:1.5px solid #A7B8B5;height:26px;margin-bottom:6px}

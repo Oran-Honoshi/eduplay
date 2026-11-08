@@ -200,3 +200,5 @@ body {
 .ep-parent h1, .ep-parent h2, .ep-parent h3 { font-family: 'Rubik', 'Assistant', system-ui, sans-serif; }
 .ep-parent input[type="text"], .ep-parent input:not([type]), .ep-parent textarea { unicode-bidi: plaintext; text-align: start; }
 .ep-ltr { direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
+@keyframes epSheet { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media (max-width: 767px) { body.ep-tabbar { padding-bottom: 72px; } }
