@@ -476,7 +476,7 @@ export default function CardsPage() {
               <div style={{fontFamily:F,fontSize:22,fontWeight:800}}>{he ? (page.phase.name_he||page.phase.name_en) : page.phase.name_en}</div>
               <div style={{fontFamily:F,fontWeight:800,color:T.text2}} dir="ltr">{page.owned}/{page.cards.length}</div>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(3, minmax(0, 1fr))',gap:14,filter:pageOpen?'none':'grayscale(1)',opacity:pageOpen?1:.45}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3, minmax(0, 1fr))',gap:14,maxWidth:480,margin:'0 auto',filter:pageOpen?'none':'grayscale(1)',opacity:pageOpen?1:.45}}>
               {page.cards.map((card,i)=>{
                 const owned = ownedIds.has(card.id)
                 const name = he ? (card.name_he||card.name_en) : card.name_en
