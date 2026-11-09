@@ -8,11 +8,11 @@ const F = '"Rubik","Assistant",sans-serif'
  * is "shaded/parts" (6/8 is accepted for 3/4). After checking the shape shows
  * green (right) or, once revealed, the right amount in green.
  */
-export default function FractionShade({ d, pie, value, onChange, onSubmit, disabled, T, isHE, result, showCount }: {
+export default function FractionShade({ d, pie, value, onToggle, onSubmit, disabled, T, isHE, result, showCount }: {
   d: number
   pie: boolean
   value: boolean[]
-  onChange: (v: boolean[]) => void
+  onToggle: (i: number) => void
   onSubmit: () => void
   disabled?: boolean
   T: any
@@ -28,7 +28,7 @@ export default function FractionShade({ d, pie, value, onChange, onSubmit, disab
     if (!value[i]) return '#F3F4F6'
     return result === 'right' ? '#12937A' : result === 'wrong' ? '#E85D3F' : accent
   }
-  const toggle = (i: number) => { if (disabled) return; const v = [...value]; v[i] = !v[i]; onChange(v) }
+  const toggle = (i: number) => { if (!disabled) onToggle(i) }
 
   let shape: React.ReactNode
   if (pie) {

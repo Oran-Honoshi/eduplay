@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import AnswerPad, { isNumericAnswer } from '@/components/kid/AnswerPad'
 import KidOpenAnswer from '@/components/kid/KidOpenAnswer'
+import PlotGate from '@/components/kid/PlotGate'
 import { hidesPicture } from '@/lib/interactive'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
@@ -1037,6 +1038,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
   </div>
 )}
 
+                  <PlotGate q={currentQ} T={T} isHE={isHE} fresh={!answered}>
                   {/* Word problems have no options: a big answer box + Check */}
                   {(!Array.isArray(currentQ.options) || currentQ.options.length === 0) && (
                     <div style={{ marginBottom:'12px' }} dir={isHE ? 'rtl' : 'ltr'}>
@@ -1069,6 +1071,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                       })}
                     </div>
                   )}
+                  </PlotGate>
 
                   {hintVisible && (currentQ.hint_en || currentQ.hint_he || isHE) && (
                     <div style={{ background:'rgba(255,215,0,0.07)', border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'10px 12px', marginBottom:'10px', direction:isHE?'rtl':'ltr' }}>
