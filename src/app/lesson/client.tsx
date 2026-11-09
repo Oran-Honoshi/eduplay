@@ -1042,7 +1042,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                       {isGridQuestion(currentQ) ? (
                         <GridAnswer data={currentQ.visual_data} value={gridPick} onChange={setGridPick} disabled={answered}
                           onSubmit={() => { if (!gridPick) return; const v = `(${gridPick[0]},${gridPick[1]})`; checkAnswer({ label: v, isCorrect: answersMatch(v, String(currentQ.correct_answer ?? '')) }) }}
-                          T={T} isHE={isHE} answer={parsePoint(currentQ.correct_answer)}
+                          T={T} isHE={isHE} answer={parsePoint(currentQ.correct_answer)} given={currentQ.prompt_he || currentQ.prompt_en}
                           mine={answered && gridPick ? [{ p: gridPick, ok: !!feedback?.correct }] : []}
                           correct={answered ? parsePoint(currentQ.correct_answer) : null} />
                       ) : !answered && (

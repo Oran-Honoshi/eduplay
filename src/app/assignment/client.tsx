@@ -340,7 +340,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
             {grid ? (
               <GridAnswer data={currentQ!.visual_data} value={gridPick} onChange={setGridPick}
                 onSubmit={() => { if (gridPick) { submitAnswer(`(${gridPick[0]},${gridPick[1]})`); setGridPick(null) } }}
-                disabled={!canAnswer} T={T} isHE={isHE} answer={answerPoint}
+                disabled={!canAnswer} T={T} isHE={isHE} answer={answerPoint} given={currentQ?.prompt_he || currentQ?.prompt_en}
                 mine={wrongLabels.map(w => parsePoint(w)).filter(Boolean).map(p => ({ p: p as [number, number], ok: false }))}
                 correct={itemResolved ? answerPoint : null} />
             ) : canAnswer && (
