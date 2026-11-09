@@ -3,10 +3,12 @@ import { useState, useEffect } from 'react'
 import { X, Lightbulb, ChevronRight } from 'lucide-react'
 import AnswerPad, { isNumericAnswer } from '@/components/kid/AnswerPad'
 import KidOpenAnswer from '@/components/kid/KidOpenAnswer'
+import PlotGate from '@/components/kid/PlotGate'
 import { hidesPicture } from '@/lib/interactive'
 import { ListOrdered } from 'lucide-react'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
+import InlineMath from '@/components/InlineMath'
 import HebrewMathText from '@/components/HebrewMathText'
 import { AnimatedBtn, Sparkles, THEME_CONFIG } from '@/components/theme'
 import { getFontSize } from '@/lib/fontSize'
@@ -273,7 +275,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
             {helpOpen.hint && (
               <div style={{ fontSize:18, lineHeight:1.55, background:T.panel, borderRadius:14, padding:'10px 12px' }}>
                 <b>{L('רמז: ', 'Hint: ')}</b>
-                <FractionText text={isHE ? (currentQ?.hint_he || 'קראו את השאלה שוב לאט, ובדקו כל תשובה אחת-אחת.') : (currentQ?.hint_en || 'Read the question again slowly.')} />
+                <InlineMath text={isHE ? (currentQ?.hint_he || 'קראו את השאלה שוב לאט, ובדקו כל תשובה אחת-אחת.') : (currentQ?.hint_en || 'Read the question again slowly.')} />
               </div>
             )}
             {helpOpen.steps > 0 && (
@@ -281,7 +283,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
                 {stepsBeforeAnswer.slice(0, helpOpen.steps).map((st, i) => (
                   <li key={i} style={{ display:'flex', gap:10, alignItems:'flex-start', background:T.panel, borderRadius:14, padding:'10px 12px', fontSize:18, lineHeight:1.55 }}>
                     <span style={{ width:28, height:28, flexShrink:0, borderRadius:'50%', background:T.accent1, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:F, fontWeight:800, fontSize:15 }}>{i + 1}</span>
-                    <span><FractionText text={st} /></span>
+                    <span><InlineMath text={st} /></span>
                   </li>
                 ))}
                 {helpOpen.steps < stepsBeforeAnswer.length ? (
@@ -297,6 +299,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
           </div>
         )}
 
+        <PlotGate q={currentQ} T={T} isHE={isHE} fresh={status === 'not_started'}>
         {/* Answers */}
         {options.length > 0 && (
           <div style={{ display:'grid', gridTemplateColumns: twoCols ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap:10 }}>
@@ -336,6 +339,8 @@ export default function AssignmentClient({ child, assignment, items: initialItem
             onSubmit={label => submitAnswer(label)} />
         )}
 
+        </PlotGate>
+
         {showCorrectFeedback && (
           <div style={{ display:'flex', gap:12, alignItems:'flex-start', background:dark ? '#1F4D2E' : '#E3F4EF', border:'2px solid #12937A', borderRadius:R - 4, padding:14 }}>
             <Pip theme={theme} pose="thumbs" size={60} he={isHE} bounce style={{ flexShrink:0 }} />
@@ -343,7 +348,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
               <div style={{ fontFamily:F, fontSize:21, fontWeight:800, color:dark ? '#9BE3C9' : '#0B6B58' }}>
                 {status === 'correct_first_try' ? L('נכון! בפעם הראשונה', 'Correct — first try!') : L('נכון!', 'Correct!')}
               </div>
-              {explanation && <div style={{ fontSize:17, lineHeight:1.6, marginTop:4 }}><FractionText text={explanation} /></div>}
+              {explanation && <div style={{ fontSize:17, lineHeight:1.6, marginTop:4 }}><InlineMath text={explanation} /></div>}
             </div>
           </div>
         )}
@@ -360,7 +365,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
               </div>
               {explanation && allowSteps && (
                 <ol style={{ margin:'8px 0 0', paddingInlineStart:22, display:'flex', flexDirection:'column', gap:4, fontSize:17, lineHeight:1.6 }}>
-                  {steps.map((st, i) => <li key={i}><FractionText text={st} /></li>)}
+                  {steps.map((st, i) => <li key={i}><InlineMath text={st} /></li>)}
                 </ol>
               )}
               <div style={{ fontSize:16, color:T.text2, marginTop:6 }}>{L('זה בסדר — ככה לומדים.', "That's okay — that's how we learn.")}</div>

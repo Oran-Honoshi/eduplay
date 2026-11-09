@@ -2,10 +2,9 @@
 import React, { useEffect, useState } from 'react'
 import AnswerPad, { isNumericAnswer } from '@/components/kid/AnswerPad'
 import GridAnswer, { parsePoint } from '@/components/kid/GridAnswer'
-import PlotPoints from '@/components/kid/PlotPoints'
 import NumberLineAnswer from '@/components/kid/NumberLineAnswer'
 import FractionShade from '@/components/kid/FractionShade'
-import { interactiveKind, plotTask, shadeTask } from '@/lib/interactive'
+import { interactiveKind, shadeTask } from '@/lib/interactive'
 
 const toNum = (s: string) => Number(String(s).replace(/[−–]/g, '-').replace(/[()+\s]/g, ''))
 
@@ -30,19 +29,13 @@ export default function KidOpenAnswer({ q, T, isHE, canAnswer, submitting, tries
   onSubmit: (label: string) => void
 }) {
   const kind = interactiveKind(q)
-  const plot = plotTask(q)
-  const [plotted, setPlotted] = useState(false)
   const [typed, setTyped] = useState('')
   const [point, setPoint] = useState<[number, number] | null>(null)
   const [num, setNum] = useState<number | null>(null)
   const shade = shadeTask(q)
   const [parts, setParts] = useState<boolean[]>([])
-  useEffect(() => { setPlotted(false); setTyped(''); setPoint(null); setNum(null); setParts(shade ? Array(shade.d).fill(false) : []) }, [q?.id]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // step 1: mark the given points (skipped once the child has already answered)
-  if (plot && !plotted && !resolved && tries.length === 0) {
-    return <PlotPoints data={q.visual_data} points={plot.points} join={plot.join} T={T} isHE={isHE} onDone={() => setPlotted(true)} />
-  }
+  const [changed, setChanged] = useState(false)
+  useEffect(() => { setTyped(''); setPoint(null); setNum(null); setParts(shade ? Array(shade.d).fill(false) : []) }, [q?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const disabled = !canAnswer || !!submitting
   const prompt = q.prompt_he || q.prompt_en
@@ -74,9 +67,9 @@ export default function KidOpenAnswer({ q, T, isHE, canAnswer, submitting, tries
     const need = m ? (Number(m[1]) * shade.d) / Number(m[2]) : null
     const lastWrong = tries.length > 0 && !resolved
     return (
-      <FractionShade d={shade.d} pie={shade.pie} value={parts} onChange={setParts} disabled={disabled || resolved}
-        onSubmit={() => onSubmit(`${parts.filter(Boolean).length}/${shade.d}`)} T={T} isHE={isHE}
-        result={resolved && rightAnswer ? 'right' : lastWrong ? 'wrong' : null}
+      <FractionShade d={shade.d} pie={shade.pie} value={parts} onToggle={i => { setChanged(true); setParts(p => p.map((x, j) => (j === i ? !x : x))) }} disabled={disabled || resolved}
+        onSubmit={() => { setChanged(false); onSubmit(`${parts.filter(Boolean).length}/${shade.d}`) }} T={T} isHE={isHE}
+        result={resolved && rightAnswer ? 'right' : lastWrong && !changed ? 'wrong' : null}
         showCount={resolved && !rightAnswer ? need : null} />
     )
   }

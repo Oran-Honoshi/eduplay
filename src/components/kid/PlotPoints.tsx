@@ -11,17 +11,18 @@ const F = '"Rubik","Assistant",sans-serif'
  * which point it was and reminds "x first, then y"; after two misses the right
  * spot glows. Placed points join into the segment or shape, then onDone().
  */
-export default function PlotPoints({ data, points, join, T, isHE, onDone, size = 300 }: {
+export default function PlotPoints({ data, points, join, T, isHE, onDone, startDone = false, size = 300 }: {
   data: any
   points: [number, number, string][]
   join: 'segment' | 'polygon' | null
   T: any
   isHE: boolean
   onDone: () => void
+  startDone?: boolean   // already marked earlier: show the finished picture
   size?: number
 }) {
   const g = geometry(data, size)
-  const [placed, setPlaced] = useState(0)
+  const [placed, setPlaced] = useState(startDone ? points.length : 0)
   const [miss, setMiss] = useState<{ p: [number, number]; n: number } | null>(null)
   const done = placed >= points.length
   const accent = T.accent1 === '#FFD700' ? '#2F5BE3' : T.accent1
