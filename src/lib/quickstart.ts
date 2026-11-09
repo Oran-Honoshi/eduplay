@@ -13,17 +13,25 @@ export function tokens(q: string): string[] {
     .split(/[^a-z0-9א-ת]+/).filter(w => w.length >= 2 && !STOP.has(w)))]
 }
 
-const stem = (w: string) => w.replace(PREFIX, '').replace(/(ים|ות)$/, '')
+const plural = (w: string) => w.replace(/(ים|ות)$/, '')
+// document words may carry a prefix (בשברים → שבר); the search word is only
+// stripped when what's left is still a real-length word (so מספרים never becomes ספר)
+const P1 = /^(?:ו|ה|ב|ל|מ|ש|כ)(?=[א-ת]{2,})/
+const docStems = (w: string) => { const one = w.replace(P1, ''); return [plural(one), plural(one.replace(P1, ''))] }
+const queryStems = (w: string) => {
+  const a = plural(w), b = plural(w.replace(PREFIX, ''))
+  return b !== a && b.length >= 4 ? [a, b] : [a]
+}
 
 /** how well a text matches the search words (0 = no word found) */
 export function textScore(words: string[], text: string): number {
-  const t = String(text || '').toLowerCase().normalize('NFC').replace(/[֑-ׇ]/g, '')
-  const stems = t.split(/[^a-z0-9א-ת]+/).filter(Boolean).map(stem)
+  const t = String(text || '').toLowerCase().normalize('NFC').replace(/[\u0591-\u05C7]/g, '')
+  const docWords = t.split(/[^a-z0-9א-ת]+/).filter(Boolean)
+  const stems = new Set([...docWords.map(plural), ...docWords.flatMap(docStems)])
   let s = 0
   for (const w of words) {
-    if (t.includes(w)) { s += 2; continue }
-    const ws = stem(w)
-    if (ws.length >= 2 && stems.some(x => x.startsWith(ws) || ws.startsWith(x) && x.length >= 3)) s += 1
+    if (docWords.includes(w)) { s += 2; continue }
+    if (queryStems(w).some(q => q.length >= 3 && stems.has(q))) s += 1.5
   }
   return s
 }

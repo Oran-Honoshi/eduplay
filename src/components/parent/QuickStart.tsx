@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import InlineMath from '@/components/InlineMath'
 import { Search, Loader2, Library, User, Database, Printer, PencilLine } from 'lucide-react'
 
 const SRC: Record<string, { he: string; Icon: any; tint: string }> = {
@@ -75,7 +76,7 @@ export default function QuickStart({ child, onUse }: { child: { id: string; grad
                 <div className="font-bold text-[17px] text-[#16213E]"><bdi>{r.title}</bdi></div>
                 {r.sample?.length > 0 && (
                   <ul className="m-0 ps-4 text-[14px] text-[#4A5672] flex flex-col gap-0.5">
-                    {r.sample.map((s: string, i: number) => <li key={i} className="line-clamp-1" style={{ unicodeBidi: 'plaintext' }}>{s}</li>)}
+                    {r.sample.map((s: string, i: number) => <li key={i} className="line-clamp-1"><InlineMath text={s} /></li>)}
                   </ul>
                 )}
                 <div className="flex gap-2 flex-wrap mt-1">
