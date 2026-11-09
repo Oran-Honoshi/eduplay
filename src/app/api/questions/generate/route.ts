@@ -503,6 +503,10 @@ Hints guide toward the method and never contain the answer.
 For a missing number or sign always use the box ☐ (U+2610).
 Comparisons and equations are read left to right: in "A ☐ B" the expression written first (A) is on the LEFT; in solutions call it "הביטוי השמאלי" and B "הביטוי הימני" (never the other way), and the correct sign must hold for A ☐ B as written.
 Writing math (Israeli school style): signed numbers in brackets like (+5), (−3); an exercise reads left to right, e.g. (+5) − (+9) = −4; mixed numbers as whole, space, fraction — 3 3/4 (never Unicode fraction characters like ¾); fractions as a/b; degrees as 5°C; angles as ∢ABC. Number lines: {"type":"number_line","min":-10,"max":10,"marked":[given numbers only],"jumps":[{"from":-7,"to":0}]} — never mark the answer.
+Questions the child can answer by tapping (they also work on paper) — use them where they fit the topic, about one or two per set:
+- Place or find a number on a number line (directed numbers, number line topics): an OPEN question (no options) whose correct_answer is one integer, with {"type":"number_line","min":…,"max":…} around it (at most 20 apart), e.g. "סמנו על ציר המספרים את המספר (−3)" or "התחילו ב-(−4) וזוזו 6 צעדים ימינה. לאיזה מספר הגעתם?" (marked:[-4] — the start only). Never mark or jump to the answer.
+- Shade a fraction (fraction topics): an OPEN question, correct_answer "a/b", with an UNSHADED shape {"type":"fraction","n":0,"d":parts} or {"type":"fraction_pie","n":0,"d":parts}; parts = the denominator or a multiple of it (e.g. "צבעו 3/4 מהמלבן" with d:4, or d:8 to practise equivalent fractions).
+- Mark points on the grid: "סמנו במערכת הצירים את הנקודות A(…), B(…) …" and then ask about them (a length, a missing vertex, perimeter); give the empty grid as described above.
 In Hebrew abbreviations and acronyms always use the Hebrew mark ״ (gershayim) or ׳ (geresh), never a plain double quote.
 OUTPUT: JSON only, no markdown — an array of exactly ${count} question objects, each shaped:
 {"q_type":"multiple_choice"|"word_problem","difficulty":"easy"|"medium"|"hard","prompt_en":"...","prompt_he":"..."|null,"options":[...]|null,"correct_answer":"...","hint_en":"..."|null,"hint_he":"..."|null,"explanation_en":"..."|null,"explanation_he":"..."|null,"visual_data":{...}|null}
@@ -512,7 +516,7 @@ visual_data (optional): add a picture only when it genuinely helps understanding
 - {"type":"number_line","min":-10,"max":10,"marked":[...]} (integers, at most 24 apart)
 - {"type":"angle","degrees":50,"letters":["A","B","C"],"label":"α"} (letters = ray end, vertex, ray end; label replaces the degrees, use "?" or a Greek letter to hide the size)
 - {"type":"rectangle","w":6,"h":4}, {"type":"triangle","sides":[3,4,5]}, {"type":"circle","r":3}
-- {"type":"fraction","numerator":3,"denominator":4}, {"type":"bar_model","parts":[5,3],"total":"?"}, {"type":"objects","icon":"apple","count":5,"crossed":2}
+- {"type":"fraction","n":3,"d":4} (a bar; "fraction_pie" for a circle; n:0 = nothing shaded), {"type":"bar_model","parts":[5,3],"total":"?"}, {"type":"objects","icon":"apple","count":5,"crossed":2}
 - {"type":"clock","h":3,"m":30}, {"type":"highlight_text","text":"...","highlight":["..."]}
 Use null when no picture helps.${spec ? `
 

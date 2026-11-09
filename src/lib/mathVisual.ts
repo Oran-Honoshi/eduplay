@@ -59,8 +59,10 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
 
     // ── FRACTION BAR ─────────────────────────────────────────
     case 'fraction': {
-      const total = data.d || 4
-      const filled = data.n || 1
+      // the question writer uses numerator/denominator; older data uses n/d.
+      // n: 0 is a shape to shade — no label then (it would read "0/4").
+      const total = Number(data.d ?? data.denominator) || 4
+      const filled = Number(data.n ?? data.numerator ?? 1)
       const bw = Math.min(40, (W - 40) / total)
       const bh = 36
       const startX = (W - total * bw) / 2
@@ -68,13 +70,13 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
       const boxes = Array.from({ length: total }, (_, i) =>
         `<rect x="${startX + i * bw}" y="${y}" width="${bw - 2}" height="${bh}" fill="${i < filled ? hl : emptyBox}" stroke="${stroke}" stroke-width="1.5" rx="3"/>`
       ).join('')
-      return svg(`${boxes}${label(W / 2, y + bh + 22, `${filled}/${total}`, 14, 'bold', lbl)}`)
+      return svg(`${boxes}${filled ? label(W / 2, y + bh + 22, `${filled}/${total}`, 14, 'bold', lbl) : ''}`)
     }
 
     // ── FRACTION PIE ─────────────────────────────────────────
     case 'fraction_pie': {
-      const total = data.d || 4
-      const filled = data.n || 1
+      const total = Number(data.d ?? data.denominator) || 4
+      const filled = Number(data.n ?? data.numerator ?? 1)
       const cx = W / 2, cy = H / 2 - 10, r = Math.min(W, H) * 0.33
       const slices = Array.from({ length: total }, (_, i) => {
         const startAngle = (i / total) * 2 * Math.PI - Math.PI / 2
@@ -84,7 +86,7 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
         const large = (endAngle - startAngle) > Math.PI ? 1 : 0
         return `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z" fill="${i < filled ? hl : emptyBox}" stroke="${stroke}" stroke-width="1.5"/>`
       }).join('')
-      return svg(`${slices}<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${stroke}" stroke-width="2"/>${label(W / 2, cy + r + 24, `${filled}/${total}`, 14, 'bold', lbl)}`)
+      return svg(`${slices}<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${stroke}" stroke-width="2"/>${filled ? label(W / 2, cy + r + 24, `${filled}/${total}`, 14, 'bold', lbl) : ''}`)
     }
 
     // ── FRACTION COMPARE ─────────────────────────────────────

@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react'
 import { X, Lightbulb, ChevronRight } from 'lucide-react'
 import AnswerPad, { isNumericAnswer } from '@/components/kid/AnswerPad'
-import GridAnswer, { isGridQuestion, parsePoint } from '@/components/kid/GridAnswer'
+import KidOpenAnswer from '@/components/kid/KidOpenAnswer'
+import { hidesPicture } from '@/lib/interactive'
 import { ListOrdered } from 'lucide-react'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
@@ -73,10 +74,9 @@ export default function AssignmentClient({ child, assignment, items: initialItem
   }
 
   const [typed, setTyped] = useState('')
-  const [gridPick, setGridPick] = useState<[number, number] | null>(null)
   // help after a wrong first try — each one only if the parent allowed it
   const [helpOpen, setHelpOpen] = useState<{ hint: boolean; steps: number }>({ hint: false, steps: 0 })
-  useEffect(() => { setTyped(''); setGridPick(null); setHelpOpen({ hint: false, steps: 0 }) }, [currentIndex])
+  useEffect(() => { setTyped(''); setHelpOpen({ hint: false, steps: 0 }) }, [currentIndex])
   const allowHints = assignment.allow_hints !== false
   const allowSteps = assignment.allow_steps !== false
 
@@ -190,8 +190,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
   const optText = (o: any) => isHE ? (o.value_he || o.value_en || '') : (o.value_en || '')
   const twoCols = options.length === 4 && options.every(o => optText(o).length <= 14)
   const numeric = options.length === 0 && isNumericAnswer(currentQ?.correct_answer)
-  const grid = isGridQuestion(currentQ)
-  const answerPoint = grid ? parsePoint(currentQ?.correct_answer) : null
+  const rightLabel = status === 'correct_after_hint' ? currentItem!.attempt_2_answer : status === 'correct_first_try' ? currentItem!.attempt_1_answer : null
   // the explanation as steps; before the child answers again, the last step
   // (the conclusion with the answer) stays hidden — that one is theirs to find
   const steps = (explanationText(currentQ, isHE)).split(/(?<=[.!?])\s+(?=\S)|\n+/).map(x => x.trim()).filter(Boolean)
@@ -237,7 +236,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
             <HebrewMathText text={currentQ?.prompt_he || ''}
               style={{ fontSize:18, color:T.text2, direction:'rtl', textAlign:'right', margin:0, lineHeight:1.6 }} />
           )}
-          {currentQ?.visual_data && !grid && (
+          {currentQ?.visual_data && !hidesPicture(currentQ) && (
             <div style={{ display:'flex', justifyContent:'center', padding:12, background:T.panel2, borderRadius:R - 6 }}>
               <MathVisual data={currentQ.visual_data} size={220} color={T.accent1} dark={dark}/>
             </div>
@@ -330,25 +329,11 @@ export default function AssignmentClient({ child, assignment, items: initialItem
           </div>
         )}
 
-        {options.length === 0 && (
-          <>
-            {wrongLabels.length > 0 && !itemResolved && !grid && (
-              <div style={{ fontSize:17, color:'#B4432A', fontWeight:700 }}>
-                {L('ניסית:', 'You tried:')} {wrongLabels.map((w, i) => <bdi key={i} style={{ marginInlineStart:6 }}>{w}</bdi>)}
-              </div>
-            )}
-            {grid ? (
-              <GridAnswer data={currentQ!.visual_data} value={gridPick} onChange={setGridPick}
-                onSubmit={() => { if (gridPick) { submitAnswer(`(${gridPick[0]},${gridPick[1]})`); setGridPick(null) } }}
-                disabled={!canAnswer} T={T} isHE={isHE} answer={answerPoint} given={currentQ?.prompt_he || currentQ?.prompt_en}
-                mine={wrongLabels.map(w => parsePoint(w)).filter(Boolean).map(p => ({ p: p as [number, number], ok: false }))}
-                correct={itemResolved ? answerPoint : null} />
-            ) : canAnswer && (
-              <AnswerPad value={typed} onChange={setTyped} numeric={numeric} expected={currentQ?.correct_answer}
-                onSubmit={() => { const v = typed.trim(); if (v) { submitAnswer(v); setTyped('') } }}
-                T={T} isHE={isHE} disabled={submitting} />
-            )}
-          </>
+        {options.length === 0 && currentQ && (
+          <KidOpenAnswer q={currentQ} T={T} isHE={isHE} canAnswer={canAnswer} submitting={submitting}
+            tries={showCorrectFeedback ? wrongLabels.filter(w => w !== rightLabel) : wrongLabels}
+            resolved={itemResolved} rightAnswer={showCorrectFeedback ? rightLabel : null}
+            onSubmit={label => submitAnswer(label)} />
         )}
 
         {showCorrectFeedback && (
