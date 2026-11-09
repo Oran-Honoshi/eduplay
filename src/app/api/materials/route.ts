@@ -10,6 +10,7 @@ export async function GET() {
     .from('materials')
     .select('id, kind, title, subject_slug, grade, child_id, status, liked, rating, question_ids, time_minutes, parent_material_id, created_at, library_status, plan')
     .eq('family_id', auth.parent.familyId)
+    .not('status', 'in', '(preparing,prepared)')  // background spares stay hidden until claimed
     .order('created_at', { ascending: false })
     .limit(100)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

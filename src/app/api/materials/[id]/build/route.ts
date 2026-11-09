@@ -126,6 +126,27 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!topicId && data.inserted?.[0]?.topic_id) topicId = data.inserted[0].topic_id
   }
 
+  // parts of a topic now run side by side: drop anything that repeats a question
+  // another part already added (same prompt or same numbers)
+  if (added.length) {
+    const { data: fresh } = await db.from('materials').select('question_ids').eq('id', m.id).single()
+    const otherIds = (fresh?.question_ids || []).filter((id: string) => !added.includes(id))
+    if (otherIds.length) {
+      const [{ data: others }, { data: mine }] = await Promise.all([
+        db.from('questions').select('prompt_he, prompt_en, options, correct_answer, visual_data').in('id', otherIds),
+        db.from('questions').select('id, prompt_he, prompt_en, options, correct_answer, visual_data').in('id', added),
+      ])
+      const seenP = new Set((others || []).map((q: any) => (q.prompt_he || q.prompt_en || '').trim()))
+      const seenS = new Set((others || []).map(signature).filter(Boolean))
+      const dupes = (mine || []).filter((q: any) => seenP.has((q.prompt_he || q.prompt_en || '').trim()) || (signature(q) && seenS.has(signature(q)))).map((q: any) => q.id)
+      if (dupes.length) {
+        const keep = added.filter(id => !dupes.includes(id))
+        added.length = 0; added.push(...keep)
+        warnings.push(`${dupes.length} repeated question(s) dropped`)
+      }
+    }
+  }
+
   // a new topic gets its id/slug on first generation — remember it in the plan
   if (topicId && !topic.topic_id) {
     const { data: t } = await db.from('topics').select('id, slug').eq('id', topicId).single()
