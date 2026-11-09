@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import AnswerPad, { isNumericAnswer } from '@/components/kid/AnswerPad'
-import GridAnswer, { isGridQuestion, parsePoint } from '@/components/kid/GridAnswer'
+import KidOpenAnswer from '@/components/kid/KidOpenAnswer'
+import { hidesPicture } from '@/lib/interactive'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
 import HebrewMathText from '@/components/HebrewMathText'
@@ -568,7 +569,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
   const [xpNotif, setXpNotif]     = useState<string|null>(null)
   const [completed, setCompleted] = useState(false)
   const [typedAnswer, setTypedAnswer] = useState('')
-  const [gridPick, setGridPick] = useState<[number, number] | null>(null)
+  const [openLabel, setOpenLabel] = useState<string | null>(null)
   const [typedError, setTypedError] = useState(false)
   const [completionInfo, setCompletionInfo] = useState<{ message: string; emoji: string; card?: boolean } | null>(null)
 
@@ -752,7 +753,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
     setCurrentStep(next)
     setQIndex(i => Math.min(i + 1, questions.length - 1))
     setAnswered(false); setSelected(null); setFeedback(null); setHint(false)
-    setTypedAnswer(''); setTypedError(false); setGridPick(null)
+    setTypedAnswer(''); setTypedError(false); setOpenLabel(null)
     setPip(pipLine)
   }
 
@@ -1025,7 +1026,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
                     )}
                   </div>
 
-                  {currentQ.visual_data && !isGridQuestion(currentQ) && (
+                  {currentQ.visual_data && !hidesPicture(currentQ) && (
   <div style={{ display:'flex', justifyContent:'center', padding:'12px', background:T.panel, border:`2px dashed ${T.border}`, borderRadius:T.radius, marginBottom:'12px' }}>
     <MathVisual
       data={currentQ.visual_data}
@@ -1039,18 +1040,10 @@ export default function LessonClient({ child, topic, questions, passage, passage
                   {/* Word problems have no options: a big answer box + Check */}
                   {(!Array.isArray(currentQ.options) || currentQ.options.length === 0) && (
                     <div style={{ marginBottom:'12px' }} dir={isHE ? 'rtl' : 'ltr'}>
-                      {isGridQuestion(currentQ) ? (
-                        <GridAnswer data={currentQ.visual_data} value={gridPick} onChange={setGridPick} disabled={answered}
-                          onSubmit={() => { if (!gridPick) return; const v = `(${gridPick[0]},${gridPick[1]})`; checkAnswer({ label: v, isCorrect: answersMatch(v, String(currentQ.correct_answer ?? '')) }) }}
-                          T={T} isHE={isHE} answer={parsePoint(currentQ.correct_answer)} given={currentQ.prompt_he || currentQ.prompt_en}
-                          mine={answered && gridPick ? [{ p: gridPick, ok: !!feedback?.correct }] : []}
-                          correct={answered ? parsePoint(currentQ.correct_answer) : null} />
-                      ) : !answered && (
-                        <AnswerPad value={typedAnswer} onChange={v => { setTypedAnswer(v); setTypedError(false) }}
-                          numeric={isNumericAnswer(currentQ.correct_answer)} expected={currentQ.correct_answer}
-                          onSubmit={() => { const v = typedAnswer.trim(); if (!v) { setTypedError(true); return } checkAnswer({ label: v, isCorrect: answersMatch(v, String(currentQ.correct_answer ?? '')) }) }}
-                          T={T} isHE={isHE} error={typedError} />
-                      )}
+                      <KidOpenAnswer q={currentQ} T={T} isHE={isHE} canAnswer={!answered}
+                        tries={answered && feedback && !feedback.correct && openLabel ? [openLabel] : []}
+                        resolved={answered} rightAnswer={answered && feedback?.correct ? openLabel : null}
+                        onSubmit={label => { setOpenLabel(label); checkAnswer({ label, isCorrect: answersMatch(label, String(currentQ.correct_answer ?? '')) }) }} />
                       {answered && feedback && !feedback.correct && currentQ.correct_answer && (
                         <div style={{ fontSize:'19px', color:T.text, fontWeight:700 }}>{isHE ? 'התשובה הנכונה: ' : 'The answer: '}<bdi><FractionText text={String(currentQ.correct_answer)} /></bdi></div>
                       )}
@@ -1096,7 +1089,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
 
                   <div className="cta-row" style={{ display:'flex', gap:'8px' }}>
                     <button onClick={() => setHint(v=>!v)} style={{ padding:'12px 18px', fontFamily:T.fontHead, fontSize:'15px', background:T.panel, border:`2px solid ${T.accent2}`, color:T.accent2, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>💡 {UI.hint}</button>
-                    <button onClick={() => { setQIndex(i=>(i+1)%Math.max(questions.length,1)); setAnswered(false); setSelected(null); setTypedAnswer(''); setGridPick(null); setFeedback(null); setHint(false) }} style={{ padding:'12px 18px', fontFamily:T.fontHead, fontSize:'15px', background:T.panel, border:`2px solid ${T.accent3}`, color:T.accent3, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>🔄</button>
+                    <button onClick={() => { setQIndex(i=>(i+1)%Math.max(questions.length,1)); setAnswered(false); setSelected(null); setTypedAnswer(''); setOpenLabel(null); setFeedback(null); setHint(false) }} style={{ padding:'12px 18px', fontFamily:T.fontHead, fontSize:'15px', background:T.panel, border:`2px solid ${T.accent3}`, color:T.accent3, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>🔄</button>
                     <button onClick={nextStep} style={{ padding:'12px 20px', fontFamily:T.fontHead, fontSize:'16px', background:T.accent1, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, flex:1, fontWeight:800 }}>{UI.next}</button>
                   </div>
                 </ThemePanel>

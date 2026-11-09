@@ -33,7 +33,7 @@ export function isGridQuestion(q: any): boolean {
 }
 
 // Same geometry as the coordinate renderer in lib/mathVisual.ts (pad 28, square).
-function geometry(data: any, size: number) {
+export function geometry(data: any, size: number) {
   const steps = data.steps || data.range || 5
   const q1 = data.quadrant === 1 || data.quadrant === '1'
   const pad = 28
