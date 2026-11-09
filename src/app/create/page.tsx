@@ -8,6 +8,7 @@
 // Nothing reaches a child before the parent approves it.
 
 import { Suspense, useEffect, useMemo, useState } from 'react'
+import QuickStart from '@/components/parent/QuickStart'
 import { useSearchParams } from 'next/navigation'
 import {
   Target, ClipboardList, BookOpen, Printer, Smartphone, Check, X, Pencil, Plus, Minus,
@@ -410,6 +411,11 @@ function CreateInner() {
 
             {step === 'kind' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <QuickStart child={child ? { id: child.id, grade: child.grade } : null} onUse={async (m, ready) => {
+                  setKind(m.kind); setSubject(m.subject_slug); setGrade(m.grade); setLang(m.language); setRequest(m.request_text || '')
+                  setMat(m); await reload(m.id); go(ready ? 'done' : 'review')
+                }} />
+                <div className="md:col-span-3 text-[15px] font-bold text-[#33415F] mt-2">או ליצור חדש:</div>
                 {KINDS.map(k => (
                   <button key={k.id} onClick={() => { setKind(k.id); go('details') }}
                     className={`${card} p-6 text-start border-[1.5px] hover:border-[#2F5BE3] hover:shadow-[0_6px_20px_rgba(47,91,227,0.12)] transition`}>
@@ -508,7 +514,7 @@ function CreateInner() {
                   {sampling
                     ? <div className="py-4"><FunLoader kind="build" pose="read" size={84} /></div>
                     : questions.length
-                      ? <div className="flex flex-col gap-2">{questions.slice(0, 3).map((q, i) => <QuestionCard key={q.id} q={q} n={i + 1} lang={mat.language} onApprove={() => act(q, 'approve')} onRemove={() => act(q, 'reject')} onSaved={() => reload()} />)}</div>
+                      ? <div className="flex flex-col gap-2">{questions.slice(0, 3).map((q, i) => <QuestionCard key={q.id} q={q} n={i + 1} lang={mat.language} materialId={mat.id} onApprove={() => act(q, 'approve')} onRemove={() => act(q, 'reject')} onSaved={() => reload()} />)}</div>
                       : <p className="text-sm text-[#4A5672] m-0">עוד אין דוגמה. לחצו "ליצור דוגמה".</p>}
                   {editing && questions.length > 0 && <p className="text-xs text-[#5E6B85] mt-2 mb-0">שיניתם את התוכנית? לחצו "דוגמה אחרת" כדי לראות שאלות לפי השינויים.</p>}
                 </div>
@@ -578,7 +584,7 @@ function CreateInner() {
                         <div key={t.key}>
                           <h3 className="text-lg font-bold text-[#2148C0] mt-4 mb-2">{t.title_he || t.title_en} <span className="text-xs font-semibold text-[#5E6B85]">· {qs.length}</span></h3>
                           <div className="flex flex-col gap-2">
-                            {qs.map((q, i) => <QuestionCard key={q.id} q={q} n={i + 1} lang={mat.language} onApprove={() => act(q, 'approve')} onRemove={() => act(q, 'reject')} onSaved={reload} />)}
+                            {qs.map((q, i) => <QuestionCard key={q.id} q={q} n={i + 1} lang={mat.language} materialId={mat.id} onApprove={() => act(q, 'approve')} onRemove={() => act(q, 'reject')} onSaved={reload} />)}
                           </div>
                         </div>
                       )
@@ -855,7 +861,7 @@ function PlanSummary({ mat, editing, onEdit }: { mat: any; editing: boolean; onE
 }
 
 // ── one question in review ──
-function QuestionCard({ q, n, lang, onApprove, onRemove, onSaved }: any) {
+function QuestionCard({ q, n, lang, onApprove, onRemove, onSaved, materialId }: any) {
   const he = lang !== 'en_only'
   const [edit, setEdit] = useState(false)
   const [draft, setDraft] = useState<any>(null)
@@ -865,7 +871,7 @@ function QuestionCard({ q, n, lang, onApprove, onRemove, onSaved }: any) {
   const diffColor = { easy: '#16A34A', medium: '#D97706', hard: '#DC2626' }[q.difficulty as string] || '#64748B'
 
   async function save() {
-    const body: any = { action: 'edit', correct_answer: draft.correct_answer }
+    const body: any = { action: 'edit', correct_answer: draft.correct_answer, material_id: materialId }
     body[he ? 'prompt_he' : 'prompt_en'] = draft.prompt
     body[he ? 'hint_he' : 'hint_en'] = draft.hint
     body[he ? 'explanation_he' : 'explanation_en'] = draft.expl
@@ -1272,7 +1278,7 @@ function SectionReview({ mat, questions, act, reload }: any) {
               </div>
             )}
             <div className="flex flex-col gap-2">
-              {qs.map(q => <QuestionCard key={q.id} q={q} n={++n} lang={mat.language} onApprove={() => act(q, 'approve')} onRemove={() => act(q, 'reject')} onSaved={reload} />)}
+              {qs.map(q => <QuestionCard key={q.id} q={q} n={++n} lang={mat.language} materialId={mat.id} onApprove={() => act(q, 'approve')} onRemove={() => act(q, 'reject')} onSaved={reload} />)}
             </div>
           </div>
         )

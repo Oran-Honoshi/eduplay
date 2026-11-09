@@ -40,7 +40,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const db = createServiceRoleClient()
     const { data: q } = await db.from('questions').select('id, approved, created_by_family, options').eq('id', params.id).maybeSingle()
     if (!q) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    if (q.approved && q.created_by_family !== auth.parent.familyId) {
+    // a shared bank question is never changed under others: inside one of this
+    // family's sheets, editing it makes the family's own copy and swaps it in
+    const forkFor = q.approved && q.created_by_family !== auth.parent.familyId
+      ? (typeof body.material_id === 'string' ? body.material_id : null) : undefined
+    if (forkFor === null) {
       return NextResponse.json({ error: 'Approved shared questions cannot be edited' }, { status: 403 })
     }
     const upd: any = {}
@@ -58,6 +62,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     for (const k of Object.keys(upd)) if (upd[k] === undefined) delete upd[k]
     if (!Object.keys(upd).length) return NextResponse.json({ error: 'Nothing to change' }, { status: 400 })
+    if (forkFor) {
+      const { data: m } = await db.from('materials').select('id, family_id, question_ids, section_q').eq('id', forkFor).maybeSingle()
+      if (!m || m.family_id !== auth.parent.familyId || !(m.question_ids || []).includes(q.id)) {
+        return NextResponse.json({ error: 'Approved shared questions cannot be edited' }, { status: 403 })
+      }
+      const { data: full } = await db.from('questions').select('*').eq('id', q.id).single()
+      const { id: _id, created_at: _c, times_served: _t, rejected_at: _ra, rejected_reason: _rr, ...rest } = full as any
+      const { data: copy, error: insErr } = await db.from('questions')
+        .insert({ ...rest, ...upd, approved: true, created_by_family: auth.parent.familyId, times_served: 0 }).select('*').single()
+      if (insErr || !copy) return NextResponse.json({ error: insErr?.message || 'copy failed' }, { status: 500 })
+      const swap = (ids: string[]) => (ids || []).map(x => (x === q.id ? copy.id : x))
+      const sectionQ = m.section_q ? Object.fromEntries(Object.entries(m.section_q).map(([k, v]) => [k, swap(v as string[])])) : m.section_q
+      await db.from('materials').update({ question_ids: swap(m.question_ids), section_q: sectionQ, updated_at: new Date().toISOString() }).eq('id', m.id)
+      return NextResponse.json({ success: true, question: copy, replaced: q.id })
+    }
     const { data, error } = await db.from('questions').update(upd).eq('id', params.id).select('*').single()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ success: true, question: data })
