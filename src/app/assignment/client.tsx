@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { X, Lightbulb, ChevronRight } from 'lucide-react'
 import AnswerPad, { isNumericAnswer } from '@/components/kid/AnswerPad'
+import GridAnswer, { isGridQuestion, parsePoint } from '@/components/kid/GridAnswer'
+import { ListOrdered } from 'lucide-react'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
 import HebrewMathText from '@/components/HebrewMathText'
@@ -30,6 +32,10 @@ interface AssignmentItem {
     q_type?: string | null
     visual_data: any
   }
+}
+
+function explanationText(q: any, isHE: boolean): string {
+  return ((isHE ? q?.explanation_he : q?.explanation_en) || q?.explanation_he || q?.explanation_en || '').trim()
 }
 
 function isResolved(status: string) {
@@ -67,7 +73,12 @@ export default function AssignmentClient({ child, assignment, items: initialItem
   }
 
   const [typed, setTyped] = useState('')
-  useEffect(() => { setTyped('') }, [currentIndex])
+  const [gridPick, setGridPick] = useState<[number, number] | null>(null)
+  // help after a wrong first try — each one only if the parent allowed it
+  const [helpOpen, setHelpOpen] = useState<{ hint: boolean; steps: number }>({ hint: false, steps: 0 })
+  useEffect(() => { setTyped(''); setGridPick(null); setHelpOpen({ hint: false, steps: 0 }) }, [currentIndex])
+  const allowHints = assignment.allow_hints !== false
+  const allowSteps = assignment.allow_steps !== false
 
   async function submitAnswer(label: string) {
     if (!currentItem || submitting) return
@@ -179,6 +190,12 @@ export default function AssignmentClient({ child, assignment, items: initialItem
   const optText = (o: any) => isHE ? (o.value_he || o.value_en || '') : (o.value_en || '')
   const twoCols = options.length === 4 && options.every(o => optText(o).length <= 14)
   const numeric = options.length === 0 && isNumericAnswer(currentQ?.correct_answer)
+  const grid = isGridQuestion(currentQ)
+  const answerPoint = grid ? parsePoint(currentQ?.correct_answer) : null
+  // the explanation as steps; before the child answers again, the last step
+  // (the conclusion with the answer) stays hidden — that one is theirs to find
+  const steps = (explanationText(currentQ, isHE)).split(/(?<=[.!?:])\s+(?=\S)|\n+/).map(x => x.trim()).filter(Boolean)
+  const stepsBeforeAnswer = steps.length > 1 ? steps.slice(0, -1) : []
   const qSize = Math.max(22, FS?.question || 0)
   const explanation = (isHE ? currentQ?.explanation_he : currentQ?.explanation_en) || ''
 
@@ -220,7 +237,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
             <HebrewMathText text={currentQ?.prompt_he || ''}
               style={{ fontSize:18, color:T.text2, direction:'rtl', textAlign:'right', margin:0, lineHeight:1.6 }} />
           )}
-          {currentQ?.visual_data && (
+          {currentQ?.visual_data && !grid && (
             <div style={{ display:'flex', justifyContent:'center', padding:12, background:T.panel2, borderRadius:R - 6 }}>
               <MathVisual data={currentQ.visual_data} size={220} color={T.accent1} dark={dark}/>
             </div>
@@ -261,12 +278,18 @@ export default function AssignmentClient({ child, assignment, items: initialItem
 
         {options.length === 0 && (
           <>
-            {wrongLabels.length > 0 && !itemResolved && (
+            {wrongLabels.length > 0 && !itemResolved && !grid && (
               <div style={{ fontSize:17, color:'#B4432A', fontWeight:700 }}>
                 {L('ניסית:', 'You tried:')} {wrongLabels.map((w, i) => <bdi key={i} style={{ marginInlineStart:6 }}>{w}</bdi>)}
               </div>
             )}
-            {canAnswer && (
+            {grid ? (
+              <GridAnswer data={currentQ!.visual_data} value={gridPick} onChange={setGridPick}
+                onSubmit={() => { if (gridPick) { submitAnswer(`(${gridPick[0]},${gridPick[1]})`); setGridPick(null) } }}
+                disabled={!canAnswer} T={T} isHE={isHE} answer={answerPoint}
+                mine={wrongLabels.map(w => parsePoint(w)).filter(Boolean).map(p => ({ p: p as [number, number], ok: false }))}
+                correct={itemResolved ? answerPoint : null} />
+            ) : canAnswer && (
               <AnswerPad value={typed} onChange={setTyped} numeric={numeric} expected={currentQ?.correct_answer}
                 onSubmit={() => { const v = typed.trim(); if (v) { submitAnswer(v); setTyped('') } }}
                 T={T} isHE={isHE} disabled={submitting} />
@@ -274,16 +297,57 @@ export default function AssignmentClient({ child, assignment, items: initialItem
           </>
         )}
 
-        {/* Feedback */}
+        {/* Feedback: after a wrong first try the child chooses help (if the parent allowed it) */}
         {showHint && (
-          <div style={{ display:'flex', gap:12, alignItems:'flex-start', background:dark ? T.panel : '#FFF4D6', border:`2px solid ${T.accent2}`, borderRadius:R - 4, padding:14 }}>
-            <Pip theme={theme} pose="think" size={56} he={isHE} style={{ flexShrink:0 }} />
-            <div>
-              <div style={{ fontFamily:F, fontSize:19, fontWeight:800, display:'flex', alignItems:'center', gap:6 }}><Lightbulb size={20}/> {L('כמעט! הנה רמז', 'Almost! Here is a hint')}</div>
-              <div style={{ fontSize:18, lineHeight:1.55, marginTop:4 }}>
-                <FractionText text={isHE ? (currentQ?.hint_he || 'קראו את השאלה שוב לאט, ובדקו כל תשובה אחת-אחת.') : (currentQ?.hint_en || 'Read the question again slowly.')} />
+          <div style={{ display:'flex', flexDirection:'column', gap:12, background:dark ? T.panel : '#FFF4D6', border:`2px solid ${T.accent2}`, borderRadius:R - 4, padding:14 }}>
+            <div style={{ display:'flex', gap:12, alignItems:'center' }}>
+              <Pip theme={theme} pose="think" size={56} he={isHE} style={{ flexShrink:0 }} />
+              <div style={{ fontFamily:F, fontSize:19, fontWeight:800 }}>
+                {allowHints || (allowSteps && stepsBeforeAnswer.length)
+                  ? L('כמעט! רוצים עזרה, או לנסות שוב?', 'Almost! Want some help, or try again?')
+                  : L('כמעט! נסו שוב.', 'Almost! Try again.')}
               </div>
             </div>
+            {(allowHints || (allowSteps && stepsBeforeAnswer.length > 0)) && (
+              <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+                {allowHints && !helpOpen.hint && (
+                  <button onClick={() => setHelpOpen(h => ({ ...h, hint: true }))}
+                    style={{ flex:'1 1 140px', minHeight:56, borderRadius:16, border:`2px solid ${T.accent2}`, background:T.panel, color:T.text, fontFamily:F, fontSize:18, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                    <Lightbulb size={20}/> {L('רמז', 'A hint')}
+                  </button>
+                )}
+                {allowSteps && stepsBeforeAnswer.length > 0 && helpOpen.steps === 0 && (
+                  <button onClick={() => setHelpOpen(h => ({ ...h, steps: 1 }))}
+                    style={{ flex:'1 1 140px', minHeight:56, borderRadius:16, border:`2px solid ${T.accent2}`, background:T.panel, color:T.text, fontFamily:F, fontSize:18, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                    <ListOrdered size={20}/> {L('צעד אחר צעד', 'Step by step')}
+                  </button>
+                )}
+              </div>
+            )}
+            {helpOpen.hint && (
+              <div style={{ fontSize:18, lineHeight:1.55, background:T.panel, borderRadius:14, padding:'10px 12px' }}>
+                <b>{L('רמז: ', 'Hint: ')}</b>
+                <FractionText text={isHE ? (currentQ?.hint_he || 'קראו את השאלה שוב לאט, ובדקו כל תשובה אחת-אחת.') : (currentQ?.hint_en || 'Read the question again slowly.')} />
+              </div>
+            )}
+            {helpOpen.steps > 0 && (
+              <ol style={{ margin:0, paddingInlineStart:0, listStyle:'none', display:'flex', flexDirection:'column', gap:8 }}>
+                {stepsBeforeAnswer.slice(0, helpOpen.steps).map((st, i) => (
+                  <li key={i} style={{ display:'flex', gap:10, alignItems:'flex-start', background:T.panel, borderRadius:14, padding:'10px 12px', fontSize:18, lineHeight:1.55 }}>
+                    <span style={{ width:28, height:28, flexShrink:0, borderRadius:'50%', background:T.accent1, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:F, fontWeight:800, fontSize:15 }}>{i + 1}</span>
+                    <span><FractionText text={st} /></span>
+                  </li>
+                ))}
+                {helpOpen.steps < stepsBeforeAnswer.length ? (
+                  <button onClick={() => setHelpOpen(h => ({ ...h, steps: h.steps + 1 }))}
+                    style={{ alignSelf:'flex-start', minHeight:48, padding:'0 18px', borderRadius:14, border:'none', background:T.accent1, color:'#fff', fontFamily:F, fontSize:17, fontWeight:800, cursor:'pointer' }}>
+                    {L('הצעד הבא', 'Next step')}
+                  </button>
+                ) : (
+                  <div style={{ fontSize:17, fontWeight:700, color:T.text2 }}>{L('הצעד האחרון — שלך! עכשיו ענו שוב.', 'The last step is yours — now answer again.')}</div>
+                )}
+              </ol>
+            )}
           </div>
         )}
 
@@ -309,7 +373,11 @@ export default function AssignmentClient({ child, assignment, items: initialItem
                   ? <bdi><FractionText text={optText(correctOption)} /></bdi>
                   : <bdi><FractionText text={currentQ?.correct_answer || ''} /></bdi>}
               </div>
-              {explanation && <div style={{ fontSize:17, lineHeight:1.6, marginTop:4 }}><FractionText text={explanation} /></div>}
+              {explanation && allowSteps && (
+                <ol style={{ margin:'8px 0 0', paddingInlineStart:22, display:'flex', flexDirection:'column', gap:4, fontSize:17, lineHeight:1.6 }}>
+                  {steps.map((st, i) => <li key={i}><FractionText text={st} /></li>)}
+                </ol>
+              )}
               <div style={{ fontSize:16, color:T.text2, marginTop:6 }}>{L('זה בסדר — ככה לומדים.', "That's okay — that's how we learn.")}</div>
             </div>
           </div>
