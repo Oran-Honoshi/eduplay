@@ -194,7 +194,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
   const answerPoint = grid ? parsePoint(currentQ?.correct_answer) : null
   // the explanation as steps; before the child answers again, the last step
   // (the conclusion with the answer) stays hidden — that one is theirs to find
-  const steps = (explanationText(currentQ, isHE)).split(/(?<=[.!?:])\s+(?=\S)|\n+/).map(x => x.trim()).filter(Boolean)
+  const steps = (explanationText(currentQ, isHE)).split(/(?<=[.!?])\s+(?=\S)|\n+/).map(x => x.trim()).filter(Boolean)
   const stepsBeforeAnswer = steps.length > 1 ? steps.slice(0, -1) : []
   const qSize = Math.max(22, FS?.question || 0)
   const explanation = (isHE ? currentQ?.explanation_he : currentQ?.explanation_en) || ''
@@ -209,7 +209,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
           style={{ width:48, height:48, flexShrink:0, borderRadius:14, background:T.panel, border:`1.5px solid ${T.border}`, display:'flex', alignItems:'center', justifyContent:'center', color:T.text, cursor:'pointer' }}>
           <X size={24}/>
         </button>
-        <div style={{ flex:1, height:14, borderRadius:99, background:T.border, overflow:'hidden' }}>
+        <div style={{ flex:1, height:14, borderRadius:99, background:dark ? '#444' : 'rgba(22,33,62,0.10)', overflow:'hidden' }}>
           <div style={{ height:'100%', width:`${Math.max(4, (currentIndex / totalItems) * 100)}%`, background:T.accent2 === '#FFD700' ? T.accent1 : T.accent2, borderRadius:99, transition:'width .3s ease' }}/>
         </div>
         <span style={{ fontFamily:F, fontWeight:800, fontSize:18 }} dir="ltr">{currentIndex + 1}/{totalItems}</span>
@@ -243,59 +243,6 @@ export default function AssignmentClient({ child, assignment, items: initialItem
             </div>
           )}
         </div>
-
-        {/* Answers */}
-        {options.length > 0 && (
-          <div style={{ display:'grid', gridTemplateColumns: twoCols ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap:10 }}>
-            {options.map(opt => {
-              const isTriedWrong = wrongLabels.includes(opt.label) && !(itemResolved && opt.isCorrect)
-              const isRevealedCorrect = itemResolved && opt.isCorrect
-              return (
-                <AnimatedBtn key={opt.label} theme={theme} T={T}
-                  correct={isRevealedCorrect} wrong={isTriedWrong}
-                  disabled={!canAnswer || wrongLabels.includes(opt.label)}
-                  onClick={() => submitAnswer(opt.label)}
-                  style={{
-                    background: isRevealedCorrect ? (dark ? '#1F4D2E' : '#E3F4EF') : isTriedWrong ? (dark ? '#4D1F1F' : '#FDECE7') : T.panel,
-                    border: `2.5px solid ${isRevealedCorrect ? '#12937A' : isTriedWrong ? '#E85D3F' : T.border}`,
-                    borderRadius: R - 6, minHeight: twoCols ? 84 : 64, padding: '12px 16px',
-                    fontSize: 22, fontWeight: 700, fontFamily: F, color: T.text,
-                    display: 'flex', alignItems: 'center', justifyContent: twoCols ? 'center' : 'flex-start', gap: 12,
-                    textAlign: twoCols ? 'center' : 'start', width: '100%', boxShadow: 'none',
-                    opacity: isTriedWrong ? 0.75 : 1,
-                  }}>
-                  {!twoCols && (
-                    <span style={{ width:34, height:34, borderRadius:10, background:T.panel2, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0, color:T.text2 }}>
-                      {isHE ? translateOptionLabel(opt.label) : opt.label}
-                    </span>
-                  )}
-                  <span style={{ unicodeBidi:'plaintext' }}><FractionText text={optText(opt)} /></span>
-                </AnimatedBtn>
-              )
-            })}
-          </div>
-        )}
-
-        {options.length === 0 && (
-          <>
-            {wrongLabels.length > 0 && !itemResolved && !grid && (
-              <div style={{ fontSize:17, color:'#B4432A', fontWeight:700 }}>
-                {L('ניסית:', 'You tried:')} {wrongLabels.map((w, i) => <bdi key={i} style={{ marginInlineStart:6 }}>{w}</bdi>)}
-              </div>
-            )}
-            {grid ? (
-              <GridAnswer data={currentQ!.visual_data} value={gridPick} onChange={setGridPick}
-                onSubmit={() => { if (gridPick) { submitAnswer(`(${gridPick[0]},${gridPick[1]})`); setGridPick(null) } }}
-                disabled={!canAnswer} T={T} isHE={isHE} answer={answerPoint}
-                mine={wrongLabels.map(w => parsePoint(w)).filter(Boolean).map(p => ({ p: p as [number, number], ok: false }))}
-                correct={itemResolved ? answerPoint : null} />
-            ) : canAnswer && (
-              <AnswerPad value={typed} onChange={setTyped} numeric={numeric} expected={currentQ?.correct_answer}
-                onSubmit={() => { const v = typed.trim(); if (v) { submitAnswer(v); setTyped('') } }}
-                T={T} isHE={isHE} disabled={submitting} />
-            )}
-          </>
-        )}
 
         {/* Feedback: after a wrong first try the child chooses help (if the parent allowed it) */}
         {showHint && (
@@ -349,6 +296,59 @@ export default function AssignmentClient({ child, assignment, items: initialItem
               </ol>
             )}
           </div>
+        )}
+
+        {/* Answers */}
+        {options.length > 0 && (
+          <div style={{ display:'grid', gridTemplateColumns: twoCols ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap:10 }}>
+            {options.map(opt => {
+              const isTriedWrong = wrongLabels.includes(opt.label) && !(itemResolved && opt.isCorrect)
+              const isRevealedCorrect = itemResolved && opt.isCorrect
+              return (
+                <AnimatedBtn key={opt.label} theme={theme} T={T}
+                  correct={isRevealedCorrect} wrong={isTriedWrong}
+                  disabled={!canAnswer || wrongLabels.includes(opt.label)}
+                  onClick={() => submitAnswer(opt.label)}
+                  style={{
+                    background: isRevealedCorrect ? (dark ? '#1F4D2E' : '#E3F4EF') : isTriedWrong ? (dark ? '#4D1F1F' : '#FDECE7') : T.panel,
+                    border: `2.5px solid ${isRevealedCorrect ? '#12937A' : isTriedWrong ? '#E85D3F' : T.border}`,
+                    borderRadius: R - 6, minHeight: twoCols ? 84 : 64, padding: '12px 16px',
+                    fontSize: 22, fontWeight: 700, fontFamily: F, color: T.text,
+                    display: 'flex', alignItems: 'center', justifyContent: twoCols ? 'center' : 'flex-start', gap: 12,
+                    textAlign: twoCols ? 'center' : 'start', width: '100%', boxShadow: 'none',
+                    opacity: isTriedWrong ? 0.75 : 1,
+                  }}>
+                  {!twoCols && (
+                    <span style={{ width:34, height:34, borderRadius:10, background:T.panel2, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0, color:T.text2 }}>
+                      {isHE ? translateOptionLabel(opt.label) : opt.label}
+                    </span>
+                  )}
+                  <span style={{ unicodeBidi:'plaintext' }}><FractionText text={optText(opt)} /></span>
+                </AnimatedBtn>
+              )
+            })}
+          </div>
+        )}
+
+        {options.length === 0 && (
+          <>
+            {wrongLabels.length > 0 && !itemResolved && !grid && (
+              <div style={{ fontSize:17, color:'#B4432A', fontWeight:700 }}>
+                {L('ניסית:', 'You tried:')} {wrongLabels.map((w, i) => <bdi key={i} style={{ marginInlineStart:6 }}>{w}</bdi>)}
+              </div>
+            )}
+            {grid ? (
+              <GridAnswer data={currentQ!.visual_data} value={gridPick} onChange={setGridPick}
+                onSubmit={() => { if (gridPick) { submitAnswer(`(${gridPick[0]},${gridPick[1]})`); setGridPick(null) } }}
+                disabled={!canAnswer} T={T} isHE={isHE} answer={answerPoint}
+                mine={wrongLabels.map(w => parsePoint(w)).filter(Boolean).map(p => ({ p: p as [number, number], ok: false }))}
+                correct={itemResolved ? answerPoint : null} />
+            ) : canAnswer && (
+              <AnswerPad value={typed} onChange={setTyped} numeric={numeric} expected={currentQ?.correct_answer}
+                onSubmit={() => { const v = typed.trim(); if (v) { submitAnswer(v); setTyped('') } }}
+                T={T} isHE={isHE} disabled={submitting} />
+            )}
+          </>
         )}
 
         {showCorrectFeedback && (
