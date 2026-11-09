@@ -11,6 +11,16 @@ export function parsePoint(s: unknown): [number, number] | null {
   return m ? [Number(m[1]), Number(m[2])] : null
 }
 
+/** labelled points the question gives, e.g. "A(2,1), B(9,1)" → [[2,1,'A'],[9,1,'B']] */
+export function givenPoints(text: unknown): [number, number, string][] {
+  const out: [number, number, string][] = []
+  const re = /([A-Z])\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)/g
+  let m: RegExpExecArray | null
+  const s = String(text ?? '')
+  while ((m = re.exec(s))) if (!out.some(p => p[2] === m![1])) out.push([Number(m[2]), Number(m[3]), m[1]])
+  return out
+}
+
 /** a question the child answers by tapping a spot on the coordinate grid */
 export function isGridQuestion(q: any): boolean {
   if (!q || (Array.isArray(q.options) && q.options.length)) return false
@@ -40,7 +50,7 @@ function geometry(data: any, size: number) {
  * is revealed the right spot is shown in green.
  */
 export default function GridAnswer({
-  data, value, onChange, onSubmit, disabled, T, isHE, mine, correct, answer, checkLabel, size = 300,
+  data, value, onChange, onSubmit, disabled, T, isHE, mine, correct, answer, given, checkLabel, size = 300,
 }: {
   data: any
   value: [number, number] | null
@@ -52,6 +62,7 @@ export default function GridAnswer({
   mine?: { p: [number, number]; ok: boolean }[]   // earlier tries, coloured
   correct?: [number, number] | null               // shown after the answer is revealed
   answer?: [number, number] | null                // never drawn in the picture before that
+  given?: string                                  // question text: its labelled points are drawn
   checkLabel?: string
   size?: number
 }) {
@@ -59,7 +70,10 @@ export default function GridAnswer({
   const [hover, setHover] = useState<[number, number] | null>(null)
   // never draw the answer itself in the background picture
   const answerKey = answer ? `${answer[0]},${answer[1]}` : null
-  const bg = renderMathVisualSVG({ ...data, points: (data.points || []).filter((p: any) => `${p[0]},${p[1]}` !== answerKey) }, {
+  const fromText = givenPoints(given).filter(p => `${p[0]},${p[1]}` !== answerKey
+    && (g.q1 ? p[0] >= 0 && p[1] >= 0 : true) && Math.abs(p[0]) <= g.steps && Math.abs(p[1]) <= g.steps)
+  const pts = [...(data.points || []), ...fromText].filter((p: any) => `${p[0]},${p[1]}` !== answerKey)
+  const bg = renderMathVisualSVG({ ...data, points: pts }, {
     width: size, height: size, color: T.accent1 === '#FFD700' ? '#2F5BE3' : T.accent1, dark: T.radius === '0px', instanceId: 'grid-answer',
   })
   const toPx = ([x, y]: [number, number]) => [g.cx + x * g.step, g.cy - y * g.step]
@@ -77,7 +91,7 @@ export default function GridAnswer({
     return (
       <g key={`${fill}${p[0]},${p[1]}`}>
         <circle cx={x} cy={y} r={11} fill={fill} stroke={ring} strokeWidth={3} />
-        {label && <text x={x + 14} y={y - 12} fontSize={15} fontWeight={800} fontFamily={KID_FONT} fill={ring}>({p[0]},{p[1]})</text>}
+        {label && <text x={x + 14} y={y - 12} fontSize={15} fontWeight={800} fontFamily={KID_FONT} fill={fill} stroke="#fff" strokeWidth={3} paintOrder="stroke">({p[0]},{p[1]})</text>}
       </g>
     )
   }
