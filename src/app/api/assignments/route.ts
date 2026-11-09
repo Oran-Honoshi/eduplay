@@ -26,6 +26,8 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   const { childId, questionIds, title } = body
+  // help the child may ask for after a wrong answer (both on unless the parent turned them off)
+  const allowHints = body.allowHints !== false, allowSteps = body.allowSteps !== false
 
   if (!childId || !Array.isArray(questionIds) || questionIds.length === 0) {
     return NextResponse.json({ error: 'childId and a non-empty questionIds array are required' }, { status: 400 })
@@ -72,6 +74,8 @@ export async function POST(req: NextRequest) {
       created_by_parent_id: auth.parent.parentId,
       title: title || null,
       topic_id: topicId,
+      allow_hints: allowHints,
+      allow_steps: allowSteps,
     })
     .select()
     .single()

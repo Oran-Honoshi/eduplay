@@ -983,10 +983,11 @@ function DonePanel({ mat, setMat, child, questions }: any) {
     })
     window.open(`/api/worksheets/builder?${params}`, '_blank')
   }
+  const [help, setHelp] = useState({ hints: true, steps: true })
   async function sendToApp() {
     setSending(true); setErr(null)
     try {
-      const r = await fetch('/api/assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ childId: mat.child_id || child?.id, questionIds: appIds, title: mat.title }) })
+      const r = await fetch('/api/assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ childId: mat.child_id || child?.id, questionIds: appIds, title: mat.title, allowHints: help.hints, allowSteps: help.steps }) })
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || 'שגיאה')
       const id = d.assignment?.id
@@ -1033,6 +1034,17 @@ function DonePanel({ mat, setMat, child, questions }: any) {
           </button>
         )}
       </div>
+      {!isExpl && !sent && (
+        <fieldset className="m-0 p-0 border-0 flex flex-wrap gap-x-5 gap-y-2 items-center">
+          <legend className="text-sm font-bold text-[#33415F] mb-1">באפליקציה, אחרי טעות הילד/ה יכול/ה לבקש:</legend>
+          <label className="inline-flex items-center gap-2 min-h-[44px] text-[15px] cursor-pointer">
+            <input type="checkbox" className="w-5 h-5 accent-[#2F5BE3]" checked={help.hints} onChange={e => setHelp(h => ({ ...h, hints: e.target.checked }))} /> רמז
+          </label>
+          <label className="inline-flex items-center gap-2 min-h-[44px] text-[15px] cursor-pointer">
+            <input type="checkbox" className="w-5 h-5 accent-[#2F5BE3]" checked={help.steps} onChange={e => setHelp(h => ({ ...h, steps: e.target.checked }))} /> הסבר צעד אחר צעד
+          </label>
+        </fieldset>
+      )}
       {err && <div className="text-sm text-[#DC2626]">{err}</div>}
 
       <div className="border-t border-[#E8E2D6] pt-4 flex flex-col gap-3">
