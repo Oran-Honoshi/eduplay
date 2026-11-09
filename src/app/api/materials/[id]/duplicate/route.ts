@@ -1,30 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireParentOnlySession } from '@/lib/session'
 import { createServiceRoleClient } from '@/lib/supabase'
-import { assignSectionWords, hasSections, usedWords } from '@/lib/workbook'
+import { insertDuplicate } from '@/lib/duplicateMaterial'
 
-// POST /api/materials/[id]/duplicate — "more like this": same plan, method,
-// question types, topics and material, but a fresh draft whose questions will
-// all be newly written (bank reuse off, so the child gets different ones).
+// POST /api/materials/[id]/duplicate — "more like this". If a spare set was
+// already prepared in the background (see prepare-next), it is handed over at
+// once, ready to review; otherwise a fresh draft with the same plan is made.
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireParentOnlySession()
   if (!auth.ok) return NextResponse.json({ error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' }, { status: auth.status })
   const db = createServiceRoleClient()
   const { data: m } = await db.from('materials').select('*').eq('id', params.id).maybeSingle()
   if (!m || m.family_id !== auth.parent.familyId) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  let plan = { ...m.plan, topics: (m.plan?.topics || []).map((t: any) => ({ ...t, reuse: 0 })) }
-  // a workbook: words the earlier one practised go to the back, so this one starts with new words
-  if (hasSections(plan)) {
-    const used = usedWords(m.plan)
-    const allUsed = (plan.words || []).every((w: any) => used.includes(w.en))
-    // once every word has had its turn, only the last workbook's words wait at the back
-    plan = assignSectionWords({ ...plan, used_before: allUsed ? usedWords({ sections: m.plan.sections }) : used })
+
+  // claim a finished spare (status guard so two clicks can't claim the same one)
+  const { data: spare } = await db.from('materials').select('id')
+    .eq('parent_material_id', m.id).eq('status', 'prepared').order('created_at').limit(1).maybeSingle()
+  if (spare) {
+    const { data: claimed } = await db.from('materials')
+      .update({ status: 'draft', created_at: new Date().toISOString() })
+      .eq('id', spare.id).eq('status', 'prepared').select('*').maybeSingle()
+    if (claimed && (claimed.question_ids || []).length) return NextResponse.json({ material: claimed, prepared: true })
   }
-  const { data, error } = await db.from('materials').insert({
-    family_id: m.family_id, child_id: m.child_id, kind: m.kind, title: `${m.title} · עוד`,
-    subject_slug: m.subject_slug, grade: m.grade, language: m.language, request_text: m.request_text,
-    upload_ids: m.upload_ids, plan, time_minutes: m.time_minutes, parent_material_id: m.id,
-  }).select('*').single()
+
+  const { data, error } = await insertDuplicate(db, m, 'draft')
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ material: data })
 }

@@ -97,6 +97,7 @@ function CreateInner() {
       if (!m) { setError('לא מצאנו את החומר הזה.'); return }
       setKind(m.kind); setSubject(m.subject_slug); setGrade(m.grade); setLang(m.language); setRequest(m.request_text || '')
       setMat(m)
+      if (from && m.question_ids?.length) { setPrepared(true); await reload(m.id); setStep('review'); return }
       if (from || (!m.question_ids?.length && !m.explanation)) { setStep('plan'); return }
       await reload(m.id)
       setStep(m.status === 'ready' ? 'done' : 'review')
@@ -116,6 +117,7 @@ function CreateInner() {
     return () => window.removeEventListener('popstate', onPop)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [failed, setFailed] = useState<any[]>([])
+  const [prepared, setPrepared] = useState(false)
   const [sampling, setSampling] = useState(false)
   const [editing, setEditing] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -167,24 +169,19 @@ function CreateInner() {
     setProgress({ done: 0, total: jobs.length, label: '' })
     const bad: Job[] = []
     let done = 0
-    // parts of the same topic run one after another, so each part sees the
-    // questions already written and never repeats them; topics run side by side
-    const byTopic = new Map<string, Job[]>()
-    for (const j of jobs) byTopic.set(j.key, [...(byTopic.get(j.key) || []), j])
-    const queues = [...byTopic.values()]
-    let nextQ = 0
+    // all parts run side by side (6 at a time): each part has its own sub-skills,
+    // and the build route drops anything that repeats another part
+    let next = 0
     async function worker() {
-      while (nextQ < queues.length) {
-        const q = queues[nextQ++]
-        for (const j of q) {
-          setProgress(p => ({ ...p, label: j.label }))
-          const r = await fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [j.section ? 'section_key' : 'topic_key']: j.key, generate: j.generate, reuse: j.reuse, part: j.part, parts: j.parts, note }) }).catch(() => null)
-          if (!r || !r.ok) bad.push(j)
-          setProgress(p => ({ ...p, done: ++done }))
-        }
+      while (next < jobs.length) {
+        const j = jobs[next++]
+        setProgress(p => ({ ...p, label: j.label }))
+        const r = await fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [j.section ? 'section_key' : 'topic_key']: j.key, generate: j.generate, reuse: j.reuse, part: j.part, parts: j.parts, note }) }).catch(() => null)
+        if (!r || !r.ok) bad.push(j)
+        setProgress(p => ({ ...p, done: ++done }))
       }
     }
-    await Promise.all(Array.from({ length: Math.min(3, queues.length) }, worker))
+    await Promise.all(Array.from({ length: Math.min(6, jobs.length) }, worker))
     return bad
   }
 
@@ -339,11 +336,14 @@ function CreateInner() {
     try {
       await fetch(`/api/materials/${mat.id}/approve-all`, { method: 'POST' })
       await savePlan(mat.plan, { status: 'ready' })
+      prepareNext(mat.id)
       await reload()
       go('done')
     } finally { setApproving(false) }
   }
-  async function finishReview() { await savePlan(mat.plan, { status: 'ready' }); go('done') }
+  // a finished sheet quietly prepares its next "more like this" in the background
+  const prepareNext = (id: string) => { fetch(`/api/materials/${id}/prepare-next`, { method: 'POST', keepalive: true }).catch(() => {}) }
+  async function finishReview() { await savePlan(mat.plan, { status: 'ready' }); prepareNext(mat.id); go('done') }
 
   const pending = questions.filter(q => !q.approved).length
   const planned = mat ? plannedCount(mat.plan, mat.kind) : 0
@@ -535,6 +535,11 @@ function CreateInner() {
             )}
 
             {mat && <MissingBanner />}
+            {step === 'review' && prepared && (
+              <div role="status" className="rounded-2xl bg-[#E3F4EF] text-[#0B6B58] px-4 py-3 text-[15px] font-semibold">
+                הכנו את הסט הזה מראש, ברקע — אפשר לעבור עליו מיד.
+              </div>
+            )}
             {step === 'review' && mat && (
               mat.kind === 'explanation'
                 ? <ExplanationReview mat={mat} onDone={async () => { await savePlan(mat.plan, { status: 'ready' }); go('done') }} />
