@@ -13,7 +13,7 @@ export const maxDuration = 300
 //   POST {action:'start', chains} → run (each chain does one topic, then calls itself for the next)
 //   POST {action:'stop'}        → stop after the current topics
 // The self-call carries the server's own key, so only the server can chain.
-const JOB = BANK_BATCH
+const BASE = BANK_BATCH
 const CHUNK = 10
 const BUDGET_MS = 230_000
 
@@ -22,16 +22,17 @@ function internal(req: NextRequest) {
   return !!k && k === process.env.SUPABASE_SERVICE_ROLE_KEY
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const JOB = BASE + (req.nextUrl.searchParams.get('mode') === 'cards' ? '-cards' : '')
   const a = await requireAdmin()
   if (!a.ok) return NextResponse.json({ error: 'Forbidden' }, { status: a.status })
   const db = createServiceRoleClient()
   const [{ data: job }, { count: drafts }, { count: flagged }, { data: claims }, { count: cards }] = await Promise.all([
     db.from('admin_jobs').select('*').eq('id', JOB).maybeSingle(),
-    db.from('question_support_drafts').select('question_id', { count: 'exact', head: true }).eq('batch', JOB),
-    db.from('question_support_drafts').select('question_id', { count: 'exact', head: true }).eq('batch', JOB).neq('flags', '[]'),
+    db.from('question_support_drafts').select('question_id', { count: 'exact', head: true }).eq('batch', BASE),
+    db.from('question_support_drafts').select('question_id', { count: 'exact', head: true }).eq('batch', BASE).neq('flags', '[]'),
     db.from('bank_upgrade_claims').select('topic_id, done_at, error').eq('batch', JOB),
-    db.from('topic_explanations').select('id', { count: 'exact', head: true }).eq('batch', JOB),
+    db.from('topic_explanations').select('id', { count: 'exact', head: true }).eq('batch', BASE),
   ])
   return NextResponse.json({ job, drafts, flagged, cards, topicsDone: (claims || []).filter(c => c.done_at).length, topicsClaimed: (claims || []).length, errors: (claims || []).filter(c => c.error).map(c => c.error).slice(0, 5) })
 }
@@ -45,7 +46,9 @@ export async function POST(req: NextRequest) {
   }
   const db = createServiceRoleClient()
   const origin = req.nextUrl.origin
-  const kick = () => fetch(`${origin}/api/admin/bank-upgrade`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-job-key': process.env.SUPABASE_SERVICE_ROLE_KEY! }, body: JSON.stringify({ action: 'step' }) }).catch(() => {})
+  const mode = body.mode === 'cards' ? 'cards' : 'all'
+  const JOB = BASE + (mode === 'cards' ? '-cards' : '')
+  const kick = () => fetch(`${origin}/api/admin/bank-upgrade`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-job-key': process.env.SUPABASE_SERVICE_ROLE_KEY! }, body: JSON.stringify({ action: 'step', mode }) }).catch(() => {})
 
   if (body.action === 'stop') {
     await db.from('admin_jobs').upsert({ id: JOB, status: 'stopped', updated_at: new Date().toISOString() })
@@ -86,7 +89,7 @@ export async function POST(req: NextRequest) {
     const ids = (qs || []).map(q => q.id)
     const { data: have } = ids.length ? await db.from('question_support_drafts').select('question_id').in('question_id', ids) : { data: [] }
     const skip = new Set((have || []).map((h: any) => h.question_id))
-    const todo = (qs || []).filter(q => !skip.has(q.id))
+    const todo = body.mode === 'cards' ? [] : (qs || []).filter(q => !skip.has(q.id))
 
     // the learn card (only where the topic has none yet)
     const { data: card } = await db.from('topic_explanations').select('id').eq('topic_slug', topic.slug).maybeSingle()
@@ -94,12 +97,13 @@ export async function POST(req: NextRequest) {
       const r = await draftLearnCard(topic, qs || [])
       if (r.ok) {
         const c = r.data
-        await db.from('topic_explanations').insert({
-          topic_slug: topic.slug, subject: topic.subject?.slug, grade: topic.grade, status: 'draft', batch: JOB,
-          title_he: c.title_he || topic.title_he, title_en: topic.title_en, summary_he: c.summary_he, key_points_he: c.key_points_he || [],
-          main_visual: c.example?.visual || null,
+        const { error: cardErr } = await db.from('topic_explanations').insert({
+          topic_slug: topic.slug, subject: topic.subject?.slug, grade: topic.grade, status: 'draft', batch: BASE,
+          title_he: c.title_he || topic.title_he || topic.title_en, title_en: topic.title_en || topic.title_he, summary_he: c.summary_he || '', summary_en: '', key_points_he: c.key_points_he || [],
+          main_visual: c.example?.visual || {},
           examples: c.example ? [{ problem_he: c.example.problem_he, solution_steps_he: c.example.steps_he || [], answer_he: c.example.answer_he, visual: c.example.visual || null }] : [],
         })
+        if (cardErr) err = `card: ${cardErr.message}`
       }
     }
 
@@ -113,7 +117,7 @@ export async function POST(req: NextRequest) {
         const steps = (d.steps || []).filter(s => s?.he).map(s => ({ he: s.he, en: s.en || null, visual: null }))
         const flags = [...(d.flags || []), ...(d.ok === false ? ['needs_review'] : [])]
         return {
-          question_id: d.id, batch: JOB, source: 'claude', status: 'draft',
+          question_id: d.id, batch: BASE, source: 'claude', status: 'draft',
           hint_he: d.hint_he || null, hint_en: d.hint_en || null, steps,
           explanation_he: steps.map(s => s.he).join('\n') || null,
           explanation_en: steps.some(s => s.en) ? steps.map(s => s.en || '').join('\n') : null,
@@ -128,7 +132,7 @@ export async function POST(req: NextRequest) {
     }
   } catch (e: any) { err = String(e?.message || e); finished = false }
 
-  if (finished) await db.from('bank_upgrade_claims').update({ done_at: new Date().toISOString(), questions_done: done, error: null }).eq('batch', JOB).eq('topic_id', topic.id)
+  if (finished) await db.from('bank_upgrade_claims').update({ done_at: new Date().toISOString(), questions_done: done, error: err ? err.slice(0, 300) : null }).eq('batch', JOB).eq('topic_id', topic.id)
   else if (err) await db.from('bank_upgrade_claims').update({ questions_done: done, error: err.slice(0, 300) }).eq('batch', JOB).eq('topic_id', topic.id)
   else await db.from('bank_upgrade_claims').delete().eq('batch', JOB).eq('topic_id', topic.id) // out of time: someone picks it up again
 
