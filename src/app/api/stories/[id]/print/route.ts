@@ -56,7 +56,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 * { box-sizing: border-box; }
 body { margin: 0; font-family: 'Noto Sans Hebrew', sans-serif; color: #16213E; background: #EEE9DF; }
 .page { width: 148mm; height: 210mm; margin: 10mm auto; background: #fff; padding: 12mm 12mm 10mm; display: flex; flex-direction: column; gap: 7mm; position: relative; overflow: hidden; page-break-after: always; break-after: page; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
-.art { width: 100%; height: 100mm; object-fit: cover; border-radius: 6mm; flex-shrink: 0; }
+.art { width: 100%; height: 100mm; object-fit: contain; border-radius: 6mm; flex-shrink: 0; }
 .art.empty { border: 2px dashed #D9D2C4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4mm; color: #A39A8A; font-size: 11pt; }
 .art.empty .pics { display: flex; gap: 6mm; }
 .text { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 2.5mm; }

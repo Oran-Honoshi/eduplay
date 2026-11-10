@@ -61,7 +61,7 @@ export default function ReaderPage() {
   if (!b) return <Shell><div style={{ textAlign: 'center', padding: 60, fontSize: 20, color: '#7A6A4F' }}>פותחים את הספרון…</div></Shell>
 
   const art = (url: string | null | undefined, pics: string[], coverArt = false) => url
-    ? <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 24 }} />
+    ? <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><img src={url} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 24 }} /></div>
     : <div style={{ width: '100%', height: '100%', borderRadius: 24, background: coverArt ? '#FFE9B8' : '#EAF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, flexWrap: 'wrap', padding: 16 }}>
         {pics.length ? pics.map(k => <span key={k} dangerouslySetInnerHTML={{ __html: pictureBig(k, 120) }} />) : <Pip theme="plain" pose={coverArt ? 'wave' : 'thumbs'} size={110} he />}
       </div>
@@ -82,7 +82,7 @@ export default function ReaderPage() {
     body = <>
       <div style={{ fontSize: 16, fontWeight: 700, color: '#7A6A4F', textAlign: 'center' }}>ספרון {b.number}</div>
       <h1 style={{ margin: 0, fontFamily: READ_FONT, fontSize: 'clamp(38px, 9vw, 56px)', fontWeight: 800, color: '#C2337F', textAlign: 'center', lineHeight: 1.5 }} dangerouslySetInnerHTML={{ __html: lineHtml(b.title_he) }} />
-      <div style={{ height: 'clamp(150px, 38vh, 420px)' }}>{art(b.cover?.image_url, [], true)}</div>
+      <div style={{ height: 'clamp(180px, 42vh, 460px)' }}>{art(b.cover?.image_url, [], true)}</div>
       <button onClick={() => go(1)} style={{ alignSelf: 'center', minHeight: 64, padding: '0 40px', borderRadius: 20, border: 'none', background: '#2F5BE3', color: '#fff', fontSize: 24, fontWeight: 800, fontFamily: READ_FONT, cursor: 'pointer' }}>מַתְחִילִים לִקְרֹא</button>
     </>
   } else if (page === last) {
@@ -98,7 +98,7 @@ export default function ReaderPage() {
   } else {
     const p = b.pages[page]
     body = <>
-      <div style={{ height: 'clamp(130px, 32vh, 400px)', flexShrink: 0 }}>{art(p.image_url, pagePictures(p))}</div>
+      <div style={{ height: 'clamp(160px, 38vh, 440px)', flexShrink: 0 }}>{art(p.image_url, pagePictures(p))}</div>
       <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', textAlign: 'center', padding: '8px 0' }}>
         {words.map((ws, li) => (
           <div key={li} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0 .35em' }}>
