@@ -178,7 +178,7 @@ function ParentsScreen({ familyId, showToast }: any) {
           <div style={{ display:'flex', gap:'10px' }}>
             <button onClick={() => setShowAdd(false)}
               style={{ flex:1, padding:'10px', borderRadius:'10px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, color:PARENT_COLORS.textSecondary, fontWeight:700, fontSize:'13px', cursor:'pointer' }}>
-              Cancel
+              ביטול
             </button>
             <button onClick={addParent} disabled={saving || !newName || !newPass}
               style={{ flex:2, display:'flex', alignItems:'center', justifyContent:'center', gap:'6px', padding:'10px', borderRadius:'10px', border:'none', background:PARENT_COLORS.primary, color:'white', fontWeight:800, fontSize:'13px', cursor:'pointer', opacity:saving||!newName||!newPass?0.6:1 }}>
@@ -337,7 +337,7 @@ function AssignmentsScreen({ children, showToast }: any) {
                             </button>
                             <button onClick={() => { setPickerFor(null); setPickerChildId('') }}
                               style={{ padding:'6px 10px', borderRadius:'50px', border:`1px solid ${PARENT_COLORS.border}`, background:PARENT_COLORS.card, color:PARENT_COLORS.textMuted, fontWeight:700, fontSize:'11px', cursor:'pointer' }}>
-                              Cancel
+                              ביטול
                             </button>
                           </>
                         ) : (

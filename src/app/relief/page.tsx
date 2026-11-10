@@ -422,7 +422,7 @@ export default function ReliefPage() {
                     fontSize: 10, fontWeight: 800, color,
                     letterSpacing: '0.07em', textTransform: 'uppercase', marginBottom: 10,
                   }}>
-                    <ChevronRight size={11} /> Instructions
+                    <ChevronRight size={11} /> הוראות
                   </div>
                   <p style={{ fontSize: 13, color: '#374151', margin: 0, lineHeight: 1.75 }}>
                     {activity.instructions_he || activity.instructions_en}

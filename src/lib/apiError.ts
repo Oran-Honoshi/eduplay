@@ -5,7 +5,7 @@
 // from a parent's point of view that's an expired/missing login, not a real
 // permissions failure, so both statuses get the same friendly copy rather than
 // echoing "Forbidden" verbatim.
-export const SESSION_EXPIRED_MESSAGE = 'Your session has expired — please log in again.'
+export const SESSION_EXPIRED_MESSAGE = 'החיבור פג — צריך להתחבר שוב.'
 
 export function isSessionExpiredStatus(status: number): boolean {
   return status === 401 || status === 403
