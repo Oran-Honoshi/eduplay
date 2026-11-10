@@ -23,9 +23,8 @@ export function ParentNav({ active }: { active?: ParentSection }) {
         return (
           <a key={key} href={href} aria-current={on ? 'page' : undefined}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, minHeight: 40, padding: '0 14px', borderRadius: 999, textDecoration: 'none',
-              fontWeight: 800, fontSize: 14, fontFamily: "'Assistant', 'Nunito', sans-serif",
-              background: on ? '#fff' : 'transparent', color: on ? PARENT_COLORS.primary : '#4B5D59',
-              boxShadow: on ? '0 1px 4px rgba(15,61,58,.12)' : 'none' }}>
+              fontWeight: on ? 800 : 600, fontSize: 15, fontFamily: PARENT_FONTS.body,
+              background: on ? PARENT_COLORS.primaryLight : 'transparent', color: on ? PARENT_COLORS.primaryHover : PARENT_COLORS.text }}>
             <Icon size={16} aria-hidden /> <span className="hidden sm:inline">{he}</span>
           </a>
         )
@@ -77,7 +76,7 @@ export function ParentTabBar({ active }: { active?: ParentSection }) {
         const on = key === active
         return (
           <a key={key} href={href} aria-current={on ? 'page' : undefined}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, minHeight: 64, textDecoration: 'none', fontSize: 13, fontWeight: on ? 800 : 600, color: on ? PARENT_COLORS.primaryHover : PARENT_COLORS.textMuted, fontFamily: "'Assistant', sans-serif" }}>
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, minHeight: 64, textDecoration: 'none', fontSize: 13, fontWeight: on ? 800 : 600, color: on ? PARENT_COLORS.primaryHover : PARENT_COLORS.textMuted, fontFamily: PARENT_FONTS.body }}>
             <span style={{ width: 48, height: 28, borderRadius: 999, background: on ? PARENT_COLORS.primaryLight : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon size={20} aria-hidden /></span>
             {he}
           </a>

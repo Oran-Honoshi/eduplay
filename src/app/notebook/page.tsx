@@ -1,164 +1,59 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
-import { Plus, ArrowLeft, Notebook as NotebookIcon } from 'lucide-react'
-import ParentHeaderBar from '@/components/ParentHeaderBar'
-import { PARENT_COLORS } from '@/lib/parentTheme'
-import { apiErrorText } from '@/lib/apiError'
-import ApiErrorText from '@/components/ApiErrorText'
+import { useEffect, useState } from 'react'
+import { FileText, Plus, Notebook } from 'lucide-react'
+import ParentPage, { card, chip, pillBtn, GRADE_HE } from '@/components/parent/ParentPage'
+import { PARENT_COLORS as C, PARENT_FONTS as F, SUBJECT_COLORS } from '@/lib/parentTheme'
 
-interface Section {
-  id: string
-  title: string
-  chapter_name: string | null
-  subcategory_name: string | null
-  tags: string[]
-  topic_id: string | null
-  created_at: string
-  updated_at: string
-}
+// "Explanation notebook" (Library): every explanation page the family made in
+// Create, by subject, so a parent can go back to a topic with the child.
+const SUBJ_HE: Record<string, string> = { math: 'חשבון', hebrew: 'עברית', english: 'אנגלית' }
 
-// ── New section form ────────────────────────────────────────────
-function NewSectionForm({ onCreated }: { onCreated: (id: string) => void }) {
-  const [open, setOpen] = useState(false)
-  const [title, setTitle] = useState('')
-  const [chapterName, setChapterName] = useState('')
-  const [subcategoryName, setSubcategoryName] = useState('')
-  const [tagsInput, setTagsInput] = useState('')
-  const [bodyText, setBodyText] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const reset = () => {
-    setTitle(''); setChapterName(''); setSubcategoryName(''); setTagsInput(''); setBodyText(''); setError(null)
-  }
-
-  const submit = async () => {
-    if (!title.trim()) { setError('Title is required'); return }
-    setSaving(true)
-    setError(null)
-    const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean)
-    const res = await fetch('/api/notebook/sections', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title,
-        chapterName: chapterName || undefined,
-        subcategoryName: subcategoryName || undefined,
-        tags,
-        bodyText: bodyText || undefined,
-      }),
-    })
-    const data = await res.json()
-    setSaving(false)
-    if (!res.ok) { setError(apiErrorText(res.status, data.error, 'Failed to create section')); return }
-    reset()
-    setOpen(false)
-    onCreated(data.section.id)
-  }
-
-  if (!open) {
-    return (
-      <button onClick={() => setOpen(true)}
-        className="self-start flex items-center gap-1.5 text-sm font-bold text-white bg-[#2F5BE3] hover:bg-[#2148C0] rounded-xl px-4 py-2">
-        <Plus size={14} /> New Section
-      </button>
-    )
-  }
-
-  return (
-    <div className="bg-white rounded-2xl border border-[#E8E2D6] p-4 flex flex-col gap-3">
-      <h3 className="text-sm font-black text-[#16213E]">New Section</h3>
-      <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Title"
-        className="border border-[#E8E2D6] rounded-lg px-3 py-2 text-sm" />
-      <div className="flex gap-2">
-        <input value={chapterName} onChange={e => setChapterName(e.target.value)} placeholder="Chapter (e.g. Fractions)"
-          className="flex-1 border border-[#E8E2D6] rounded-lg px-3 py-2 text-sm" />
-        <input value={subcategoryName} onChange={e => setSubcategoryName(e.target.value)} placeholder="Subcategory (e.g. Adding and Subtracting)"
-          className="flex-1 border border-[#E8E2D6] rounded-lg px-3 py-2 text-sm" />
-      </div>
-      <input value={tagsInput} onChange={e => setTagsInput(e.target.value)} placeholder="Tags, comma separated"
-        className="border border-[#E8E2D6] rounded-lg px-3 py-2 text-sm" />
-      <textarea value={bodyText} onChange={e => setBodyText(e.target.value)} placeholder="Notes..." rows={4}
-        className="border border-[#E8E2D6] rounded-lg px-3 py-2 text-sm" />
-      {error && <div className="text-xs text-[#DC2626] font-semibold"><ApiErrorText text={error} /></div>}
-      <div className="flex gap-2">
-        <button onClick={submit} disabled={saving}
-          className="text-sm font-bold text-white bg-[#2F5BE3] hover:bg-[#2148C0] disabled:opacity-50 rounded-xl px-4 py-2">
-          {saving ? 'Creating…' : 'Create'}
-        </button>
-        <button onClick={() => { reset(); setOpen(false) }}
-          className="text-sm font-bold text-[#5E6B85] rounded-xl px-4 py-2 hover:bg-[#FAF7F2]">
-          Cancel
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ── Main page ────────────────────────────────────────────────────
 export default function NotebookPage() {
-  const [sections, setSections] = useState<Section[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [items, setItems] = useState<any[] | null>(null)
+  const [subject, setSubject] = useState<string>('all')
 
-  const load = useCallback(() => {
-    setLoading(true)
-    fetch('/api/notebook/sections')
-      .then(async r => {
-        const data = await r.json()
-        if (data.error) { setError(apiErrorText(r.status, data.error, data.error)); setSections([]) }
-        else { setError(null); setSections(data.sections || []) }
-      })
-      .finally(() => setLoading(false))
+  useEffect(() => {
+    fetch('/api/materials').then(r => (r.ok ? r.json() : { materials: [] }))
+      .then(d => setItems((d.materials || []).filter((m: any) => m.kind === 'explanation' && m.status === 'ready')))
+      .catch(() => setItems([]))
   }, [])
 
-  useEffect(() => { load() }, [load])
+  const subjects = [...new Set((items || []).map(m => m.subject_slug).filter(Boolean))]
+  const shown = (items || []).filter(m => subject === 'all' || m.subject_slug === subject)
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] font-[Manrope]">
-      <ParentHeaderBar
-        center={<span className="text-sm font-semibold text-[#6B7690]">/ Notebook</span>}
-        right={
-          <button onClick={() => window.location.href = '/dashboard'}
-            className="flex items-center gap-1.5 text-xs font-semibold text-[#5E6B85] border border-[#E8E2D6] rounded-lg px-3 py-1.5 hover:bg-[#FAF7F2]">
-            <ArrowLeft size={12} /> Dashboard
-          </button>
-        }
-      />
-
-      <div className="max-w-4xl mx-auto px-6 py-6 flex flex-col gap-4">
-        <h1 className="flex items-center gap-2 text-xl font-extrabold text-[#16213E]">
-          <NotebookIcon size={18} color={PARENT_COLORS.primary} /> Notebook
-        </h1>
-
-        <NewSectionForm onCreated={id => { window.location.href = `/notebook/${id}` }} />
-
-        {error && <div className="text-sm text-[#DC2626] font-semibold"><ApiErrorText text={error} /></div>}
-        {loading && <div className="text-sm text-[#6B7690]">Loading…</div>}
-        {!loading && !error && sections.length === 0 && (
-          <div className="text-sm text-[#6B7690]">No sections yet — create your first one above.</div>
-        )}
-
-        <div className="flex flex-col gap-2">
-          {sections.map(s => (
-            <div key={s.id} onClick={() => window.location.href = `/notebook/${s.id}`}
-              className="bg-white rounded-2xl border border-[#E8E2D6] p-4 flex flex-col gap-2 cursor-pointer hover:border-[#2F5BE3]">
-              <div className="font-bold text-[#16213E]">{s.title}</div>
-              <div className="flex gap-2 flex-wrap">
-                {s.chapter_name && (
-                  <span className="text-xs font-semibold text-[#2F5BE3] bg-[#EAF0FF] rounded-full px-2 py-0.5">{s.chapter_name}</span>
-                )}
-                {s.subcategory_name && (
-                  <span className="text-xs font-semibold text-[#7C6BAE] bg-[#EFE9FA] rounded-full px-2 py-0.5">{s.subcategory_name}</span>
-                )}
-                {(s.tags || []).map(tag => (
-                  <span key={tag} className="text-xs font-semibold text-[#5E6B85] bg-[#f0efe9] rounded-full px-2 py-0.5">#{tag}</span>
-                ))}
-              </div>
-            </div>
-          ))}
+    <ParentPage section="library" title="מחברת ההסברים"
+      subtitle="דפי ההסבר שהכנתם, לפי מקצוע. אפשר לפתוח, להדפיס, לשלוח לילד או להכין עוד אחד."
+      actions={<a href="/create?kind=explanation" style={pillBtn(true)}><Plus size={16} /> דף הסבר חדש</a>}>
+      {subjects.length > 1 && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+          <button onClick={() => setSubject('all')} style={chip(subject === 'all')}>הכול</button>
+          {subjects.map(s => <button key={s} onClick={() => setSubject(s)} style={chip(subject === s, SUBJECT_COLORS[s]?.fg, SUBJECT_COLORS[s]?.bg)}>{SUBJ_HE[s] || s}</button>)}
         </div>
-      </div>
-    </div>
+      )}
+      {items === null ? <div style={{ color: C.textMuted }}>טוען…</div> : shown.length === 0 ? (
+        <div style={{ ...card, padding: 36, textAlign: 'center' }}>
+          <Notebook size={32} color={C.primary} />
+          <div style={{ fontFamily: F.heading, fontWeight: 800, fontSize: 19, marginTop: 10 }}>המחברת עוד ריקה</div>
+          <p style={{ color: C.textSecondary, margin: '6px auto 16px', maxWidth: 440, lineHeight: 1.6 }}>דף הסבר הוא דף לימוד לנושא אחד: הסבר קצר, דוגמאות פתורות שלב אחר שלב, טעויות נפוצות ותרגול קטן. כל דף שתכינו יישמר כאן.</p>
+          <a href="/create?kind=explanation" style={pillBtn(true)}><Plus size={16} /> להכין דף הסבר ראשון</a>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
+          {shown.map(m => {
+            const sc = SUBJECT_COLORS[m.subject_slug] || SUBJECT_COLORS.math
+            return (
+              <a key={m.id} href={`/create?open=${m.id}`} style={{ ...card, padding: 16, textDecoration: 'none', color: C.text, display: 'flex', gap: 12 }}>
+                <span style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 12, background: sc.bg, color: sc.fg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FileText size={22} /></span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: 'block', fontWeight: 800, fontSize: 16, lineHeight: 1.35 }}>{m.title || 'דף הסבר'}</span>
+                  <span style={{ display: 'block', fontSize: 13, color: C.textMuted, marginTop: 4 }}>{SUBJ_HE[m.subject_slug] || ''}{m.grade != null ? ` · ${GRADE_HE[m.grade] || ''}` : ''} · {new Date(m.created_at).toLocaleDateString('he-IL')}</span>
+                </span>
+              </a>
+            )
+          })}
+        </div>
+      )}
+    </ParentPage>
   )
 }

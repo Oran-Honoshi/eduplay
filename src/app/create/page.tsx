@@ -428,8 +428,8 @@ function CreateInner() {
                   <div className="w-12 h-12 rounded-xl bg-[#FFF4D6] text-[#8a5a00] flex items-center justify-center shrink-0"><BookOpen size={24} /></div>
                   <div><div className="text-lg font-black text-[#16213E]">חוברות קריאה (גן–א׳)</div><div className="text-sm text-[#4A5672]">קמץ, שווא, חיריק ועוד: הברות, מילים, משפטים וסיפור, עם התאמה לתמונות, חיבור נקודות וציור.</div></div>
                 </a>
-                <a href="/worksheets" className="md:col-span-3 text-sm text-[#2F5BE3] font-semibold underline-offset-2 hover:underline">
-                  רק להדפיס דף עבודה מהמאגר המוכן (גן–ו׳)? לבונה דפי העבודה ←
+                <a href="/curriculum" className="md:col-span-3 text-sm text-[#2F5BE3] font-semibold underline-offset-2 hover:underline">
+                  רק להדפיס דף מוכן מהמאגר (גן–ו׳)? לתוכנית הלימודים ←
                 </a>
               </div>
             )}
