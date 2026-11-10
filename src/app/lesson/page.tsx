@@ -122,7 +122,7 @@ export default async function LessonPage({ searchParams }: Props) {
       isReadingTopic={isReadingTopic} allTopics={allTopics || []} subjects={subjects || []} progress={progress || []} difficulty={difficulty} />
   }
   const { data: explanation } = topic?.slug
-    ? await supabase.from('topic_explanations').select('*').eq('topic_slug', topic.slug).order('updated_at', { ascending: false }).limit(1).maybeSingle()
+    ? await supabase.from('topic_explanations').select('*').eq('topic_slug', topic.slug).eq('status', 'approved').order('updated_at', { ascending: false }).limit(1).maybeSingle()
     : { data: null }
   // easy first, then harder
   const rank: Record<string, number> = { easy: 0, medium: 1, hard: 2 }
