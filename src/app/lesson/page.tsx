@@ -2,6 +2,7 @@ import { createServiceRoleClient } from '@/lib/supabase'
 import { kidTopicsForGrade } from '@/lib/kidTopics'
 import { authorizeChildAccess } from '@/lib/session'
 import LessonClient from './client'
+import LegacyLesson from './legacy'
 import { redirect } from 'next/navigation'
 
 interface Props {
@@ -114,8 +115,21 @@ export default async function LessonPage({ searchParams }: Props) {
   const { data: progress } = await supabase
     .from('child_topic_progress').select('*').eq('child_id', child.id)
 
+  // Reading topics with a passage keep the passage reader; everything else
+  // uses the lesson built like the assignment screen.
+  if (isReadingTopic && passage) {
+    return <LegacyLesson child={child} topic={topic} questions={questions} passage={passage} passageQuestions={passageQuestions}
+      isReadingTopic={isReadingTopic} allTopics={allTopics || []} subjects={subjects || []} progress={progress || []} difficulty={difficulty} />
+  }
+  const { data: explanation } = topic?.slug
+    ? await supabase.from('topic_explanations').select('*').eq('topic_slug', topic.slug).order('updated_at', { ascending: false }).limit(1).maybeSingle()
+    : { data: null }
+  // easy first, then harder
+  const rank: Record<string, number> = { easy: 0, medium: 1, hard: 2 }
+  questions.sort((a: any, b: any) => (rank[a.difficulty] ?? 1) - (rank[b.difficulty] ?? 1))
+
   return (
-    <LessonClient
+    <LessonClient explanation={explanation}
       child={child}
       topic={topic}
       questions={questions}
