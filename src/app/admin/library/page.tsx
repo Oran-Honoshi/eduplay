@@ -1,4 +1,5 @@
 'use client'
+import ParentPage from '@/components/parent/ParentPage'
 import { useEffect, useState } from 'react'
 import { KIND_HE, SUBJECT_HE, gradeHe } from '@/lib/publicLabels'
 
@@ -14,9 +15,8 @@ export default function AdminLibraryPage() {
   }
   const statusHe: any = { submitted: 'ממתין', listed: 'בספרייה', rejected: 'נדחה' }
   return (
-    <main dir="rtl" className="min-h-screen bg-[#FAF7F2] p-4" style={{ fontFamily: "'Assistant','Nunito',sans-serif" }}>
-      <div className="max-w-[900px] mx-auto">
-        <h1 className="text-2xl font-black">ניהול הספרייה החינמית</h1>
+    <ParentPage section="library" title="אישורים לספרייה החינמית" subtitle="דפים שהורים הציעו לשתף, ומשוב מהורים.">
+      <div>
         {err && <p className="text-[#DC2626]">{err}</p>}
         {!data ? !err && <p>טוען…</p> : <>
           <div className="flex flex-col gap-2 mt-4">
@@ -47,6 +47,6 @@ export default function AdminLibraryPage() {
           </div>
         </>}
       </div>
-    </main>
+    </ParentPage>
   )
 }
