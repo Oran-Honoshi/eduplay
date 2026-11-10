@@ -442,7 +442,7 @@ function CreateHub({ children }: any) {
   )
 }
 
-function LibraryHub() {
+function LibraryHub({ isAdmin }: { isAdmin?: boolean }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
       <SectionTitle icon={BookOpen} title="ספרייה" subtitle="כל מה שמוכן לשימוש: תוכנית הלימודים, מה שכבר יצרתם, מחברת ההסברים וקטעי קריאה." />
@@ -453,6 +453,14 @@ function LibraryHub() {
         { icon:BookOpen, title:'קטעי קריאה', desc:'סיפורים עם שאלות הבנה, לפי רמה.', href:'/passages' },
         { icon:Map, title:'ספרייה חינמית', desc:'דפים חינם שהורים שיתפו — וכאן יופיעו גם שלכם אחרי אישור.', href:'/free', tone:'accent' },
       ]}/>
+      {isAdmin && <>
+        <div style={{ fontSize:'13px', fontWeight:800, color:PARENT_COLORS.textMuted }}>ניהול EduPlay</div>
+        <HubGrid items={[
+          { icon:ClipboardList, title:'בדיקת מאגר השיעורים', desc:'רמזים, פתרונות צעד אחר צעד ודפי לימוד חדשים לשיעורים — לאשר לפני שהם עולים.', href:'/admin/bank', tone:'amber' },
+          { icon:Map, title:'אישורים לספרייה החינמית', desc:'דפים שהורים הציעו לשתף.', href:'/admin/library' },
+          { icon:BookOpen, title:'ספרוני קריאה ראשונה', desc:'איורים, אישור והסתרה.', href:'/stories', tone:'accent' },
+        ]}/>
+      </>}
     </div>
   )
 }
@@ -810,7 +818,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
           {screen === 'create' && <CreateHub children={children} />}
 
           {/* ── LIBRARY ── */}
-          {screen === 'library' && <LibraryHub />}
+          {screen === 'library' && <LibraryHub isAdmin={!!family?.is_admin} />}
 
           {/* ── PARENTS ── */}
           {screen === 'family' && (
