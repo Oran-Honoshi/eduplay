@@ -1,905 +1,258 @@
 'use client'
-import { useState, useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { BookOpen, Printer, Search, Sparkles, X, Check, Loader2 } from 'lucide-react'
+import ParentPage, { card, chip, pillBtn, GRADE_HE } from '@/components/parent/ParentPage'
+import { PARENT_COLORS as C, PARENT_FONTS as F, SUBJECT_COLORS } from '@/lib/parentTheme'
 import { createBrowserClient } from '@/lib/supabase'
 import { apiErrorText } from '@/lib/apiError'
-import ApiErrorText from '@/components/ApiErrorText'
 
-// ── Types ──────────────────────────────────────────────────────
-interface ReadingLevel {
-  id: string
-  track: 'niqqud' | 'phonics'
-  level_number: number
-  label_en: string
-  label_he: string | null
-}
-
-interface Passage {
-  id: string
-  grade: number
-  subject: string
-  passage_type: string
-  difficulty: string
-  title_en: string
-  title_he: string | null
-  content_en: string | null
-  content_he: string | null
-  word_count_en: number | null
-  word_count_he: number | null
-  paragraph_count: number | null
-  approved: boolean
-  question_count?: number
-  level_id?: string | null
-  level?: ReadingLevel | null
-}
-
-// ── Constants ──────────────────────────────────────────────────
+// Reading passages (Library): short stories and texts with comprehension
+// questions, by grade. Read on screen, print with questions, or write a new
+// one. The EduPlay admin also sees the review queue here.
 const supabase = createBrowserClient()
 
-const GRADE_LABELS: Record<number, string> = {
-  0: 'KG', 1: 'G1', 2: 'G2', 3: 'G3', 4: 'G4', 5: 'G5', 6: 'G6'
+const TYPE_HE: Record<string, string> = { story: 'סיפור', informational: 'מידע', argumentative: 'טיעון', poem: 'שיר' }
+const DIFF_HE: Record<string, string> = { easy: 'קל', medium: 'בינוני', hard: 'מאתגר' }
+const SUBJ_HE: Record<string, string> = { hebrew: 'עברית', english: 'אנגלית' }
+
+type Q = { id: string; prompt_en: string | null; prompt_he: string | null; options: any; correct_answer: string | null; sort_order: number | null; approved: boolean }
+type P = {
+  id: string; grade: number; subject: string; passage_type: string; difficulty: string
+  title_en: string; title_he: string | null; content_en: string | null; content_he: string | null
+  word_count_en: number | null; word_count_he: number | null; questions: Q[]
 }
 
-const TYPE_EMOJI: Record<string, string> = {
-  story: '📖', informational: '📰', argumentative: '💬', poem: '🎵'
-}
+const esc = (s: string) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } as any)[c])
+const optText = (o: any) => (typeof o === 'string' ? o : o?.text_he || o?.text || o?.label || o?.text_en || '')
 
-const DIFF_COLOR: Record<string, { bg: string; text: string; label: string }> = {
-  easy:   { bg: '#D1FAE5', text: '#065F46', label: 'Easy' },
-  medium: { bg: '#FEF3C7', text: '#92400E', label: 'Medium' },
-  hard:   { bg: '#FEE2E2', text: '#991B1B', label: 'Hard' },
-}
+export default function PassagesPage() {
+  const [tab, setTab] = useState<'library' | 'new' | 'review'>('library')
+  const [all, setAll] = useState<P[] | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [subject, setSubject] = useState('all')
+  const [grade, setGrade] = useState<number | 'all'>('all')
+  const [q, setQ] = useState('')
+  const [open, setOpen] = useState<P | null>(null)
 
-const SUBJ_COLOR: Record<string, { bg: string; text: string }> = {
-  english: { bg: '#DBEAFE', text: '#1E40AF' },
-  hebrew:  { bg: '#D1FAE5', text: '#065F46' },
-}
+  async function load() {
+    const [{ data: subjects }, { data }] = await Promise.all([
+      supabase.from('subjects').select('id,slug'),
+      supabase.from('reading_passages').select('*, passage_questions(id,prompt_en,prompt_he,options,correct_answer,sort_order,approved)').eq('approved', true).order('grade'),
+    ])
+    const slug: Record<string, string> = Object.fromEntries((subjects || []).map((s: any) => [s.id, s.slug]))
+    setAll((data || []).map((p: any) => ({ ...p, subject: slug[p.subject_id] || p.subject || 'english', questions: (p.passage_questions || []).filter((x: Q) => x.approved).sort((a: Q, b: Q) => (a.sort_order ?? 0) - (b.sort_order ?? 0)) })))
+  }
+  useEffect(() => {
+    load()
+    fetch('/api/stories?all=1').then(r => (r.ok ? r.json() : {})).then((d: any) => setIsAdmin(!!d.admin)).catch(() => {})
+  }, [])
 
-const TRACK_EMOJI: Record<string, string> = { niqqud: '🔤', phonics: '🔡' }
-function levelBadgeLabel(level: ReadingLevel) {
-  return `${TRACK_EMOJI[level.track] ?? '📗'} ${level.track === 'niqqud' ? 'Niqqud' : 'Phonics'} L${level.level_number}`
-}
-
-// ── Passage Card ───────────────────────────────────────────────
-function PassageCard({ p, onOpen }: { p: Passage; onOpen: () => void }) {
-  const diff = DIFF_COLOR[p.difficulty] ?? DIFF_COLOR.medium
-  const subj = SUBJ_COLOR[p.subject] ?? SUBJ_COLOR.english
-  const words = p.word_count_en ?? p.word_count_he ?? 0
-  const isHe = !p.content_en && !!p.content_he
+  const shown = useMemo(() => (all || []).filter(p =>
+    (subject === 'all' || p.subject === subject) && (grade === 'all' || p.grade === grade) &&
+    (!q.trim() || `${p.title_en} ${p.title_he || ''}`.toLowerCase().includes(q.trim().toLowerCase()))), [all, subject, grade, q])
 
   return (
-    <div
-      onClick={onOpen}
-      className="bg-white rounded-2xl border border-gray-100 p-4 cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150"
-    >
-      {/* Top row */}
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: subj.bg, color: subj.text }}>
-            {p.subject === 'english' ? 'EN' : 'עב'}
-          </span>
-          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-            {GRADE_LABELS[p.grade]}
-          </span>
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: diff.bg, color: diff.text }}>
-            {diff.label}
-          </span>
-          {p.level && (
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
-              {levelBadgeLabel(p.level)}
-            </span>
-          )}
+    <ParentPage section="library" title="קטעי קריאה" subtitle="סיפורים וטקסטים קצרים עם שאלות הבנה, לפי כיתה. לקרוא על המסך, להדפיס עם השאלות, או לכתוב קטע חדש.">
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        <button onClick={() => setTab('library')} style={chip(tab === 'library')}><BookOpen size={15} /> כל הקטעים</button>
+        <button onClick={() => setTab('new')} style={chip(tab === 'new')}><Sparkles size={15} /> קטע חדש</button>
+        {isAdmin && <button onClick={() => setTab('review')} style={chip(tab === 'review')}>ממתינים לאישור</button>}
+      </div>
+
+      {tab === 'library' && <>
+        <div style={{ ...card, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={16} color={C.textMuted} style={{ position: 'absolute', insetInlineStart: 14, top: 14 }} />
+            <input value={q} onChange={e => setQ(e.target.value)} placeholder="חיפוש לפי שם" style={{ width: '100%', boxSizing: 'border-box', minHeight: 44, borderRadius: 12, border: `1px solid ${C.border}`, paddingInlineStart: 38, fontSize: 15, fontFamily: F.body }} />
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button onClick={() => setSubject('all')} style={chip(subject === 'all')}>כל השפות</button>
+            {['hebrew', 'english'].map(s => <button key={s} onClick={() => setSubject(s)} style={chip(subject === s, SUBJECT_COLORS[s].fg, SUBJECT_COLORS[s].bg)}>{SUBJ_HE[s]}</button>)}
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button onClick={() => setGrade('all')} style={chip(grade === 'all')}>כל הכיתות</button>
+            {[0, 1, 2, 3, 4, 5, 6].map(g => <button key={g} onClick={() => setGrade(g)} style={chip(grade === g)}>{GRADE_HE[g]}</button>)}
+          </div>
         </div>
-        <span className="text-lg shrink-0">{TYPE_EMOJI[p.passage_type] ?? '📄'}</span>
-      </div>
-
-      {/* Title */}
-      <h3 className="text-sm font-bold text-gray-900 leading-snug mb-1 text-start" dir={isHe ? 'rtl' : 'ltr'}>
-        {isHe ? (p.title_he ?? p.title_en) : p.title_en}
-      </h3>
-      {p.title_he && !isHe && (
-        <p className="text-xs text-gray-400 mb-2" dir="rtl">{p.title_he}</p>
-      )}
-
-      {/* Stats */}
-      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-50">
-        <span className="text-xs text-gray-400">
-          {words > 0 ? `~${words} words` : 'No content'}
-        </span>
-        <span className="text-xs text-gray-300">·</span>
-        <span className="text-xs text-gray-400 capitalize">{p.passage_type}</span>
-        {(p.question_count ?? 0) > 0 && (
-          <>
-            <span className="text-xs text-gray-300">·</span>
-            <span className="text-xs text-emerald-600 font-semibold">{p.question_count}Q</span>
-          </>
+        {all === null ? <div style={{ color: C.textMuted }}>טוען…</div> : shown.length === 0 ? (
+          <div style={{ ...card, padding: 32, textAlign: 'center', color: C.textSecondary }}>אין קטעים שמתאימים לבחירה. אפשר לכתוב קטע חדש.</div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12 }}>
+            {shown.map(p => {
+              const he = p.subject === 'hebrew' || (!p.content_en && !!p.content_he)
+              const sc = SUBJECT_COLORS[p.subject] || SUBJECT_COLORS.english
+              const words = p.word_count_he ?? p.word_count_en ?? 0
+              return (
+                <button key={p.id} onClick={() => setOpen(p)} style={{ ...card, padding: 16, textAlign: 'start', cursor: 'pointer', fontFamily: F.body, color: C.text, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <span style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <Tag bg={sc.bg} fg={sc.fg}>{SUBJ_HE[p.subject] || p.subject}</Tag>
+                    <Tag>{GRADE_HE[p.grade]}</Tag>
+                    <Tag>{TYPE_HE[p.passage_type] || p.passage_type}</Tag>
+                    <Tag>{DIFF_HE[p.difficulty] || p.difficulty}</Tag>
+                  </span>
+                  <span dir={he ? 'rtl' : 'ltr'} style={{ fontFamily: F.heading, fontWeight: 800, fontSize: 17, lineHeight: 1.35, textAlign: 'start' }}>{he ? (p.title_he || p.title_en) : p.title_en}</span>
+                  <span style={{ fontSize: 13, color: C.textMuted }}>{words ? `כ־${words} מילים` : ''}{p.questions.length ? ` · ${p.questions.length} שאלות הבנה` : ''}</span>
+                </button>
+              )
+            })}
+          </div>
         )}
-      </div>
-    </div>
+      </>}
+
+      {tab === 'new' && <NewPassage onDone={() => { load(); setTab(isAdmin ? 'review' : 'library') }} isAdmin={isAdmin} />}
+      {tab === 'review' && isAdmin && <Review onChanged={load} />}
+      {open && <Reader p={open} onClose={() => setOpen(null)} />}
+    </ParentPage>
   )
 }
 
-// ── Passage Modal ──────────────────────────────────────────────
-function PassageModal({ p, onClose }: { p: Passage; onClose: () => void }) {
-  const [lang, setLang] = useState<'en' | 'he'>(p.content_en ? 'en' : 'he')
-  const diff = DIFF_COLOR[p.difficulty] ?? DIFF_COLOR.medium
-  const content = lang === 'en' ? p.content_en : p.content_he
-  const words = lang === 'en' ? p.word_count_en : p.word_count_he
+function Tag({ children, bg = '#F3EFE6', fg = C.textSecondary }: { children: React.ReactNode; bg?: string; fg?: string }) {
+  return <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: bg, color: fg }}>{children}</span>
+}
 
-  const handlePrint = () => {
-    const w = window.open('', '_blank')!
-    w.document.write(`
-      <html><head><title>${p.title_en}</title>
-      <style>
-        body { font-family: ${lang === 'he' ? 'Arial' : 'Georgia'}, serif; padding: 40px; max-width: 700px; margin: 0 auto; direction: ${lang === 'he' ? 'rtl' : 'ltr'}; }
-        h1 { font-size: 22px; margin-bottom: 4px; }
-        .meta { font-size: 12px; color: #888; margin-bottom: 24px; }
-        p { font-size: 15px; line-height: 1.8; margin-bottom: 14px; }
-        @media print { body { padding: 20px; } }
-      </style></head><body>
-      <h1>${lang === 'he' && p.title_he ? p.title_he : p.title_en}</h1>
-      <div class="meta">${p.grade === 0 ? 'Kindergarten' : `Grade ${p.grade}`} · ${p.passage_type} · ${p.difficulty} · ~${words ?? '?'} words · EduPlay</div>
-      ${(content ?? '').split('\n\n').map((para: string) => `<p>${para}</p>`).join('')}
-      </body></html>
-    `)
+function Reader({ p, onClose }: { p: P; onClose: () => void }) {
+  const both = !!(p.content_en && p.content_he)
+  const [lang, setLang] = useState<'he' | 'en'>(p.subject === 'english' && p.content_en ? 'en' : p.content_he ? 'he' : 'en')
+  const he = lang === 'he'
+  const title = he ? (p.title_he || p.title_en) : p.title_en
+  const content = (he ? p.content_he : p.content_en) || ''
+  const qText = (x: Q) => (he ? x.prompt_he || x.prompt_en : x.prompt_en || x.prompt_he) || ''
+
+  function print(withAnswers: boolean) {
+    const w = window.open('', '_blank'); if (!w) return
+    const qs = p.questions.map((x, i) => {
+      const opts = Array.isArray(x.options) ? x.options.map(optText).filter(Boolean) : []
+      return `<li><div class="q">${esc(qText(x))}</div>${opts.length ? `<ol class="opts">${opts.map(o => `<li>${esc(o)}</li>`).join('')}</ol>` : '<div class="line"></div><div class="line"></div>'}${withAnswers && x.correct_answer ? `<div class="ans">תשובה: ${esc(x.correct_answer)}</div>` : ''}</li>`
+    }).join('')
+    w.document.write(`<!DOCTYPE html><html lang="${lang}" dir="${he ? 'rtl' : 'ltr'}"><head><meta charset="utf-8"><title>${esc(title)}</title>
+<style>@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@400;700&display=swap');
+body{font-family:'Noto Sans Hebrew',Arial,sans-serif;max-width:720px;margin:0 auto;padding:32px;color:#16213E}
+h1{font-size:24px;margin:0 0 4px}.meta{color:#5E6B85;font-size:13px;margin-bottom:20px}.name{margin-bottom:20px;font-size:14px}
+p{font-size:16px;line-height:1.9;margin:0 0 12px}h2{font-size:18px;margin:28px 0 10px}ol{padding-inline-start:22px}li{margin-bottom:14px}
+.q{font-weight:700}.opts{list-style:hebrew;margin-top:6px}.opts li{margin-bottom:4px}.line{border-bottom:1px solid #999;height:26px}.ans{color:#0B6B58;font-size:13px;margin-top:4px}
+@media print{body{padding:0}}</style></head><body>
+<div class="name">שם: ____________ &nbsp; תאריך: ________</div>
+<h1>${esc(title)}</h1><div class="meta">${GRADE_HE[p.grade] || ''} · ${TYPE_HE[p.passage_type] || ''} · EduPlay</div>
+${content.split(/\n\s*\n/).map(x => `<p>${esc(x)}</p>`).join('')}
+${qs ? `<h2>${he ? 'שאלות' : 'Questions'}</h2><ol>${qs}</ol>` : ''}
+<script>setTimeout(()=>window.print(),500)</script></body></html>`)
     w.document.close()
-    w.print()
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.5)' }}
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Modal header */}
-        <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-gray-100">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                style={{ background: SUBJ_COLOR[p.subject]?.bg, color: SUBJ_COLOR[p.subject]?.text }}>
-                {p.subject === 'english' ? 'English' : 'עברית'}
-              </span>
-              <span className="text-xs bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded-full">
-                {p.grade === 0 ? 'Kindergarten' : `Grade ${p.grade}`}
-              </span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full capitalize"
-                style={{ background: diff.bg, color: diff.text }}>
-                {p.difficulty}
-              </span>
-              <span className="text-xs text-gray-400 capitalize">{TYPE_EMOJI[p.passage_type]} {p.passage_type}</span>
-              {p.level && (
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
-                  {levelBadgeLabel(p.level)}
-                </span>
-              )}
-            </div>
-            <h2 className="text-base font-black text-gray-900 text-start" dir={lang === 'he' ? 'rtl' : 'ltr'}>
-              {lang === 'he' && p.title_he ? p.title_he : p.title_en}
-            </h2>
-            {p.title_he && lang === 'en' && (
-              <p className="text-xs text-gray-400 mt-0.5" dir="rtl">{p.title_he}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Language toggle */}
-            {p.content_en && p.content_he && (
-              <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-                <button onClick={() => setLang('en')}
-                  className={`px-2.5 py-1 text-xs font-semibold ${lang === 'en' ? 'bg-emerald-500 text-white' : 'text-gray-500'}`}>EN</button>
-                <button onClick={() => setLang('he')}
-                  className={`px-2.5 py-1 text-xs font-semibold ${lang === 'he' ? 'bg-emerald-500 text-white' : 'text-gray-500'}`}>עב</button>
-              </div>
-            )}
-            <button onClick={handlePrint}
-              className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-semibold transition-colors">
-              🖨 Print
-            </button>
-            <button onClick={onClose}
-              className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 text-sm font-bold transition-colors">
-              ×
-            </button>
-          </div>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(22,33,62,.45)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} dir="rtl" style={{ ...card, width: '100%', maxWidth: 720, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: `1px solid ${C.border}`, flexWrap: 'wrap' }}>
+          {both && <>
+            <button onClick={() => setLang('he')} style={chip(he)}>עברית</button>
+            <button onClick={() => setLang('en')} style={chip(!he)}>English</button>
+          </>}
+          <span style={{ flex: 1 }} />
+          <button onClick={() => print(false)} style={{ ...pillBtn(), minHeight: 40, fontSize: 14 }}><Printer size={15} /> הדפסה</button>
+          {p.questions.length > 0 && <button onClick={() => print(true)} style={{ ...pillBtn(), minHeight: 40, fontSize: 14 }}>עם תשובות</button>}
+          <button onClick={onClose} aria-label="סגירה" style={{ width: 40, height: 40, borderRadius: 99, border: `1px solid ${C.border}`, background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
         </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
-          {content ? (
-            <div
-              className="prose prose-sm max-w-none"
-              dir={lang === 'he' ? 'rtl' : 'ltr'}
-              style={{ fontFamily: lang === 'he' ? 'Arial, sans-serif' : 'Georgia, serif', lineHeight: 1.85, fontSize: '15px', textAlign: 'start' }}
-            >
-              {content.split('\n\n').map((para: string, i: number) => (
-                <p key={i} className="mb-4 text-gray-800">{para}</p>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-gray-400">
-              <div className="text-3xl mb-2">📄</div>
-              <p className="text-sm">Content not available in this language</p>
-            </div>
-          )}
-        </div>
-
-        {/* Footer stats */}
-        <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-gray-50">
-          <div className="flex items-center gap-4 text-xs text-gray-400">
-            {words && <span>~{words} words</span>}
-            {p.paragraph_count && <span>{p.paragraph_count} paragraphs</span>}
-            {(p.question_count ?? 0) > 0 && <span className="text-emerald-600 font-semibold">{p.question_count} comprehension questions</span>}
-          </div>
-          <span className="text-xs text-gray-300">EduPlay Passage Library</span>
+        <div dir={he ? 'rtl' : 'ltr'} style={{ overflowY: 'auto', padding: '20px 24px 28px', textAlign: 'start' }}>
+          <h2 style={{ fontFamily: F.heading, fontSize: 24, margin: '0 0 14px' }}>{title}</h2>
+          {content ? content.split(/\n\s*\n/).map((x, i) => <p key={i} style={{ fontSize: 17, lineHeight: 1.9, margin: '0 0 12px' }}>{x}</p>) : <p style={{ color: C.textMuted }}>{he ? 'אין נוסח בשפה הזו.' : 'No text in this language.'}</p>}
+          {p.questions.length > 0 && <>
+            <h3 style={{ fontFamily: F.heading, fontSize: 19, margin: '24px 0 10px' }}>{he ? 'שאלות הבנה' : 'Comprehension questions'}</h3>
+            <ol style={{ paddingInlineStart: 22, margin: 0 }}>
+              {p.questions.map(x => <li key={x.id} style={{ marginBottom: 12, fontSize: 16, lineHeight: 1.6 }}>
+                <div style={{ fontWeight: 700 }}>{qText(x)}</div>
+                {Array.isArray(x.options) && <ul style={{ margin: '4px 0 0', paddingInlineStart: 18, color: C.textSecondary }}>{x.options.map((o: any, i: number) => <li key={i}>{optText(o)}</li>)}</ul>}
+              </li>)}
+            </ol>
+          </>}
         </div>
       </div>
     </div>
   )
 }
 
-// reference_file: same 3MB raw cap /api/passages enforces server-side — checked
-// client-side too so a too-large file fails fast instead of after a wasted round trip.
-const MAX_REFERENCE_FILE_BYTES = 3 * 1024 * 1024
-const ALLOWED_REFERENCE_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
-
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve((reader.result as string).split(',')[1])
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
-
-// ── Passage Generator Panel ────────────────────────────────────
-function GeneratorPanel({ onGenerated, onViewExisting }: {
-  onGenerated: (p: Passage) => void
-  onViewExisting: (filter: { grade: string; subject: string; type: string; difficulty: string }) => void
-}) {
-  const [grade, setGrade] = useState('4')
-  const [subject, setSubject] = useState('english')
+function NewPassage({ onDone, isAdmin }: { onDone: () => void; isAdmin: boolean }) {
+  const [grade, setGrade] = useState(2)
+  const [subject, setSubject] = useState('hebrew')
   const [type, setType] = useState('story')
   const [difficulty, setDifficulty] = useState('medium')
   const [topic, setTopic] = useState('')
-  const [customPrompt, setCustomPrompt] = useState('')
-  const [generating, setGenerating] = useState(false)
-  const [result, setResult] = useState<string | null>(null)
-  const [decodabilityResult, setDecodabilityResult] = useState<any>(null)
-  const [questionsResult, setQuestionsResult] = useState<{ count: number; warnings?: string[] } | null>(null)
-  const [existingCount, setExistingCount] = useState<number | null>(null)
+  const [extra, setExtra] = useState('')
+  const [withQ, setWithQ] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
-  // Reading-acquisition level (checkpoint 6) — optional; selecting one locks
-  // the subject to whatever language the level's track requires, matching
-  // /api/passages' own track/subject validation instead of letting the user
-  // hit that 400 by picking an incompatible combination.
-  const [levels, setLevels] = useState<ReadingLevel[]>([])
-  const [levelId, setLevelId] = useState('')
-
-  const [generateQuestions, setGenerateQuestions] = useState(false)
-
-  const [referenceFile, setReferenceFile] = useState<{ name: string; media_type: string; data: string } | null>(null)
-  const [referenceFileError, setReferenceFileError] = useState<string | null>(null)
-
-  useEffect(() => {
-    supabase.from('reading_levels').select('id,track,level_number,label_en,label_he')
-      .eq('is_active', true).order('track').order('level_number')
-      .then(({ data }) => setLevels(data || []))
-  }, [])
-
-  const selectedLevel = levels.find(l => l.id === levelId) ?? null
-
-  const handleLevelChange = (id: string) => {
-    setLevelId(id)
-    const level = levels.find(l => l.id === id)
-    if (level) setSubject(level.track === 'niqqud' ? 'hebrew' : 'english')
-  }
-
-  // "Check before generating" discovery signal — debounced count of already-
-  // approved passages matching the current filters, mirroring the same
-  // pattern added to the question generator. Informational only, never
-  // disables Generate.
-  useEffect(() => {
-    setExistingCount(null)
-    const timer = setTimeout(() => {
-      const params = new URLSearchParams({ grade, subject, type, difficulty })
-      if (levelId) params.set('level_id', levelId)
-      fetch(`/api/passages/count?${params}`)
-        .then(r => r.json())
-        .then(data => setExistingCount(data.count ?? 0))
-        .catch(() => setExistingCount(null))
-    }, 400)
-    return () => clearTimeout(timer)
-  }, [grade, subject, type, difficulty, levelId])
-
-  const handleReferenceFile = async (file: File | null) => {
-    setReferenceFileError(null)
-    if (!file) { setReferenceFile(null); return }
-    if (!ALLOWED_REFERENCE_TYPES.includes(file.type)) {
-      setReferenceFileError('Must be a JPEG/PNG image or a PDF.')
-      return
-    }
-    if (file.size > MAX_REFERENCE_FILE_BYTES) {
-      setReferenceFileError(`File is ${(file.size / 1024 / 1024).toFixed(1)}MB — max is ${MAX_REFERENCE_FILE_BYTES / 1024 / 1024}MB.`)
-      return
-    }
-    const data = await fileToBase64(file)
-    setReferenceFile({ name: file.name, media_type: file.type, data })
-  }
-
-  const generate = async () => {
-    setGenerating(true)
-    setResult(null)
-    setDecodabilityResult(null)
-    setQuestionsResult(null)
+  async function go() {
+    setBusy(true); setMsg(null)
     try {
-      const res = await fetch('/api/passages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          grade: parseInt(grade), subject, type, difficulty, topic: topic || undefined,
-          custom_prompt: customPrompt || undefined,
-          level_id: levelId || undefined,
-          generate_questions: generateQuestions || undefined,
-          reference_file: referenceFile ? { media_type: referenceFile.media_type, data: referenceFile.data } : undefined,
-        }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        setResult('✅ Passage generated and saved for review!')
-        if (data.decodability) setDecodabilityResult(data.decodability)
-        if (data.questions) {
-          setQuestionsResult({ count: data.questions.length, warnings: data.question_warnings })
-          if (data.question_warnings?.length) console.warn('[passages] comprehension question warnings:', data.question_warnings)
-        }
-        onGenerated({ ...data.passage, level: selectedLevel, question_count: data.questions?.length ?? 0 })
-        setTopic('')
-      } else {
-        setResult(`❌ ${apiErrorText(res.status, data.error, 'Error generating passage')}`)
-      }
-    } catch (e: any) {
-      setResult(`❌ ${e.message}`)
-    }
-    setGenerating(false)
+      const r = await fetch('/api/passages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ grade, subject, type, difficulty, topic: topic || undefined, custom_prompt: extra || undefined, generate_questions: withQ || undefined }) })
+      const d = await r.json()
+      if (d.success) { setMsg({ ok: true, text: isAdmin ? 'הקטע נכתב ומחכה לאישור בלשונית "ממתינים לאישור".' : 'הקטע נכתב ונשלח לבדיקה. אחרי האישור הוא יופיע בספרייה.' }); setTopic(''); setExtra(''); setTimeout(onDone, 1200) }
+      else setMsg({ ok: false, text: apiErrorText(r.status, d.error, 'לא הצלחנו לכתוב את הקטע. נסו שוב.') })
+    } catch { setMsg({ ok: false, text: 'לא הצלחנו לכתוב את הקטע. נסו שוב.' }) }
+    setBusy(false)
   }
 
+  const field: React.CSSProperties = { width: '100%', boxSizing: 'border-box', minHeight: 44, borderRadius: 12, border: `1px solid ${C.border}`, padding: '10px 12px', fontSize: 15, fontFamily: F.body, background: '#fff' }
   return (
-    <div className="bg-white rounded-2xl border border-emerald-100 p-5 mb-6">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-lg">✨</span>
-        <h2 className="text-sm font-black text-gray-900">Generate New Passage</h2>
-        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">AI</span>
-      </div>
-      <div className="flex flex-wrap gap-2 items-end">
-        <div>
-          <label className="text-xs text-gray-400 font-semibold block mb-1">Grade</label>
-          <select value={grade} onChange={e => setGrade(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
-            {[0,1,2,3,4,5,6].map(g => <option key={g} value={g}>{g === 0 ? 'KG' : `Grade ${g}`}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs text-gray-400 font-semibold block mb-1">
-            Subject {selectedLevel && <span className="text-purple-400 font-normal">(locked by level)</span>}
-          </label>
-          <select value={subject} onChange={e => setSubject(e.target.value)} disabled={!!selectedLevel}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:bg-gray-50 disabled:text-gray-400">
-            <option value="english">English</option>
-            <option value="hebrew">Hebrew עברית</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-xs text-gray-400 font-semibold block mb-1">Type</label>
-          <select value={type} onChange={e => setType(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
-            <option value="story">📖 Story</option>
-            <option value="informational">📰 Informational</option>
-            <option value="argumentative">💬 Argumentative</option>
-            <option value="poem">🎵 Poem</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-xs text-gray-400 font-semibold block mb-1">Difficulty</label>
-          <select value={difficulty} onChange={e => setDifficulty(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-xs text-gray-400 font-semibold block mb-1">Reading level (optional)</label>
-          <select value={levelId} onChange={e => handleLevelChange(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
-            <option value="">— None (regular passage) —</option>
-            <optgroup label="Niqqud (Hebrew)">
-              {levels.filter(l => l.track === 'niqqud').map(l => (
-                <option key={l.id} value={l.id}>L{l.level_number} — {l.label_en}{l.label_he ? ` (${l.label_he})` : ''}</option>
-              ))}
-            </optgroup>
-            <optgroup label="Phonics (English)">
-              {levels.filter(l => l.track === 'phonics').map(l => (
-                <option key={l.id} value={l.id}>L{l.level_number} — {l.label_en}</option>
-              ))}
-            </optgroup>
-          </select>
-        </div>
-        <div className="flex-1 min-w-40">
-          <label className="text-xs text-gray-400 font-semibold block mb-1">Topic (optional)</label>
-          <input type="text" value={topic} onChange={e => setTopic(e.target.value)}
-            placeholder="e.g. bees, the moon, friendship..."
-            className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
-          />
-        </div>
-        <button onClick={generate} disabled={generating}
-          className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold text-sm rounded-xl transition-colors whitespace-nowrap">
-          {generating ? '⏳ Generating...' : '✨ Generate'}
-        </button>
-      </div>
-
-      <div className="mt-3">
-        <label className="text-xs text-gray-400 font-semibold block mb-1">Custom instructions (optional)</label>
-        <textarea value={customPrompt} onChange={e => setCustomPrompt(e.target.value)}
-          rows={2} placeholder="e.g. focus on a specific character trait, keep sentences short..." dir="auto"
-          className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300"
-        />
-      </div>
-
-      {!!existingCount && (
-        <div className="mt-4 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex items-center justify-between gap-4">
-          <div className="text-sm text-emerald-800">
-            <strong>{existingCount}</strong> similar passage{existingCount === 1 ? '' : 's'} already
-            exist{existingCount === 1 ? 's' : ''} in the Library for this grade, subject, type, and difficulty.
-          </div>
-          <button onClick={() => onViewExisting({ grade, subject, type, difficulty })}
-            className="shrink-0 flex items-center gap-1.5 text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg px-3 py-1.5">
-            View them 📚
-          </button>
-        </div>
-      )}
-
-      {/* Row 2 — comprehension questions + reference file */}
-      <div className="flex flex-wrap gap-4 items-center mt-4 pt-4 border-t border-gray-50">
-        <label className="flex items-center gap-2 text-xs font-semibold text-gray-600 cursor-pointer">
-          <input type="checkbox" checked={generateQuestions} onChange={e => setGenerateQuestions(e.target.checked)}
-            className="w-4 h-4 rounded accent-emerald-500" />
-          Add comprehension questions
-        </label>
-
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-semibold text-gray-600 px-3 py-1.5 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
-            📎 Reference file
-            <input type="file" accept="image/jpeg,image/png,application/pdf" className="hidden"
-              onChange={e => handleReferenceFile(e.target.files?.[0] ?? null)} />
-          </label>
-          {referenceFile && (
-            <span className="text-xs text-gray-500 flex items-center gap-1">
-              {referenceFile.name}
-              <button onClick={() => handleReferenceFile(null)} className="text-gray-400 hover:text-red-500 font-bold px-1">×</button>
-            </span>
-          )}
-        </div>
-        {referenceFileError && <span className="text-xs text-red-600 font-semibold">{referenceFileError}</span>}
-      </div>
-
-      {result && (
-        <div className="mt-3 space-y-1">
-          <p className="text-xs font-semibold" style={{ color: result.startsWith('✅') ? '#065F46' : '#991B1B' }}>
-            <ApiErrorText text={result} />
-            {result.startsWith('✅') && ' (Marked for review — approve in Supabase to publish)'}
-          </p>
-          {decodabilityResult && (
-            <p className="text-xs font-semibold" style={{ color: decodabilityResult.passed ? '#065F46' : '#B45309' }}>
-              {decodabilityResult.passed ? '✅' : '⚠️'} {decodabilityResult.pct}% decodable at this level
-              {decodabilityResult.regenerated ? ' (after 1 retry)' : ''}
-              {!decodabilityResult.passed && ' — this topic may be too advanced for the selected level'}
-            </p>
-          )}
-          {questionsResult && (
-            <p className="text-xs font-semibold text-emerald-700">
-              ✅ {questionsResult.count} comprehension question{questionsResult.count !== 1 ? 's' : ''} added
-              {questionsResult.warnings?.length ? ` (${questionsResult.warnings.length} skipped — see console)` : ''}
-            </p>
-          )}
-        </div>
-      )}
+    <div style={{ ...card, padding: 18, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 720 }}>
+      <Group label="שפה">{['hebrew', 'english'].map(s => <button key={s} onClick={() => setSubject(s)} style={chip(subject === s, SUBJECT_COLORS[s].fg, SUBJECT_COLORS[s].bg)}>{SUBJ_HE[s]}</button>)}</Group>
+      <Group label="כיתה">{[0, 1, 2, 3, 4, 5, 6].map(g => <button key={g} onClick={() => setGrade(g)} style={chip(grade === g)}>{GRADE_HE[g]}</button>)}</Group>
+      <Group label="סוג">{Object.entries(TYPE_HE).map(([k, v]) => <button key={k} onClick={() => setType(k)} style={chip(type === k)}>{v}</button>)}</Group>
+      <Group label="רמה">{Object.entries(DIFF_HE).map(([k, v]) => <button key={k} onClick={() => setDifficulty(k)} style={chip(difficulty === k)}>{v}</button>)}</Group>
+      <label style={{ fontWeight: 800, fontSize: 14 }}>על מה? (לא חובה)
+        <input value={topic} onChange={e => setTopic(e.target.value)} placeholder="לדוגמה: דבורים, הירח, חברות" style={{ ...field, marginTop: 6, fontWeight: 400 }} />
+      </label>
+      <label style={{ fontWeight: 800, fontSize: 14 }}>הערות נוספות (לא חובה)
+        <textarea value={extra} onChange={e => setExtra(e.target.value)} rows={2} placeholder="לדוגמה: משפטים קצרים, דמות שמתמודדת עם פחד" style={{ ...field, marginTop: 6, fontWeight: 400, resize: 'vertical' }} />
+      </label>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15 }}><input type="checkbox" checked={withQ} onChange={e => setWithQ(e.target.checked)} style={{ width: 18, height: 18 }} /> להוסיף שאלות הבנה</label>
+      {msg && <div style={{ padding: '10px 14px', borderRadius: 12, background: msg.ok ? C.mintLight : C.dangerLight, color: msg.ok ? C.mintText : C.danger, fontWeight: 700 }}>{msg.text}</div>}
+      <button onClick={go} disabled={busy} style={{ ...pillBtn(true), alignSelf: 'flex-start', opacity: busy ? 0.7 : 1 }}>{busy ? <><Loader2 size={16} className="animate-spin" /> כותבים… (עד דקה)</> : <><Sparkles size={16} /> לכתוב את הקטע</>}</button>
     </div>
   )
 }
 
-// ── Pending Review ────────────────────────────────────────────
-// Per-item approve/reject only — deliberately no bulk-approve action here.
-// See the 2026-08-01 bulk-approve incident on the questions queue: a bulk
-// action against a shared/unscoped review queue silently affected real
-// pending content. Until bulk approval gets the same real-review-before-
-// confirm treatment questions' BulkApproveModal has, passages ship without it.
-interface PendingPassageQuestion {
-  id: string
-  prompt_en: string | null
-  prompt_he: string | null
-  options: { label: string; isCorrect: boolean; value_en?: string; value_he?: string }[]
-  correct_answer: string
-  explanation_en: string | null
-  approved: boolean
+function Group({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><span style={{ width: 48, fontSize: 13, fontWeight: 800, color: C.textMuted }}>{label}</span>{children}</div>
 }
 
-interface PendingPassage {
-  id: string
-  grade: number
-  subjects: { slug: string } | null
-  passage_type: string
-  difficulty: string
-  title_en: string
-  title_he: string | null
-  content_en: string | null
-  content_he: string | null
-  approved: boolean
-  passage_questions: PendingPassageQuestion[]
-}
-
-// A passage is done needing review once it's approved AND every one of its
-// comprehension questions is too — passage_questions carries its own
-// independent `approved` column (gated separately in lesson/page.tsx), so
-// approving the passage alone doesn't resolve its questions.
-const isResolved = (p: PendingPassage) => p.approved && p.passage_questions.every(q => q.approved)
-
-function PendingPassageQuestionRow({ passageId, q, busy, onAct }: {
-  passageId: string
-  q: PendingPassageQuestion
-  busy: boolean
-  onAct: (passageId: string, questionId: string, action: 'approve' | 'reject', reason?: string) => void
-}) {
+function Review({ onChanged }: { onChanged: () => void }) {
+  const [list, setList] = useState<any[] | null>(null)
+  const [busy, setBusy] = useState<string | null>(null)
+  async function load() { const r = await fetch('/api/passages/pending'); const d = await r.json().catch(() => ({})); setList(d.passages || []) }
+  useEffect(() => { load() }, [])
+  async function act(kind: 'passage' | 'question', id: string, action: 'approve' | 'reject') {
+    setBusy(id)
+    await fetch(kind === 'passage' ? `/api/passages/${id}` : `/api/passages/questions/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) })
+    setBusy(null); await load(); onChanged()
+  }
+  if (!list) return <div style={{ color: C.textMuted }}>טוען…</div>
+  if (!list.length) return <div style={{ ...card, padding: 28, textAlign: 'center', color: C.textSecondary }}>אין קטעים שממתינים לאישור.</div>
   return (
-    <div className="bg-gray-50 rounded-xl p-3 mt-2">
-      <p className="text-xs font-semibold text-gray-800 mb-1">{q.prompt_en ?? q.prompt_he}</p>
-      {q.prompt_he && q.prompt_en && <p className="text-xs text-gray-400 mb-1" dir="rtl">{q.prompt_he}</p>}
-      <ul className="text-xs text-gray-600 mb-2 flex flex-col gap-0.5">
-        {q.options.map((opt, i) => (
-          <li key={i} className={opt.isCorrect ? 'font-bold text-emerald-700' : ''}>
-            {opt.label}. {opt.value_en ?? opt.value_he}{opt.isCorrect ? ' ✓' : ''}
-          </li>
-        ))}
-      </ul>
-      {q.explanation_en && <p className="text-xs text-gray-400 mb-2">Explanation: {q.explanation_en}</p>}
-      {q.approved ? (
-        <span className="text-xs font-semibold text-emerald-600">✓ Approved</span>
-      ) : (
-        <div className="flex gap-2">
-          <button onClick={() => onAct(passageId, q.id, 'approve')} disabled={busy}
-            className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
-            Approve
-          </button>
-          <button onClick={() => onAct(passageId, q.id, 'reject', window.prompt('Reason for rejecting (optional):') || undefined)} disabled={busy}
-            className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 disabled:opacity-50 font-bold text-xs rounded-lg transition-colors">
-            Reject
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function PendingReviewList({ active }: { active: boolean }) {
-  const [passages, setPassages] = useState<PendingPassage[]>([])
-  const [loading, setLoading] = useState(true)
-  const [busyPassageId, setBusyPassageId] = useState<string | null>(null)
-  const [busyQuestionId, setBusyQuestionId] = useState<string | null>(null)
-
-  const load = () => {
-    setLoading(true)
-    fetch('/api/passages/pending')
-      .then(r => r.json())
-      .then(data => setPassages(data.passages || []))
-      .finally(() => setLoading(false))
-  }
-
-  // Refetch each time this tab becomes active, matching questions/page.tsx's
-  // PendingReviewList — the tab stays mounted across switches.
-  useEffect(() => { if (active) load() }, [active])
-
-  const actPassage = async (id: string, action: 'approve' | 'reject', reason?: string) => {
-    setBusyPassageId(id)
-    const res = await fetch(`/api/passages/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...(reason !== undefined ? { reason } : {}) }),
-    })
-    if (res.ok) {
-      setPassages(prev => {
-        if (action === 'reject') return prev.filter(p => p.id !== id)
-        return prev.map(p => p.id === id ? { ...p, approved: true } : p).filter(p => !isResolved(p))
-      })
-    }
-    setBusyPassageId(null)
-  }
-
-  const rejectPassage = (id: string) => actPassage(id, 'reject', window.prompt('Reason for rejecting (optional):') || undefined)
-
-  const actQuestion = async (passageId: string, questionId: string, action: 'approve' | 'reject', reason?: string) => {
-    setBusyQuestionId(questionId)
-    const res = await fetch(`/api/passages/questions/${questionId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...(reason !== undefined ? { reason } : {}) }),
-    })
-    if (res.ok) {
-      setPassages(prev => prev.map(p => {
-        if (p.id !== passageId) return p
-        const passage_questions = action === 'reject'
-          ? p.passage_questions.filter(q => q.id !== questionId)
-          : p.passage_questions.map(q => q.id === questionId ? { ...q, approved: true } : q)
-        return { ...p, passage_questions }
-      }).filter(p => !isResolved(p)))
-    }
-    setBusyQuestionId(null)
-  }
-
-  if (loading) return <p className="text-sm text-gray-400">Loading…</p>
-  if (passages.length === 0) {
-    return <p className="text-sm text-gray-400">No pending passages — everything's been reviewed.</p>
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      {passages.map(p => {
-        const diff = DIFF_COLOR[p.difficulty] ?? DIFF_COLOR.medium
-        const content = p.content_en ?? p.content_he
-        const isHe = !p.content_en && !!p.content_he
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {list.map((p: any) => {
+        const he = !!p.content_he && !p.content_en
+        const qs = (p.passage_questions || []).filter((x: any) => !x.approved && !x.rejected_at)
         return (
-          <div key={p.id} className="bg-white rounded-2xl border border-gray-100 p-5">
-            <div className="flex items-center justify-between gap-3 mb-2">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                  {GRADE_LABELS[p.grade] ?? `G${p.grade}`}
-                </span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: SUBJ_COLOR[p.subjects?.slug ?? 'english']?.bg, color: SUBJ_COLOR[p.subjects?.slug ?? 'english']?.text }}>
-                  {p.subjects?.slug === 'hebrew' ? 'עב' : 'EN'}
-                </span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full capitalize" style={{ background: diff.bg, color: diff.text }}>
-                  {p.difficulty}
-                </span>
-                <span className="text-xs text-gray-400 capitalize">{TYPE_EMOJI[p.passage_type] ?? '📄'} {p.passage_type}</span>
-              </div>
+          <div key={p.id} style={{ ...card, padding: 16 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <strong style={{ fontSize: 17, flex: 1 }} dir={he ? 'rtl' : 'ltr'}>{he ? p.title_he || p.title_en : p.title_en}</strong>
+              {!p.approved && <>
+                <button disabled={busy === p.id} onClick={() => act('passage', p.id, 'approve')} style={{ ...pillBtn(true), minHeight: 38, fontSize: 14 }}><Check size={14} /> לאשר</button>
+                <button disabled={busy === p.id} onClick={() => act('passage', p.id, 'reject')} style={{ ...pillBtn(), minHeight: 38, fontSize: 14, color: C.danger }}>לדחות</button>
+              </>}
             </div>
-
-            <h3 className="text-sm font-bold text-gray-900 mb-1">{p.title_en}</h3>
-            {p.title_he && <p className="text-xs text-gray-400 mb-2" dir="rtl">{p.title_he}</p>}
-
-            <div
-              className="text-sm text-gray-700 mb-3 max-h-56 overflow-y-auto bg-gray-50 rounded-xl p-3"
-              dir={isHe ? 'rtl' : 'ltr'}
-            >
-              {(content ?? '').split('\n\n').map((para, i) => <p key={i} className="mb-2">{para}</p>)}
-            </div>
-
-            {p.approved ? (
-              <span className="text-xs font-semibold text-emerald-600">✓ Passage approved</span>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={() => actPassage(p.id, 'approve')} disabled={busyPassageId === p.id}
-                  className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition-colors">
-                  Approve
-                </button>
-                <button onClick={() => rejectPassage(p.id)} disabled={busyPassageId === p.id}
-                  className="px-4 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 disabled:opacity-50 font-bold text-xs rounded-lg transition-colors">
-                  Reject
-                </button>
+            <p dir={he ? 'rtl' : 'ltr'} style={{ whiteSpace: 'pre-wrap', fontSize: 15, lineHeight: 1.8, color: C.textSecondary, maxHeight: 220, overflow: 'auto' }}>{p.content_he || p.content_en}</p>
+            {qs.map((x: any) => (
+              <div key={x.id} style={{ display: 'flex', gap: 8, alignItems: 'center', borderTop: `1px solid ${C.borderLight}`, padding: '8px 0' }}>
+                <span style={{ flex: 1, fontSize: 14 }}>{x.prompt_he || x.prompt_en}</span>
+                <button disabled={busy === x.id} onClick={() => act('question', x.id, 'approve')} style={{ ...pillBtn(), minHeight: 34, fontSize: 13 }}>לאשר</button>
+                <button disabled={busy === x.id} onClick={() => act('question', x.id, 'reject')} style={{ ...pillBtn(), minHeight: 34, fontSize: 13, color: C.danger }}>לדחות</button>
               </div>
-            )}
-
-            {p.passage_questions.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-gray-50">
-                <p className="text-xs font-semibold text-gray-500 mb-1">
-                  Comprehension questions ({p.passage_questions.filter(q => !q.approved).length} pending)
-                </p>
-                {p.passage_questions.map(q => (
-                  <PendingPassageQuestionRow key={q.id} passageId={p.id} q={q} busy={busyQuestionId === q.id} onAct={actQuestion} />
-                ))}
-              </div>
-            )}
+            ))}
           </div>
         )
       })}
-    </div>
-  )
-}
-
-// ── Main Page ──────────────────────────────────────────────────
-export default function PassagesPage() {
-  const [tab, setTab] = useState<'library' | 'generate' | 'pending'>('library')
-  const [passages, setPassages] = useState<Passage[]>([])
-  const [loading, setLoading] = useState(true)
-  const [openPassage, setOpenPassage] = useState<Passage | null>(null)
-
-  // Filters
-  const [filterGrade, setFilterGrade] = useState<string>('')
-  const [filterSubject, setFilterSubject] = useState<string>('')
-  const [filterType, setFilterType] = useState<string>('')
-  const [filterDiff, setFilterDiff] = useState<string>('')
-  const [search, setSearch] = useState('')
-
-  useEffect(() => {
-    supabase
-      .from('reading_passages')
-      .select('*,passage_questions(id)')
-      .eq('approved', true)
-      .order('grade').order('passage_type').order('difficulty')
-      .then(({ data }) => {
-        // Join with subject info + reading levels
-        Promise.all([
-          supabase.from('subjects').select('id,slug'),
-          supabase.from('reading_levels').select('id,track,level_number,label_en,label_he'),
-        ]).then(([{ data: subjects }, { data: levels }]) => {
-          const subjectMap: Record<string, string> = {}
-          ;(subjects || []).forEach((s: any) => { subjectMap[s.id] = s.slug })
-          const levelMap: Record<string, ReadingLevel> = {}
-          ;(levels || []).forEach((l: any) => { levelMap[l.id] = l })
-          const enriched = (data || []).map((p: any) => ({
-            ...p,
-            subject: subjectMap[p.subject_id] ?? 'unknown',
-            question_count: p.passage_questions?.length ?? 0,
-            level: p.level_id ? levelMap[p.level_id] ?? null : null,
-          }))
-          setPassages(enriched)
-          setLoading(false)
-        })
-      })
-  }, [])
-
-  const filtered = useMemo(() => passages.filter(p => {
-    // The Library tab is approved-only content — a freshly-generated passage
-    // (onGenerated below prepends it straight into `passages` state, always
-    // approved:false) must never show up here, even before the next fetch.
-    if (!p.approved) return false
-    if (filterGrade && String(p.grade) !== filterGrade) return false
-    if (filterSubject && p.subject !== filterSubject) return false
-    if (filterType && p.passage_type !== filterType) return false
-    if (filterDiff && p.difficulty !== filterDiff) return false
-    if (search) {
-      const q = search.toLowerCase()
-      if (!p.title_en?.toLowerCase().includes(q) && !p.title_he?.includes(q)) return false
-    }
-    return true
-  }), [passages, filterGrade, filterSubject, filterType, filterDiff, search])
-
-  // Stats
-  const stats = useMemo(() => ({
-    total: passages.length,
-    withQuestions: passages.filter(p => (p.question_count ?? 0) > 0).length,
-    grades: [...new Set(passages.map(p => p.grade))].sort(),
-  }), [passages])
-
-  return (
-    <div className="min-h-screen bg-gray-50 font-[Nunito]">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-6 py-4 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-black text-gray-900">📖 Passage Library</h1>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {stats.total} passages · {stats.withQuestions} with comprehension questions · Grades {stats.grades.map(g => GRADE_LABELS[g]).join(', ')}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setTab('library')}
-              className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'library' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
-              Library
-            </button>
-            <button onClick={() => setTab('generate')}
-              className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'generate' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
-              ✨ Generate new
-            </button>
-            <button onClick={() => setTab('pending')}
-              className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors ${tab === 'pending' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
-              Pending Review
-            </button>
-            <button onClick={() => window.location.href = '/dashboard'}
-              className="text-xs font-semibold text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">
-              ← Dashboard
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        {/* Generator tab — kept mounted-on-demand (unlike library/pending) since
-            it has no data to refetch on tab switch, just in-progress form state. */}
-        <div className={tab === 'generate' ? 'mb-6' : 'hidden'}>
-          <GeneratorPanel onGenerated={p => {
-            // Derived from which content field the passage actually has, not the
-            // active filter — caught live in checkpoint 6 testing: generating a
-            // Hebrew passage with no subject filter active showed an "EN" badge
-            // until the next page refresh, because this previously fell back to
-            // filterSubject || 'english' regardless of the passage's real language.
-            setPassages(prev => [{ ...p, subject: p.content_he ? 'hebrew' : 'english', question_count: p.question_count ?? 0 } as Passage, ...prev])
-          }}
-          onViewExisting={filter => {
-            setFilterGrade(filter.grade)
-            setFilterSubject(filter.subject)
-            setFilterType(filter.type)
-            setFilterDiff(filter.difficulty)
-            setTab('library')
-          }} />
-        </div>
-
-        <div className={tab === 'pending' ? '' : 'hidden'}>
-          <PendingReviewList active={tab === 'pending'} />
-        </div>
-
-        <div className={tab === 'library' ? '' : 'hidden'}>
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          <input
-            type="text"
-            placeholder="Search passages..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300 w-48"
-          />
-          <select value={filterGrade} onChange={e => setFilterGrade(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
-            <option value="">All grades</option>
-            {[0,1,2,3,4,5,6].map(g => <option key={g} value={g}>Grade {g}</option>)}
-          </select>
-          <select value={filterSubject} onChange={e => setFilterSubject(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
-            <option value="">All subjects</option>
-            <option value="english">English</option>
-            <option value="hebrew">Hebrew עברית</option>
-          </select>
-          <select value={filterType} onChange={e => setFilterType(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
-            <option value="">All types</option>
-            <option value="story">📖 Story</option>
-            <option value="informational">📰 Informational</option>
-            <option value="argumentative">💬 Argumentative</option>
-            <option value="poem">🎵 Poem</option>
-          </select>
-          <select value={filterDiff} onChange={e => setFilterDiff(e.target.value)}
-            className="px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-300">
-            <option value="">All difficulties</option>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
-          {(filterGrade || filterSubject || filterType || filterDiff || search) && (
-            <button
-              onClick={() => { setFilterGrade(''); setFilterSubject(''); setFilterType(''); setFilterDiff(''); setSearch('') }}
-              className="px-3 py-2 text-sm text-gray-500 hover:text-red-500 font-semibold"
-            >
-              Clear filters
-            </button>
-          )}
-          <span className="ml-auto text-sm text-gray-400 self-center">
-            {filtered.length} passage{filtered.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-
-        {/* Grid */}
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="h-40 bg-gray-100 rounded-2xl animate-pulse" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <div className="text-4xl mb-3">🔍</div>
-            <p className="font-semibold">No passages match your filters</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filtered.map(p => (
-              <PassageCard key={p.id} p={p} onOpen={() => setOpenPassage(p)} />
-            ))}
-          </div>
-        )}
-        </div>
-      </div>
-
-      {/* Modal */}
-      {openPassage && <PassageModal p={openPassage} onClose={() => setOpenPassage(null)} />}
     </div>
   )
 }

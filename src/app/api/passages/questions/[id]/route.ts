@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { requireParentOnlySession } from '@/lib/session'
+import { requireAdmin } from '@/lib/admin'
 
 // ─── PATCH /api/passages/questions/[id] ─────────────────────────
 // Approve, reject, or unapprove a single passage_questions row. Separate
@@ -14,7 +15,7 @@ import { requireParentOnlySession } from '@/lib/session'
 // rejected_reason, row stays) so an optional reason survives for review.
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireParentOnlySession()
+  const auth = await requireAdmin() // the review queue is the EduPlay admin's
   if (!auth.ok) {
     return NextResponse.json(
       { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },

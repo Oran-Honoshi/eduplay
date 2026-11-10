@@ -53,7 +53,7 @@ export default async function DashboardPage({ searchParams }: Props) {
   : { data: [] },
     childIds.length
       ? supabase.from('focus_recommendations')
-          .select('*, topic:topics(title_en, description_en, slug)')
+          .select('*, topic:topics(title_en, title_he, description_en, slug)')
           .in('child_id', childIds)
           .order('priority')
       : { data: [] },

@@ -1,7 +1,8 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-import { Printer, BookOpen, Upload, Check, EyeOff, ArrowRight, FileText, Trash2 } from 'lucide-react'
+import { Printer, BookOpen, Upload, Check, EyeOff, FileText, Trash2 } from 'lucide-react'
 import { PARENT_COLORS as C, PARENT_FONTS as F } from '@/lib/parentTheme'
+import ParentPage from '@/components/parent/ParentPage'
 import { lineHtml, type StoryBooklet } from '@/lib/storyBooklet'
 
 // Parents: the story booklets — print one, or open it in the reader to read
@@ -53,13 +54,8 @@ export default function StoriesPage() {
   )
 
   return (
-    <div dir="rtl" style={{ minHeight: '100vh', background: C.pageBg, fontFamily: F.body, color: C.text }}>
-      <div style={{ maxWidth: 980, margin: '0 auto', padding: '24px 18px 60px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <a href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: C.textSecondary, textDecoration: 'none', fontWeight: 700, fontSize: 14 }}><ArrowRight size={16} /> חזרה ללוח הבקרה</a>
-        <div>
-          <h1 style={{ fontFamily: F.heading, fontSize: 28, margin: 0 }}>ספרוני קריאה ראשונה</h1>
-          <p style={{ margin: '6px 0 0', color: C.textSecondary, lineHeight: 1.6 }}>סיפורים קצרים בקמץ ופתח בלבד, עם תמונות קטנות במקום מילים שעוד לא למדו. אפשר להדפיס (A5) או לקרוא יחד באפליקציה — הילדים מוצאים אותם גם במסך הבית שלהם.</p>
-        </div>
+    <ParentPage section="create" title="ספרוני קריאה ראשונה" back={{ href: '/dashboard?tab=create', label: 'יצירה' }}
+      subtitle="סיפורים קצרים בקמץ ופתח בלבד, עם תמונות קטנות במקום מילים שעוד לא למדו. אפשר להדפיס (A5) או לקרוא יחד באפליקציה — הילדים מוצאים אותם גם במסך הבית שלהם.">
         {msg && <div style={{ background: '#FDECEC', color: '#B42318', padding: '10px 14px', borderRadius: 12, fontWeight: 700 }}>{msg}</div>}
         {!list ? <div style={{ color: C.textMuted }}>טוען…</div> : list.length === 0 ? <div style={{ color: C.textMuted }}>עוד אין ספרונים פעילים.</div> : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
@@ -97,7 +93,6 @@ export default function StoriesPage() {
             })}
           </div>
         )}
-      </div>
-    </div>
+    </ParentPage>
   )
 }

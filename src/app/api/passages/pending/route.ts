@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { requireParentOnlySession } from '@/lib/session'
+import { requireAdmin } from '@/lib/admin'
 
 // ─── GET /api/passages/pending ──────────────────────────────────
 // Lists passages needing review: any not-yet-rejected passage with
@@ -11,7 +12,7 @@ import { requireParentOnlySession } from '@/lib/session'
 // stays in its table (rejected_reason may hold why) but must not resurface here.
 
 export async function GET() {
-  const auth = await requireParentOnlySession()
+  const auth = await requireAdmin() // the review queue is the EduPlay admin's
   if (!auth.ok) {
     return NextResponse.json(
       { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },

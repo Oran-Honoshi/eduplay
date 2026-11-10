@@ -1,5 +1,5 @@
-import BookletClient from './client'
-
+import { redirect } from 'next/navigation'
+// The study booklet became Create's explanation pages.
 export default function BookletPage() {
-  return <BookletClient topics={[]} />
+  redirect('/create?kind=explanation')
 }

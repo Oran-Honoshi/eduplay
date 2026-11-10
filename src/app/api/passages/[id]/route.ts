@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { requireParentOnlySession } from '@/lib/session'
+import { requireAdmin } from '@/lib/admin'
 
 // ─── PATCH /api/passages/[id] ───────────────────────────────────
 // Approve, reject, or unapprove a reading passage. Same shape as
@@ -22,7 +23,7 @@ import { requireParentOnlySession } from '@/lib/session'
 // GET /api/passages/pending via its own-pending-questions check.
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const auth = await requireParentOnlySession()
+  const auth = await requireAdmin() // the review queue is the EduPlay admin's
   if (!auth.ok) {
     return NextResponse.json(
       { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
