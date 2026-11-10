@@ -63,7 +63,7 @@ export default function ReaderPage() {
   const art = (url: string | null | undefined, pics: string[], coverArt = false) => url
     ? <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 24 }} />
     : <div style={{ width: '100%', height: '100%', borderRadius: 24, background: coverArt ? '#FFE9B8' : '#EAF4FF', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, flexWrap: 'wrap', padding: 16 }}>
-        {pics.length ? pics.map(k => <span key={k} dangerouslySetInnerHTML={{ __html: pictureBig(k, 150) }} />) : <Pip theme="plain" pose={coverArt ? 'wave' : 'thumbs'} size={130} he />}
+        {pics.length ? pics.map(k => <span key={k} dangerouslySetInnerHTML={{ __html: pictureBig(k, 120) }} />) : <Pip theme="plain" pose={coverArt ? 'wave' : 'thumbs'} size={110} he />}
       </div>
 
   const arrow = (d: 1 | -1) => {
@@ -82,13 +82,13 @@ export default function ReaderPage() {
     body = <>
       <div style={{ fontSize: 16, fontWeight: 700, color: '#7A6A4F', textAlign: 'center' }}>ספרון {b.number}</div>
       <h1 style={{ margin: 0, fontFamily: READ_FONT, fontSize: 'clamp(38px, 9vw, 56px)', fontWeight: 800, color: '#C2337F', textAlign: 'center', lineHeight: 1.5 }} dangerouslySetInnerHTML={{ __html: lineHtml(b.title_he) }} />
-      <div style={{ flex: 1, minHeight: 220, maxHeight: 420 }}>{art(b.cover?.image_url, [], true)}</div>
+      <div style={{ height: 'clamp(150px, 38vh, 420px)' }}>{art(b.cover?.image_url, [], true)}</div>
       <button onClick={() => go(1)} style={{ alignSelf: 'center', minHeight: 64, padding: '0 40px', borderRadius: 20, border: 'none', background: '#2F5BE3', color: '#fff', fontSize: 24, fontWeight: 800, fontFamily: READ_FONT, cursor: 'pointer' }}>מַתְחִילִים לִקְרֹא</button>
     </>
   } else if (page === last) {
     body = <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, textAlign: 'center' }}>
       <Pip theme="plain" pose="celebrate" size={150} he />
-      <div style={{ fontFamily: READ_FONT, fontSize: 40, fontWeight: 800 }}>קָרָאתָ סֵפֶר שָׁלֵם!</div>
+      <div style={{ fontFamily: READ_FONT, fontSize: 40, fontWeight: 800 }}>קָרָאתִי סֵפֶר שָׁלֵם!</div>
       {done?.sticker && <div style={{ background: '#FFF4D6', borderRadius: 18, padding: '12px 22px', fontSize: 21, fontWeight: 700 }}>⭐ קיבלת מדבקה חדשה לאלבום!</div>}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
         <button onClick={() => { setPage(-1); setLit(null) }} style={{ minHeight: 60, padding: '0 26px', borderRadius: 18, border: '1.5px solid #E2DBCD', background: '#fff', fontSize: 20, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'inherit' }}><RotateCcw size={20} /> לקרוא שוב</button>
@@ -98,7 +98,7 @@ export default function ReaderPage() {
   } else {
     const p = b.pages[page]
     body = <>
-      <div style={{ flex: 1, minHeight: 200, maxHeight: 400 }}>{art(p.image_url, pagePictures(p))}</div>
+      <div style={{ height: 'clamp(130px, 32vh, 400px)', flexShrink: 0 }}>{art(p.image_url, pagePictures(p))}</div>
       <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', textAlign: 'center', padding: '8px 0' }}>
         {words.map((ws, li) => (
           <div key={li} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0 .35em' }}>
@@ -106,7 +106,7 @@ export default function ReaderPage() {
               const key = `${li}-${wi}`
               const on = lit === key
               return <button key={key} onClick={() => setLit(on ? null : key)}
-                style={{ fontFamily: READ_FONT, fontSize: 'clamp(36px, 8.5vw, 52px)', fontWeight: 600, lineHeight: 1.8, letterSpacing: '.02em', color: '#16213E', background: on ? '#FFE27A' : 'transparent', border: 'none', borderRadius: 14, padding: '0 .18em', cursor: 'pointer', transition: 'background .15s' }}
+                style={{ fontFamily: READ_FONT, fontSize: 'clamp(28px, min(8.5vw, 6vh), 52px)', fontWeight: 600, lineHeight: 1.7, letterSpacing: '.02em', color: '#16213E', background: on ? '#FFE27A' : 'transparent', border: 'none', borderRadius: 14, padding: '0 .18em', cursor: 'pointer', transition: 'background .15s' }}
                 dangerouslySetInnerHTML={{ __html: lineHtml(w) }} />
             })}
           </div>

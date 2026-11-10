@@ -15,7 +15,7 @@ export default function StoriesPage() {
   const [msg, setMsg] = useState<string | null>(null)
 
   async function load() {
-    const r = await fetch('/api/stories')
+    const r = await fetch('/api/stories?all=1')
     if (r.status === 401) { window.location.href = '/'; return }
     const d = await r.json(); setList(d.booklets); setAdmin(!!d.admin)
   }
