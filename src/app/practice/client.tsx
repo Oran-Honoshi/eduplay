@@ -4,7 +4,9 @@ import { Dumbbell, Play, RotateCcw, CheckCircle2, Clock } from 'lucide-react'
 import { THEME_CONFIG, KidNavBar, ThemeDecorations, CollectionButton } from '@/components/theme'
 import { readKidLang, type KidLang } from '@/lib/kidPrefs'
 
-const SUBJECT_ICON: Record<string, string> = { math: '🔢', english: '🔤', hebrew: 'א' }
+const SUBJ_MARK: Record<string, string> = { math: '1+2', hebrew: 'אב', english: 'Ab' }
+const SUBJ_TINT: Record<string, [string, string]> = { math: ['#EAF0FF', '#2148C0'], hebrew: ['#FDECE7', '#B4432A'], english: ['#E3F4EF', '#0B6B58'] }
+const H = '"Rubik","Assistant",sans-serif'
 const GRADE_LABEL_HE = ['גן', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ז׳', 'ח׳', 'ט׳', 'י׳', 'י״א', 'י״ב']
 const GRADE_LABEL_EN = ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
 // A normal lesson uses 10 questions; below that a topic can't fill one round.
@@ -34,18 +36,18 @@ export default function PracticeClient({ child, token, grade, subjects, topics, 
   const t = (he: string, en: string) => (isHE ? he : en)
 
   return (
-    <div dir={isHE ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: T.bg, fontFamily: '"Nunito",sans-serif', position: 'relative' }}>
+    <div dir={isHE ? 'rtl' : 'ltr'} style={{ minHeight: '100vh', background: T.bg, fontFamily: '"Assistant",sans-serif', color: T.text, position: 'relative' }}>
       <ThemeDecorations theme={theme}/>
 
       <header style={{ background: T.panel, borderBottom: `2px solid ${T.border}`, padding: '0 16px', height: 56, display: 'flex', alignItems: 'center', gap: 10, position: 'sticky', top: 0, zIndex: 100 }}>
         <Dumbbell size={20} color={T.accent1}/>
-        <div style={{ fontFamily: T.fontHead, fontWeight: 900, fontSize: theme === 'minecraft' ? 11 : 17, color: T.text }}>
+        <div style={{ fontFamily: H, fontWeight: 800, fontSize: 20, color: T.text }}>
           {t('תרגול', 'Practice')}
         </div>
       </header>
 
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '16px 16px 150px', position: 'relative', zIndex: 1 }}>
-        <p style={{ margin: '0 0 14px', color: T.text, opacity: .7, fontSize: 14, fontWeight: 600 }}>
+        <p style={{ margin: '0 0 14px', color: T.text, opacity: .75, fontSize: 17, fontWeight: 600 }}>
           {t('בחרו נושא ותרגלו כמה שרוצים — גם אחרי שסיימתם את השיעור.', 'Pick a topic and practice as much as you like — even after you finish the lesson.')}
         </p>
 
@@ -70,7 +72,7 @@ export default function PracticeClient({ child, token, grade, subjects, topics, 
               <button key={s.slug ?? 'all'} onClick={() => setSubject(s.slug)}
                 style={{ padding: '10px 18px', minHeight: 44, borderRadius: theme === 'minecraft' ? 4 : 999, cursor: 'pointer', fontWeight: 800, fontSize: 14,
                   border: `2px solid ${active ? T.accent1 : T.border}`, background: active ? `${T.accent1}22` : T.panel, color: active ? T.accent1 : T.text }}>
-                {s.slug ? `${SUBJECT_ICON[s.slug] || ''} ` : ''}{isHE ? (s.label_he || s.label_en) : s.label_en}
+                {isHE ? (s.label_he || s.label_en) : s.label_en}
               </button>
             )
           })}
@@ -91,12 +93,12 @@ export default function PracticeClient({ child, token, grade, subjects, topics, 
             const title = isHE ? (topic.title_he || topic.title_en) : topic.title_en
             const disabled = n === 0
             return (
-              <div key={topic.id} style={{ background: T.panel, border: `2px solid ${done ? T.accent3 || T.accent1 : T.border}`, borderRadius: T.radius, padding: 14, display: 'flex', flexDirection: 'column', gap: 8, boxShadow: T.shadow }}>
+              <div key={topic.id} style={{ background: T.panel, border: `1.5px solid ${done ? T.accent3 || T.accent1 : T.border}`, borderRadius: theme === 'minecraft' ? 4 : 20, padding: 16, display: 'flex', flexDirection: 'column', gap: 8, boxShadow: T.shadow }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 20 }}>{SUBJECT_ICON[topic.subject?.slug] || '📘'}</span>
-                  <span style={{ fontWeight: 900, fontSize: 15, color: T.text, lineHeight: 1.3, flex: 1 }}>{title}</span>
+                  <span dir="ltr" style={{ width: 40, height: 40, flexShrink: 0, borderRadius: 12, background: (SUBJ_TINT[topic.subject?.slug] || ['#F3EFE6', T.text])[0], color: (SUBJ_TINT[topic.subject?.slug] || ['', T.text])[1], display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: H, fontWeight: 800, fontSize: 15 }}>{SUBJ_MARK[topic.subject?.slug] || '★'}</span>
+                  <span style={{ fontFamily: H, fontWeight: 700, fontSize: 17, color: T.text, lineHeight: 1.3, flex: 1 }}>{title}</span>
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: T.text, opacity: .65, display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: T.text, opacity: .7, display: 'flex', alignItems: 'center', gap: 5 }}>
                   {done ? <><CheckCircle2 size={14}/> {t('סיימת! אפשר לתרגל עוד', 'Done! You can practice more')}</>
                     : started ? <><Clock size={14}/> {t('בתהליך', 'In progress')}</>
                     : t('חדש', 'New')}
@@ -105,9 +107,9 @@ export default function PracticeClient({ child, token, grade, subjects, topics, 
                   <div style={{ fontSize: 11, color: T.text, opacity: .5 }}>{t('עוד שאלות בדרך', 'More questions coming soon')}</div>
                 )}
                 <button disabled={disabled} onClick={() => open(topic.id, done)}
-                  style={{ marginTop: 'auto', minHeight: 46, padding: '10px', borderRadius: T.radius, border: 'none', cursor: disabled ? 'default' : 'pointer',
-                    background: disabled ? T.border : done ? T.accent2 : T.accent1, color: done ? '#000' : '#fff', fontWeight: 900, fontSize: 14,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: disabled ? .5 : 1, fontFamily: T.fontHead }}>
+                  style={{ marginTop: 'auto', minHeight: 54, padding: '10px', borderRadius: theme === 'minecraft' ? 4 : 16, border: 'none', cursor: disabled ? 'default' : 'pointer',
+                    background: disabled ? T.border : done ? T.accent2 : T.accent1, color: done ? '#000' : '#fff', fontWeight: 800, fontSize: 18,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, opacity: disabled ? .5 : 1, fontFamily: H }}>
                   {disabled ? t('בקרוב', 'Coming soon')
                     : done ? <><RotateCcw size={16}/> {t('תרגול נוסף', 'Practice more')}</>
                     : started ? <><Play size={16}/> {t('המשך', 'Continue')}</>

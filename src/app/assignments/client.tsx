@@ -1,4 +1,5 @@
 'use client'
+import { Pip } from '@/components/Pip'
 import { useState, useEffect } from 'react'
 import { ClipboardList } from 'lucide-react'
 import { THEME_CONFIG, KidNavBar, ThemeDecorations, CollectionButton } from '@/components/theme'
@@ -45,13 +46,13 @@ export default function AssignmentsClient({ child, token }: { child: any, token:
   const completed = assignments.filter(a => a.totalItems > 0 && a.completedItems >= a.totalItems)
 
   return (
-    <div style={{ minHeight:'100vh', background:T.bg, fontFamily:'"Nunito",sans-serif', position:'relative' }} dir={isHE ? 'rtl' : 'ltr'}>
+    <div style={{ minHeight:'100vh', background:T.bg, fontFamily:'"Assistant",sans-serif', color:T.text, position:'relative' }} dir={isHE ? 'rtl' : 'ltr'}>
       <ThemeDecorations theme={theme}/>
 
       <header style={{ background:T.panel, borderBottom:`2px solid ${T.border}`, padding:'0 16px', height:'56px', display:'flex', alignItems:'center', gap:'10px', position:'sticky', top:0, zIndex:100, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
         <ClipboardList size={20} color={T.accent1}/>
-        <div style={{ fontFamily:T.fontHead, fontWeight:900, fontSize: theme === 'minecraft' ? '11px' : '16px', color:T.text }}>
-          {isHE ? 'המטלות שלי' : 'My Assignments'}
+        <div style={{ fontFamily:'"Rubik","Assistant",sans-serif', fontWeight:800, fontSize:20, color:T.text }}>
+          {isHE ? 'המשימות שלי' : 'My tasks'}
         </div>
       </header>
 
@@ -62,16 +63,16 @@ export default function AssignmentsClient({ child, token }: { child: any, token:
 
         {!loading && assignments.length === 0 && (
           <div style={{ textAlign:'center', padding:'60px 20px', background:T.panel, borderRadius:T.radius, border:`1.5px solid ${T.border}` }}>
-            <div style={{ fontSize:'40px', marginBottom:'12px' }}>📭</div>
-            <div style={{ fontWeight:800, fontSize:'15px', color:T.text }}>{isHE ? 'אין מטלות עדיין' : 'No assignments yet'}</div>
-            <div style={{ fontSize:'13px', color:T.text2, marginTop:'6px' }}>{isHE ? 'ההורה שלך עדיין לא הקצה לך מטלה' : "Your parent hasn't assigned you anything yet"}</div>
+            <div style={{ display:'flex', justifyContent:'center', marginBottom:'8px' }}><Pip theme={theme} pose="thumbs" size={90} he={isHE} /></div>
+            <div style={{ fontWeight:800, fontSize:'20px', color:T.text }}>{isHE ? 'אין משימות כרגע' : 'No tasks right now'}</div>
+            <div style={{ fontSize:'17px', color:T.text2, marginTop:'6px' }}>{isHE ? 'כשההורים ישלחו משימה, היא תופיע כאן.' : 'When your parents send a task, it will show up here.'}</div>
           </div>
         )}
 
         {!loading && pending.length > 0 && (
           <>
-            <div style={{ fontSize:'11px', fontWeight:800, color:T.text2, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'8px' }}>
-              {isHE ? 'ממתינות' : 'To Do'}
+            <div style={{ fontSize:'17px', fontWeight:800, color:T.text2, marginBottom:'8px' }}>
+              {isHE ? 'מחכות לי' : 'To do'}
             </div>
             <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'24px' }}>
               {pending.map(a => (
@@ -83,7 +84,7 @@ export default function AssignmentsClient({ child, token }: { child: any, token:
 
         {!loading && completed.length > 0 && (
           <>
-            <div style={{ fontSize:'11px', fontWeight:800, color:T.text2, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'8px' }}>
+            <div style={{ fontSize:'17px', fontWeight:800, color:T.text2, marginBottom:'8px' }}>
               {isHE ? 'הושלמו' : 'Completed'}
             </div>
             <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
@@ -106,31 +107,31 @@ function AssignmentCard({ a, T, isHE, onOpen, kind }: {
 }) {
   const pct = a.totalItems > 0 ? Math.round((a.completedItems / a.totalItems) * 100) : 0
   return (
-    <div onClick={onOpen} style={{ background:T.panel, border:`2px solid ${kind === 'pending' ? T.accent1 : T.border}`, borderRadius:T.radius, padding:'14px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:'12px' }}>
+    <div onClick={onOpen} style={{ background:T.panel, border:`2px solid ${kind === 'pending' ? T.accent1 : T.border}`, borderRadius:20, padding:'16px', cursor:'pointer', display:'flex', alignItems:'center', gap:'12px', minHeight:84 }}>
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontWeight:800, fontSize:'14px', color:T.text, marginBottom:'2px' }}>
+        <div style={{ fontFamily:'"Rubik","Assistant",sans-serif', fontWeight:700, fontSize:'19px', color:T.text, marginBottom:'4px' }}>
           {a.title || (isHE ? (a.topicTitleHe || a.topicTitleEn) : a.topicTitleEn) || (isHE ? 'משימה' : 'Practice')}
         </div>
         {(a.subjectEn || a.fromParent) && (
-          <div style={{ fontSize:'11px', color:T.text2, marginBottom:'6px' }}>
+          <div style={{ fontSize:'15px', color:T.text2, marginBottom:'6px' }}>
             {[isHE ? (a.subjectHe || a.subjectEn) : a.subjectEn, a.fromParent ? (isHE ? `מאת ${a.fromParent}` : `from ${a.fromParent}`) : null].filter(Boolean).join(' · ')}
           </div>
         )}
         {kind === 'pending' ? (
-          <div style={{ height:'6px', background:'rgba(0,0,0,0.08)', borderRadius:'50px', overflow:'hidden', marginBottom:'4px' }}>
+          <div style={{ height:'10px', background:'rgba(0,0,0,0.08)', borderRadius:'50px', overflow:'hidden', marginBottom:'4px' }}>
             <div style={{ height:'100%', width:`${pct}%`, background:T.accent1, borderRadius:'50px' }}/>
           </div>
         ) : (
-          <div style={{ fontSize:'11px', color:T.text2, display:'flex', gap:'10px', marginBottom:'2px' }}>
+          <div style={{ fontSize:'15px', color:T.text2, display:'flex', gap:'10px', marginBottom:'2px' }}>
             {a.correctFirstTry > 0 && <span>✅ {a.correctFirstTry}</span>}
             {a.correctAfterHint > 0 && <span>💡 {a.correctAfterHint}</span>}
             {a.revealedAnswer > 0 && <span>👀 {a.revealedAnswer}</span>}
           </div>
         )}
-        <div style={{ fontSize:'11px', color:T.text2, fontWeight:600 }}>{a.completedItems}/{a.totalItems} {isHE ? 'הושלמו' : 'done'}</div>
+        <div style={{ fontSize:'15px', color:T.text2, fontWeight:600 }}>{isHE ? `${a.completedItems} מתוך ${a.totalItems}` : `${a.completedItems}/${a.totalItems} done`}</div>
       </div>
-      <div style={{ fontSize:'11px', fontWeight:800, padding:'6px 14px', borderRadius:'50px', background: kind === 'pending' ? T.accent1 : T.border, color: kind === 'pending' ? 'white' : T.text, whiteSpace:'nowrap', flexShrink:0 }}>
-        {kind === 'pending' ? (pct > 0 ? (isHE ? 'המשך' : 'Continue') : (isHE ? 'התחל' : 'Start')) : (isHE ? 'סקירה' : 'Review')}
+      <div style={{ fontSize:'17px', fontWeight:800, padding:'12px 18px', borderRadius:'16px', background: kind === 'pending' ? T.accent1 : T.border, color: kind === 'pending' ? 'white' : T.text, whiteSpace:'nowrap', flexShrink:0 }}>
+        {kind === 'pending' ? (pct > 0 ? (isHE ? 'המשך' : 'Continue') : (isHE ? 'התחל' : 'Start')) : (isHE ? 'לראות' : 'Review')}
       </div>
     </div>
   )
