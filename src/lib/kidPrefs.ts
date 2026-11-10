@@ -48,7 +48,7 @@ export const KID_LABELS = {
 } as const
 
 export function kidLabel(key: keyof typeof KID_LABELS, lang: KidLang) {
-  return lang === 'he_only' ? KID_LABELS[key].he : KID_LABELS[key].en
+  return lang === 'en_only' ? KID_LABELS[key].en : KID_LABELS[key].he
 }
 
 // Fired after anything that can change a child's card tokens (lesson finished,

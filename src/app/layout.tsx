@@ -6,7 +6,7 @@ import RegisterSW from '@/components/RegisterSW'
 // PWA: installable on phones/tablets (manifest + icons + theme color).
 export const metadata: Metadata = {
   title: 'EduPlay',
-  description: 'K-6 learning platform',
+  description: 'תרגול, מבחנים, דפי הסבר וחוברות קריאה לילדים — בחשבון, עברית ואנגלית',
   manifest: '/manifest.json',
   applicationName: 'EduPlay',
   appleWebApp: { capable: true, title: 'EduPlay', statusBarStyle: 'default' },
@@ -29,9 +29,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="he" dir="rtl">
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700;800&family=Rubik:wght@500;600;700;800&family=Nunito:wght@400;600;700;800;900&family=Press+Start+2P&family=Cinzel+Decorative:wght@400;700&family=Quicksand:wght@500;600;700&family=Manrope:wght@500;600;700;800&family=Baloo+2:wght@600;700&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;500;600;700;800&family=Rubik:wght@500;600;700;800&family=Noto+Sans+Hebrew:wght@400;600;700;800&family=Nunito:wght@400;600;700;800;900&family=Press+Start+2P&family=Cinzel+Decorative:wght@400;700&family=Quicksand:wght@500;600;700&family=Manrope:wght@500;600;700;800&family=Baloo+2:wght@600;700&display=swap" rel="stylesheet"/>
         {/* NES.css for Minecraft pixelated UI */}
         <link href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css" rel="stylesheet"/>
       </head>

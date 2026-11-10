@@ -551,7 +551,7 @@ export default function LessonClient({ child, topic, questions, passage, passage
   const T   = SHARED_THEMES[theme] || SHARED_THEMES.plain
   const subjSlug  = topic?.subject?.slug || 'math'
   const subjColor = SUBJECT_COLORS[subjSlug] || T.accent1
-  const isHE      = langMode === 'he_only'
+  const isHE      = langMode !== 'en_only'
   const pipLine = (isHE ? PIP_LINES_HE : PIP_LINES)[theme] || (isHE ? PIP_LINES_HE : PIP_LINES).plain
   // Remember the language the child is using so Home / Rewards / Assignments open in it too.
   useEffect(() => { if (child?.id) saveKidLang(langMode as KidLang, child.id) }, [langMode, child?.id])

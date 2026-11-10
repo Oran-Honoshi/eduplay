@@ -332,7 +332,7 @@ export default function CardsPage() {
   // English and a fixed light look here).
   const [lang,setLang] = useState<KidLang>('bilingual')
   useEffect(()=>{ setLang(readKidLang(childId)) },[childId])
-  const he = lang === 'he_only'
+  const he = lang !== 'en_only'
 
   const showToast = useCallback((msg:string)=>{ setToast(msg); setTimeout(()=>setToast(null),3500) },[])
 
@@ -358,7 +358,7 @@ export default function CardsPage() {
       if (pv === 'reveal' || pv === 'reveal-region') {
         const owned = (cardsData.cards||[]).find((c: Card) => (cardsData.ownedIds||[]).includes(c.id))
         const ph = owned && (cardsData.phases||[]).find((p: Phase) => p.id === owned.phase_id)
-        if (owned) setReveal({ card: owned, region: pv === 'reveal-region' && ph ? { name: readKidLang(childId) === 'he_only' ? (ph.name_he||ph.name_en) : ph.name_en, emoji: ph.emoji } : null })
+        if (owned) setReveal({ card: owned, region: pv === 'reveal-region' && ph ? { name: readKidLang(childId) !== 'en_only' ? (ph.name_he||ph.name_en) : ph.name_en, emoji: ph.emoji } : null })
       }
       setLoading(false)
     })

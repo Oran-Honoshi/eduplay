@@ -15,7 +15,7 @@ export default function PracticeClient({ child, token, grade, subjects, topics, 
   const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
   const [lang, setLang] = useState<KidLang>((child.lang_screen || 'bilingual') as KidLang)
   useEffect(() => { setLang(readKidLang(child.id, child.lang_screen)) }, [child.id, child.lang_screen])
-  const isHE = lang === 'he_only'
+  const isHE = lang !== 'en_only'
   const [subject, setSubject] = useState<string | null>(null)
 
   const progressBy: Record<string, any> = {}

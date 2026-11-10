@@ -38,7 +38,7 @@ export default async function AssignmentPage({ searchParams }: Props) {
     .from('assignment_items')
     .select(`
       id, sort_order, status, attempt_1_answer, attempt_1_correct, attempt_2_answer, attempt_2_correct,
-      question:questions ( id, prompt_en, prompt_he, options, hint_en, hint_he, explanation_en, explanation_he, correct_answer, q_type, visual_data, difficulty )
+      question:questions ( id, prompt_en, prompt_he, options, hint_en, hint_he, explanation_en, explanation_he, correct_answer, q_type, visual_data, difficulty, topic:topics(subject:subjects(slug)) )
     `)
     .eq('assignment_id', id)
     .order('sort_order')
