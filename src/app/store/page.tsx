@@ -39,7 +39,7 @@ function StoreRedirect() {
           Opening Animal Collection…
         </div>
         <div style={{ fontSize: 13, color: '#9CA3AF' }}>
-          The XP Store has moved to your Collection
+          החנות עברה לאלבום המדבקות
         </div>
       </div>
       <Loader2 size={20} color="#4A7FD4" style={{ animation: 'spin 0.7s linear infinite' }} />

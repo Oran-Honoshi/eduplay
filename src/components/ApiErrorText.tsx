@@ -13,7 +13,7 @@ export default function ApiErrorText({ text, className }: { text: string; classN
     return (
       <span className={className}>
         {prefix}{SESSION_EXPIRED_MESSAGE}{' '}
-        <a href="/login" className="underline font-bold">Log in</a>
+        <a href="/login" className="underline font-bold">להתחברות</a>
       </span>
     )
   }
