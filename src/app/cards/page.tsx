@@ -59,7 +59,7 @@ function InProgressBar({ topic, he }: { topic: InProgressTopic | null; he: boole
       <div style={{background:'white',borderRadius:14,padding:'16px',border:'1px solid rgba(15,118,110,.14)',display:'flex',alignItems:'center',gap:12}}>
         <div style={{width:36,height:36,borderRadius:10,background:'#F7F5F0',display:'flex',alignItems:'center',justifyContent:'center'}}><Target size={18} color="#9aa6a3"/></div>
         <div>
-          <div style={{fontWeight:800,fontSize:14,color:'#111827',fontFamily:'"Baloo 2",sans-serif'}}>{he ? 'אין שיעור פתוח כרגע' : 'No lesson in progress'}</div>
+          <div style={{fontWeight:800,fontSize:14,color:'#111827',fontFamily:'"Rubik","Assistant",sans-serif'}}>{he ? 'אין שיעור פתוח כרגע' : 'No lesson in progress'}</div>
           <div style={{fontSize:11,color:'#9CA3AF'}}>{he ? 'התחילו שיעור כדי לראות כאן את ההתקדמות!' : 'Start a lesson to see your step progress here!'}</div>
         </div>
       </div>
@@ -72,7 +72,7 @@ function InProgressBar({ topic, he }: { topic: InProgressTopic | null; he: boole
         <div style={{display:'flex',alignItems:'center',gap:10}}>
           <div style={{width:36,height:36,borderRadius:10,background:'linear-gradient(135deg,#E0A927,#B7862F)',display:'flex',alignItems:'center',justifyContent:'center'}}><BookOpen size={18} color="white"/></div>
           <div>
-            <div style={{fontWeight:800,fontSize:15,color:'#111827',fontFamily:'"Baloo 2",sans-serif'}}>{he ? (topic.topic?.title_he || topic.topic?.title_en) : topic.topic?.title_en}</div>
+            <div style={{fontWeight:800,fontSize:15,color:'#111827',fontFamily:'"Rubik","Assistant",sans-serif'}}>{he ? (topic.topic?.title_he || topic.topic?.title_en) : topic.topic?.title_en}</div>
             <div style={{fontSize:11,color:'#9CA3AF'}}>{topic.steps_completed}/{topic.steps_total || 5} {he ? 'שלבים' : 'steps done'}</div>
           </div>
         </div>
@@ -128,7 +128,7 @@ function AnimalCard({ card, owned, canCollect, onCollect, onOpen, he }: {
       </div>
       <div style={{padding:'10px 11px 11px'}}>
         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:4}}>
-          <div style={{fontWeight:700,fontSize:13,color:'#111827',lineHeight:1.2,fontFamily:'"Baloo 2",sans-serif'}}>{he ? (card.name_he || card.name_en) : card.name_en}</div>
+          <div style={{fontWeight:700,fontSize:13,color:'#111827',lineHeight:1.2,fontFamily:'"Rubik","Assistant",sans-serif'}}>{he ? (card.name_he || card.name_en) : card.name_en}</div>
           <span style={{fontSize:9,fontWeight:700,padding:'2px 6px',borderRadius:10,background:r.bg,color:r.text,border:`0.5px solid ${r.color}40`,marginLeft:4,flexShrink:0}}>{r.label}</span>
         </div>
         <div style={{fontSize:11,color:'#6B7280',marginBottom:7,display:'flex',alignItems:'center',gap:3}}><MapPin size={10}/> {owned?(he?(card.location_he||card.location_en):card.location_en):'???'}</div>
@@ -173,7 +173,7 @@ function CardModal({ card, onClose, initialHe = false }: { card: Card; onClose: 
           {card.image_url&&!imgErr&&<img src={card.image_url} alt={card.name_en} crossOrigin="anonymous" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain'}} onError={()=>setImgErr(true)}/>}
           <div style={{position:'absolute',inset:0,background:'linear-gradient(to top,rgba(0,0,0,0.65) 0%,transparent 55%)'}}/>
           <div style={{position:'absolute',bottom:14,left:16,right:60,textAlign:'start'}} dir={he?'rtl':'ltr'}>
-            <div style={{fontSize:24,fontWeight:800,color:'white',marginBottom:3,fontFamily:'"Baloo 2",sans-serif'}}>{name}</div>
+            <div style={{fontSize:24,fontWeight:800,color:'white',marginBottom:3,fontFamily:'"Rubik","Assistant",sans-serif'}}>{name}</div>
             <div style={{fontSize:12,color:'rgba(255,255,255,0.85)',display:'flex',alignItems:'center',gap:4}}><MapPin size={12}/> {location}</div>
           </div>
           <div style={{position:'absolute',top:10,left:10,display:'flex',borderRadius:8,overflow:'hidden',border:'1px solid rgba(255,255,255,0.3)'}}>
@@ -244,7 +244,7 @@ function CardReveal({ card, region, he, theme, onClose }: {
 
   return (
     <div role="dialog" aria-modal="true" dir={he ? 'rtl' : 'ltr'}
-      style={{ position:'fixed', inset:0, zIndex:500, background:'rgba(10,15,30,0.82)', display:'flex', alignItems:'center', justifyContent:'center', padding:20, overflow:'hidden', fontFamily:'"Nunito",sans-serif' }}>
+      style={{ position:'fixed', inset:0, zIndex:500, background:'rgba(10,15,30,0.82)', display:'flex', alignItems:'center', justifyContent:'center', padding:20, overflow:'hidden', fontFamily:'"Assistant",sans-serif' }}>
       <style>{`
         @keyframes cr-fall { 0%{transform:translateY(-10vh) rotate(0)} 100%{transform:translateY(110vh) rotate(720deg)} }
         @keyframes cr-pop { 0%{transform:scale(.6);opacity:0} 70%{transform:scale(1.06);opacity:1} 100%{transform:scale(1)} }
@@ -267,7 +267,7 @@ function CardReveal({ card, region, he, theme, onClose }: {
           <div style={{ perspective:1000, width:260, height:340 }}>
             <div className="cr-anim" style={{ position:'relative', width:'100%', height:'100%', transformStyle:'preserve-3d', transition:'transform .8s cubic-bezier(.3,1.4,.5,1)', transform: flipped ? 'rotateY(180deg)' : 'none' }}>
               {/* back */}
-              <div style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', borderRadius:20, background:'linear-gradient(135deg,#0F766E,#7C6BAE)', border:'4px solid #F4D35E', display:'flex', alignItems:'center', justifyContent:'center', fontSize:96, color:'#F4D35E', fontWeight:900 }}>?</div>
+              <div style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', borderRadius:20, background:'linear-gradient(135deg,#2F5BE3,#5B4BD1)', border:'4px solid #F4D35E', display:'flex', alignItems:'center', justifyContent:'center', fontSize:96, color:'#F4D35E', fontWeight:900 }}>?</div>
               {/* front */}
               <div className="cr-anim" style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', transform:'rotateY(180deg)', borderRadius:20, background:'#fff', border:`4px solid ${r.color}`, overflow:'hidden', display:'flex', flexDirection:'column', animation: flipped ? 'cr-glow 2s ease-in-out 1s infinite' : 'none' }}>
                 <div style={{ position:'relative', height:190, background:`linear-gradient(135deg, ${r.color}40, ${r.color}15)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:90 }}>
@@ -276,7 +276,7 @@ function CardReveal({ card, region, he, theme, onClose }: {
                 </div>
                 <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:6 }}>
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
-                    <div style={{ fontWeight:900, fontSize:20, color:'#111827', fontFamily:'"Baloo 2",sans-serif' }}>{name}</div>
+                    <div style={{ fontWeight:900, fontSize:20, color:'#111827', fontFamily:'"Rubik","Assistant",sans-serif' }}>{name}</div>
                     <span style={{ fontSize:11, fontWeight:800, padding:'3px 8px', borderRadius:10, background:r.bg, color:r.text }}>{he ? RARITY_HE[card.rarity] || r.label : r.label}</span>
                   </div>
                   <div style={{ fontSize:12, color:'#6B7280', display:'flex', alignItems:'center', gap:4 }}><MapPin size={12}/> {location}</div>
@@ -296,7 +296,7 @@ function CardReveal({ card, region, he, theme, onClose }: {
             <Pip theme={theme} pose="celebrate" size={130} he={he} bounce />
             <span style={{ fontSize:44 }} aria-hidden>{region?.emoji || '🌍'}</span>
           </div>
-          <div style={{ fontWeight:900, fontSize:22, color:'#065F46', fontFamily:'"Baloo 2",sans-serif' }}>
+          <div style={{ fontWeight:900, fontSize:22, color:'#065F46', fontFamily:'"Rubik","Assistant",sans-serif' }}>
             {he ? `העמוד "${region?.name}" מלא!` : `"${region?.name}" page full!`}
           </div>
           <div style={{ fontSize:14, color:'#374151', margin:'8px 0 18px', lineHeight:1.5 }}>
@@ -384,8 +384,8 @@ export default function CardsPage() {
   }
 
   if(loading) return (
-    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'"Nunito",sans-serif',background:'#F7F5F0'}}>
-      <div style={{textAlign:'center',color:'#6B7280'}}><div style={{marginBottom:12,display:'flex',justifyContent:'center'}}><Globe size={40}/></div><div style={{fontWeight:700,fontFamily:'"Baloo 2",sans-serif'}}>{he ? 'פותחים את האלבום...' : 'Opening your album...'}</div></div>
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'"Assistant",sans-serif',background:'#F7F5F0'}}>
+      <div style={{textAlign:'center',color:'#6B7280'}}><div style={{marginBottom:12,display:'flex',justifyContent:'center'}}><Globe size={40}/></div><div style={{fontWeight:700,fontFamily:'"Rubik","Assistant",sans-serif'}}>{he ? 'פותחים את האלבום...' : 'Opening your album...'}</div></div>
     </div>
   )
 

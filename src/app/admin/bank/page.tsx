@@ -76,6 +76,7 @@ export default function BankReview() {
                 <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>
                   {!c ? 'עוד לא עבר' : `${c.draft} מחכות${c.flagged ? ` · ${c.flagged} לבדיקה` : ''}${c.applied ? ` · ${c.applied} אושרו` : ''}`}
                   {t.card === 'draft' ? ' · דף לימוד מחכה' : t.card === 'approved' ? ' · דף לימוד ✓' : ''}
+                  {t.fresh ? ` · ${t.fresh} שאלות חדשות` : ''}
                 </div>
               </button>
             )
@@ -104,6 +105,23 @@ export default function BankReview() {
               </div>
             )}
 
+            {(detail.fresh || []).length > 0 && <>
+              <h3 style={{ fontFamily: F.heading, fontSize: 18 }}>שאלות חדשות לשיעור ({detail.fresh.length})</h3>
+              {detail.fresh.map((q: any) => (
+                <div key={q.id} style={{ ...card, padding: 14, marginBottom: 10, borderColor: '#B9C9F5' }}>
+                  <div style={{ fontSize: 17, fontWeight: 700 }}><InlineMath text={q.prompt_he || q.prompt_en || ''} /></div>
+                  <div style={{ fontSize: 14, color: C.textSecondary, marginTop: 4 }}>
+                    {Array.isArray(q.options) && q.options.length ? q.options.map((o: any) => <span key={o.label} style={{ marginInlineEnd: 10, fontWeight: o.isCorrect ? 800 : 400, color: o.isCorrect ? C.mintText : undefined }}>{o.value_he || o.value_en}</span>) : <>תשובה: <b>{q.correct_answer}</b></>}
+                  </div>
+                  {q.hint_he && <div style={{ fontSize: 14, marginTop: 6 }}><b>רמז: </b><InlineMath text={q.hint_he} /></div>}
+                  {q.explanation_he && <div style={{ fontSize: 14, marginTop: 4, whiteSpace: 'pre-line' }}><b>פתרון: </b><InlineMath text={q.explanation_he} /></div>}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <button disabled={busy === q.id} onClick={() => act({ action: 'approve_new', questionId: q.id }, q.id)} style={{ ...pillBtn(true), minHeight: 38, fontSize: 14 }}><Check size={14} /> להוסיף לשיעור</button>
+                    <button disabled={busy === q.id} onClick={() => act({ action: 'hide', questionId: q.id }, q.id)} style={{ ...pillBtn(), minHeight: 38, fontSize: 14, color: C.danger }}><X size={14} /> לא להוסיף</button>
+                  </div>
+                </div>
+              ))}
+            </>}
             {flagged.length > 0 && <h3 style={{ fontFamily: F.heading, fontSize: 18, display: 'flex', alignItems: 'center', gap: 6 }}><AlertTriangle size={18} color={C.amberText} /> לבדיקה שלך ({flagged.length})</h3>}
             {[...flagged, ...clean, ...qs.filter(q => q.draft?.status !== 'draft')].map(q => <QCard key={q.id} q={q} topicId={detail.topic.id} busy={busy} act={act} />)}
           </>}

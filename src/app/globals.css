@@ -35,7 +35,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
-  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+  font-family: 'Assistant', 'Rubik', system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.65;
