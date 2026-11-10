@@ -24,12 +24,17 @@ export function renderExplanationHTML(m: any, b: Brand): string {
     ${brandHeader(b, he, 'read')}
     <h1>${txt(L(p, 'title') || t.title_he || t.title_en, he)}</h1>
     <p class="intro">${txt(L(p, 'intro'), he)}</p>
+    ${vis(p.main_visual)}
+    ${(L(p, 'parent_guide') || []).length ? `<div class="box guide"><h2>${he ? 'איך לעבור על הדף עם הילד' : 'Going through it together'}</h2><ol>${L(p, 'parent_guide').map((x: string) => `<li>${txt(x, he)}</li>`).join('')}</ol></div>` : ''}
     ${(L(p, 'key_points') || []).length ? `<div class="box key"><h2>${he ? 'מה חשוב לזכור' : 'Key points'}</h2><ul>${L(p, 'key_points').map((x: string) => `<li>${txt(x, he)}</li>`).join('')}</ul></div>` : ''}
     ${(p.examples || []).map((ex: any, j: number) => `
       <div class="box ex"><h2>${he ? `דוגמה ${j + 1}` : `Example ${j + 1}`}</h2>
         <p class="q">${txt(L(ex, 'question'), he)}</p>${vis(ex.visual_data)}
         <ol>${(L(ex, 'steps') || []).map((s: string) => `<li>${txt(s, he)}</li>`).join('')}</ol>
         <p class="ans">${he ? 'תשובה' : 'Answer'}: ${txt(L(ex, 'answer'), he)}</p></div>`).join('')}
+    ${p.try_it ? `<div class="box try"><h2>${he ? 'עכשיו תורכם' : 'Your turn'}</h2><p class="q">${txt(L(p.try_it, 'q'), he)}</p><div class="line"></div><div class="line"></div>
+      <p class="hint">${he ? 'רמז' : 'Hint'}: ${txt(L(p.try_it, 'hint'), he)}</p>
+      <div class="sol"><b>${he ? 'הפתרון (לבדוק אחרי שניסיתם)' : 'Solution (check after trying)'}:</b><ol>${(L(p.try_it, 'steps') || []).map((x: string) => `<li>${txt(x, he)}</li>`).join('')}</ol><p class="ans">${he ? 'תשובה' : 'Answer'}: ${txt(L(p.try_it, 'a'), he)}</p></div></div>` : ''}
     ${(L(p, 'mistakes') || []).length ? `<div class="box warn"><h2>${he ? 'טעויות נפוצות' : 'Common mistakes'}</h2><ul>${L(p, 'mistakes').map((x: string) => `<li>${txt(x, he)}</li>`).join('')}</ul></div>` : ''}
     ${(p.check || []).length ? `<div class="box chk"><h2>${he ? 'בדקו את עצמכם' : 'Check yourself'}</h2><ol>${p.check.map((c: any) => `<li>${txt(L(c, 'q'), he)}<div class="line"></div></li>`).join('')}</ol>
       <p class="answers">${he ? 'תשובות' : 'Answers'}: ${p.check.map((c: any, k: number) => `${k + 1}) ${txt(L(c, 'a'), he)}`).join(' · ')}</p></div>` : ''}
@@ -39,16 +44,16 @@ export function renderExplanationHTML(m: any, b: Brand): string {
   const html = `<!DOCTYPE html><html dir="${he ? 'rtl' : 'ltr'}" lang="${he ? 'he' : 'en'}"><head><meta charset="utf-8"/>
 <title>EduPlay — ${esc(m.title)}</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;800&family=Nunito:wght@700;900&display=swap');
-*{box-sizing:border-box} body{font-family:'Assistant','Nunito',sans-serif;color:#1f2a28;max-width:820px;margin:0 auto;padding:24px 32px;font-size:15px;line-height:1.7}
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@400;600;800&family=Rubik:wght@600;800&display=swap');
+*{box-sizing:border-box} body{font-family:'Noto Sans Hebrew','Assistant',sans-serif;color:#16213E;max-width:820px;margin:0 auto;padding:24px 32px;font-size:15px;line-height:1.7}
 ${BRAND_CSS}
 .no-print{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
 .no-print button{padding:9px 20px;border-radius:999px;border:none;font-weight:800;cursor:pointer;font-family:inherit}
 .p{background:#2F5BE3;color:#fff}.c{background:#F1F5F9;color:#334155}
-h1{font-size:26px;color:#16213E;margin:6px 0 4px} h2{font-size:15px;margin:0 0 6px;color:#2F5BE3}
+h1{font-family:'Rubik',sans-serif;font-size:26px;color:#16213E;margin:6px 0 4px} h2{font-family:'Rubik',sans-serif;font-size:15px;margin:0 0 6px;color:#2F5BE3}
 .intro{font-size:16px;margin:0 0 10px}
 .box{border-radius:12px;padding:12px 16px;margin:10px 0;page-break-inside:avoid}
-.key{background:#EAF0FF}.ex{border:1.5px solid #D6E7E4}.warn{background:#FFF7ED}.warn h2{color:#B45309}.chk{border:1.5px dashed #2F5BE3}
+.key{background:#EAF0FF}.ex{border:1.5px solid #E8E2D6}.guide{background:#FFF4D1}.guide h2{color:#7A5600}.try{border:1.5px solid #12937A}.try h2{color:#0B6B58}.hint{font-size:13px;color:#4A5672;margin:6px 0}.sol{font-size:13px;color:#4A5672;border-top:1px dashed #D9D2C4;margin-top:8px;padding-top:6px}.warn{background:#FFF7ED}.warn h2{color:#B45309}.chk{border:1.5px dashed #2F5BE3}
 .q{font-weight:800;margin:0 0 4px}.ans{font-weight:800;color:#15803D;margin:4px 0 0}
 .vis{display:flex;justify-content:center;margin:6px 0}.vis svg{max-width:200px;height:auto}
 .line{border-bottom:1.5px solid #A7B8B5;height:26px;margin-bottom:6px}
@@ -56,7 +61,7 @@ h1{font-size:26px;color:#16213E;margin:6px 0 4px} h2{font-size:15px;margin:0 0 6
 .page{page-break-after:always}.page:last-child{page-break-after:auto}
 @media print{.no-print{display:none}body{padding:10px}}
 </style></head><body>
-<div class="no-print"><button class="p" onclick="window.print()">🖨️ ${he ? 'הדפסה / שמירה כ-PDF' : 'Print / Save as PDF'}</button><button class="c" onclick="window.close()">✕</button></div>
+<div class="no-print"><button class="p" onclick="window.print()">${he ? 'הדפסה / שמירה כ-PDF' : 'Print / Save as PDF'}</button><button class="c" onclick="window.close()">${he ? 'סגירה' : 'Close'}</button></div>
 ${pages || `<p>${he ? 'אין עדיין דפים.' : 'No pages yet.'}</p>`}
 </body></html>`
   return html

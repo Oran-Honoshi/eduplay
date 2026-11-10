@@ -15,6 +15,7 @@ import {
   Sparkles, ThumbsUp, Star, Copy, History, ArrowLeft, ArrowUp, Loader2, AlertTriangle, Trash2, Share2, Library,
 } from 'lucide-react'
 import ParentHeaderBar from '@/components/ParentHeaderBar'
+import ExplanationPage from '@/components/ExplanationPage'
 import { MaterialUpload, type UploadedMaterial } from '@/components/MaterialUpload'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
@@ -946,19 +947,8 @@ function ExplanationReview({ mat, onDone }: any) {
     <div className="flex flex-col gap-3">
       {pages.length === 0 && <div className={`${card} p-5 text-sm`}>לא נכתבו דפים. אפשר לחזור ולנסות שוב.</div>}
       {pages.map(({ t, page }: any) => (
-        <div key={t.key} className={`${card} p-5`} dir={he ? 'rtl' : 'ltr'}>
-          <h2 className="text-xl font-black text-[#2F5BE3] mt-0 mb-2">{L(page, 'title') || t.title_he}</h2>
-          <p className="text-[15px] text-[#16213E] leading-relaxed">{L(page, 'intro')}</p>
-          <ul className="ps-5 text-[15px] leading-relaxed">{(L(page, 'key_points') || []).map((x: string, i: number) => <li key={i}><FractionText text={x} /></li>)}</ul>
-          {(page.examples || []).map((ex: any, i: number) => (
-            <div key={i} className="rounded-xl bg-[#F7F4EE] border border-[#E8E2D6] p-3 my-2">
-              <div className="font-bold"><FractionText text={L(ex, 'question')} /></div>
-              {ex.visual_data && <div className="flex justify-center my-2"><MathVisual data={ex.visual_data} size={180} color="#2F5BE3" /></div>}
-              <ol className="ps-5 my-1 text-sm leading-relaxed">{(L(ex, 'steps') || []).map((s: string, j: number) => <li key={j}><FractionText text={s} /></li>)}</ol>
-              <div className="text-sm font-bold text-[#16A34A]"><FractionText text={L(ex, 'answer')} /></div>
-            </div>
-          ))}
-          {(L(page, 'mistakes') || []).length > 0 && <div className="text-sm mt-2"><b>טעויות נפוצות:</b><ul className="ps-5 my-1">{L(page, 'mistakes').map((x: string, i: number) => <li key={i}><FractionText text={x} /></li>)}</ul></div>}
+        <div key={t.key} className={`${card} p-5`}>
+          <ExplanationPage page={{ ...page, title_he: page.title_he || t.title_he }} he={he} mode="review" />
         </div>
       ))}
       {pages.length > 0 && <div className="flex justify-end"><button className={btnPrimary} onClick={onDone}><Check size={18} /> הדפים נראים טוב</button></div>}
@@ -990,6 +980,17 @@ function DonePanel({ mat, setMat, child, questions }: any) {
     window.open(`/api/worksheets/builder?${params}`, '_blank')
   }
   const [help, setHelp] = useState({ hints: true, steps: true })
+  const [expSent, setExpSent] = useState<boolean>(!!mat.plan?.app_sent_at)
+  async function sendExplanation() {
+    setSending(true); setErr(null)
+    try {
+      const r = await fetch(`/api/materials/${mat.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ send_explanation_to: mat.child_id || child?.id }) })
+      const d = await r.json()
+      if (!r.ok) throw new Error(d.error)
+      setMat(d.material); setExpSent(true)
+    } catch { setErr('לא הצלחנו לשלוח. נסו שוב.') }
+    setSending(false)
+  }
   async function sendToApp() {
     setSending(true); setErr(null)
     try {
@@ -1033,6 +1034,12 @@ function DonePanel({ mat, setMat, child, questions }: any) {
         <button className={`${card} p-4 text-start hover:border-[#2F5BE3]`} onClick={() => (isExpl ? print() : setPrintOpen(true))}>
           <Printer className="text-[#2F5BE3]" /><div className="font-bold mt-2">להדפסה</div><div className="text-xs text-[#4A5672]">{isExpl ? 'דפי הסבר ממותגים' : 'בוחרים: רמזים, פתרונות, תשובות בסוף'}</div>
         </button>
+        {isExpl && (
+          <button className={`${card} p-4 text-start hover:border-[#2F5BE3] disabled:opacity-60`} disabled={sending || !!expSent || !(mat.child_id || child?.id)} onClick={sendExplanation}>
+            <Smartphone className="text-[#2F5BE3]" /><div className="font-bold mt-2">{expSent ? 'נשלח לאפליקציה ✓' : 'לשלוח לאפליקציה'}</div>
+            <div className="text-xs text-[#4A5672]">{child ? `יופיע ל${child.name} במסך הבית, לקריאה צעד אחר צעד` : 'בחרו ילד/ה'}</div>
+          </button>
+        )}
         {!isExpl && (
           <button className={`${card} p-4 text-start hover:border-[#2F5BE3] disabled:opacity-60`} disabled={sending || !!sent || !(mat.child_id || child?.id)} onClick={sendToApp}>
             <Smartphone className="text-[#2F5BE3]" /><div className="font-bold mt-2">{sent ? 'נשלח לאפליקציה ✓' : 'לשלוח לאפליקציה'}</div>

@@ -46,6 +46,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (b.rating === null || (Number.isInteger(b.rating) && b.rating >= 1 && b.rating <= 5)) upd.rating = b.rating
   if (Number.isInteger(b.time_minutes) && b.time_minutes >= 5 && b.time_minutes <= 300) upd.time_minutes = b.time_minutes
   if (typeof b.assignment_id === 'string') upd.assignment_id = b.assignment_id
+  // explanation pages to a child's app: they appear on the child's home screen
+  if (typeof b.send_explanation_to === 'string' && m.kind === 'explanation') {
+    const { data: kid } = await createServiceRoleClient().from('children').select('id, family_id').eq('id', b.send_explanation_to).maybeSingle()
+    if (!kid || kid.family_id !== auth.parent.familyId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    upd.child_id = kid.id
+    upd.plan = { ...(upd.plan || m.plan || {}), app_sent_at: new Date().toISOString() }
+  }
   const { data, error } = await createServiceRoleClient().from('materials').update(upd).eq('id', m.id).select('*').single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ material: data })
