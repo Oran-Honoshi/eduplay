@@ -1,0 +1,1172 @@
+'use client'
+import { useState, useEffect } from 'react'
+import AnswerPad, { isNumericAnswer } from '@/components/kid/AnswerPad'
+import KidOpenAnswer from '@/components/kid/KidOpenAnswer'
+import PlotGate from '@/components/kid/PlotGate'
+import { hidesPicture } from '@/lib/interactive'
+import MathVisual from '@/components/MathVisual'
+import FractionText from '@/components/FractionText'
+import HebrewMathText from '@/components/HebrewMathText'
+import { ThemeDecorations, CelebrationModal, KidOverlay, AnimatedBtn, Sparkles, ThemePanel, CollectionButton, THEME_CONFIG as SHARED_THEMES } from '@/components/theme'
+import { FONT_SIZES } from '@/lib/fontSize'
+import { isDistinctHe, translateOptionLabel } from '@/lib/text'
+import { saveKidLang, announceTokensChanged, type KidLang } from '@/lib/kidPrefs'
+import { answersMatch } from '@/lib/answerMatch'
+import { Pip, type PipPose } from '@/components/Pip'
+
+
+function Fraction({ n, d, size = 20 }: { n: any; d: any; size?: number }) {
+  return (
+    <span style={{ display:'inline-flex', flexDirection:'column', alignItems:'center', lineHeight:1, verticalAlign:'middle', margin:'0 4px', fontFamily:'Georgia,serif' }}>
+      <span style={{ fontSize:size, fontWeight:600 }}>{n}</span>
+      <span style={{ display:'block', width:'100%', minWidth:`${size*0.9}px`, height:'1.5px', background:'currentColor', margin:'2px 0' }}/>
+      <span style={{ fontSize:size, fontWeight:600 }}>{d}</span>
+    </span>
+  )
+}
+
+// Core color/font/shadow tokens come from the shared THEME_CONFIG (imported
+// as SHARED_THEMES below) — this file used to keep its own byte-identical
+// copy, which meant every new theme had to be added twice to stay in sync.
+const PIP_LINES: any = {
+  minecraft:  'Keep going! Every answer makes you stronger! 💪',
+  princesses: 'You are doing amazingly! Keep shining! ✨',
+  plain:      'Great work! Keep going! 🌟',
+  sports:     'Great hustle! Keep pushing! 🔥',
+}
+const PIP_LINES_HE: any = {
+  minecraft:  'ממשיכים! כל תשובה מחזקת אותך! 💪',
+  princesses: 'את/ה מדהים/ה! ממשיכים לזרוח! ✨',
+  plain:      'עבודה יפה! ממשיכים! 🌟',
+  sports:     'מאמץ אדיר! ממשיכים לדחוף! 🔥',
+}
+
+
+const SUBJECT_COLORS: any = {
+  math:    '#4A7FD4',
+  english: '#2EC4B6',
+  hebrew:  '#FF6B6B',
+}
+
+const SUBJECT_ICONS: any = {
+  math:    '📐',
+  english: '📖',
+  hebrew:  '🇮🇱',
+}
+
+const lessonStyles = `
+  /* ── Mobile ─────────────────────────────── */
+  @media (max-width: 767px) {
+    .lesson-grid { grid-template-columns: 1fr !important; padding: 10px !important; }
+    .lesson-sidebar { display: none !important; }
+    .lesson-header { padding: 0 10px !important; height: 48px !important; }
+    .lesson-header-controls { gap: 4px !important; overflow-x: auto; }
+    .font-size-controls { display: none !important; }
+    .lesson-lang-toggle button { padding: 4px 8px !important; font-size: 11px !important; }
+    .learn-panel { padding: 12px !important; }
+    .question-panel { padding: 12px !important; }
+    .answer-grid { grid-template-columns: 1fr !important; }
+    .cta-row { flex-wrap: wrap !important; }
+    .cta-row button { flex: 1 !important; min-width: 80px !important; }
+    .lesson-progress-bar { height: 6px !important; }
+    .lesson-step-label { font-size: 10px !important; }
+    .completion-modal { padding: 24px 18px !important; max-width: 340px !important; }
+    .celebration-modal { padding: 24px 18px !important; max-width: 320px !important; }
+    .bonus-card { padding: 10px 12px !important; }
+  }
+
+  /* ── Tablet ──────────────────────────────── */
+  @media (max-width: 1024px) and (min-width: 768px) {
+    .lesson-grid { grid-template-columns: 1fr 200px !important; }
+    .lesson-sidebar .mascot-panel { display: none !important; }
+  }
+
+  /* ── Answer options full-width on small ─── */
+  @media (max-width: 480px) {
+    .answer-grid { grid-template-columns: 1fr !important; gap: 6px !important; }
+    .answer-btn { padding: 12px 10px !important; font-size: 14px !important; }
+    .lesson-header-controls .xp-display { display: none !important; }
+  }
+`
+
+function getLearnContent(topic: any, T: any, isHE: boolean = false) {
+  const slug = topic?.slug || ''
+  const subj = topic?.subject?.slug || ''
+
+  // Helper to render description block
+  const DescBlock = ({ en, he }: { en?: string; he?: string }) => {
+    const text = isHE ? (he || en || '') : (en || '')
+    if (!text) return null
+    return (
+      <div style={{ padding:'12px 14px', background:`${T.accent1}10`, border:`1px solid ${T.accent1}30`, borderRadius:T.radius, margin:'10px 0', color:T.text, fontSize:'1em', lineHeight:1.7, direction:isHE?'rtl':'ltr', textAlign:isHE?'right':'left' }}>
+        {text}
+      </div>
+    )
+  }
+
+  // Hebrew subjects — always RTL
+  if (subj === 'hebrew') {
+    return (
+      <>
+        <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 8px', direction:'rtl', textAlign:'right' }}>
+          <strong style={{ color:T.text }}>{topic?.title_he || topic?.title_en}</strong>
+        </p>
+        {topic?.description_he && (
+          <div style={{ padding:'12px 14px', background:`${T.accent1}10`, border:`1px solid ${T.accent1}30`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'1em', lineHeight:1.8, direction:'rtl', textAlign:'right' }}>
+            {topic.description_he}
+          </div>
+        )}
+        {slug.includes('aleph') || slug.includes('nikud') || slug.includes('ktiva') ? (
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'1.3em', fontFamily:'serif', direction:'rtl', letterSpacing:'6px' }}>
+            א ב ג ד ה ו ז ח ט י כ ל מ
+          </div>
+        ) : null}
+        <div style={{ padding:'10px 12px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, color:T.text2, fontSize:'0.9em', lineHeight:1.8, direction:'rtl', textAlign:'right' }}>
+          <div>📖 קראו כל שאלה בעיון</div>
+          <div>💡 השתמשו ברמז אם צריך</div>
+          <div>⭐ צברו XP על כל תשובה נכונה</div>
+        </div>
+      </>
+    )
+  }
+
+  // Math topics — visual examples
+  if (subj === 'math') {
+    const mathHint = isHE ? (topic?.description_he || '') : (topic?.description_en || '')
+
+    if (slug.includes('fraction') || slug.includes('equivalent') || slug.includes('comparing_fraction') || slug.includes('fraction_addition')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}>{isHE ? 'שבר' : 'A'} <strong style={{ color:T.text }}>{isHE ? 'מתאר חלקים שווים של שלם' : 'fraction'}</strong>{isHE ? ':' : ' describes equal parts of a whole:'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text }}>
+            <Fraction n={3} d={8} size={22}/>
+            <span style={{ fontSize:'1em', color:T.text2, marginLeft:'12px' }}>{isHE ? '= 3 מתוך 8 חלקים' : '= 3 out of 8 equal parts'}</span>
+          </div>
+          <p style={{ fontSize:'1em', color:T.text2, margin:0, direction:isHE?'rtl':'ltr' }}>
+            <strong style={{ color:T.accent3 }}>{isHE ? 'מונה' : 'Numerator'}</strong> ({isHE ? 'למעלה' : 'top'}) = {isHE ? 'חלקים שיש לנו' : 'parts we have'}. <strong style={{ color:T.accent4 }}>{isHE ? 'מכנה' : 'Denominator'}</strong> ({isHE ? 'למטה' : 'bottom'}) = {isHE ? 'סה"כ חלקים' : 'total parts'}.
+          </p>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    if (slug.includes('whole') || slug.includes('place') || slug.includes('numbers_to') || slug.includes('million') || slug.includes('counting')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}>{isHE ? 'לכל ספרה יש' : 'Each digit has a'} <strong style={{ color:T.text }}>{isHE ? 'ערך מקומי' : 'place value'}</strong> {isHE ? 'לפי מיקומה.' : 'depending on its position.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'1.2em' }}>
+            <span style={{ color:T.accent1 }}>3</span>,<span style={{ color:T.accent2 }}>4</span><span style={{ color:T.accent3 }}>5</span><span style={{ color:T.accent4 }}>6</span>
+            <div style={{ fontSize:'0.75em', color:T.text2, marginTop:'8px', fontFamily:'sans-serif', direction:isHE?'rtl':'ltr' }}>{isHE ? 'אלפים · מאות · עשרות · יחידות' : 'Thousands · Hundreds · Tens · Ones'}</div>
+          </div>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    if (slug.includes('decimal')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}><strong style={{ color:T.text }}>{isHE ? 'עשרוניים' : 'Decimals'}</strong> {isHE ? 'מייצגים חלקים מהשלם באמצעות נקודה.' : 'represent parts of a whole using a point.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'1.2em' }}>
+            0.7 = <Fraction n={7} d={10} size={20}/>
+          </div>
+          <p style={{ fontSize:'1em', color:T.text2, margin:0, direction:isHE?'rtl':'ltr' }}>{isHE ? 'מקום ראשון אחרי הנקודה = עשיריות. שני = מאיות.' : 'First place after point = tenths. Second = hundredths.'}</p>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    if (slug.includes('algebra') || slug.includes('linear') || slug.includes('equation')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}>{isHE ? 'ב' : 'In'} <strong style={{ color:T.text }}>{isHE ? 'אלגברה' : 'algebra'}</strong>{isHE ? ', אותיות מייצגות מספרים לא ידועים.' : ', letters stand for unknown numbers.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'1.1em' }}>
+            x + 5 = 12 → x = 7
+          </div>
+          <p style={{ fontSize:'1em', color:T.text2, margin:0, direction:isHE?'rtl':'ltr' }}>{isHE ? 'בצע את הפעולה ההפוכה משני צידי המשוואה.' : 'Do the'} <strong style={{ color:T.accent3 }}>{isHE ? '' : 'opposite operation'}</strong>{isHE ? '' : ' on both sides to solve.'}</p>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    if (slug.includes('geometry') || slug.includes('shape') || slug.includes('area') || slug.includes('perimeter') || slug.includes('volume') || slug.includes('surface') || slug.includes('triangle')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}><strong style={{ color:T.text }}>{isHE ? 'שטח' : 'Area'}</strong> = {isHE ? 'אורך × רוחב. ' : 'length × width. '}<strong style={{ color:T.text }}>{isHE ? 'היקף' : 'Perimeter'}</strong> = {isHE ? 'סכום כל הצלעות.' : 'sum of all sides.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'1em' }}>
+            📐 {isHE ? 'מלבן: ש = א × ר | משולש: ש = ½ × ב × ג' : 'Rectangle: A = l × w | Triangle: A = ½ × b × h'}
+          </div>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    if (slug.includes('ratio') || slug.includes('percent') || slug.includes('proportion')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}>{isHE ? 'יחס' : 'A'} <strong style={{ color:T.text }}>{isHE ? '' : 'ratio'}</strong> {isHE ? 'משווה שתי כמויות. ' : 'compares two quantities. '}{isHE ? 'אחוז הוא מתוך 100.' : 'A percentage is out of 100.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'1.1em' }}>
+            50% = <Fraction n={50} d={100} size={18}/> = <Fraction n={1} d={2} size={18}/>
+          </div>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    if (slug.includes('multiplication') || slug.includes('times_table') || slug.includes('division') || slug.includes('averages')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}><strong style={{ color:T.text }}>{isHE ? 'כפל' : 'Multiplication'}</strong> {isHE ? 'הוא חיבור חוזר. ' : 'is repeated addition. '}<strong style={{ color:T.text }}>{isHE ? 'חילוק' : 'Division'}</strong> {isHE ? 'הוא חלוקה שווה.' : 'is equal sharing.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'1.1em' }}>
+            4 × 3 = 12 | 12 ÷ 3 = 4
+          </div>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    if (slug.includes('addition') || slug.includes('subtraction')) {
+      return (
+        <>
+          <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 10px', direction:isHE?'rtl':'ltr' }}><strong style={{ color:T.text }}>{isHE ? 'חיבור' : 'Addition'}</strong> {isHE ? 'מחבר מספרים. ' : 'puts numbers together. '}<strong style={{ color:T.text }}>{isHE ? 'חיסור' : 'Subtraction'}</strong> {isHE ? 'לוקח בחזרה.' : 'takes away.'}</p>
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontFamily:'Georgia,serif', fontSize:'1.1em' }}>
+            7 + 5 = 12 | 12 − 5 = 7
+          </div>
+          {mathHint && <DescBlock en={topic?.description_en} he={topic?.description_he}/>}
+        </>
+      )
+    }
+
+    // Generic math fallback
+    return (
+      <>
+        <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 8px', direction:isHE?'rtl':'ltr' }}>
+          <strong style={{ color:T.text }}>{isHE ? (topic?.title_he || topic?.title_en) : topic?.title_en}</strong>
+        </p>
+        <DescBlock en={topic?.description_en} he={topic?.description_he}/>
+        <div style={{ padding:'10px 12px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, color:T.text2, fontSize:'0.9em', lineHeight:1.8, direction:isHE?'rtl':'ltr' }}>
+          <div>📐 {isHE ? 'קרא את השאלה בעיון' : 'Read the question carefully'}</div>
+          <div>💡 {isHE ? 'השתמש ברמז אם צריך' : 'Use the hint if you need help'}</div>
+          <div>⭐ {isHE ? 'צבור XP על כל תשובה נכונה' : 'Earn XP for every correct answer'}</div>
+        </div>
+      </>
+    )
+  }
+
+  // English topics
+  if (subj === 'english') {
+    const showGrammar = slug.includes('grammar') || slug.includes('noun') || slug.includes('verb') || slug.includes('sentence') || slug.includes('clause') || slug.includes('syntax')
+    const showPhonics = slug.includes('phonics') || slug.includes('letter') || slug.includes('sound') || slug.includes('blend') || slug.includes('sight')
+    const showWriting = slug.includes('writing') || slug.includes('essay') || slug.includes('composition') || slug.includes('paragraph')
+
+    return (
+      <>
+        <p style={{ fontSize:'1em', lineHeight:1.75, color:T.text2, margin:'0 0 8px', direction:isHE?'rtl':'ltr' }}>
+          <strong style={{ color:T.text }}>{isHE ? (topic?.title_he || topic?.title_en) : topic?.title_en}</strong>
+        </p>
+        {showPhonics && (
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'1.2em', letterSpacing:'4px' }}>
+            B · A · T = 🦇 bat
+          </div>
+        )}
+        {showGrammar && (
+          <div style={{ textAlign:'center', padding:'14px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'1em' }}>
+            <span style={{ color:T.accent3 }}>Lia</span> <span style={{ color:T.accent4 }}>reads</span> a book.
+            <div style={{ fontSize:'0.8em', color:T.text2, marginTop:'6px' }}>Subject · Verb · Object</div>
+          </div>
+        )}
+        {showWriting && (
+          <div style={{ padding:'10px 12px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, margin:'8px 0', color:T.text, fontSize:'0.9em', lineHeight:1.8 }}>
+            <div>✍️ <strong>Introduction</strong> — introduce the topic</div>
+            <div>📝 <strong>Body</strong> — develop your ideas</div>
+            <div>🏁 <strong>Conclusion</strong> — summarise and close</div>
+          </div>
+        )}
+        <DescBlock en={topic?.description_en} he={topic?.description_he}/>
+        <div style={{ padding:'8px 12px', background:T.panel, border:`1px solid ${T.border}`, borderRadius:T.radius, color:T.text2, fontSize:'0.9em', lineHeight:1.8, marginTop:'8px' }}>
+          <div>📖 {isHE ? 'קרא כל שאלה בעיון' : 'Read each question carefully'}</div>
+          <div>💡 {isHE ? 'השתמש ברמז' : 'Use the hint if stuck'}</div>
+          <div>⭐ {isHE ? 'צבור XP' : 'Earn XP for correct answers'}</div>
+        </div>
+      </>
+    )
+  }
+
+  // Ultimate fallback
+  return (
+    <>
+      <p style={{ fontSize:'1em', color:T.text2, margin:'0 0 8px', direction:isHE?'rtl':'ltr' }}>
+        <strong style={{ color:T.text }}>{isHE ? (topic?.title_he || topic?.title_en) : topic?.title_en}</strong>
+      </p>
+      <DescBlock en={topic?.description_en} he={topic?.description_he}/>
+    </>
+  )
+}
+
+
+// ── PASSAGE READER ────────────────────────────────────────────
+function PassageReader({ passage, questions, T, langMode, isHE, UI, child, topic, subjColor, token, theme, FS, onXpEarned, onCardEarned }: any) {
+  const [phase, setPhase]       = useState<'reading'|'questions'>('reading')
+  const [qIndex, setQIndex]     = useState(0)
+  const [answered, setAnswered] = useState(false)
+  const [selected, setSelected] = useState<string|null>(null)
+  const [feedback, setFeedback] = useState<any>(null)
+  const [score, setScore]       = useState(0)
+  const [done, setDone]         = useState(false)
+  const [cardEarned, setCardEarned] = useState(false)
+
+  const currentQ = questions[qIndex]
+  const isRTL    = passage?.is_rtl && isHE
+
+  // FIXED (2026-08-03): this used to never persist anything — a reading-comprehension
+  // answer only updated local `score`/`feedback` state, no /api/progress POST, so no
+  // XP/streak/child_topic_progress update ever happened. Now mirrors the main lesson's
+  // checkAnswer (~line 620): fires an unconditional POST with `passageQuestionId` (these
+  // questions live in `passage_questions`, not `questions`, so the API re-derives
+  // correctness from that table instead — see api/progress/route.ts).
+  async function checkAnswer(opt: any) {
+    if (answered) return
+    setAnswered(true)
+    setSelected(opt.label)
+    const correct = opt.isCorrect
+    if (correct) setScore(s => s + 1)
+    setFeedback({ correct, explanation: correct ? '✅ ' + UI.correct : '❌ ' + UI.notQuite })
+    try {
+      await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          childId: child?.id, topicId: topic?.id, passageQuestionId: currentQ.id,
+          answerGiven: opt.label, correct, hintUsed: false,
+          stepNumber: qIndex, totalSteps: questions.length,
+        }),
+      })
+    } catch {}
+    if (correct) onXpEarned?.(25)
+  }
+
+  function next() {
+    if (qIndex + 1 >= questions.length) {
+      // Completion-only call (no passageQuestionId), same shape as the main lesson's
+      // nextStep() — marks the topic complete and returns isNewBest to gate a card token.
+      fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: questions.length, totalSteps: questions.length }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data?.isNewBest) {
+            setCardEarned(true)
+            onCardEarned?.()
+          }
+        })
+        .catch(() => {})
+      setDone(true)
+    } else {
+      setQIndex(i => i + 1)
+      setAnswered(false)
+      setSelected(null)
+      setFeedback(null)
+    }
+  }
+
+  function goBack() {
+    // Persist partial progress on early exit, same as the main lesson's goBack().
+    if (qIndex > 0 || answered) {
+      fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: qIndex, totalSteps: questions.length }),
+      }).catch(() => {})
+    }
+    if (token) window.location.href = `/play/${token}`
+    else window.location.href = '/dashboard'
+  }
+
+  if (done) {
+    return (
+      <div style={{ textAlign:'center', padding:'40px', background:T.panel, border:`2px solid ${T.accent2}`, borderRadius:T.radius, boxShadow:T.shadow }}>
+        <div style={{ fontSize:'48px', marginBottom:'12px' }}>🎉</div>
+        <h2 style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2, marginBottom:'8px' }}>{UI.complete}</h2>
+        <p style={{ fontSize:'14px', color:T.text2, marginBottom:'8px' }}>
+          {isHE ? `ענית נכון על ${score} מתוך ${questions.length} שאלות` : `You got ${score} out of ${questions.length} correct!`}
+        </p>
+        <div style={{ fontSize:'36px', margin:'12px 0' }}>
+          {score === questions.length ? '⭐⭐⭐' : score >= questions.length / 2 ? '⭐⭐' : '⭐'}
+        </div>
+        {cardEarned && (
+          <p style={{ fontSize:'14px', color:T.accent2, fontWeight:800, marginBottom:'8px' }}>
+            {isHE ? 'קיבלת מדבקה חדשה!' : 'You earned a new sticker!'}
+          </p>
+        )}
+        <div style={{ display:'flex', gap:'10px', justifyContent:'center', marginTop:'16px' }}>
+          <button onClick={goBack} style={{ padding:'10px 20px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'16px', cursor:'pointer' }}>{UI.home}</button>
+          <button onClick={() => { setPhase('reading'); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null); setScore(0); setDone(false) }}
+            style={{ padding:'10px 20px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'16px', cursor:'pointer' }}>{UI.again}</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'reading') {
+    return (
+      <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+        <div style={{ background:T.panel, border:`2px solid ${subjColor}`, borderRadius:T.radius, overflow:'hidden', boxShadow:T.shadow }}>
+          <div style={{ background:subjColor, padding:'12px 16px', display:'flex', alignItems:'center', gap:'10px' }}>
+            <span style={{ fontSize:'20px' }}>📖</span>
+            <div>
+              <div style={{ fontFamily:T.fontHead, fontSize:'16px', color:'white', opacity:.8 }}>{isHE ? 'קטע לקריאה' : 'READING PASSAGE'}</div>
+              <div style={{ fontWeight:800, fontSize:'14px', color:'white' }}>{isHE && passage.title_he ? passage.title_he : passage.title_en}</div>
+            </div>
+            <span style={{ marginLeft:'auto', fontSize:'10px', fontWeight:800, background:'rgba(255,255,255,0.2)', color:'white', padding:'3px 10px', borderRadius:'50px' }}>
+              {passage.passage_type}
+            </span>
+          </div>
+          <div style={{ padding:'20px', maxHeight:'420px', overflowY:'auto' }}>
+            {!isHE && passage.content_en && (
+              <p style={{ fontSize:`${FS?.passage || 14}px`, lineHeight:1.9, color:T.text, margin:0, fontFamily:'"Georgia",serif' }}>
+                {passage.content_en}
+              </p>
+            )}
+            {isHE && passage.content_he && (
+              <p style={{ fontSize:`${FS?.passage || 14}px`, lineHeight:1.9, color:T.text, margin:0, fontFamily:'"Times New Roman",serif', direction:'rtl', textAlign:'right' }}>
+                {passage.content_he}
+              </p>
+            )}
+            {!isHE && langMode === 'bilingual' && isDistinctHe(passage.content_he, passage.content_en) && (
+              <div style={{ marginTop:'16px', padding:'14px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius }}>
+                <div style={{ fontSize:'10px', fontWeight:800, color:T.text2, marginBottom:'8px' }}>🇮🇱 Hebrew</div>
+                <p style={{ fontSize:'16px', lineHeight:1.9, color:T.text2, margin:0, fontFamily:'"Times New Roman",serif', direction:'rtl', textAlign:'right' }}>
+                  {passage.content_he}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+        {questions.length > 0 && (
+          <button onClick={() => setPhase('questions')}
+            style={{ padding:'14px', background:`linear-gradient(135deg,${subjColor},${T.xp})`, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'14px', cursor:'pointer', boxShadow:T.btnShadow }}>
+            {isHE ? '← עבור לשאלות הבנה' : 'ANSWER COMPREHENSION QUESTIONS →'}
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  // Questions phase
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+        <span style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.text2 }}>
+          {isHE ? `שאלה ${qIndex+1} מתוך ${questions.length}` : `Question ${qIndex+1} of ${questions.length}`}
+        </span>
+        <div style={{ flex:1, height:'8px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:`${((qIndex+1)/questions.length)*100}%`, background:subjColor, transition:'width 0.3s' }}/>
+        </div>
+        <span style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2 }}>{score}/{questions.length}</span>
+      </div>
+
+      <div style={{ background:T.panel2, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'16px', boxShadow:T.shadow }}>
+        <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent4, marginBottom:'10px' }}>❓ {UI.practice}</div>
+
+        {/* Primary prompt — Hebrew when isHE. A Hebrew prompt with an embedded
+            math expression (e.g. "5 x 3/10 = ___ בצורה פשוטה ביותר") renders
+            as separate RTL-text/LTR-math lines via HebrewMathText rather than
+            one line, so the equation doesn't get UAX#9-reversed inside the
+            surrounding RTL run — same fix as the worksheet builder's, shared
+            via lib/text.ts. */}
+        {isHE && currentQ.prompt_he ? (
+          <HebrewMathText text={currentQ.prompt_he}
+            style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:'rtl', textAlign:'right' }} />
+        ) : (
+          <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 8px', lineHeight:1.5, direction:'ltr', textAlign:'left' }}>
+            <FractionText text={currentQ.prompt_en} />
+          </p>
+        )}
+        {langMode === 'bilingual' && !isHE && isDistinctHe(currentQ?.prompt_he, currentQ?.prompt_en) && (
+          <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 10px', lineHeight:1.6 }}><FractionText text={currentQ.prompt_he} /></p>
+        )}
+
+        {currentQ?.options && (
+          <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginBottom:'12px' }}>
+            {currentQ.options.map((opt: any) => {
+              const isCorrect  = opt.isCorrect && answered
+              const isWrong    = selected === opt.label && !opt.isCorrect && answered
+              const displayVal = isHE ? (opt.value_he || opt.value_en || '') : (opt.value_en || '')
+              return (
+                <button className="answer-btn" key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
+                  style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'10px 14px', cursor:answered?'default':'pointer', fontSize:'16px', fontWeight:700, display:'flex', alignItems:'center', gap:'10px', color:T.text, textAlign:isRTL?'right':'left', direction:isRTL?'rtl':'ltr', fontFamily:isRTL?'"Times New Roman",serif':'"Nunito",sans-serif' }}>
+                  <span style={{ width:'22px', height:'22px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'"Noto Serif Hebrew","Times New Roman",serif', fontSize:'14px', flexShrink:0 }}>{isHE ? translateOptionLabel(opt.label) : opt.label}</span>
+                  <FractionText text={displayVal} />
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {currentQ?.hint_he && isHE && !answered && (
+          <div style={{ fontSize:'12px', color:T.accent2, padding:'6px 10px', background:`${T.accent2}15`, borderRadius:T.radius, marginBottom:'8px', direction:'rtl', textAlign:'right' }}>
+            💡 <FractionText text={currentQ.hint_he} />
+          </div>
+        )}
+        {currentQ?.hint_en && !isHE && !answered && (
+          <div style={{ fontSize:'12px', color:T.accent2, padding:'6px 10px', background:`${T.accent2}15`, borderRadius:T.radius, marginBottom:'8px' }}>
+            💡 <FractionText text={currentQ.hint_en} />
+          </div>
+        )}
+
+        {feedback && (
+          <div style={{ border:`2px solid ${feedback.correct?T.accent3:'#E03030'}`, background:feedback.correct?'rgba(0,200,83,0.1)':'rgba(224,48,48,0.1)', borderRadius:T.radius, padding:'10px 14px', marginBottom:'10px', fontSize:'16px', color:T.text2 }}>
+            <FractionText text={feedback.explanation} />
+            {currentQ?.explanation_en && (
+              <div style={{ marginTop:'6px', fontSize:'12px' }}><FractionText text={currentQ.explanation_en} /></div>
+            )}
+          </div>
+        )}
+
+        <div style={{ display:'flex', gap:'8px' }}>
+          <button onClick={() => setPhase('reading')} style={{ padding:'8px 12px', fontFamily:T.fontHead, fontSize:'14px', background:T.panel, border:`2px solid ${T.border}`, color:T.text2, borderRadius:T.radius, cursor:'pointer' }}>
+            📖 {isHE ? 'חזור לקטע' : 'RE-READ'}
+          </button>
+          {answered && (
+            <button onClick={next} style={{ flex:1, padding:'9px 16px', fontFamily:T.fontHead, fontSize:'12px', background:subjColor, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>
+              {qIndex + 1 >= questions.length ? (isHE ? 'סיים ✓' : 'FINISH ✓') : (isHE ? 'הבא ▶' : 'NEXT ▶')}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── MAIN LESSON CLIENT ────────────────────────────────────────
+export default function LessonClient({ child, topic, questions, passage, passageQuestions, isReadingTopic, allTopics, subjects, progress, difficulty }: any) {
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+  const theme     = (urlParams?.get('theme') || child?.theme || 'plain') as string
+  const token     = urlParams?.get('token') || ''
+  const langMode  = (urlParams?.get('lang') || child?.lang_screen || 'bilingual') as string
+  const isBonus   = urlParams?.get('bonus') === 'true'
+
+  const T   = SHARED_THEMES[theme] || SHARED_THEMES.plain
+  const subjSlug  = topic?.subject?.slug || 'math'
+  const subjColor = SUBJECT_COLORS[subjSlug] || T.accent1
+  const isHE      = langMode !== 'en_only'
+  const pipLine = (isHE ? PIP_LINES_HE : PIP_LINES)[theme] || (isHE ? PIP_LINES_HE : PIP_LINES).plain
+  // Remember the language the child is using so Home / Rewards / Assignments open in it too.
+  useEffect(() => { if (child?.id) saveKidLang(langMode as KidLang, child.id) }, [langMode, child?.id])
+
+  const progressMap: any = {}
+  progress.forEach((p: any) => { progressMap[p.topic_id] = p })
+
+  const [currentStep, setCurrentStep] = useState(0)
+  const totalSteps = isBonus ? 20 : (topic?.lesson_count || 5)
+  const [qIndex, setQIndex]       = useState(0)
+  const [answered, setAnswered]   = useState(false)
+  const [selected, setSelected]   = useState<string|null>(null)
+  const [feedback, setFeedback]   = useState<any>(null)
+  const [hintVisible, setHint]    = useState(false)
+  const [xpBalance, setXp]        = useState(child?.xp_balance || 0)
+  const [xpNotif, setXpNotif]     = useState<string|null>(null)
+  const [completed, setCompleted] = useState(false)
+  const [typedAnswer, setTypedAnswer] = useState('')
+  const [openLabel, setOpenLabel] = useState<string | null>(null)
+  const [typedError, setTypedError] = useState(false)
+  const [completionInfo, setCompletionInfo] = useState<{ message: string; emoji: string; card?: boolean } | null>(null)
+
+  const [celebration, setCelebration] = useState<{ message: string; emoji: string } | null>(null)
+  const [sparkleActive, setSparkleActive] = useState(false)
+  const [xpMilestone, setXpMilestone] = useState(Math.floor((child?.xp_total || 0) / 1000))
+  const [passageOpen, setPassageOpen] = useState(false)
+
+  // Only the XP-milestone celebration uses this now — lesson completion used
+  // to ALSO fire this on top of the completion overlay below (CelebrationModal
+  // at z-index 9999 briefly stacked over the completion screen's own z-index
+  // 9998, since the celebration's 4s auto-dismiss ran concurrently with the
+  // completion screen staying open). Fixed by folding the completion message
+  // into the completion overlay itself (see completionInfo) instead of firing
+  // a second overlay on top of it.
+  function triggerCelebration(message: string, emoji: string) {
+    setCelebration({ message, emoji })
+    setTimeout(() => setCelebration(null), 4000)
+  }
+
+
+  const [pipText, setPip]         = useState(pipLine)
+  const [fontSize, setFontSize]   = useState<'small'|'medium'|'large'|'xl'>(
+    (urlParams?.get('fs') || child?.font_size || 'medium') as 'small'|'medium'|'large'|'xl'
+  )
+
+  const FS = FONT_SIZES[fontSize]
+
+  const currentQ   = questions[qIndex]
+  const progressPct = Math.round((currentStep / totalSteps) * 100)
+
+  const UI = {
+    learnThis:   isHE ? 'למד זאת'                     : 'LEARN THIS',
+    practice:    isHE ? 'שאלת תרגול'                   : 'PRACTICE QUESTION',
+    hint:        isHE ? 'רמז'                          : 'HINT',
+    correct:     isHE ? 'כל הכבוד!'                   : 'CORRECT!',
+    notQuite:    isHE ? 'לא בדיוק!'                    : 'NOT QUITE!',
+    next:        isHE ? 'הבא ▶'                        : 'NEXT ▶',
+    back:        isHE ? '◀ חזור'                       : '◀ BACK',
+    noQuestions: isHE ? 'אין שאלות עדיין'              : 'NO QUESTIONS YET',
+    comingSoon:  isHE ? 'שאלות לנושא זה יתווספו בקרוב!' : 'Questions coming soon!',
+    pipSays:     isHE ? 'פיפ אומר:'                   : 'PIP SAYS:',
+    topics:      isHE ? 'נושאים'                       : 'TOPICS',
+    subjects:    isHE ? 'מקצועות'                      : 'SUBJECTS',
+    step:        isHE ? 'שלב'                          : 'STEP',
+    home:        isHE ? 'בית'                          : 'HOME',
+    again:       isHE ? 'שוב'                          : 'AGAIN',
+    complete:    isHE ? 'השיעור הושלם!'                : 'LESSON COMPLETE! 🎉',
+    mastered:    isHE ? 'שלטת ב'                       : 'You mastered',
+    xpEarned:   isHE ? '!צברת 100 XP'                 : '+100 XP earned!',
+    inProgress:  isHE ? 'בתהליך'                       : 'In progress',
+  }
+
+  function navigateToTopic(topicId: string) {
+    window.location.href = `/lesson?topicId=${topicId}&childId=${child?.id}&theme=${theme}${token?`&token=${token}`:''}&lang=${langMode}`
+  }
+
+  function goBack() {
+    if (currentStep > 0) {
+      fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: currentStep, totalSteps }),
+      }).catch(() => {})
+    }
+    if (token) window.location.href = `/play/${token}`
+    else window.location.href = '/dashboard'
+  }
+
+  function showXP(text: string) {
+    setXpNotif(text)
+    setTimeout(() => setXpNotif(null), 2500)
+  }
+
+  function awardCardToken() {
+    fetch('/api/cards/token', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ childId: child?.id }) }).then(() => announceTokensChanged()).catch(()=>{})
+  }
+
+  function speak(text: string, lang: string) {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    const u = new SpeechSynthesisUtterance(text)
+    u.lang = lang === 'he' ? 'he-IL' : 'en-US'
+    u.rate = 0.9
+    window.speechSynthesis.speak(u)
+  }
+
+  async function changeFontSize(newSize: 'small'|'medium'|'large'|'xl') {
+    setFontSize(newSize)
+    try {
+      await fetch('/api/children', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child?.id, font_size: newSize }),
+      })
+    } catch {}
+  }
+
+  async function checkAnswer(opt: any) {
+    if (answered) return
+    setAnswered(true)
+    setSelected(opt.label)
+    const correct = opt.isCorrect
+    setFeedback({
+      correct,
+      explanation: correct ? (currentQ.explanation_en || 'Correct! Well done!') : (currentQ.hint_en || currentQ.explanation_en || 'Not quite — try the hint!'),
+      explanation_he: correct ? (currentQ.explanation_he || 'כל הכבוד! תשובה נכונה.') : (currentQ.hint_he || 'לא נורא! התשובה הנכונה מסומנת בירוק — קראו אותה ונסו להבין למה.'),
+    })
+    setPip(correct ? (isHE ? '🎉 מצוין! הצלחת!' : '🎉 Excellent! You nailed it!') : (isHE ? '💡 לא מוותרים!' : "💡 Don't give up!"))
+    // FIXED (2026-07-28): the /api/progress POST used to be nested inside the
+    // `if (correct)` block below, so a wrong answer never reached the server at all — no
+    // question_attempts row, no child_topic_progress update. Confirmed live against the DB
+    // before this fix: every existing question_attempts row (37/37) was correct=true,
+    // hint_used=false, attempt_number=1 — misses weren't rare, they were silently dropped.
+    // That also meant the "exclude recently seen questions" logic in lesson/page.tsx could
+    // only ever see correct answers, so a child could be re-served a question they'd
+    // already gotten wrong repeatedly while one they got right once rotated out — a live
+    // degradation of question variety, not just a data gap. Fetch now fires unconditionally;
+    // only the XP/celebration logic below stays gated on `correct`.
+    try {
+      await fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child?.id, questionId: currentQ.id, topicId: topic?.id, answerGiven: opt.label, correct, hintUsed: hintVisible, stepNumber: currentStep, totalSteps }),
+      })
+    } catch {}
+    if (correct) {
+      const newXp = xpBalance + 25
+      setXp(newXp)
+      showXP('+25 XP ⬆')
+      setSparkleActive(true); setTimeout(() => setSparkleActive(false), 1300)
+      const newMilestone = Math.floor(newXp / 1000)
+      if (newMilestone > xpMilestone) {
+        setXpMilestone(newMilestone)
+        setTimeout(() => triggerCelebration(`${newXp.toLocaleString()} XP reached! Amazing! 🚀`, '🏆'), 500)
+      }
+    }
+  }
+
+  function nextStep() {
+    if (!answered) { setPip('⚠️ Answer the question first!'); return }
+    const next = currentStep + 1
+    if (next >= totalSteps) {
+      // Trigger relief if configured
+      const reliefTrigger = child?.relief_trigger || 'topic'
+      if (reliefTrigger === 'lesson' || reliefTrigger === 'both') {
+        setTimeout(() => {
+          window.location.href = `/relief?childId=${child?.id}&grade=${child?.grade||0}&token=${token}&returnTo=${token?`/play/${token}`:'/dashboard'}`
+        }, 1500)
+      }
+      setCompleted(true)
+      // The card-token award (and the "card earned" wording below) is gated on the
+      // server's isNewBest verdict — a personal-best check against steps_total, not
+      // mere completion — so replaying a lesson or a bonus round that's already been
+      // done before doesn't farm a token every time.
+      fetch('/api/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child?.id, topicId: topic?.id, stepNumber: totalSteps, totalSteps }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          const cardEarned = !!data?.isNewBest
+          announceTokensChanged()
+          setCompletionInfo({
+            message: isHE
+              ? (isBonus ? (cardEarned ? 'תרגיל הבונוס הושלם! קיבלת עוד מדבקה!' : 'תרגיל הבונוס הושלם! כל הכבוד! 🎓') : 'כל הכבוד! סיימת את השיעור! 🎓')
+              : (isBonus ? (cardEarned ? 'Bonus complete! Extra card earned! 🎴' : 'Bonus complete! Great practice! 🎓') : 'Lesson complete! Amazing work! 🎓'),
+            emoji: isBonus && cardEarned ? '🎴' : '🎉',
+            card: cardEarned,
+          })
+          if (cardEarned) {
+            awardCardToken()
+          }
+        })
+        .catch(() => {
+          setCompletionInfo({ message: isHE ? 'כל הכבוד! סיימת את השיעור! 🎓' : 'Lesson complete! Amazing work! 🎓', emoji: '🎉' })
+        })
+      return
+    }
+    setCurrentStep(next)
+    setQIndex(i => Math.min(i + 1, questions.length - 1))
+    setAnswered(false); setSelected(null); setFeedback(null); setHint(false)
+    setTypedAnswer(''); setTypedError(false); setOpenLabel(null)
+    setPip(pipLine)
+  }
+
+  return (
+    <div style={{ minHeight:'100vh', background:T.bg, color:T.text, fontFamily:'"Nunito",sans-serif', overflowX:'hidden', position:'relative', fontSize: fontSize==='small'?'14px':fontSize==='medium'?'16px':fontSize==='large'?'19px':'22px' }} dir={isHE ? 'rtl' : 'ltr'}>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes celebPop { from { transform:scale(0.5); opacity:0; } to { transform:scale(1); opacity:1; } }
+        @keyframes spin { from { transform:rotate(-20deg) scale(0.8); } to { transform:rotate(0deg) scale(1); } }
+        @keyframes float0 { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+        @keyframes float1 { from { transform:translateY(30px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+        @keyframes float2 { from { transform:translateY(25px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Cinzel+Decorative:wght@400;700&family=Nunito:wght@400;700;800;900&display=swap');
+      ` }} />
+
+      <ThemeDecorations theme={theme}/>
+
+      <style>{lessonStyles}</style>
+
+      {xpNotif && (
+        <KidOverlay position="top-right">
+          <div style={{ background:T.panel, border:`3px solid ${T.xp}`, borderRadius:T.radius, padding:'10px 18px', fontFamily:T.fontHead, fontSize:'14px', color:T.xp, boxShadow:T.shadow }}>
+            {xpNotif}
+          </div>
+        </KidOverlay>
+      )}
+
+      {completed && (
+        <KidOverlay position="center" interactive>
+          <div className="completion-modal" style={{ background:T.panel, border:`4px solid ${T.accent2}`, borderRadius:T.radius, padding:'36px', textAlign:'center', maxWidth:'420px', width:'100%', boxShadow:T.shadow }}>
+            {completionInfo ? (
+              <>
+                <Pip theme={theme} he={isHE} size={140} bounce pose="celebrate" style={{ margin:'0 auto 8px' }} />
+                <h2 style={{ fontFamily:T.fontHead, fontSize:'16px', color:T.accent2, marginBottom:'10px' }}>{completionInfo.message}</h2>
+              </>
+            ) : (
+              <>
+                <Pip theme={theme} he={isHE} size={140} bounce pose="celebrate" style={{ margin:'0 auto 8px' }} />
+                <h2 style={{ fontFamily:T.fontHead, fontSize:'16px', color:T.accent2, marginBottom:'10px' }}>{UI.complete}</h2>
+              </>
+            )}
+            <div style={{ fontSize:'44px', letterSpacing:'6px', margin:'12px 0' }}>⭐⭐⭐</div>
+            <p style={{ fontSize:'16px', color:T.text2, marginBottom:'8px' }}>{UI.mastered} <strong style={{ color:T.accent2 }}>{isHE ? topic?.title_he || topic?.title_en : topic?.title_en}</strong>!</p>
+            <p style={{ fontSize:'14px', color:T.text2, marginBottom:'20px' }}>{UI.xpEarned}</p>
+
+            {/* A card was earned — send the child straight to collect it (the reveal happens there) */}
+            {completionInfo?.card && (
+              <button onClick={() => { window.location.href = `/cards?childId=${child?.id}${token ? `&token=${token}` : ''}&theme=${theme}&lang=${langMode}` }}
+                style={{ width:'100%', minHeight:52, marginBottom:'14px', padding:'12px', background:'#E0A927', border:'3px solid #B7862F', borderRadius:T.radius, color:'#fff', fontFamily:T.fontHead, fontSize:'15px', fontWeight:900, cursor:'pointer' }}>
+                {isHE ? 'להדביק באלבום' : 'Place it in my album'}
+              </button>
+            )}
+
+            {/* Bonus exercise option */}
+            <div style={{ background:`${T.accent2}15`, border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'14px 16px', marginBottom:'16px' }}>
+              <div style={{ fontSize:'20px', marginBottom:6 }}>🎴 +1</div>
+              <div style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2, marginBottom:4 }}>
+                {isHE ? 'תרגיל בונוס!' : 'BONUS ROUND!'}
+              </div>
+              <div style={{ fontSize:'13px', color:T.text2, marginBottom:10 }}>
+                {isHE ? 'עונים על עוד 20 שאלות ומקבלים עוד מדבקה!' : 'Answer 20 more questions and earn another sticker!'}
+              </div>
+              <button onClick={() => {
+                window.location.href = `/lesson?childId=${child?.id}&topicId=${topic?.id}&theme=${theme}&lang=${langMode}&bonus=true&token=${token}`
+              }} style={{ width:'100%', padding:'10px', background:T.accent2, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'13px', cursor:'pointer', fontWeight:800 }}>
+                ⚡ {isHE ? 'שחק בונוס!' : 'PLAY BONUS!'}
+              </button>
+            </div>
+
+            <div style={{ display:'flex', gap:'10px' }}>
+              <button onClick={() => {
+                const reliefTrigger = child?.relief_trigger || 'topic'
+                if (reliefTrigger === 'lesson' || reliefTrigger === 'both') {
+                  window.location.href = `/relief?childId=${child?.id}&grade=${child?.grade||0}&token=${token}&returnTo=${token?`/play/${token}`:'/dashboard'}`
+                } else {
+                  goBack()
+                }
+              }} style={{ flex:1, padding:'12px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'14px', cursor:'pointer' }}>{UI.home}</button>
+              <button onClick={() => { setCompleted(false); setCompletionInfo(null); setCurrentStep(0); setQIndex(0); setAnswered(false); setSelected(null); setFeedback(null) }} style={{ flex:1, padding:'12px', background:T.accent3, border:'none', borderRadius:T.radius, color:'#000', fontFamily:T.fontHead, fontSize:'14px', cursor:'pointer' }}>{UI.again}</button>
+            </div>
+          </div>
+        </KidOverlay>
+      )}
+
+
+      <CelebrationModal celebration={celebration} T={T} theme={theme}/>
+      <Sparkles active={sparkleActive} theme={theme}/>
+
+      {/* Header */}
+      <header className="lesson-header" style={{ background:theme==='minecraft'?'rgba(0,0,0,0.75)':T.panel, borderBottom:`${theme==='minecraft'?4:1}px solid ${T.border}`, padding:'0 16px', height:'52px', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:100, gap:'8px' }}>
+        <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent1, flexShrink:0 }}>Edu<span style={{ color:T.accent2 }}>Play</span></div>
+        {isBonus && <div style={{ background:T.accent2, color:'#000', borderRadius:T.radius, padding:'2px 10px', fontFamily:T.fontHead, fontSize:'10px', fontWeight:800 }}>⚡ BONUS</div>}
+        <div className="lesson-header-controls" style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'nowrap', overflowX:'auto' }}>
+          <span className="xp-display" style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.xp, flexShrink:0 }}>{xpBalance.toLocaleString()} XP</span>
+
+          {/* Font size controls */}
+          <div className="font-size-controls" style={{ display:'flex', gap:'2px', alignItems:'center' }}>
+            {(['small','medium','large','xl'] as const).map(size => (
+              <button key={size} onClick={() => changeFontSize(size)}
+                style={{ padding:'3px 6px', borderRadius:T.radius, border:`2px solid ${fontSize===size?T.accent2:T.border}`, background:fontSize===size?`${T.accent2}20`:T.panel, color:fontSize===size?T.accent2:T.text2, fontFamily:'sans-serif', fontSize:size==='small'?'9px':size==='medium'?'11px':size==='large'?'13px':'15px', fontWeight:800, cursor:'pointer', lineHeight:1 }}>
+                {size==='small'?'A-':size==='medium'?'A':size==='large'?'A+':'A++'}
+              </button>
+            ))}
+          </div>
+
+          {/* Language switcher */}
+          <div style={{ display:'flex', gap:'3px' }}>
+            {['en_only','bilingual','he_only'].map(l => (
+              <button key={l}
+                onClick={() => window.location.href=`/lesson?topicId=${topic?.id}&childId=${child?.id}&theme=${theme}&lang=${l}${token?`&token=${token}`:''}`}
+                style={{ padding:'3px 7px', borderRadius:T.radius, border:`2px solid ${langMode===l?T.accent2:T.border}`, background:langMode===l?`${T.accent2}20`:T.panel, color:langMode===l?T.accent2:T.text2, fontFamily:T.fontHead, fontSize:'14px', cursor:'pointer' }}>
+                {l==='en_only'?'🇺🇸':l==='bilingual'?'🌐':'🇮🇱'}
+              </button>
+            ))}
+          </div>
+
+          {/* Passage slide-in button — only show when passage available and not a reading topic */}
+          {passage && !isReadingTopic && (
+            <button onClick={() => setPassageOpen(v => !v)}
+              style={{ background:passageOpen?T.accent3:T.panel, border:`2px solid ${passageOpen?T.accent3:T.border}`, borderRadius:T.radius, padding:'5px 9px', cursor:'pointer', color:passageOpen?'white':T.text, boxShadow:T.btnShadow, fontFamily:T.fontHead, fontSize:'12px', flexShrink:0 }}>
+              📖
+            </button>
+          )}
+
+          <button onClick={() => window.location.href=`/theme?childId=${child?.id}&name=${child?.display_name}&current=${theme}${token?`&returnTo=/play/${token}`:''}`}
+            style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 9px', cursor:'pointer', color:T.text, boxShadow:T.btnShadow, fontFamily:T.fontHead, fontSize:'12px', flexShrink:0 }}>
+            🎨
+          </button>
+        </div>
+      </header>
+
+      {child?.id && <CollectionButton childId={child.id} token={token} theme={theme} lang={langMode as KidLang} aboveNav={false} compact/>}
+
+      {/* ── Passage slide-in panel ─────────────────────────────── */}
+      {passage && !isReadingTopic && passageOpen && (
+        <div style={{
+          position:'fixed', top:'60px', right:0, bottom:0, width:'min(420px, 90vw)',
+          background:T.panel, borderLeft:`3px solid ${T.accent3}`,
+          zIndex:150, overflowY:'auto', padding:'20px',
+          boxShadow:'-4px 0 20px rgba(0,0,0,0.15)',
+          animation:'slideInRight 0.25s ease',
+        }}>
+          <style>{`@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
+
+          {/* Header */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+            <div>
+              <div style={{ fontFamily:T.fontHead, fontSize:'11px', color:T.accent3, marginBottom:3 }}>📖 {isHE ? 'קטע לקריאה' : 'READING PASSAGE'}</div>
+              <div style={{ fontWeight:800, fontSize:'15px', color:T.text }}>
+                {isHE && passage.title_he ? passage.title_he : passage.title_en}
+              </div>
+            </div>
+            <button onClick={() => setPassageOpen(false)}
+              style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:'20px', color:T.text2, padding:'4px' }}>✕</button>
+          </div>
+
+          {/* Passage content */}
+          <div style={{ background:T.panel2, borderRadius:T.radius, padding:'16px', border:`1px solid ${T.border}` }}>
+            {!isHE && passage.content_en && (
+              <p style={{ fontSize:`${FS?.passage || 15}px`, lineHeight:2, color:T.text, margin:0, fontFamily:'"Georgia",serif' }}>
+                {passage.content_en}
+              </p>
+            )}
+            {isHE && passage.content_he && (
+              <p style={{ fontSize:`${FS?.passage || 15}px`, lineHeight:2, color:T.text, margin:0, fontFamily:'"Times New Roman",serif', direction:'rtl', textAlign:'right' }}>
+                {passage.content_he}
+              </p>
+            )}
+            {langMode === 'bilingual' && !isHE && isDistinctHe(passage.content_he, passage.content_en) && (
+              <div style={{ marginTop:16, paddingTop:16, borderTop:`1px solid ${T.border}`, direction:'rtl', textAlign:'right' }}>
+                <div style={{ fontSize:'11px', fontWeight:800, color:T.text2, marginBottom:8 }}>🇮🇱 עברית</div>
+                <p style={{ fontSize:`${FS?.passage || 14}px`, lineHeight:1.9, color:T.text2, margin:0, fontFamily:'"Times New Roman",serif' }}>
+                  {passage.content_he}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginTop:12, fontSize:'12px', color:T.text2, textAlign:'center' }}>
+            {isHE ? 'השתמש בקטע זה כעזר לשאלות' : 'Use this passage to help answer questions'}
+          </div>
+        </div>
+      )}
+
+      {/* Main grid — sidebar hidden on mobile */}
+      <div className="lesson-grid" style={{ display:'grid', gridTemplateColumns:'1fr 260px', gap:'14px', padding:'16px', maxWidth:'1200px', margin:'0 auto' }}>
+
+        {/* Left — main content */}
+        <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+
+          {/* Progress + back */}
+          <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+            <button onClick={goBack} style={{ fontFamily:T.fontHead, fontSize:'12px', background:T.panel, border:`2px solid ${T.border}`, color:T.text, padding:'7px 10px', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, whiteSpace:'nowrap' }}>{UI.back}</button>
+            <div style={{ flex:1, height:'10px', background:T.panel2, border:`2px solid ${T.border}`, borderRadius:T.radius, overflow:'hidden' }}>
+              <div style={{ height:'100%', width:`${progressPct}%`, background:`linear-gradient(90deg,${subjColor},${T.xp})`, transition:'width 0.5s ease' }}/>
+            </div>
+            <span style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2, whiteSpace:'nowrap' }}>{UI.step} {currentStep+1}/{totalSteps}</span>
+          </div>
+
+          {/* Subject + topic label */}
+          <div style={{ display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap' }}>
+            <span style={{ fontSize:'14px', fontWeight:800, background:`${subjColor}20`, color:subjColor, padding:'3px 10px', borderRadius:'50px' }}>
+              {SUBJECT_ICONS[subjSlug]} {isHE ? topic?.subject?.label_he || topic?.subject?.label_en : topic?.subject?.label_en}
+            </span>
+            <span style={{ fontFamily:T.fontHead, fontSize:'16px', color:T.accent2 }}>
+              {isHE ? topic?.title_he || topic?.title_en : topic?.title_en}
+            </span>
+          </div>
+
+          {/* Content area */}
+          {isReadingTopic && passage ? (
+            <PassageReader
+              passage={passage}
+              questions={passageQuestions}
+              T={T} langMode={langMode} isHE={isHE} UI={UI}
+              child={child} topic={topic} subjColor={subjColor}
+              token={token} theme={theme} FS={FS}
+              onXpEarned={(amt: number) => { setXp(xpBalance + amt); showXP(`+${amt} XP ⬆`) }}
+              onCardEarned={awardCardToken}
+            />
+          ) : isReadingTopic && !passage ? (
+            <div style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'32px', textAlign:'center', color:T.text2 }}>
+              <div style={{ fontSize:'40px', marginBottom:'12px' }}>📖</div>
+              <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent2, marginBottom:'8px' }}>READING PASSAGES COMING SOON</div>
+              <p style={{ fontSize:'16px' }}>Reading passages for this topic are being prepared. Check back soon!</p>
+            </div>
+          ) : (
+            <>
+              {/* Learn panel */}
+              <ThemePanel theme={theme} T={T} borderWidth={1} style={{ padding:'18px' }}>
+                <div style={{ background:T.panel2, border:`2px solid ${T.border}`, borderLeft:`5px solid ${subjColor}`, padding:'14px', marginBottom:'12px' }}>
+                  <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:subjColor, marginBottom:'8px' }}>📘 {UI.learnThis}</div>
+                  {getLearnContent(topic, T, isHE)}
+                </div>
+                {langMode !== 'en_only' && topic?.description_he && (
+                  <div style={{ padding:'8px 12px', fontSize:'16px', lineHeight:1.7, direction:'rtl', textAlign:'right', border:`1px solid ${T.border}`, borderRadius:T.radius, background:'rgba(0,0,0,0.03)', fontFamily:'"Times New Roman",serif', color:subjColor, marginBottom:'10px' }}>
+                    🇮🇱 {topic.description_he}
+                  </div>
+                )}
+                <div style={{ display:'flex', gap:'8px' }}>
+                  <button onClick={() => speak(topic?.description_en || topic?.title_en || '', 'en')} style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 10px', cursor:'pointer', fontSize:'12px', color:T.text, boxShadow:T.btnShadow }}>
+                    🔊 <span style={{ background:T.accent3, color:'#000', borderRadius:'4px', padding:'1px 7px', fontSize:'10px', fontWeight:800 }}>EN</span>
+                  </button>
+                  {langMode !== 'en_only' && (
+                    <button onClick={() => speak(topic?.description_he || topic?.title_he || '', 'he')} style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'5px 10px', cursor:'pointer', fontSize:'12px', color:T.text, boxShadow:T.btnShadow }}>
+                      🔊 <span style={{ background:T.accent2, color:'#000', borderRadius:'4px', padding:'1px 7px', fontSize:'10px', fontWeight:800 }}>עב</span>
+                    </button>
+                  )}
+                </div>
+              </ThemePanel>
+
+              {/* Question panel */}
+              {currentQ ? (
+                <ThemePanel theme={theme} T={T} bg={T.panel2} style={{ padding:'16px' }}>
+                  <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent4, marginBottom:'10px' }}>⚔️ {UI.practice}</div>
+                  <div style={{ marginBottom:'10px' }}>
+                    {/* Primary prompt — Hebrew when isHE. Same embedded-math
+                        two-line handling as the practice-mode block above. */}
+                    {isHE && currentQ.prompt_he ? (
+                      <HebrewMathText text={currentQ.prompt_he}
+                        style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 6px', direction:'rtl', textAlign:'right' }} />
+                    ) : (
+                      <p style={{ fontSize:`${FS?.question || 16}px`, fontWeight:700, color:T.text, margin:'0 0 6px', direction:'ltr', textAlign:'left' }}>
+                        <FractionText text={currentQ.prompt_en} />
+                      </p>
+                    )}
+                    {/* Secondary prompt in bilingual mode */}
+                    {langMode === 'bilingual' && !isHE && isDistinctHe(currentQ.prompt_he, currentQ.prompt_en) && (
+                      <p style={{ fontSize:`${FS?.question || 13}px`, color:subjColor, direction:'rtl', textAlign:'right', fontFamily:'"Times New Roman",serif', margin:'0 0 6px', lineHeight:1.6 }}><FractionText text={currentQ.prompt_he} /></p>
+                    )}
+                  </div>
+
+                  {currentQ.visual_data && !hidesPicture(currentQ) && (
+  <div style={{ display:'flex', justifyContent:'center', padding:'12px', background:T.panel, border:`2px dashed ${T.border}`, borderRadius:T.radius, marginBottom:'12px' }}>
+    <MathVisual
+      data={currentQ.visual_data}
+      size={200}
+      color={subjColor}
+      dark={theme === 'minecraft'}
+    />
+  </div>
+)}
+
+                  <PlotGate q={currentQ} T={T} isHE={isHE} fresh={!answered}>
+                  {/* Word problems have no options: a big answer box + Check */}
+                  {(!Array.isArray(currentQ.options) || currentQ.options.length === 0) && (
+                    <div style={{ marginBottom:'12px' }} dir={isHE ? 'rtl' : 'ltr'}>
+                      <KidOpenAnswer q={currentQ} T={T} isHE={isHE} canAnswer={!answered}
+                        tries={answered && feedback && !feedback.correct && openLabel ? [openLabel] : []}
+                        resolved={answered} rightAnswer={answered && feedback?.correct ? openLabel : null}
+                        onSubmit={label => { setOpenLabel(label); checkAnswer({ label, isCorrect: answersMatch(label, String(currentQ.correct_answer ?? '')) }) }} />
+                      {answered && feedback && !feedback.correct && currentQ.correct_answer && (
+                        <div style={{ fontSize:'19px', color:T.text, fontWeight:700 }}>{isHE ? 'התשובה הנכונה: ' : 'The answer: '}<bdi><FractionText text={String(currentQ.correct_answer)} /></bdi></div>
+                      )}
+                    </div>
+                  )}
+
+                  {currentQ.options && (
+                    <div className="answer-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'12px' }}>
+                      {currentQ.options.map((opt: any) => {
+                        const isCorrect    = opt.isCorrect && answered
+                        const isWrong      = selected === opt.label && !opt.isCorrect && answered
+                        const displayVal   = isHE
+                          ? (opt.value_he || opt.value_en || '')
+                          : (opt.value_en || '')
+                        const isRTLAnswer  = isHE
+                        return (
+                          <button className="answer-btn" key={opt.label} onClick={() => checkAnswer(opt)} disabled={answered}
+                            style={{ background:isCorrect?'rgba(0,200,83,0.15)':isWrong?'rgba(224,48,48,0.15)':T.panel, border:`2px solid ${isCorrect?T.accent3:isWrong?'#E03030':T.border}`, borderRadius:T.radius, padding:'12px 14px', minHeight:'64px', cursor:answered?'default':'pointer', fontFamily:'"Rubik","Assistant",sans-serif', fontSize:`${Math.max(20, FS?.question || 0)}px`, fontWeight:800, boxShadow:T.btnShadow, display:'flex', alignItems:'center', gap:'8px', color:T.text, direction:isRTLAnswer?'rtl':'ltr', textAlign:isRTLAnswer?'right':'left' }}>
+                            <span style={{ width:'20px', height:'20px', background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'12px', flexShrink:0 }}>{isHE ? translateOptionLabel(opt.label) : opt.label}</span>
+                            <FractionText text={displayVal} />
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                  </PlotGate>
+
+                  {hintVisible && (currentQ.hint_en || currentQ.hint_he || isHE) && (
+                    <div style={{ background:'rgba(255,215,0,0.07)', border:`2px solid ${T.accent2}`, borderRadius:T.radius, padding:'10px 12px', marginBottom:'10px', direction:isHE?'rtl':'ltr' }}>
+                      <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent2, marginBottom:'4px' }}>💡 {UI.hint}</div>
+                      <p style={{ fontSize:'16px', color:T.text2, margin:0 }}><FractionText text={isHE ? (currentQ.hint_he || 'קראו את השאלה שוב לאט, ובדקו כל תשובה אחת-אחת.') : currentQ.hint_en} /></p>
+                    </div>
+                  )}
+
+                  {feedback && (
+                    <div style={{ border:`2px solid ${feedback.correct?T.accent3:'#E03030'}`, background:feedback.correct?'rgba(0,200,83,0.1)':'rgba(224,48,48,0.1)', borderRadius:T.radius, padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:'10px', marginBottom:'10px' }}>
+                      <Pip theme={theme} he={isHE} size={56} bounce pose={feedback.correct ? 'thumbs' : 'think'} style={{ flexShrink:0 }} />
+                      <div>
+                        <div style={{ fontFamily:T.fontHead, fontSize:'16px', color:feedback.correct?T.accent3:'#E03030', marginBottom:'3px' }}>{feedback.correct?UI.correct:UI.notQuite}</div>
+                        <div style={{ fontSize:'14px', color:T.text2, lineHeight:1.6, direction:isHE?'rtl':'ltr' }}><FractionText text={isHE ? (feedback.explanation_he || feedback.explanation) : feedback.explanation} /></div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="cta-row" style={{ display:'flex', gap:'8px' }}>
+                    <button onClick={() => setHint(v=>!v)} style={{ padding:'12px 18px', fontFamily:T.fontHead, fontSize:'15px', background:T.panel, border:`2px solid ${T.accent2}`, color:T.accent2, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>💡 {UI.hint}</button>
+                    <button onClick={() => { setQIndex(i=>(i+1)%Math.max(questions.length,1)); setAnswered(false); setSelected(null); setTypedAnswer(''); setOpenLabel(null); setFeedback(null); setHint(false) }} style={{ padding:'12px 18px', fontFamily:T.fontHead, fontSize:'15px', background:T.panel, border:`2px solid ${T.accent3}`, color:T.accent3, borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow }}>🔄</button>
+                    <button onClick={nextStep} style={{ padding:'12px 20px', fontFamily:T.fontHead, fontSize:'16px', background:T.accent1, border:'none', color:'white', borderRadius:T.radius, cursor:'pointer', boxShadow:T.btnShadow, flex:1, fontWeight:800 }}>{UI.next}</button>
+                  </div>
+                </ThemePanel>
+              ) : (
+                <div style={{ background:T.panel, border:`2px solid ${T.border}`, borderRadius:T.radius, padding:'24px', textAlign:'center', color:T.text2 }}>
+                  <div style={{ fontSize:'32px', marginBottom:'12px' }}>📚</div>
+                  <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent2, marginBottom:'8px' }}>{UI.noQuestions}</div>
+                  <p style={{ fontSize:'16px' }}>{UI.comingSoon}</p>
+                  <button onClick={goBack} style={{ marginTop:'12px', padding:'8px 20px', background:T.accent1, border:'none', borderRadius:T.radius, color:'white', fontFamily:T.fontHead, fontSize:'12px', cursor:'pointer' }}>{UI.back}</button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Right sidebar — hidden on mobile */}
+        <div className="lesson-sidebar" style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+
+          {/* Mascot */}
+          <ThemePanel theme={theme} T={T} borderColor={T.accent2} style={{ padding:'14px', textAlign:'center' }}>
+            <Pip theme={theme} he={isHE} size={120} bounce pose={(completed ? 'celebrate' : feedback ? (feedback.correct ? 'thumbs' : 'think') : hintVisible ? 'think' : 'wave') as PipPose} style={{ margin:'0 auto' }} />
+            <div style={{ fontFamily:T.fontHead, fontSize:'12px', color:T.accent2, margin:'6px 0 3px' }}>{UI.pipSays}</div>
+            <div style={{ background:T.panel2, border:`1px solid ${T.border}`, borderRadius:T.radius, padding:'8px', fontSize:'14px', color:T.text2, lineHeight:1.5, textAlign:'start' }} dir={isHE ? 'rtl' : 'ltr'}>{pipText}</div>
+          </ThemePanel>
+
+          {/* Subject switcher */}
+          <ThemePanel theme={theme} T={T} style={{ padding:'10px' }}>
+            <div style={{ fontFamily:T.fontHead, fontSize:'14px', color:T.accent2, marginBottom:'8px' }}>📚 {UI.subjects}</div>
+            <div style={{ display:'flex', gap:'6px' }}>
+              {['math','english','hebrew'].map(s => (
+                <button key={s} onClick={() => {
+                  const subjectTopics = allTopics
+                    .filter((t: any) => t.subject?.slug === s)
+                    .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+                  const first = subjectTopics[0]
+                  if (first) navigateToTopic(first.id)
+                }}
+                  style={{ flex:1, padding:'6px 4px', background:subjSlug===s?`${SUBJECT_COLORS[s]}20`:T.panel2, border:`2px solid ${subjSlug===s?SUBJECT_COLORS[s]:T.border}`, borderRadius:T.radius, cursor:'pointer', fontSize:'16px', display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' }}>
+                  <span>{SUBJECT_ICONS[s]}</span>
+                  <span style={{ fontFamily:T.fontHead, fontSize:'5px', color:subjSlug===s?SUBJECT_COLORS[s]:T.text2 }}>{s.toUpperCase().slice(0,4)}</span>
+                </button>
+              ))}
+            </div>
+          </ThemePanel>
+
+          {/* Topics list */}
+          <ThemePanel theme={theme} T={T} style={{ overflow:'hidden' }}>
+            <div style={{ background:T.panel2, borderBottom:`2px solid ${T.border}`, padding:'8px 12px', fontFamily:T.fontHead, fontSize:'14px', color:subjColor }}>
+              📋 {isHE ? topic?.subject?.label_he || UI.topics : topic?.subject?.label_en?.toUpperCase() || UI.topics}
+            </div>
+            <div style={{ maxHeight:'320px', overflowY:'auto' }}>
+              {allTopics.filter((t: any) => t.subject?.slug === subjSlug).slice(0,15).map((t: any, i: number) => {
+                const isActive  = t.id === topic?.id
+                const tp        = progressMap[t.id]
+                const isDone    = tp?.status === 'completed'
+                const isInProg  = tp?.status === 'in_progress'
+                return (
+                  <div key={t.id} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px 10px', borderBottom:`1px solid rgba(128,128,128,0.1)`, background:isActive?`${subjColor}22`:'transparent', cursor:'pointer' }}
+                    onClick={() => navigateToTopic(t.id)}>
+                    <div style={{ width:'20px', height:'20px', borderRadius:T.radius, background:isActive?subjColor:isDone?'#27AE60':T.panel2, border:`2px solid ${isActive?subjColor:isDone?'#27AE60':T.border}`, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:T.fontHead, fontSize:'14px', color:isActive||isDone?'white':T.text2, flexShrink:0 }}>
+                      {isDone?'✓':i+1}
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:'14px', fontWeight:700, color:T.text, lineHeight:1.3 }}>{isHE ? t.title_he || t.title_en : t.title_en}</div>
+                      {isInProg && <div style={{ fontSize:'14px', color:subjColor, marginTop:'1px' }}>{UI.inProgress}</div>}
+                    </div>
+                    <div style={{ fontFamily:T.fontHead, fontSize:'11px', color:T.xp, flexShrink:0 }}>+{t.xp_reward}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </ThemePanel>
+        </div>
+      </div>
+    </div>
+  )
+}

@@ -107,6 +107,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success:   true,
+      correct:   !!correct,
       xpAwarded: correct ? 25 : 0,
       isNewBest, // true only on the completion call that beats this topic's prior steps_total personal best
     })
