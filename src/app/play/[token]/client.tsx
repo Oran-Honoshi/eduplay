@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { Star, Play, BookOpen, Palette, ChevronRight, ChevronLeft } from 'lucide-react'
 import { THEME_CONFIG, KidNavBar, KidOverlay, CollectionButton } from '@/components/theme'
 import { readKidLang, saveKidLang, kidLabel, type KidLang } from '@/lib/kidPrefs'
+import { lineHtml } from '@/lib/storyBooklet'
 
 
 // page.tsx is a Server Component and can't set cookies during render (Next 14 only
@@ -56,6 +57,13 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
     await fetch('/api/session/logout', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ scope:'child' }) }).catch(() => {})
     window.location.href = '/dashboard'
   }
+
+  // Story booklets shelf (young readers): approved booklets, finished ones ticked.
+  const [shelf, setShelf] = useState<{ booklets: any[], read: string[] } | null>(null)
+  useEffect(() => {
+    if ((child.grade ?? 0) > 2) return
+    sessionPromise.then(ok => ok && fetch(`/api/stories?childId=${child.id}`).then(r => r.ok ? r.json() : null).then(d => d?.booklets?.length && setShelf({ booklets: d.booklets, read: d.read || [] })).catch(() => {}))
+  }, [sessionPromise, child.id, child.grade])
 
   const [selectedSubject, setSelectedSubject] = useState<string|null>(null)
   const [langMode, setLangModeState]          = useState<KidLang>((child.lang_screen || 'bilingual') as KidLang)
@@ -240,6 +248,24 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
               <Play size={22} fill="#fff" style={isHE ? { transform:'scaleX(-1)' } : undefined}/>
             </span>
           </button>
+        )}
+
+        {shelf && (
+          <div>
+            <div style={{ ...H, fontSize:21, fontWeight:700, margin:'4px 0 10px' }}>{L('ספרונים לקריאה', 'Books to read')}</div>
+            <div style={{ display:'flex', gap:12, overflowX:'auto', paddingBottom:6, scrollSnapType:'x mandatory' }}>
+              {shelf.booklets.map((bk: any) => {
+                const done = shelf.read.includes(bk.id)
+                return (
+                  <a key={bk.id} href={`/read/${bk.id}?token=${token}&theme=${theme}`} style={{ ...card, flex:'0 0 150px', scrollSnapAlign:'start', padding:10, display:'flex', flexDirection:'column', gap:8, textDecoration:'none', color:T.text, position:'relative' }}>
+                    <span style={{ height:120, borderRadius:16, background: bk.cover?.image_url ? `center/cover url(${bk.cover.image_url})` : '#FFE9B8', display:'flex', alignItems:'center', justifyContent:'center', fontSize:40, fontWeight:800, color:'#C2337F' }}>{!bk.cover?.image_url && bk.number}</span>
+                    <span dir="rtl" style={{ fontFamily:'"Noto Sans Hebrew","Rubik",sans-serif', fontSize:19, fontWeight:700, textAlign:'center', lineHeight:1.5 }} dangerouslySetInnerHTML={{ __html: lineHtml(bk.title_he) }}/>
+                    {done && <span aria-label={L('קראתי', 'Read')} style={{ position:'absolute', top:6, insetInlineEnd:6, width:30, height:30, borderRadius:99, background:'#12937A', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800 }}>✓</span>}
+                  </a>
+                )
+              })}
+            </div>
+          </div>
         )}
 
         {/* Free choice: subject tiles filter the one-at-a-time lesson card */}

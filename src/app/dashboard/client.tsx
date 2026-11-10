@@ -437,6 +437,7 @@ function CreateHub({ children }: any) {
         { icon:Printer,  title:'דף עבודה מהמאגר', desc:'תרגול מוכן לגן–ו׳ לפי נושא ורמה, עם דף תשובות.', href:'/worksheets' },
         { icon:Sparkles, title:'מחולל שאלות מפורט', desc:'נושא אחד בכל פעם, כל ההגדרות ידנית.', href:'/questions' },
         { icon:BookOpen, title:'קטע קריאה', desc:'סיפור קצר ברמת הקריאה המתאימה, עם שאלות הבנה.', href:'/passages', tone:'amber' },
+        { icon:BookOpen, title:'ספרוני קריאה ראשונה', desc:'ספרונים מאוירים לקמץ ופתח — להדפסה, או לקריאה באפליקציה עם הילד.', href:'/stories', tone:'accent' },
         { icon:FileText, title:'חוברת הסברים', desc:'הסברים להדפסה עם דוגמאות פתורות ותמונות.', href:'/booklet' },
       ]}/>
     </div>
