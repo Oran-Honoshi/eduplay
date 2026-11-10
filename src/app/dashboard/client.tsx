@@ -445,13 +445,13 @@ function CreateHub({ children }: any) {
 function LibraryHub({ isAdmin }: { isAdmin?: boolean }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:'20px' }}>
-      <SectionTitle icon={BookOpen} title="ספרייה" subtitle="כל מה שמוכן לשימוש: תוכנית הלימודים, מה שכבר יצרתם, מחברת ההסברים וקטעי קריאה." />
+      <SectionTitle icon={BookOpen} title="ספרייה" subtitle="כל מה שמוכן לשימוש: חוברות מוכנות, תוכנית הלימודים, מה שכבר יצרתם, מחברת ההסברים וקטעי קריאה." />
       <HubGrid items={[
+        { icon:Printer,  title:'ספרייה מוכנה', desc:'מאות חוברות תרגול מוכנות לכל נושא. מחפשים לפי נושא או מיומנות, ומשתמשים מיד — בלי ליצור מאפס.', href:'/library', tone:'accent' },
         { icon:Map,      title:'תוכנית הלימודים', desc:'כל הנושאים לפי כיתה ומקצוע, גן–ו׳. לפתוח שיעור או להכין דף מהמאגר.', href:'/curriculum' },
         { icon:Printer,  title:'מה כבר יצרתי', desc:'כל הדפים, המבחנים ודפי ההסבר שהכנתם — להדפיס שוב, לשלוח או עוד כזה.', href:'/create?view=history', tone:'accent' },
         { icon:Notebook, title:'מחברת ההסברים', desc:'דפי ההסבר שהכנתם, מסודרים לפי מקצוע ונושא — לעבור עליהם עם הילד.', href:'/notebook', tone:'amber' },
         { icon:BookOpen, title:'קטעי קריאה', desc:'סיפורים עם שאלות הבנה, לפי רמה.', href:'/passages' },
-        { icon:Map, title:'ספרייה חינמית', desc:'דפים חינם שהורים שיתפו — וכאן יופיעו גם שלכם אחרי אישור.', href:'/free', tone:'accent' },
       ]}/>
       {isAdmin && <>
         <div style={{ fontSize:'13px', fontWeight:800, color:PARENT_COLORS.textMuted }}>ניהול EduPlay</div>

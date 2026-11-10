@@ -412,6 +412,14 @@ function CreateInner() {
 
             {step === 'kind' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <a href="/library" className="md:col-span-3 no-underline rounded-2xl p-5 flex items-center gap-4 flex-wrap" style={{ background: 'linear-gradient(135deg,#FFF4D1,#EAF0FF)', border: '1px solid #E8E2D6' }}>
+                  <img src="/pip/plain/read.webp" alt="" width={64} height={64} />
+                  <div className="flex-1 min-w-[220px]">
+                    <div className="text-xl font-black text-[#16213E]" style={{ fontFamily: "'Rubik', sans-serif" }}>ראיתם את הספרייה המוכנה שלנו?</div>
+                    <div className="text-[15px] text-[#33415F] mt-1 leading-relaxed">מאות חוברות תרגול מוכנות לכל נושא, מגן ועד ו׳. לא צריך לעבוד קשה — בואו לחפש ולהשתמש מיד. ותמיד אפשר ליצור לבד.</div>
+                  </div>
+                  <span className="inline-flex items-center gap-2 min-h-[48px] px-5 rounded-full bg-[#2F5BE3] text-white font-bold">לספרייה ←</span>
+                </a>
                 <QuickStart child={child ? { id: child.id, grade: child.grade } : null} onUse={async (m, ready) => {
                   setKind(m.kind); setSubject(m.subject_slug); setGrade(m.grade); setLang(m.language); setRequest(m.request_text || '')
                   setMat(m); await reload(m.id); go(ready ? 'done' : 'review')
@@ -429,8 +437,8 @@ function CreateInner() {
                   <div className="w-12 h-12 rounded-xl bg-[#FFF4D6] text-[#8a5a00] flex items-center justify-center shrink-0"><BookOpen size={24} /></div>
                   <div><div className="text-lg font-black text-[#16213E]">חוברות קריאה (גן–א׳)</div><div className="text-sm text-[#4A5672]">קמץ, שווא, חיריק ועוד: הברות, מילים, משפטים וסיפור, עם התאמה לתמונות, חיבור נקודות וציור.</div></div>
                 </a>
-                <a href="/curriculum" className="md:col-span-3 text-sm text-[#2F5BE3] font-semibold underline-offset-2 hover:underline">
-                  רק להדפיס דף מוכן מהמאגר (גן–ו׳)? לתוכנית הלימודים ←
+                <a href="/library" className="md:col-span-3 text-sm text-[#2F5BE3] font-semibold underline-offset-2 hover:underline">
+                  רק להדפיס חוברת מוכנה? לספרייה המוכנה ←
                 </a>
               </div>
             )}
@@ -477,6 +485,9 @@ function CreateInner() {
                   <textarea value={request} onChange={e => setRequest(e.target.value)} rows={3} dir="auto"
                     placeholder={kind === 'exam' ? 'לדוגמה: מבחן ב-18.11 על מערכת צירים, מספרים מכוונים ומבוא לזוויות' : kind === 'explanation' ? 'לדוגמה: היא לא מבינה איך מחסרים מספרים שליליים' : 'לדוגמה: תרגול שברים עם הרבה בעיות מילוליות'}
                     className="w-full px-3 py-2 text-[15px] rounded-xl border border-[#D9D2C4] bg-white focus:outline-none focus:ring-2 focus:ring-[#2F5BE333]" />
+                  {request.trim().length > 2 && kind !== 'explanation' && (
+                    <a href={`/library?q=${encodeURIComponent([...request.trim().split(/\s+/)].filter(w => !['תרגול', 'דף', 'דפי', 'עם', 'של', 'הרבה', 'שאלות', 'לבת', 'לבן', 'שלי'].includes(w)).sort((a, b) => b.length - a.length)[0] || '')}`} className="inline-block mt-1 text-sm font-semibold text-[#2F5BE3]">אולי יש כבר חוברת מוכנה לזה? לחפש בספרייה ←</a>
+                  )}
                 </Field>
                 <Field label="חומר של הילד/ה (לא חובה)">
                   <MaterialUpload value={materials} onChange={setMaterials} he autoRead />

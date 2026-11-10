@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Dumbbell, Play, RotateCcw, CheckCircle2, Clock } from 'lucide-react'
 import { THEME_CONFIG, KidNavBar, ThemeDecorations, CollectionButton } from '@/components/theme'
 import { readKidLang, type KidLang } from '@/lib/kidPrefs'
+import LibrarySearch from '@/components/LibrarySearch'
 
 const SUBJ_MARK: Record<string, string> = { math: '1+2', hebrew: 'אב', english: 'Ab' }
 const SUBJ_TINT: Record<string, [string, string]> = { math: ['#EAF0FF', '#2148C0'], hebrew: ['#FDECE7', '#B4432A'], english: ['#E3F4EF', '#0B6B58'] }
@@ -50,6 +51,15 @@ export default function PracticeClient({ child, token, grade, subjects, topics, 
         <p style={{ margin: '0 0 14px', color: T.text, opacity: .75, fontSize: 17, fontWeight: 600 }}>
           {t('בחרו נושא ותרגלו כמה שרוצים — גם אחרי שסיימתם את השיעור.', 'Pick a topic and practice as much as you like — even after you finish the lesson.')}
         </p>
+
+        {(child.grade ?? 0) >= 3 && (
+          <details style={{ background: T.panel, border: `1.5px solid ${T.border}`, borderRadius: theme === 'minecraft' ? 4 : 20, padding: '12px 16px', marginBottom: 16 }}>
+            <summary style={{ cursor: 'pointer', fontFamily: H, fontWeight: 800, fontSize: 19, color: T.text, minHeight: 36, display: 'flex', alignItems: 'center' }}>{t('חוברות מוכנות — לחפש ולתרגל', 'Ready workbooks — search and practice')}</summary>
+            <div style={{ marginTop: 12 }}>
+              <LibrarySearch mode="kid" childId={child.id} grade={grade} />
+            </div>
+          </details>
+        )}
 
         {/* Grade — a starting point, not a wall */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
