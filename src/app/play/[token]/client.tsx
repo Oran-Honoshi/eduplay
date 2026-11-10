@@ -58,6 +58,12 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
     window.location.href = '/dashboard'
   }
 
+  // Explanation pages the parent sent from Create
+  const [learnPages, setLearnPages] = useState<any[]>([])
+  useEffect(() => {
+    sessionPromise.then(ok => { if (ok) fetch(`/api/learn?childId=${child.id}`).then(r => r.ok ? r.json() : null).then(d => setLearnPages(d?.pages || [])).catch(() => {}) })
+  }, [sessionPromise, child.id])
+
   // Story booklets shelf (young readers): approved booklets, finished ones ticked.
   const [shelf, setShelf] = useState<{ booklets: any[], read: string[] } | null>(null)
   useEffect(() => {
@@ -248,6 +254,21 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
               <Play size={22} fill="#fff" style={isHE ? { transform:'scaleX(-1)' } : undefined}/>
             </span>
           </button>
+        )}
+
+        {learnPages.length > 0 && (
+          <div>
+            <div style={{ ...H, fontSize:21, fontWeight:700, margin:'4px 0 10px' }}>{L('דפי הסבר', 'Explanation pages')}</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {learnPages.map((lp: any) => (
+                <a key={lp.id} href={`/learn/${lp.id}?childId=${child.id}&token=${token}&theme=${theme}`} style={{ ...card, padding:14, display:'flex', alignItems:'center', gap:12, textDecoration:'none', color:T.text }}>
+                  <span style={{ width:48, height:48, flexShrink:0, borderRadius:14, background:(SUBJ_TINT[lp.subject]||['#FFF4D1'])[0], color:(SUBJ_TINT[lp.subject]||['','#7A5600'])[1], display:'flex', alignItems:'center', justifyContent:'center' }}><BookOpen size={24}/></span>
+                  <span style={{ flex:1, ...H, fontSize:18, fontWeight:700 }}>{lp.title}</span>
+                  <ChevronRight size={22} style={isHE ? { transform:'scaleX(-1)' } : undefined}/>
+                </a>
+              ))}
+            </div>
+          </div>
         )}
 
         {shelf && (
