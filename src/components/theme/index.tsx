@@ -407,7 +407,7 @@ export function KidNavBar({
   const [answer, setAnswer] = useState('')
   const [gateError, setGateError] = useState(false)
   const [parentHere, setParentHere] = useState(false)
-  const isHE = lang === 'he_only'
+  const isHE = lang !== 'en_only'
   // A parent who opened this screen from their own account gets a clear way back.
   useEffect(() => {
     fetch('/api/session/whoami').then(r => r.ok ? r.json() : null).then(d => setParentHere(!!d?.parent)).catch(() => {})
@@ -529,7 +529,7 @@ export function CollectionButton({
   const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
   const [tokens, setTokens] = useState<number | null>(null)
   const [bump, setBump] = useState(false)
-  const isHE = lang === 'he_only'
+  const isHE = lang !== 'en_only'
 
   useEffect(() => {
     if (!childId) return

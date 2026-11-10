@@ -71,7 +71,7 @@ export default function ChildPortalClient({ child, subjects, allTopics, progress
   // server-rendered HTML and the first client render match.
   useEffect(() => { setLangModeState(readKidLang(child.id, child.lang_screen)) }, [child.id, child.lang_screen])
   function setLangMode(l: string) { setLangModeState(l as KidLang); saveKidLang(l as KidLang, child.id) }
-  const isHE = langMode === 'he_only'
+  const isHE = langMode !== 'en_only'
   // Open the booklet on the topic the child was last working on — this used to
   // be a separate "continue where you left off" banner competing with the card.
   const [page, setPage]                       = useState(() => {

@@ -25,7 +25,7 @@ export default function AssignmentsClient({ child, token }: { child: any, token:
   const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
   const [langMode, setLangMode] = useState<KidLang>((child.lang_screen || 'bilingual') as KidLang)
   useEffect(() => { setLangMode(readKidLang(child.id, child.lang_screen)) }, [child.id, child.lang_screen])
-  const isHE = langMode === 'he_only'
+  const isHE = langMode !== 'en_only'
 
   const [assignments, setAssignments] = useState<AssignmentSummary[]>([])
   const [loading, setLoading] = useState(true)

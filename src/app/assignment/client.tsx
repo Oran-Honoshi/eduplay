@@ -52,7 +52,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
   const theme = child.theme || 'plain'
   const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
   const langMode = child.lang_screen || 'bilingual'
-  const isHE = langMode === 'he_only'
+  const isHE = langMode !== 'en_only'
   const FS = getFontSize(child.font_size)
 
   const [items, setItems] = useState<AssignmentItem[]>(initialItems)
@@ -234,9 +234,9 @@ export default function AssignmentClient({ child, assignment, items: initialItem
               <FractionText text={currentQ?.prompt_en} />
             </p>
           )}
-          {langMode === 'bilingual' && !isHE && isDistinctHe(currentQ?.prompt_he, currentQ?.prompt_en) && (
-            <HebrewMathText text={currentQ?.prompt_he || ''}
-              style={{ fontSize:18, color:T.text2, direction:'rtl', textAlign:'right', margin:0, lineHeight:1.6 }} />
+          {/* English lessons in bilingual mode: the English wording under the Hebrew */}
+          {langMode === 'bilingual' && isHE && currentQ?.prompt_he && (currentQ as any)?.topic?.subject?.slug === 'english' && isDistinctHe(currentQ?.prompt_he, currentQ?.prompt_en) && (
+            <p dir="ltr" style={{ fontSize:18, color:T.text2, textAlign:'left', margin:0, lineHeight:1.6 }}><FractionText text={currentQ?.prompt_en} /></p>
           )}
           {currentQ?.visual_data && !hidesPicture(currentQ) && (
             <div style={{ display:'flex', justifyContent:'center', padding:12, background:T.panel2, borderRadius:R - 6 }}>
