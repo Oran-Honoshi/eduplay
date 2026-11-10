@@ -29,7 +29,10 @@ export async function GET(req: NextRequest) {
       else { r.draft++; if ((d.flags || []).length) r.flagged++ }
     }
     const card = Object.fromEntries((cards || []).map(c => [c.topic_slug, c.status]))
-    return NextResponse.json({ topics: (topics || []).map(t => ({ ...t, counts: by[t.id] || null, card: card[t.slug] || null })) })
+    const { data: fresh } = await db.from('questions').select('topic_id').eq('approved', false).is('rejected_at', null).gte('created_at', '2026-11-10')
+    const nf: Record<string, number> = {}
+    for (const f of fresh || []) nf[f.topic_id] = (nf[f.topic_id] || 0) + 1
+    return NextResponse.json({ topics: (topics || []).map(t => ({ ...t, counts: by[t.id] || null, card: card[t.slug] || null, fresh: nf[t.id] || 0 })) })
   }
   const { data: topic } = await db.from('topics').select('id, slug, grade, title_he, title_en, subject:subjects(slug)').eq('id', topicId).maybeSingle()
   if (!topic) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -38,7 +41,9 @@ export async function GET(req: NextRequest) {
   const { data: drafts } = ids.length ? await db.from('question_support_drafts').select('*').in('question_id', ids).eq('batch', BANK_BATCH) : { data: [] }
   const { data: card } = await db.from('topic_explanations').select('*').eq('topic_slug', topic.slug).maybeSingle()
   const dmap = Object.fromEntries((drafts || []).map((d: any) => [d.question_id, d]))
-  return NextResponse.json({ topic, card, questions: (qs || []).map(q => ({ ...q, draft: dmap[q.id] || null })) })
+  // new questions written to fill a thin lesson, waiting for approval
+  const { data: fresh } = await db.from('questions').select('id, prompt_he, prompt_en, options, correct_answer, hint_he, explanation_he, difficulty, q_type, visual_data').eq('topic_id', topicId).eq('approved', false).is('rejected_at', null).gte('created_at', '2026-11-10')
+  return NextResponse.json({ topic, card, fresh: fresh || [], questions: (qs || []).map(q => ({ ...q, draft: dmap[q.id] || null })) })
 }
 
 export async function POST(req: NextRequest) {
@@ -49,6 +54,11 @@ export async function POST(req: NextRequest) {
 
   if (b.action === 'reject' && b.questionId) {
     await db.from('question_support_drafts').update({ status: 'rejected' }).eq('question_id', b.questionId)
+    return NextResponse.json({ ok: true })
+  }
+  if (b.action === 'approve_new' && b.questionId) {
+    // a new bank question: shared with everyone, not one family's
+    await db.from('questions').update({ approved: true, created_by_family: null }).eq('id', b.questionId).eq('approved', false)
     return NextResponse.json({ ok: true })
   }
   if (b.action === 'hide' && b.questionId) {

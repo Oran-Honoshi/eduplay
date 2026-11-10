@@ -1,243 +1,94 @@
 'use client'
-import { Pip } from '@/components/Pip'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Suspense } from 'react'
+import { Check, ChevronRight } from 'lucide-react'
+import { Pip } from '@/components/Pip'
 import { THEME_CONFIG } from '@/components/theme'
 
+// The child picks the look of their app. Only real, working themes are shown;
+// the preview is the actual home layout in that theme's colors.
+const H = '"Rubik","Assistant",sans-serif'
 const THEMES = [
-  {
-    id: 'minecraft',
-    name: 'Minecraft',
-    emoji: '⛏️',
-    desc: 'Dark, pixelated, adventure!',
-    bg: 'linear-gradient(135deg,#1A1A2E,#2D5A1B)',
-    border: '#5D9E2F',
-    text: '#F5F5DC',
-    accent: '#FFD700',
-    available: true,
-  },
-  {
-    id: 'princesses',
-    name: 'Princesses',
-    emoji: '👑',
-    desc: 'Magical, sparkly, royal!',
-    bg: 'linear-gradient(135deg,#FFE4F4,#F8D7FF)',
-    border: '#E05BA0',
-    text: '#3D1A2E',
-    accent: '#FFD700',
-    available: true,
-  },
-  {
-    id: 'plain',
-    name: 'Classic',
-    emoji: '📚',
-    desc: 'Clean and simple.',
-    bg: 'linear-gradient(135deg,#F8F9FA,#EEF2FF)',
-    border: '#4A90D9',
-    text: '#212529',
-    accent: '#4A90D9',
-    available: true,
-  },
-  {
-    id: 'adventure',
-    name: 'Adventure',
-    emoji: '🗺️',
-    desc: 'Coming soon!',
-    bg: 'linear-gradient(135deg,#2C3E50,#3498DB)',
-    border: '#F39C12',
-    text: '#ECF0F1',
-    accent: '#F39C12',
-    available: false,
-  },
-  {
-    id: 'space',
-    name: 'Space',
-    emoji: '🚀',
-    desc: 'Coming soon!',
-    bg: 'linear-gradient(135deg,#0a0a1a,#1a1a4e)',
-    border: '#9B59B6',
-    text: '#ECF0F1',
-    accent: '#9B59B6',
-    available: false,
-  },
-  {
-    id: 'sports',
-    name: 'Sports',
-    emoji: '🦁',
-    desc: 'Team colors, game on!',
-    bg: 'linear-gradient(135deg,#1D3557,#2C4C7C)',
-    border: '#F4762A',
-    text: '#FFFFFF',
-    accent: '#F4762A',
-    available: true,
-  },
+  { id: 'plain', he: 'רגילה', en: 'Classic', desc: 'נקי, בהיר ושמח' },
+  { id: 'minecraft', he: 'מיינקרפט', en: 'Minecraft', desc: 'כהה, פיקסלים והרפתקה' },
+  { id: 'princesses', he: 'נסיכות', en: 'Princesses', desc: 'ורוד, נוצץ ומלכותי' },
+  { id: 'sports', he: 'ספורט', en: 'Sports', desc: 'צבעי קבוצה, יוצאים למשחק' },
 ]
 
-// Real Home layout re-skinned with the selected theme's actual THEME_CONFIG
-// tokens (bg/panel/border/radius/font/accents/mascot/shadow) — not the
-// picker's own decorative swatch gradients above, which are just this
-// screen's chrome and were never meant to represent the real app.
-function MiniHomePreview({ theme }: { theme: string }) {
+function Preview({ theme }: { theme: string }) {
   const T = THEME_CONFIG[theme] || THEME_CONFIG.plain
+  const r = theme === 'minecraft' ? 4 : 18
   return (
-    <div style={{ background: T.bg, borderRadius: '14px', padding: '14px', border: `1px solid ${T.border}` }}>
-      <div style={{ background: T.panel, borderRadius: T.radius === '0px' ? '4px' : T.radius, border: `1.5px solid ${T.border}`, padding: '8px 10px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-        <Pip theme={theme} pose="wave" size={30} style={{ flexShrink: 0 }} />
-        <div style={{ fontFamily: T.fontHead, fontSize: 9, fontWeight: 900, color: T.accent1 }}>EduPlay</div>
-        <div style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, color: T.accent2 }}>⭐ 1,250</div>
+    <div dir="rtl" style={{ background: T.bg, borderRadius: 20, padding: 14, border: `1.5px solid ${T.border}`, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Pip theme={theme} pose="wave" size={44} he />
+        <div style={{ fontFamily: H, fontWeight: 800, fontSize: 18, color: T.text }}>היי!</div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px', marginBottom: '10px' }}>
-        {['✅', '⭐', '🔥'].map((icon, i) => (
-          <div key={i} style={{ background: T.panel, border: `1px solid ${T.border}`, borderRadius: T.radius, padding: '8px 4px', textAlign: 'center' }}>
-            <div style={{ fontSize: 14 }}>{icon}</div>
-            <div style={{ fontSize: 9, color: T.text, opacity: .6, fontWeight: 700, marginTop: 2 }}>{['Done', 'XP', 'Streak'][i]}</div>
-          </div>
+      <div style={{ background: T.accent1, color: '#fff', borderRadius: r, padding: 14 }}>
+        <div style={{ fontSize: 13, opacity: .9, fontWeight: 700 }}>המשימה של היום</div>
+        <div style={{ fontFamily: H, fontWeight: 800, fontSize: 18 }}>שברים: חלקים שווים</div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+        {['1+2', 'אב', 'Ab'].map(m => (
+          <div key={m} style={{ background: T.panel, border: `1.5px solid ${T.border}`, borderRadius: r, padding: 10, textAlign: 'center', fontFamily: H, fontWeight: 800, color: T.text }} dir="ltr">{m}</div>
         ))}
-      </div>
-      <div style={{ background: T.panel, border: `2px solid ${T.accent1}`, borderRadius: T.radius, padding: '10px', boxShadow: T.shadow }}>
-        <div style={{ fontFamily: T.fontHead, fontWeight: 800, fontSize: 11, color: T.text, marginBottom: 4 }}>Fractions — Equal Parts</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 10, color: T.accent2, fontWeight: 800 }}>⭐ +150</span>
-          <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: '50px', background: T.accent1, color: 'white' }}>Start</span>
-        </div>
       </div>
     </div>
   )
 }
 
 function ThemeSelector() {
-  const searchParams = useSearchParams()
+  const sp = useSearchParams()
   const router = useRouter()
-  const childId   = searchParams.get('childId') || ''
-  const childName = searchParams.get('name') || 'there'
-  const current   = searchParams.get('current') || 'plain'
-  const returnTo  = searchParams.get('returnTo') || `/lesson?childId=${childId}`
+  const childId = sp.get('childId') || ''
+  const name = sp.get('name') || ''
+  const current = sp.get('current') || 'plain'
+  const returnTo = sp.get('returnTo') || `/lesson?childId=${childId}`
+  const [selected, setSelected] = useState(THEMES.some(t => t.id === current) ? current : 'plain')
+  const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const T = THEME_CONFIG[selected] || THEME_CONFIG.plain
+  const dest = (t: string) => `${returnTo}${returnTo.includes('?') ? '&' : '?'}theme=${t}`
 
-  const [selected, setSelected]   = useState(current)
-  const [saving, setSaving]       = useState(false)
-  const [saved, setSaved]         = useState(false)
-
-  async function saveTheme() {
-    if (selected === current) {
-      router.push(returnTo)
-      return
-    }
-    setSaving(true)
+  async function save() {
+    if (selected === current) { router.push(returnTo); return }
+    setState('saving')
     try {
-      const res = await fetch('/api/theme', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ childId, theme: selected }),
-      })
-      if (!res.ok) throw new Error('Save failed')
-      setSaved(true)
-      setTimeout(() => {
-        // Return to where they came from, with new theme in URL
-        const dest = returnTo.includes('?')
-          ? `${returnTo}&theme=${selected}`
-          : `${returnTo}?theme=${selected}`
-        router.push(dest)
-      }, 1200)
-    } catch {
-      setSaving(false)
-    }
+      const r = await fetch('/api/theme', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ childId, theme: selected }) })
+      if (!r.ok) throw new Error()
+      setState('saved')
+      setTimeout(() => router.push(dest(selected)), 900)
+    } catch { setState('error') }
   }
 
-  const selectedTheme = THEMES.find(t => t.id === selected) || THEMES[2]
-
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: selectedTheme.bg,
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: '24px', transition: 'background 0.4s ease',
-      fontFamily: '"Nunito", sans-serif',
-    }}>
-      <div style={{
-        background: 'rgba(255,255,255,0.12)',
-        backdropFilter: 'blur(12px)',
-        borderRadius: '24px',
-        padding: '32px',
-        maxWidth: '600px',
-        width: '100%',
-        border: `2px solid ${selectedTheme.border}`,
-        boxShadow: '0 16px 48px rgba(0,0,0,0.2)',
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '8px' }}>🎨</div>
-          <h1 style={{ fontSize: '22px', fontWeight: 900, color: selectedTheme.text, margin: 0 }}>
-            Pick your theme, {childName}!
-          </h1>
-          <p style={{ fontSize: '13px', color: selectedTheme.text, opacity: .7, marginTop: '6px' }}>
-            Your whole app will change to match!
-          </p>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px', marginBottom: '24px' }}>
-          {THEMES.map(theme => (
-            <div key={theme.id}
-              onClick={() => theme.available && setSelected(theme.id)}
-              style={{
-                background: theme.bg,
-                border: `3px solid ${selected === theme.id ? theme.border : 'transparent'}`,
-                borderRadius: '16px',
-                padding: '16px 12px',
-                textAlign: 'center',
-                cursor: theme.available ? 'pointer' : 'not-allowed',
-                opacity: theme.available ? 1 : 0.5,
-                transition: 'all 0.2s',
-                transform: selected === theme.id ? 'scale(1.05)' : 'scale(1)',
-                boxShadow: selected === theme.id ? `0 8px 24px rgba(0,0,0,0.3)` : 'none',
-                position: 'relative',
-              }}>
-              {selected === theme.id && (
-                <div style={{ position: 'absolute', top: '8px', right: '8px', background: theme.border, borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: 'white', fontWeight: 900 }}>✓</div>
-              )}
-              {!theme.available && (
-                <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.5)', borderRadius: '50px', padding: '2px 8px', fontSize: '9px', color: 'white', fontWeight: 800 }}>SOON</div>
-              )}
-              {theme.available
-                ? <Pip theme={theme.id} pose="wave" size={64} style={{ margin: '0 auto 4px' }} />
-                : <div style={{ fontSize: '32px', marginBottom: '6px' }}>{theme.emoji}</div>}
-              <div style={{ fontSize: '13px', fontWeight: 800, color: theme.text }}>{theme.name}</div>
-              <div style={{ fontSize: '10px', color: theme.text, opacity: .7, marginTop: '3px' }}>{theme.desc}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: selectedTheme.text, opacity: .7, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Live Preview
-          </div>
-          <MiniHomePreview theme={selected}/>
-        </div>
-
-        <button
-          onClick={saveTheme}
-          disabled={saving || saved}
-          style={{
-            width: '100%',
-            padding: '14px',
-            borderRadius: '50px',
-            border: 'none',
-            background: saved ? '#27AE60' : selectedTheme.border,
-            color: 'white',
-            fontSize: '16px',
-            fontWeight: 900,
-            cursor: saving || saved ? 'default' : 'pointer',
-            fontFamily: '"Nunito", sans-serif',
-            boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
-            transition: 'all 0.2s',
-          }}>
-          {saved ? '✅ Theme saved! Loading...' : saving ? 'Saving...' : `✨ Use ${selectedTheme.name} Theme!`}
+    <div dir="rtl" style={{ minHeight: '100vh', background: T.bg, color: T.text, fontFamily: '"Assistant",sans-serif', transition: 'background .3s' }}>
+      <div style={{ maxWidth: 560, margin: '0 auto', padding: '16px 16px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <button onClick={() => router.push(returnTo)} style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 4, minHeight: 44, background: 'none', border: 'none', color: T.text, fontWeight: 700, fontSize: 17, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <ChevronRight size={20} /> חזרה
         </button>
-
-        <button
-          onClick={() => router.push(returnTo)}
-          style={{ display: 'block', margin: '12px auto 0', background: 'transparent', border: 'none', color: selectedTheme.text, opacity: .7, fontSize: '13px', cursor: 'pointer', fontFamily: '"Nunito", sans-serif' }}>
-          ← Back without changing
+        <h1 style={{ fontFamily: H, fontWeight: 800, fontSize: 28, margin: 0 }}>{name ? `${name}, איזה עיצוב בא לך?` : 'איזה עיצוב בא לך?'}</h1>
+        <p style={{ margin: 0, fontSize: 18, opacity: .8 }}>כל האפליקציה תתלבש בעיצוב שתבחרו.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 10 }}>
+          {THEMES.map(t => {
+            const tc = THEME_CONFIG[t.id] || THEME_CONFIG.plain
+            const on = selected === t.id
+            return (
+              <button key={t.id} onClick={() => setSelected(t.id)} aria-pressed={on}
+                style={{ position: 'relative', background: tc.bg, border: `3px solid ${on ? tc.accent1 : tc.border}`, borderRadius: 20, padding: '14px 10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, fontFamily: 'inherit', color: tc.text, minHeight: 150 }}>
+                {on && <span style={{ position: 'absolute', top: 8, insetInlineStart: 8, width: 28, height: 28, borderRadius: 99, background: tc.accent1, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Check size={18} /></span>}
+                <Pip theme={t.id} pose="wave" size={64} he />
+                <span style={{ fontFamily: H, fontWeight: 800, fontSize: 19 }}>{t.he}</span>
+                <span style={{ fontSize: 14, opacity: .75 }}>{t.desc}</span>
+              </button>
+            )
+          })}
+        </div>
+        <div style={{ fontWeight: 800, fontSize: 16, opacity: .75 }}>ככה זה ייראה:</div>
+        <Preview theme={selected} />
+        {state === 'error' && <div style={{ color: '#B4432A', fontWeight: 700 }}>לא הצלחנו לשמור. נסו שוב.</div>}
+        <button onClick={save} disabled={state === 'saving' || state === 'saved'}
+          style={{ minHeight: 64, borderRadius: 18, border: 'none', background: state === 'saved' ? '#12937A' : T.accent1, color: '#fff', fontFamily: H, fontWeight: 800, fontSize: 22, cursor: 'pointer' }}>
+          {state === 'saved' ? 'נשמר!' : state === 'saving' ? 'שומרים…' : selected === current ? 'נשאר עם העיצוב הזה' : `לבחור ${THEMES.find(t => t.id === selected)?.he}`}
         </button>
       </div>
     </div>
@@ -245,9 +96,5 @@ function ThemeSelector() {
 }
 
 export default function ThemePage() {
-  return (
-    <Suspense fallback={<div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Nunito,sans-serif', fontSize:'18px' }}>Loading...</div>}>
-      <ThemeSelector/>
-    </Suspense>
-  )
+  return <Suspense fallback={<div dir="rtl" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>טוען…</div>}><ThemeSelector /></Suspense>
 }

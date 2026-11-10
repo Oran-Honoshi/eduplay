@@ -504,7 +504,7 @@ export function KidNavBar({
               <button onClick={() => setGate(null)} style={{ flex: 1, padding: '10px', borderRadius: 10, border: '1px solid #e5e7eb', background: '#fff', fontWeight: 700, cursor: 'pointer' }}>
                 {isHE ? 'ביטול' : 'Cancel'}
               </button>
-              <button onClick={submitGate} style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: '#0F766E', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+              <button onClick={submitGate} style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: '#2F5BE3', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
                 {isHE ? 'המשך' : 'Continue'}
               </button>
             </div>

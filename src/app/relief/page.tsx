@@ -138,9 +138,9 @@ function ExerciseIllustration({ type, color }: { type: string; color: string }) 
 
 // ─── Type config ──────────────────────────────────────────────
 const TYPE_CONFIG: any = {
-  exercise:   { icon: Dumbbell, label: 'Physical Activity', labelHe: 'פעילות גופנית', color: '#EF4444', bg: '#FEF2F2', desc: 'Get moving with fun physical challenges!' },
-  brain_game: { icon: Brain,    label: 'Brain Game',        labelHe: 'משחק מח',       color: '#8B5CF6', bg: '#F5F3FF', desc: 'Puzzles, riddles and brain teasers!'     },
-  video:      { icon: Video,    label: 'Fun Video',         labelHe: 'סרטון כיף',     color: '#2EC4B6', bg: '#F0FDFB', desc: 'Watch a short educational clip!'         },
+  exercise:   { icon: Dumbbell, label: 'פעילות גופנית', labelHe: 'פעילות גופנית', color: '#E85D3F', bg: '#FDECE7', desc: 'זזים קצת: אתגרי תנועה קצרים וכיפיים' },
+  brain_game: { icon: Brain,    label: 'משחק מחשבה',        labelHe: 'משחק מחשבה',       color: '#5B4BD1', bg: '#F0EDFF', desc: 'חידות, אתגרים ומשחקי חשיבה'     },
+  video:      { icon: Video,    label: 'סרטון קצר',         labelHe: 'סרטון קצר',     color: '#12937A', bg: '#E3F5EF', desc: 'סרטון לימודי קצר ומהנה'         },
 }
 
 export default function ReliefPage() {
@@ -230,9 +230,9 @@ export default function ReliefPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#F9FAFB',
+      background: '#FAF7F2',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: '"Nunito", system-ui, sans-serif',
+      fontFamily: '"Assistant", "Rubik", system-ui, sans-serif', direction: 'rtl',
       padding: 20, position: 'relative', overflow: 'hidden',
     }}>
       <style>{`
@@ -278,7 +278,7 @@ export default function ReliefPage() {
                 color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer',
                 fontFamily: 'inherit', backdropFilter: 'blur(4px)',
               }}>
-                <CheckCircle size={14} /> Done
+                <CheckCircle size={14} /> סיימתי
               </button>
             </div>
           </div>
@@ -289,11 +289,11 @@ export default function ReliefPage() {
               style={{ width: '100%', height: '100%', border: 'none' }}
               allow="autoplay; encrypted-media"
               sandbox="allow-scripts allow-same-origin allow-presentation"
-              title={activity?.title_en}
+              title={activity?.title_he || activity?.title_en}
             />
           </div>
           <div style={{ marginTop: 14, color: 'rgba(255,255,255,0.35)', fontSize: 12, textAlign: 'center', display: 'flex', alignItems: 'center', gap: 6 }}>
-            🔒 Safe video player · No ads · No suggestions · Auto-closes in {videoTime}s
+            נגן בטוח · בלי פרסומות · בלי המלצות · נסגר לבד בעוד {videoTime} שניות
           </div>
         </div>
       )}
@@ -321,10 +321,10 @@ export default function ReliefPage() {
               <Star size={28} color="white" fill="white" />
             </div>
             <h2 style={{ fontWeight: 900, fontSize: 26, color: '#111827', margin: '0 0 6px', letterSpacing: '-0.02em' }}>
-              Break Time! 🎉
+              זמן הפסקה!
             </h2>
             <p style={{ fontSize: 14, color: '#6B7280', margin: '0 0 28px', lineHeight: 1.6 }}>
-              You've earned a break! Pick an activity to recharge.
+              הרווחת הפסקה! בחרו פעילות כדי לצבור כוח.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22 }}>
@@ -368,7 +368,7 @@ export default function ReliefPage() {
               onMouseEnter={e => (e.currentTarget.style.color = '#6B7280')}
               onMouseLeave={e => (e.currentTarget.style.color = '#9CA3AF')}
             >
-              Skip break
+              לדלג על ההפסקה
             </button>
           </div>
         )}
@@ -379,7 +379,7 @@ export default function ReliefPage() {
             {loading ? (
               <div style={{ padding: 48, color: '#6B7280', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <div style={{ width: 20, height: 20, border: '2px solid #E5E7EB', borderTopColor: '#4A7FD4', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                Loading activity…
+                טוענים פעילות…
               </div>
             ) : activity ? (
               <>
@@ -401,20 +401,20 @@ export default function ReliefPage() {
                 }}>
                   <Timer size={12} color={color} />
                   <span style={{ fontSize: 11, fontWeight: 800, color, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                    {cfg.label} · {activity.duration_seconds}s
+                    {cfg.label} · {activity.duration_seconds} שניות
                   </span>
                 </div>
 
                 <h2 style={{ fontWeight: 900, fontSize: 24, color: '#111827', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
-                  {activity.title_en}
+                  {activity.title_he || activity.title_en}
                 </h2>
                 <p style={{ fontSize: 14, color: '#6B7280', margin: '0 0 18px', lineHeight: 1.6 }}>
-                  {activity.description_en}
+                  {activity.description_he || activity.description_en}
                 </p>
 
                 {/* Instructions box */}
                 <div style={{
-                  background: '#F9FAFB', border: `1.5px solid ${color}25`,
+                  background: '#FAF7F2', border: `1.5px solid ${color}25`,
                   borderRadius: 14, padding: 16, marginBottom: 20, textAlign: 'left',
                 }}>
                   <div style={{
@@ -425,7 +425,7 @@ export default function ReliefPage() {
                     <ChevronRight size={11} /> Instructions
                   </div>
                   <p style={{ fontSize: 13, color: '#374151', margin: 0, lineHeight: 1.75 }}>
-                    {activity.instructions_en}
+                    {activity.instructions_he || activity.instructions_en}
                   </p>
                 </div>
 
@@ -438,7 +438,7 @@ export default function ReliefPage() {
                     marginBottom: 16, fontSize: 12, color,
                   }}>
                     <Volume2 size={14} />
-                    <span style={{ fontWeight: 700 }}>Turn up your volume for the best experience!</span>
+                    <span style={{ fontWeight: 700 }}>תגבירו את הקול כדי ליהנות יותר!</span>
                   </div>
                 )}
 
@@ -468,15 +468,15 @@ export default function ReliefPage() {
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'}
                   >
                     <Play size={16} fill="white" />
-                    {activity.type === 'video' ? 'Watch Video' : "Let's Go!"}
+                    {activity.type === 'video' ? 'לצפות בסרטון' : 'יוצאים לדרך!'}
                   </button>
                 </div>
               </>
             ) : (
               <div style={{ padding: 40, color: '#6B7280' }}>
-                No activity found.{' '}
+                לא מצאנו פעילות.{' '}
                 <button onClick={() => setPhase('choose')} style={{ color: '#4A7FD4', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, fontFamily: 'inherit' }}>
-                  Try again
+                  לנסות שוב
                 </button>
               </div>
             )}
@@ -497,10 +497,10 @@ export default function ReliefPage() {
             </div>
 
             <h2 style={{ fontWeight: 900, fontSize: 20, color: '#111827', margin: '0 0 6px' }}>
-              {activity.title_en}
+              {activity.title_he || activity.title_en}
             </h2>
             <p style={{ fontSize: 13, color: '#6B7280', margin: '0 0 22px', lineHeight: 1.6 }}>
-              {activity.instructions_en}
+              {activity.instructions_he || activity.instructions_en}
             </p>
 
             {/* Countdown ring */}
@@ -524,7 +524,7 @@ export default function ReliefPage() {
                 <div style={{ fontWeight: 900, fontSize: 38, color: '#111827', letterSpacing: '-0.02em', lineHeight: 1 }}>
                   {countdown}
                 </div>
-                <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 700, marginTop: 3 }}>seconds</div>
+                <div style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 700, marginTop: 3 }}>שניות</div>
               </div>
             </div>
 
@@ -540,7 +540,7 @@ export default function ReliefPage() {
                 boxShadow: `0 4px 14px ${color}35`,
               }}
             >
-              <CheckCircle size={16} /> Done Early
+              <CheckCircle size={16} /> סיימתי מוקדם
             </button>
           </div>
         )}
@@ -560,10 +560,10 @@ export default function ReliefPage() {
             </div>
 
             <h2 style={{ fontWeight: 900, fontSize: 26, color: '#111827', margin: '0 0 8px', letterSpacing: '-0.02em' }}>
-              Amazing job! 🌟
+              כל הכבוד!
             </h2>
             <p style={{ fontSize: 14, color: '#6B7280', margin: '0 0 24px', lineHeight: 1.6 }}>
-              You completed your break activity! Ready to keep learning?
+              סיימת את ההפסקה! מוכנים להמשיך ללמוד?
             </p>
 
             {/* XP reward */}
@@ -581,10 +581,10 @@ export default function ReliefPage() {
               </div>
               <div style={{ textAlign: 'left' }}>
                 <div style={{ fontWeight: 900, fontSize: 19, color: '#B45309', letterSpacing: '-0.01em' }}>
-                  +{xpEarned} XP Bonus!
+                  +{xpEarned} נקודות בונוס!
                 </div>
                 <div style={{ fontSize: 12, color: '#92400E', fontWeight: 600 }}>
-                  For completing your activity break
+                  על פעילות ההפסקה
                 </div>
               </div>
             </div>
@@ -607,7 +607,7 @@ export default function ReliefPage() {
                 ;(e.currentTarget as HTMLElement).style.filter = 'none'
               }}
             >
-              <Play size={16} fill="white" /> Continue Learning!
+              <Play size={16} fill="white" style={{ transform: "scaleX(-1)" }} /> ממשיכים ללמוד
             </button>
           </div>
         )}
