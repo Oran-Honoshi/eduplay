@@ -105,7 +105,7 @@ export default function ReaderPage() {
             {ws.map((w, wi) => {
               const key = `${li}-${wi}`
               const on = lit === key
-              return <button key={key} onClick={() => setLit(on ? null : key)}
+              return <button key={key} className="story-word" onClick={() => setLit(on ? null : key)}
                 style={{ fontFamily: READ_FONT, fontSize: 'clamp(28px, min(8.5vw, 6vh), 52px)', fontWeight: 600, lineHeight: 1.7, letterSpacing: '.02em', color: '#16213E', background: on ? '#FFE27A' : 'transparent', border: 'none', borderRadius: 14, padding: '0 .18em', cursor: 'pointer', transition: 'background .15s' }}
                 dangerouslySetInnerHTML={{ __html: lineHtml(w) }} />
             })}
@@ -118,6 +118,7 @@ export default function ReaderPage() {
   return (
     <Shell>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@400;600;700;800&display=swap" />
+      <style>{'.story-word svg{margin:0 !important}'}</style>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <a href={backHref} aria-label="סגירה" style={{ width: 52, height: 52, borderRadius: 16, background: '#fff', border: '1.5px solid #E2DBCD', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16213E' }}><X size={26} /></a>
         <div style={{ flex: 1, display: 'flex', gap: 6, justifyContent: 'center' }} aria-hidden>
