@@ -12,7 +12,8 @@ export async function GET(req: NextRequest) {
   if (!parent && !child) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const db = createServiceRoleClient()
   let admin = false
-  if (parent) {
+  // drafts only on the parent/admin page (?all=1), never on a child's shelf
+  if (parent && req.nextUrl.searchParams.get('all') === '1') {
     const { data } = await db.from('families').select('is_admin').eq('id', parent.familyId).maybeSingle()
     admin = !!data?.is_admin
   }
