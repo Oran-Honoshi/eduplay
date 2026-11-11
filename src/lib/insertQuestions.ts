@@ -1,4 +1,5 @@
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
+import { shuffleOptions, letterAfterShuffle } from '@/lib/optionOrder'
 
 // Body: { questions: QuestionInput[] }
 // Each question: {
@@ -126,14 +127,14 @@ export async function insertQuestions(questions: QuestionInput[]): Promise<Inser
   }
 
   // Build insert rows
-  const rows = questions.map(q => ({
+  const rows = questions.map(q => { const opts = shuffleOptions(q.options as any) as any[] | null | undefined; return ({
     topic_id:       q.topic_id || topicMap[q.topic_slug],
     difficulty:     q.difficulty,
     q_type:         q.q_type || 'multiple_choice',
     prompt_en:      q.prompt_en,
     prompt_he:      q.prompt_he || null,
-    options:        q.options || null,
-    correct_answer: q.correct_answer,
+    options:        opts || null,
+    correct_answer: letterAfterShuffle(q.correct_answer, q.options as any, opts),
     hint_en:        q.hint_en || null,
     hint_he:        q.hint_he || null,
     explanation_en: q.explanation_en || null,
@@ -143,7 +144,7 @@ export async function insertQuestions(questions: QuestionInput[]): Promise<Inser
     visual_data:    q.visual_data || null,
     // AI-generated questions go in as approved=false for review
     approved:       q.approved ?? false,
-  }))
+  }) })
 
   // Upsert — skip exact duplicates (same topic + prompt_en). questions has RLS with
   // no anon write policy (by design — see lib/supabase.ts), so this needs the
