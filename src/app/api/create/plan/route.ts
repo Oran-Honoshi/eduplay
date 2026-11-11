@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { consumeCreation } from '@/lib/trial'
 import { requireParentOnlySession, requireFamilyMatch } from '@/lib/session'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { uploadsAsText } from '@/lib/uploadBlocks'
@@ -37,6 +38,9 @@ export async function POST(req: NextRequest) {
   if (!KINDS.includes(kind)) return NextResponse.json({ error: 'kind must be practice, exam or explanation' }, { status: 400 })
   if (!subject || !Number.isInteger(grade) || grade < 0 || grade > 12) return NextResponse.json({ error: 'subject and grade are required' }, { status: 400 })
   if (childId && !(await requireFamilyMatch(childId, familyId))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  // A brand-new material counts as one creation (re-planning a draft doesn't).
+  if (typeof b.material_id !== 'string') { const blocked = await consumeCreation(familyId); if (blocked) return blocked }
 
   // Pages are normally read right after upload; anything not read yet is read now, in parallel.
   const mtext = await uploadsAsText(familyId, b.upload_ids)

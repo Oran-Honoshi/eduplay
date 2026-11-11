@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { checkCreationAllowed } from '@/lib/trial'
 import { requireParentOnlySession } from '@/lib/session'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { loadUploadBlocks } from '@/lib/uploadBlocks'
@@ -14,6 +15,7 @@ export const maxDuration = 300
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireParentOnlySession()
   if (!auth.ok) return NextResponse.json({ error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' }, { status: auth.status })
+  { const blocked = await checkCreationAllowed(auth.parent.familyId); if (blocked) return blocked }
   const db = createServiceRoleClient()
   const { data: m } = await db.from('materials').select('*').eq('id', params.id).maybeSingle()
   if (!m || m.family_id !== auth.parent.familyId) return NextResponse.json({ error: 'Not found' }, { status: 404 })

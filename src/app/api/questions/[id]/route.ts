@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { requireParentOnlySession } from '@/lib/session'
 
+async function isAdminFamily(familyId: string) {
+  const { data } = await createServiceRoleClient().from('families').select('is_admin').eq('id', familyId).maybeSingle()
+  return !!data?.is_admin
+}
+
 // ─── PATCH /api/questions/[id] ─────────────────────────────────
 // Approve, reject, or unapprove a question.
 // Body: { action: 'approve' | 'reject' | 'unapprove' | 'edit', reason?: string, ...fields for edit }
-// Deliberately NOT scoped to the caller's family — same shared-review
-// tradeoff as GET /api/questions/pending. Accepted, not an oversight.
+// Scoped (2026-11-11, open sign-up): a family may approve/reject/edit only
+// questions it created itself; the shared bank is reviewed by an admin only.
 //
 // 'unapprove' exists to back the bulk-approve review modal's undo window —
 // approve only ever flipped a boolean, so undo is just flipping it back.
@@ -32,6 +37,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (action !== 'approve' && action !== 'reject' && action !== 'unapprove' && action !== 'edit') {
     return NextResponse.json({ error: 'action must be "approve", "reject", "unapprove" or "edit"' }, { status: 400 })
   }
+
+  const db0 = createServiceRoleClient()
+  const { data: own } = await db0.from('questions').select('id, approved, created_by_family').eq('id', params.id).maybeSingle()
+  if (!own) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const admin = await isAdminFamily(auth.parent.familyId)
+  const mine = own.created_by_family === auth.parent.familyId
+  if (action !== 'edit' && !admin && !mine) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (action === 'edit' && !own.approved && !admin && !mine) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   // 'edit': fix a question while reviewing it (Create review step). Only
   // questions not yet approved, or ones this family created, can be edited —

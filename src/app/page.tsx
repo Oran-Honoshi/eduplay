@@ -45,7 +45,7 @@ export default function LandingPage() {
             תרגול, מבחנים, דפי הסבר וחוברות קריאה בחשבון, עברית ואנגלית. מדפיסים, או שולחים לאפליקציה של הילד. ושום דבר לא מגיע לילד לפני שאישרתם.
           </p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <a href="/login" style={btn(true)}>להתחיל</a>
+            <a href="/signup" style={btn(true)}>להתחיל חודש חינם</a>
             <a href="/free" style={btn(false)}><Printer size={18} /> דפים חינם להורדה</a>
           </div>
         </div>
@@ -96,11 +96,11 @@ export default function LandingPage() {
         <div style={{ ...card, maxWidth: 520, margin: '0 auto', border: `2px solid ${C.primary}`, padding: 28 }}>
           <h2 style={{ fontFamily: F.heading, fontSize: 26, margin: 0 }}>מנוי משפחתי</h2>
           <div style={{ fontFamily: F.heading, fontSize: 40, fontWeight: 800, margin: '8px 0 4px' }}><bdi>$20</bdi> <span style={{ fontSize: 17, color: C.textMuted, fontWeight: 600 }}>לחודש</span></div>
-          <div style={{ color: C.textSecondary, marginBottom: 16 }}>שבוע ניסיון חינם, בלי התחייבות.</div>
+          <div style={{ color: C.textSecondary, marginBottom: 16 }}>חודש ניסיון חינם. בלי כרטיס אשראי ובלי התחייבות.</div>
           <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {plan.map(x => <li key={x} style={{ display: 'flex', gap: 10, alignItems: 'center', fontSize: 16 }}><CheckCircle2 size={20} color={C.mint} /> {x}</li>)}
           </ul>
-          <a href="/login" style={{ ...btn(true), width: '100%', boxSizing: 'border-box' }}>להתחיל ניסיון חינם</a>
+          <a href="/signup" style={{ ...btn(true), width: '100%', boxSizing: 'border-box' }}>להתחיל ניסיון חינם</a>
         </div>
       </section>
 

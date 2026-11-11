@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { consumeCreation } from '@/lib/trial'
 import { requireParentOnlySession } from '@/lib/session'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { askClaudeJSON } from '@/lib/claude'
@@ -42,6 +43,7 @@ export async function POST(req: NextRequest) {
   if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: auth.status })
   const db = createServiceRoleClient()
   const b = await req.json().catch(() => ({}))
+  { const blocked = await consumeCreation(auth.parent.familyId); if (blocked) return blocked }
   const { data: level } = await db.from('reading_levels').select('id, level_number, label_he').eq('track', 'niqqud').eq('level_number', Number(b.level_number)).maybeSingle()
   if (!level) return NextResponse.json({ error: 'Unknown level' }, { status: 400 })
   const theme = typeof b.theme === 'string' && b.theme.trim() ? b.theme.trim().slice(0, 120) : null

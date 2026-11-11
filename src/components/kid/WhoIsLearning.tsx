@@ -58,6 +58,9 @@ export default function WhoIsLearning({ kids, mode, familyId }: { kids: Kid[]; m
     if (next.length === 4) submit(next)
   }
 
+  // this device now knows its family (the sign-in page's kids' button goes here)
+  useEffect(() => { try { if (mode === 'family' && familyId) localStorage.setItem('ep_family', familyId) } catch {} }, [mode, familyId])
+
   // A real keyboard works on the code pad too (digits, Backspace).
   useEffect(() => {
     if (!picked) return

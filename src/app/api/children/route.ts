@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
 import { createServiceRoleClient } from '@/lib/supabase'
-import { getSession, requireFamilyMatch, authorizeChildAccess } from '@/lib/session'
+import { getSession, requireFamilyMatch, authorizeChildAccess, requireParentOnlySession } from '@/lib/session'
 
 // pin_code and grade are parent-only regardless of whose row it is; everything
 // else in `allowed` below is self-service subject to the ownership check.
@@ -72,4 +73,34 @@ export async function PATCH(req: NextRequest) {
   const { error } = await supabase.from('children').update(update).eq('id', childId)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true, updated: Object.keys(update) })
+}
+// POST /api/children — a parent adds a child to their own family (onboarding
+// and the "add a child" button). Up to MAX_CHILDREN per family.
+const MAX_CHILDREN = 5
+const THEMES = ['plain', 'minecraft', 'princesses', 'sports']
+
+export async function POST(req: NextRequest) {
+  const auth = await requireParentOnlySession()
+  if (!auth.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: auth.status })
+  const familyId = auth.parent.familyId
+  const b = await req.json().catch(() => ({}))
+  const display_name = String(b.display_name || '').trim().slice(0, 40)
+  const grade = Number(b.grade)
+  const theme = THEMES.includes(b.theme) ? b.theme : 'plain'
+  const pin = b.pin_code == null || b.pin_code === '' ? null : String(b.pin_code)
+  if (!display_name) return NextResponse.json({ error: 'נא למלא שם' }, { status: 400 })
+  if (!Number.isInteger(grade) || grade < 0 || grade > 6) return NextResponse.json({ error: 'נא לבחור כיתה' }, { status: 400 })
+  if (pin !== null && !/^\d{4}$/.test(pin)) return NextResponse.json({ error: 'הקוד צריך להיות 4 ספרות' }, { status: 400 })
+
+  const supabase = createServiceRoleClient()
+  const { count } = await supabase.from('children').select('id', { count: 'exact', head: true }).eq('family_id', familyId)
+  if ((count ?? 0) >= MAX_CHILDREN) return NextResponse.json({ error: `אפשר עד ${MAX_CHILDREN} ילדים במנוי` }, { status: 400 })
+
+  const { data, error } = await supabase.from('children').insert({
+    family_id: familyId, display_name, grade, theme, pin_code: pin,
+    access_token: randomBytes(12).toString('hex'),
+    lang_screen: 'bilingual', lang_worksheets: 'bilingual', hebrew_enabled: true, journey_mode: 'story',
+  }).select('id, display_name, grade, theme, access_token, pin_code').single()
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ child: data })
 }

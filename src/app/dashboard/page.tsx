@@ -36,6 +36,10 @@ export default async function DashboardPage({ searchParams }: Props) {
     supabase.from('families').select('*').eq('id', familyId).single(),
     supabase.from('subjects').select('*').order('sort_order'),
   ])
+  // a trial that has ended goes to the upgrade screen
+  if (family?.plan === 'trial' && family.trial_ends_at && new Date(family.trial_ends_at).getTime() < Date.now()) redirect('/upgrade')
+  // a brand-new family adds its children first
+  if (family && !(children || []).length && family.plan === 'trial' && !family.is_admin) redirect('/welcome')
   // the signed-in parent's name (else the family's first parent)
   const { data: parentRows } = await supabase.from('family_parents').select('id, name').eq('family_id', familyId).order('created_at')
   const parentRow = (parentRows || []).find(p => p.id === auth.parent.parentId) || (parentRows || [])[0]

@@ -33,8 +33,13 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServiceRoleClient()
   const body = await req.json()
-  const { name, email, password, avatar_emoji, role } = body
+  const { name, password, avatar_emoji, role } = body
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
   const familyId = auth.parent.familyId
+  // parents sign in with their email, so every parent needs one
+  if (!String(name || '').trim()) return NextResponse.json({ error: 'נא למלא שם' }, { status: 400 })
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return NextResponse.json({ error: 'נא למלא אימייל תקין — איתו ההורה נכנס' }, { status: 400 })
+  if (!password || String(password).length < 8) return NextResponse.json({ error: 'הסיסמה צריכה להיות באורך 8 תווים לפחות' }, { status: 400 })
 
   // Max 3 parents check
   const { data: existing } = await supabase
@@ -56,12 +61,13 @@ export async function POST(req: NextRequest) {
       email,
       password: hashedPassword,
       avatar_emoji: avatar_emoji || '👤',
-      role: role || 'parent',
+      role: role === 'admin' ? 'admin' : 'parent',
       sort_order: (existing?.length || 0) + 1,
     })
-    .select()
+    .select('id, name, email, avatar_emoji, role, sort_order')
     .single()
 
+  if (error?.code === '23505') return NextResponse.json({ error: 'כבר יש חשבון עם האימייל הזה' }, { status: 409 })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true, parent: data })
 }
@@ -104,7 +110,7 @@ export async function PATCH(req: NextRequest) {
   // was changed by <name>" notification.
   const updates: any = {}
   if (name) updates.name = name
-  if (email) updates.email = email
+  if (email) updates.email = String(email).trim().toLowerCase()
   if (password) updates.password = await bcrypt.hash(password, 10)
   if (avatar_emoji) updates.avatar_emoji = avatar_emoji
 

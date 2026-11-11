@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
-import { requireParentOnlySession } from '@/lib/session'
+import { requireAdmin } from '@/lib/admin'
 
 // ─── GET /api/questions/pending ────────────────────────────────
 // Lists unapproved (approved:false), not-yet-rejected (rejected_at:null)
@@ -23,7 +23,7 @@ import { requireParentOnlySession } from '@/lib/session'
 // count and IDs, every time.
 
 export async function GET() {
-  const auth = await requireParentOnlySession()
+  const auth = await requireAdmin()
   if (!auth.ok) {
     return NextResponse.json(
       { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
