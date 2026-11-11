@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { consumeCreation } from '@/lib/trial'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import { authorizeChildAccess, requireParentOnlySession } from '@/lib/session'
 import { checkNiqqudDecodability, checkWordListDecodability } from '@/lib/readingDecodability'
@@ -112,6 +113,8 @@ export async function POST(req: NextRequest) {
       { status: auth.status }
     )
   }
+
+  { const blocked = await consumeCreation(auth.parent.familyId); if (blocked) return blocked }
 
   const body = await req.json()
   const { grade, subject, type, difficulty, topic, language, reading_track, level_id, generate_questions } = body

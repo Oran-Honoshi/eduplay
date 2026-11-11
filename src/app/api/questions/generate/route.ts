@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { checkCreationAllowed } from '@/lib/trial'
 import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import { requireParentOnlySession } from '@/lib/session'
 import { insertQuestions, QuestionInput } from '@/lib/insertQuestions'
@@ -176,6 +177,9 @@ export async function POST(req: NextRequest) {
       { status: auth.status }
     )
   }
+
+  // part of a material already counted when it was planned — check only
+  { const blocked = await checkCreationAllowed(auth.parent.familyId); if (blocked) return blocked }
 
   const body = await req.json()
   const { subject_slug: bodySubjectSlug, grade: bodyGrade, topic_slug: bodyTopicSlug, difficulty, progressive } = body

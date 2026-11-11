@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
-import { requireParentOnlySession } from '@/lib/session'
+import { requireAdmin } from '@/lib/admin'
 import { insertQuestions, QuestionInput } from '@/lib/insertQuestions'
 
 // ─── POST /api/questions ──────────────────────────────────────
@@ -9,8 +9,11 @@ import { insertQuestions, QuestionInput } from '@/lib/insertQuestions'
 // See src/lib/insertQuestions.ts for the request body shape and
 // the shared validate + topic-lookup + upsert logic.
 
+// Admin-only since open sign-up (2026-11-11): no screen uses these legacy
+// bank endpoints any more, and the shared bank must not be written or read
+// unapproved by other families.
 export async function POST(req: NextRequest) {
-  const auth = await requireParentOnlySession()
+  const auth = await requireAdmin()
   if (!auth.ok) {
     return NextResponse.json(
       { error: auth.status === 401 ? 'Unauthorized' : 'Forbidden' },
@@ -44,6 +47,8 @@ export async function POST(req: NextRequest) {
 // ─── GET /api/questions ───────────────────────────────────────
 // Get questions for a topic (used by lesson + worksheet builder)
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin()
+  if (!auth.ok) return NextResponse.json({ error: 'Forbidden' }, { status: auth.status })
   const supabase = createServerClient()
   const { searchParams } = new URL(req.url)
 

@@ -489,6 +489,7 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
     if (t) setScreen(TABS.some(x => x.key === t) || t === 'progress' ? t : (LEGACY_TAB[t] || 'home'))
   }, [])
   const [toast, setToast]           = useState<{ icon:string; text:string; link?: string }|null>(null)
+  useEffect(() => { try { if (family?.id) localStorage.setItem('ep_family', family.id) } catch {} }, [family?.id])
   const [errorBanner, setErrorBanner]   = useState(error)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -837,7 +838,14 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                 <h3 style={{ display:'flex', alignItems:'center', gap:'7px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', color:PARENT_COLORS.text, marginBottom:'4px' }}>
                   <GraduationCap size={16} color={PARENT_COLORS.primary} /> הילדים
                 </h3>
-                <p style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, marginBottom:'16px' }}>כיתה, גודל טקסט, הפסקות וקוד כניסה לכל ילד/ה.</p>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'10px', flexWrap:'wrap', marginBottom:'16px' }}>
+                  <p style={{ fontSize:'13px', color:PARENT_COLORS.textSecondary, margin:0 }}>כיתה, גודל טקסט, הפסקות וקוד כניסה לכל ילד/ה.</p>
+                  {(children || []).length < 5 && (
+                    <a href="/welcome?add=1" style={{ display:'inline-flex', alignItems:'center', gap:'6px', minHeight:40, padding:'0 16px', borderRadius:'999px', background:PARENT_COLORS.primary, color:'#fff', fontWeight:800, fontSize:'14px', textDecoration:'none' }}>
+                      <UserPlus size={15} /> הוספת ילד/ה
+                    </a>
+                  )}
+                </div>
 
                 {/* Column headers */}
                 <div className="manage-headers" style={{ display:'grid', gridTemplateColumns:'1fr 110px 110px 110px 120px 80px', gap:'8px', padding:'0 14px', marginBottom:'6px' }}>
@@ -1032,12 +1040,12 @@ export default function DashboardClient({ data, error }: { data: any; error?: st
                     <div style={{ display:'flex', alignItems:'center', gap:'7px', fontFamily:PARENT_FONTS.heading, fontWeight:800, fontSize:'16px', marginBottom:'4px' }}>
                       <Rocket size={16} /> מנוי משפחתי EduPlay
                     </div>
-                    <div style={{ fontSize:'13px', opacity:.85 }}>ניסיון — עוד {family?.trial_days_left ?? daysLeft} ימים</div>
+                    <div style={{ fontSize:'13px', opacity:.85 }}>{family?.plan === 'trial' ? `חודש ניסיון — עוד ${daysLeft} ימים · ${family?.gen_month === new Date().toISOString().slice(0,7) ? (family?.monthly_gen_used || 0) : 0} מתוך ${family?.monthly_gen_limit ?? 50} יצירות החודש` : 'המנוי פעיל'}</div>
                   </div>
-                  <div style={{ background:'rgba(255,255,255,0.2)', borderRadius:'8px', padding:'6px 12px', fontSize:'12px', fontWeight:800 }}>ניסיון</div>
+                  <div style={{ background:'rgba(255,255,255,0.2)', borderRadius:'8px', padding:'6px 12px', fontSize:'12px', fontWeight:800 }}>{family?.plan === 'trial' ? 'ניסיון' : 'פעיל'}</div>
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:'6px', fontSize:'12px', opacity:.9 }}>
-                  <Check size={13} /> שיעורים ללא הגבלה &nbsp;·&nbsp; <Check size={13} /> כל המקצועות &nbsp;·&nbsp; <Check size={13} /> 3 ילדים &nbsp;·&nbsp; <Check size={13} /> דפי עבודה
+                  <Check size={13} /> שיעורים ללא הגבלה &nbsp;·&nbsp; <Check size={13} /> כל המקצועות &nbsp;·&nbsp; <Check size={13} /> עד 5 ילדים &nbsp;·&nbsp; <Check size={13} /> דפי עבודה
                 </div>
               </div>
             </div>

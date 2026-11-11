@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { Home, Sparkles, BookOpen, Users } from 'lucide-react'
 import EduPlayLogo from './EduPlayLogo'
 import { SuggestionsButton } from './Feedback'
+import { TrialChip, AccountMenu } from './parent/AccountBits'
 import { PARENT_COLORS, PARENT_FONTS } from '@/lib/parentTheme'
 
 export type ParentSection = 'home' | 'create' | 'library' | 'family'
@@ -59,7 +60,7 @@ export default function ParentHeaderBar({ center, right, active }: { center?: Re
       </a>
       {center ?? (active ? <span className="hidden md:flex"><ParentNav active={active} /></span> : null)}
       {!center && active && <ParentTabBar active={active} />}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}><span className="hidden md:inline-flex"><SuggestionsButton /></span>{right}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}><TrialChip /><span className="hidden md:inline-flex"><SuggestionsButton /></span>{right}<AccountMenu /></div>
     </header>
   )
 }

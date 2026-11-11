@@ -12,7 +12,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   if (!m || m.family_id !== auth.parent.familyId) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (!(m.question_ids || []).length) return NextResponse.json({ approved: 0 })
   const { data, error } = await db.from('questions').update({ approved: true })
-    .in('id', m.question_ids).eq('approved', false).is('rejected_at', null).select('id')
+    .in('id', m.question_ids).eq('approved', false).eq('created_by_family', m.family_id).is('rejected_at', null).select('id')
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ approved: (data || []).length })
 }

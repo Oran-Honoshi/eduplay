@@ -4,7 +4,7 @@ import { createServiceRoleClient } from '@/lib/supabase'
 import { isBcryptHash } from '@/lib/passwordHash.mjs'
 import { createChildSession, createParentSession, clearChildSession } from '@/lib/session'
 
-const FAMILY_ID = '11111111-1111-1111-1111-111111111111'
+const UUID = /^[0-9a-f-]{36}$/i
 
 async function checkPassword(
   candidate: string,
@@ -63,7 +63,8 @@ export async function POST(req: NextRequest) {
     if (await tooManyAttempts(supabase, key, LIMITS.pin)) return tooMany()
     // From the family link (/f/<familyId>) the child picks their picture first,
     // so the code is checked against that one child only.
-    const famId = typeof body.familyId === 'string' && /^[0-9a-f-]{36}$/i.test(body.familyId) ? body.familyId : FAMILY_ID
+    const famId = typeof body.familyId === 'string' && UUID.test(body.familyId) ? body.familyId : null
+    if (!famId) return NextResponse.json({ error: 'familyId required' }, { status: 400 })
     let q = supabase
       .from('children')
       .select('id, family_id, display_name, access_token, pin_code, grade, theme')
@@ -98,13 +99,18 @@ export async function POST(req: NextRequest) {
 if (password) {
   const pwKey = clientKey(req, 'pw')
   if (await tooManyAttempts(supabase, pwKey, LIMITS.pw)) return tooMany()
-  // Check individual parent passwords first
-  const { data: allParents } = await supabase
-    .from('family_parents')
-    .select('id, name, password, role, avatar_emoji')
-    .eq('family_id', FAMILY_ID)
+  // Which parents to check: by email (any family), or — on a device that
+  // remembers its family — that family's profile picker (parentId optional).
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
+  const pickFamily = typeof body.familyId === 'string' && UUID.test(body.familyId) ? body.familyId : null
+  if (!email && !pickFamily) return NextResponse.json({ error: 'email required' }, { status: 400 })
+  let pq = supabase.from('family_parents').select('id, family_id, name, password, role, avatar_emoji')
+  pq = email ? pq.ilike('email', email.replace(/[%_\\]/g, '\\$&')) : pq.eq('family_id', pickFamily)
+  if (!email && typeof body.parentId === 'string' && UUID.test(body.parentId)) pq = pq.eq('id', body.parentId)
+  const { data: allParents } = await pq
 
   for (const parent of allParents || []) {
+    if (!parent.password) continue
     const ok = await checkPassword(password, parent.password, async (newHash) => {
       await supabase.from('family_parents').update({ password: newHash }).eq('id', parent.id)
     })
@@ -113,18 +119,14 @@ if (password) {
       // browser (shared-device families alternate child PIN / parent password
       // logins) — otherwise it can outlive this new parent login by up to 90
       // days and shadow it in authorizeChildAccess for any child that isn't
-      // the one the stale cookie belongs to. See the fix note on
-      // authorizeChildAccess itself (2026-08-08) for the matching precedence
-      // bug this closes half of; the other half (already-logged-in parent
-      // previewing a child link mid-session) has no login call to hook here,
-      // which is what that precedence fix covers.
+      // the one the stale cookie belongs to.
       clearChildSession()
       await clearFailures(supabase, pwKey)
-      await createParentSession(parent.id, FAMILY_ID)
+      await createParentSession(parent.id, parent.family_id)
       return NextResponse.json({
         success: true,
         type: 'parent',
-        familyId: FAMILY_ID,
+        familyId: parent.family_id,
         parentId: parent.id,
         parentName: parent.name,
       })
@@ -132,25 +134,23 @@ if (password) {
   }
 
   // Fallback to family password
-  const { data: family } = await supabase
-    .from('families')
-    .select('id, parent_password')
-    .eq('id', FAMILY_ID)
-    .maybeSingle()
+  let fq = supabase.from('families').select('id, parent_password')
+  fq = email ? fq.ilike('parent_email', email.replace(/[%_\\]/g, '\\$&')) : fq.eq('id', pickFamily)
+  const { data: family } = await fq.limit(1).maybeSingle()
 
   if (family?.parent_password) {
     const ok = await checkPassword(password, family.parent_password, async (newHash) => {
-      await supabase.from('families').update({ parent_password: newHash }).eq('id', FAMILY_ID)
+      await supabase.from('families').update({ parent_password: newHash }).eq('id', family.id)
     })
     if (ok) {
       // See the individual-parent-password branch above for why this is here.
       clearChildSession()
       await clearFailures(supabase, pwKey)
-      await createParentSession(null, FAMILY_ID)
+      await createParentSession(null, family.id)
       return NextResponse.json({
         success: true,
         type: 'parent',
-        familyId: FAMILY_ID,
+        familyId: family.id,
       })
     }
   }
