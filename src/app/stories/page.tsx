@@ -55,7 +55,7 @@ export default function StoriesPage() {
 
   return (
     <ParentPage section="create" title="ספרוני קריאה ראשונה" back={{ href: '/dashboard?tab=create', label: 'יצירה' }}
-      subtitle="סיפורים קצרים בקמץ ופתח בלבד, עם תמונות קטנות במקום מילים שעוד לא למדו. אפשר להדפיס (A5) או לקרוא יחד באפליקציה — הילדים מוצאים אותם גם במסך הבית שלהם.">
+      subtitle="סיפורים קצרים לפי רמות ניקוד (רמה 1: קמץ ופתח, רמה 2: גם שווא וחטף פתח), עם תמונות קטנות במקום מילים שעוד לא למדו. אפשר להדפיס (A5) או לקרוא יחד באפליקציה — הילדים מוצאים אותם גם במסך הבית שלהם.">
         {msg && <div style={{ background: '#FDECEC', color: '#B42318', padding: '10px 14px', borderRadius: 12, fontWeight: 700 }}>{msg}</div>}
         {!list ? <div style={{ color: C.textMuted }}>טוען…</div> : list.length === 0 ? <div style={{ color: C.textMuted }}>עוד אין ספרונים פעילים.</div> : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
@@ -67,7 +67,7 @@ export default function StoriesPage() {
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     <div style={{ width: 64, height: 64, borderRadius: 12, flexShrink: 0, background: b.cover?.image_url ? `center/cover url(${b.cover.image_url})` : '#FFE9B8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 22, color: '#C2337F' }}>{!b.cover?.image_url && b.number}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 700 }}>ספרון {b.number} · {b.pages.length} עמודים</div>
+                      <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 700 }}>רמה {b.level_number} · ספרון {b.number} · {b.pages.length} עמודים</div>
                       <div style={{ fontFamily: '"Noto Sans Hebrew","Rubik",sans-serif', fontSize: 21, fontWeight: 800 }} dangerouslySetInnerHTML={{ __html: lineHtml(b.title_he) }} />
                       {admin && <div style={{ display: 'flex', gap: 6, marginTop: 4, fontSize: 12 }}><span style={{ background: sbg, color: sfg, borderRadius: 50, padding: '2px 8px', fontWeight: 800 }}>{sl}</span><span style={{ color: C.textMuted }}>איורים: {drawn}/{b.pages.length + 1}</span></div>}
                     </div>
