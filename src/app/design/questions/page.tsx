@@ -2,14 +2,17 @@ import { notFound } from 'next/navigation'
 import { createServiceRoleClient } from '@/lib/supabase'
 import fixtures from './fixtures.json'
 import DesignSandbox from './sandbox'
+import { designAllowed } from '@/lib/designAccess'
 
 // Design QA page for the question screens: the designer's 24 reference
 // questions plus real questions from the bank, for every subject and grade.
-// Opens without signing in, saves nothing, and exists on preview links only.
+// Opens without signing in and saves nothing. Preview links, or the live site with ?key=.
 export const dynamic = 'force-dynamic'
 
-export default async function DesignQuestionsPage() {
-  if (process.env.VERCEL_ENV === 'production') notFound()
+export const metadata = { robots: { index: false, follow: false } }
+
+export default async function DesignQuestionsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+  if (!designAllowed(searchParams)) notFound()
 
   const real: any[] = []
   try { await loadReal(real) } catch { /* no database here: show the designer's questions only */ }
@@ -20,7 +23,7 @@ async function loadReal(real: any[]) {
   const supabase = createServiceRoleClient()
   const { data: subjects } = await supabase.from('subjects').select('id, slug')
   for (const sub of subjects || []) {
-    for (let grade = 1; grade <= 6; grade++) {
+    for (let grade = 0; grade <= 6; grade++) {
       const { data: topics } = await supabase.from('topics').select('id, slug, title_he').eq('subject_id', sub.id).contains('grades', [grade]).limit(40)
       const ids = (topics || []).map(t => t.id)
       if (!ids.length) continue
