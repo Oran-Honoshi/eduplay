@@ -1,0 +1,46 @@
+// Small pictures inside the sentences of story booklets (levels 3–6).
+// A line holds [[key]]; the picture is, in order:
+//   1. a drawn picture from src/lib/readingPictures.ts (levels 1–2 and shared ones),
+//   2. a file public/stories/inline/<key>.webp|png|svg listed in inlineAssets.json,
+//   3. until then, a dashed "missing picture" box with the word (drafts only).
+// To add pictures: put the files in public/stories/inline/ named by key, then run
+//   node scripts/inline-assets.mjs
+
+export const INLINE_NEW: Record<string, { he: string; note?: string }> = {
+  tent: { he: 'אוהל', note: 'אוהל משמיכה וכריות בסלון (ספרון 3·1)' },
+  cushions: { he: 'כריות', note: 'כמה כריות צבעוניות' },
+  swing: { he: 'נדנדה', note: 'נדנדה בגינת משחקים' },
+  kitten: { he: 'חתלתול', note: 'חתלתול קטן; משמש גם ל"חתלתולה"' },
+  school: { he: 'בית ספר', note: 'בניין בית ספר' },
+  kitchen: { he: 'מטבח', note: 'פינת מטבח (שיש, כיריים)' },
+  table: { he: 'שולחן', note: 'שולחן אוכל' },
+  schoolyard: { he: 'חצר בית הספר', note: 'חצר עם מגרש קטן' },
+  football: { he: 'כדורגל', note: 'כדורגל קלאסי' },
+  tuna_can: { he: 'קופסת טונה', note: 'קופסת שימורים פתוחה, בלי כיתוב' },
+  rug: { he: 'שטיח', note: 'שטיח צבעוני' },
+  door: { he: 'דלת', note: 'דלת כניסה' },
+  supermarket: { he: 'סופרמרקט', note: 'חזית או מדפים' },
+  oven: { he: 'תנור', note: 'תנור אפייה' },
+  desert: { he: 'מדבר', note: 'דיונות וסלעים' },
+  gecko: { he: 'חרדון', note: 'חרדון מדברי קטן' },
+  hedgehog: { he: 'קיפוד', note: 'קיפוד קטן' },
+  street: { he: 'רחוב', note: 'רחוב עירוני' },
+  toy_shop: { he: 'חנות צעצועים', note: 'חזית חנות, בלי כיתוב' },
+  market: { he: 'שוק', note: 'דוכני שוק צבעוניים, בלי כיתוב' },
+  vendor: { he: 'מוכר', note: 'מוכר בדוכן שוק' },
+  fawn: { he: 'עופר', note: 'עופר צעיר עם כתמים בהירים' },
+  beach: { he: 'חוף ים', note: 'חוף וים' },
+  science_museum: { he: 'מוזיאון מדע', note: 'בניין מוזיאון, בלי כיתוב' },
+  lightbulb: { he: 'נורה', note: 'נורה קטנה (דולקת)' },
+  ibex: { he: 'יעל', note: 'יעל צעירה (ibex)' },
+  restaurant: { he: 'מסעדה', note: 'חזית מסעדה, בלי כיתוב' },
+  cake: { he: 'עוגה', note: 'עוגה פשוטה' },
+  window: { he: 'חלון', note: 'חלון ברכבת' },
+  string: { he: 'חוט', note: 'חוט / סליל חוט' },
+  puppy: { he: 'כלבלב', note: 'גור כלבים קטן' },
+  cupcake: { he: 'קאפקייק', note: 'קאפקייק; משמש גם ל"קאפקייקס" (אפשר 2–3)' },
+  donuts: { he: 'דונאטס', note: 'כמה דונאטס' },
+  aquarium: { he: 'אקווריום', note: 'מכל דגים' },
+  tail: { he: 'זנב', note: 'זנב כלב מכשכש' },
+  telescope: { he: 'טלסקופ', note: 'טלסקופ קטן על חצובה' },
+}
