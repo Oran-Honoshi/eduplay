@@ -8,7 +8,7 @@ import FractionText from './FractionText'
 // and steps (HebrewMathText splits math onto its own line, which suits prompts).
 // a number: optional bracket, a sign only when not glued to a word (ל-0 is "to 0"),
 // digits with inner . , / (no trailing full stop), optional closing bracket
-const NUM = String.raw`\(?(?:(?<![א-תA-Za-z])[−\-+])?\d+(?:[.,/]\d+)*\)?`
+const NUM = String.raw`\(?(?:(?<![א-ת\u0591-\u05C7A-Za-z])[−\-+])?\d+(?:[.,/]\d+)*\)?`
 const MATH = new RegExp(`(${NUM}(?:\\s*[+\\-−–×÷=<>]\\s*${NUM})*)`, 'g')
 
 export default function InlineMath({ text }: { text: string | null | undefined }) {

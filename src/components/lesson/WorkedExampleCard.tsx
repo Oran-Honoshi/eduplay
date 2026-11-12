@@ -6,6 +6,8 @@ import ColumnBoard from './ColumnBoard'
 import StepDots from './StepDots'
 import StepExplanation from './StepExplanation'
 import { deriveColumnProblem } from './columnMath'
+import PlaceValueBoard from './PlaceValueBoard'
+import { derivePlaceValue } from './placeValue'
 import s from './lesson.module.css'
 
 // "דוגמה פתורה": the question, step dots, then either the interactive column
@@ -16,6 +18,8 @@ export default function WorkedExampleCard({ example, he }: { example: any; he: b
   const answer: string = (he ? example.answer_he || example.answer_en : example.answer_en || example.answer_he) || ''
   const rawSteps: string[] = ((he ? example.solution_steps_he : example.solution_steps_en) || example.solution_steps_he || []).filter(Boolean)
   const board = useMemo(() => (he ? deriveColumnProblem(problem, answer) : null), [he, problem, answer])
+  // tens and ones: the place-value table and blocks
+  const pv = useMemo(() => (he && !board ? derivePlaceValue(problem, answer, rawSteps) : null), [he, board, problem, answer, rawSteps.join('\n')])
 
   // fallback steps: the example's own, with the answer merged into the last one
   const listSteps = useMemo(() => {
@@ -27,7 +31,7 @@ export default function WorkedExampleCard({ example, he }: { example: any; he: b
     return st.map(t => ({ title: '', text: t }))
   }, [rawSteps.join('\n'), answer, he])
 
-  const steps = board ? board.steps : listSteps
+  const steps = board ? board.steps : pv ? pv.steps : listSteps
   const total = steps.length
   const [step, setStep] = useState(1)
   if (!total) return null
@@ -47,6 +51,7 @@ export default function WorkedExampleCard({ example, he }: { example: any; he: b
 
       {board
         ? <ColumnBoard p={board} step={step} />
+        : pv ? <PlaceValueBoard p={pv} step={step} />
         : example.visual?.type ? <div className={s.visualBox}><MathVisual data={example.visual} size={220} color="#2F5BE3" /></div> : null}
 
       <StepExplanation n={step} title={cur.title} text={cur.text} done={done} he={he} />
