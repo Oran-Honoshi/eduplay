@@ -6,6 +6,7 @@ import { PARENT_COLORS as C, PARENT_FONTS as F } from '@/lib/parentTheme'
 import { MarkedText, FeedbackText } from '@/components/question/markup'
 import { subjectKey, subjectVars } from '@/components/question/tokens'
 import qs from '@/components/question/question.module.css'
+import MoveQuestion from '@/components/admin/MoveQuestion'
 
 // Admin: review the question-screen content pass. Per lesson, each question
 // shows the new markup the way the child will see it (key concept highlighter,
@@ -148,6 +149,7 @@ export default function DesignReview() {
                     </div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
                       {(draft.flags || []).map((f: string) => <span key={f} style={tag('#FFF4D6', '#7A5600')}>{FLAG_HE[f] || f}</span>)}
+                      {open !== 'passages' && <MoveQuestion questionId={q.id} subject={openTopic?.subject?.slug || 'math'} grade={openTopic?.grade || 1} topicId={open!} onMoved={loadList} />}
                       <span style={{ flex: 1 }} />
                       {draft.status === 'draft' && <>
                         <button disabled={busy === draft.id} onClick={() => act({ action: 'apply', ids: [draft.id] }, draft.id)} style={{ ...pillBtn(true), minHeight: 36, fontSize: 14 }}><Check size={14} /> לאשר</button>
