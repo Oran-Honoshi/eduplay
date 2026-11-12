@@ -10,7 +10,7 @@ import { askClaudeJSON } from '@/lib/claude'
 
 export const BANK_BATCH = 'bank-2026-11'
 
-const MATH_STYLE = `Writing math (Israeli school style): signed numbers in brackets like (+5), (−3); an exercise reads left to right, e.g. (+5) − (+9) = −4; mixed numbers as whole, space, fraction — 3 3/4 (never Unicode fraction characters like ¾); fractions as a/b; × for multiplication and : for division in the lower grades; degrees as 5°C; angles as ∢ABC; a missing number or sign is the box ☐. Comparisons are read left to right. In Hebrew abbreviations use ״ or ׳, never a plain double quote. Keep every exercise whole on one line.`
+export const MATH_STYLE = `Writing math (Israeli school style): signed numbers in brackets like (+5), (−3); an exercise reads left to right, e.g. (+5) − (+9) = −4; mixed numbers as whole, space, fraction — 3 3/4 (never Unicode fraction characters like ¾); fractions as a/b; × for multiplication and : for division in the lower grades; degrees as 5°C; angles as ∢ABC; a missing number or sign is the box ☐. Comparisons are read left to right. In Hebrew abbreviations use ״ or ׳, never a plain double quote. Keep every exercise whole on one line.`
 
 const SUBJ_HE: Record<string, string> = { math: 'חשבון', hebrew: 'עברית', english: 'אנגלית' }
 const gradeHe = (g: number) => (g === 0 ? 'גן' : `כיתה ${'אבגדהוזחטיכ'[g - 1] || g}׳`)

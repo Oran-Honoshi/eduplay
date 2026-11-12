@@ -5,8 +5,10 @@ import { pillBtn } from '@/components/parent/ParentPage'
 import { PARENT_COLORS as C, PARENT_FONTS as F } from '@/lib/parentTheme'
 
 // "This question belongs to another grade / lesson": keep it, move it there.
-// Used on both admin review pages. Same subject only; logged and undoable.
+// Used on both admin review pages. Any subject; logged and undoable. The lesson
+// it left gets a new question in its place (waits for approval in /admin/bank).
 const GRADE = ['', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳']
+const SUBJ: [string, string][] = [['math', 'חשבון'], ['hebrew', 'עברית'], ['english', 'אנגלית']]
 const cache: Record<string, Promise<any[]>> = {}
 function lessons(subject: string) {
   return (cache[subject] ||= fetch(`/api/admin/question-move?subject=${subject}`).then(r => r.json()).then(d => d.topics || []).catch(() => []))
@@ -17,11 +19,12 @@ export default function MoveQuestion({ questionId, subject, grade, topicId, onMo
 }) {
   const [open, setOpen] = useState(false)
   const [all, setAll] = useState<any[]>([])
+  const [sub, setSub] = useState(subject)
   const [g, setG] = useState(grade || 1)
   const [t, setT] = useState('')
   const [busy, setBusy] = useState(false)
   const [moved, setMoved] = useState<string | null>(null)
-  useEffect(() => { if (open && !all.length) lessons(subject).then(setAll) }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (open) { setAll([]); lessons(sub).then(setAll) } }, [open, sub])
   const inGrade = useMemo(() => all.filter(x => x.grade === g), [all, g])
   useEffect(() => { setT(inGrade.find(x => x.id !== topicId)?.id || '') }, [inGrade, topicId])
 
@@ -41,12 +44,15 @@ export default function MoveQuestion({ questionId, subject, grade, topicId, onMo
     )
   }
   if (!open) {
-    return <button onClick={() => setOpen(true)} style={{ ...pillBtn(), minHeight: 36, fontSize: 14 }}><ArrowLeftRight size={14} /> שייכת לכיתה או לשיעור אחר</button>
+    return <button onClick={() => setOpen(true)} style={{ ...pillBtn(), minHeight: 36, fontSize: 14 }}><ArrowLeftRight size={14} /> שייכת למקצוע, כיתה או שיעור אחר</button>
   }
   const sel: React.CSSProperties = { minHeight: 36, borderRadius: 10, border: `1.5px solid ${C.border}`, padding: '0 8px', fontFamily: F.body, fontSize: 14, background: '#fff', maxWidth: 260 }
   return (
     <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', background: C.pageBg, borderRadius: 12, padding: '6px 8px' }}>
       <span style={{ fontSize: 14, fontWeight: 700 }}>להעביר ל:</span>
+      <select value={sub} onChange={e => setSub(e.target.value)} style={sel} aria-label="מקצוע">
+        {SUBJ.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+      </select>
       <select value={g} onChange={e => setG(Number(e.target.value))} style={sel} aria-label="כיתה">
         {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>כיתה {GRADE[n]}</option>)}
       </select>
@@ -56,7 +62,7 @@ export default function MoveQuestion({ questionId, subject, grade, topicId, onMo
       </select>
       <button disabled={!t || busy} onClick={async () => {
         const name = inGrade.find(x => x.id === t)
-        if (await post({ action: 'move', topicId: t })) { setMoved(`${name?.title_he || ''}, כיתה ${GRADE[g]}`); onMoved() }
+        if (await post({ action: 'move', topicId: t })) { setMoved(`${SUBJ.find(x => x[0] === sub)?.[1]} · ${name?.title_he || ''}, כיתה ${GRADE[g]}`); onMoved() }
       }} style={{ ...pillBtn(true), minHeight: 36, fontSize: 14 }}>{busy ? <Loader2 size={14} className="animate-spin" /> : null} להעביר</button>
       <button onClick={() => setOpen(false)} style={{ ...pillBtn(), minHeight: 36, fontSize: 14 }}>ביטול</button>
     </span>
