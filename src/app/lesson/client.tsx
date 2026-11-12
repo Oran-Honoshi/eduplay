@@ -9,6 +9,7 @@ import InlineMath from '@/components/InlineMath'
 import HebrewMathText from '@/components/HebrewMathText'
 import { AnimatedBtn, Sparkles, THEME_CONFIG } from '@/components/theme'
 import { Pip } from '@/components/Pip'
+import LessonLearn from '@/components/lesson/LessonLearn'
 import { hidesPicture } from '@/lib/interactive'
 import { getFontSize } from '@/lib/fontSize'
 import { announceTokensChanged, saveKidLang, type KidLang } from '@/lib/kidPrefs'
@@ -25,7 +26,7 @@ const splitSteps = (t: string) => (t || '').split(/(?<=[.!?])\s+(?=\S)|\n+/).map
 
 type Status = 'open' | 'wrong1' | 'right1' | 'right2' | 'revealed'
 
-export default function LessonClient({ child, topic, questions, explanation, difficulty }: any) {
+export default function LessonClient({ child, topic, questions, explanation, difficulty, progress }: any) {
   const sp = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
   const theme = (sp?.get('theme') || child?.theme || 'plain') as string
   const token = sp?.get('token') || ''
@@ -148,51 +149,15 @@ export default function LessonClient({ child, topic, questions, explanation, dif
   const box: React.CSSProperties = { background: T.panel, border: `1.5px solid ${T.border}`, borderRadius: R, padding: '18px 16px' }
 
   // ── 1. learn ─────────────────────────────────────────────
+  // Notebook design (designer pilot, 2026-11): see src/components/lesson.
   if (phase === 'learn') {
-    const ex = explanation
-    const summary = ex ? (isHE ? ex.summary_he || ex.summary_en : ex.summary_en) : (isHE ? topic?.description_he || topic?.description_en : topic?.description_en)
-    const points: string[] = ex ? ((isHE ? ex.key_points_he : ex.key_points_en) || []) : []
-    const example = ex?.examples?.[0]
-    const exSteps: string[] = example ? ((isHE ? example.solution_steps_he : example.solution_steps_en) || []) : []
-    return shell(<>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Pip theme={theme} pose="read" size={72} he={isHE} />
-        <div style={{ fontFamily: F, fontSize: 26, fontWeight: 800, lineHeight: 1.25 }}>{title}</div>
-      </div>
-      {summary && <div style={{ ...box, fontSize: 20, lineHeight: 1.65 }}><InlineMath text={summary} /></div>}
-      {points.length > 0 && (
-        <div style={{ ...box, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontFamily: F, fontWeight: 800, fontSize: 19 }}>{L('חשוב לזכור', 'Remember')}</div>
-          {points.map((p, i) => (
-            <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 19, lineHeight: 1.55 }}>
-              <span style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 99, background: T.accent2, color: dark ? '#000' : T.text, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15 }}>{i + 1}</span>
-              <span><InlineMath text={p} /></span>
-            </div>
-          ))}
-        </div>
-      )}
-      {example && (
-        <div style={{ ...box, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontFamily: F, fontWeight: 800, fontSize: 19 }}>{L('דוגמה פתורה', 'Worked example')}</div>
-          <div style={{ fontSize: 22, fontWeight: 700 }}><InlineMath text={(isHE ? example.problem_he : example.problem_en) || ''} /></div>
-          {example.visual?.type && <div style={{ display: 'flex', justifyContent: 'center' }}><MathVisual data={example.visual} size={200} color={T.accent1} dark={dark} /></div>}
-          <ol style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {exSteps.slice(0, exStep).map((s, i) => (
-              <li key={i} style={{ display: 'flex', gap: 10, background: T.panel2, borderRadius: 14, padding: '10px 12px', fontSize: 19, lineHeight: 1.55 }}>
-                <span style={{ width: 28, height: 28, flexShrink: 0, borderRadius: 99, background: T.accent1, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 15 }}>{i + 1}</span>
-                <span><InlineMath text={s} /></span>
-              </li>
-            ))}
-          </ol>
-          {exStep < exSteps.length
-            ? <button onClick={() => setExStep(s => s + 1)} style={{ alignSelf: 'flex-start', minHeight: 48, padding: '0 18px', borderRadius: 14, border: `2px solid ${T.accent1}`, background: 'transparent', color: T.accent1, fontFamily: F, fontSize: 17, fontWeight: 800, cursor: 'pointer' }}>{L('הצעד הבא', 'Next step')}</button>
-            : <div style={{ fontSize: 19, fontWeight: 800 }}>{L('התשובה: ', 'Answer: ')}<bdi><InlineMath text={(isHE ? example.answer_he : example.answer_en) || ''} /></bdi></div>}
-        </div>
-      )}
-      {total > 0
-        ? <button onClick={() => { setPhase('quiz'); window.scrollTo({ top: 0 }) }} style={bigBtn(T.accent1)}><Play size={22} fill="#fff" style={isHE ? { transform: 'scaleX(-1)' } : undefined} /> {L(`מתחילים לתרגל · ${total} שאלות`, `Let's practice · ${total} questions`)}</button>
-        : <div style={{ ...box, textAlign: 'center', fontSize: 19 }}>{L('השאלות לנושא הזה עוד בהכנה. בינתיים אפשר לבחור נושא אחר.', 'Questions for this topic are on the way.')}</div>}
-    </>)
+    const stars = Array.isArray(progress) ? progress.filter((p: any) => p.status === 'completed').length : null
+    return (
+      <LessonLearn title={title || ''} subject={subj} explanation={explanation} he={isHE}
+        topicDescription={isHE ? topic?.description_he || topic?.description_en : topic?.description_en}
+        stars={stars} questionCount={total} onClose={exit}
+        onStart={() => { setPhase('quiz'); window.scrollTo({ top: 0 }) }} />
+    )
   }
 
   // ── 3. done ──────────────────────────────────────────────
