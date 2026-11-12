@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
 import { requireAdmin } from '@/lib/admin'
+import { waitUntil } from '@vercel/functions'
+import { refillTopic } from '@/lib/refill'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 120
 
-// Admin review: keep a question but move it to the lesson and grade it belongs to.
+// Admin review: keep a question but move it to the lesson, grade (and subject) it belongs to.
+// The lesson it left gets a new question in its place, waiting for approval in /admin/bank.
 //   GET ?subject=math            → K–6 lessons of that subject, for the picker
 //   POST {action:'move', questionId, topicId} → move (logged in question_moves)
 //   POST {action:'undo', questionId}          → back to where it was before the last move
@@ -25,18 +29,17 @@ export async function POST(req: NextRequest) {
   const db = createServiceRoleClient()
   const b = await req.json().catch(() => ({}))
   if (!b.questionId) return NextResponse.json({ error: 'Missing question' }, { status: 400 })
-  const { data: q } = await db.from('questions').select('id, topic_id, grade').eq('id', b.questionId).maybeSingle()
+  const { data: q } = await db.from('questions').select('id, topic_id, grade, prompt_he, prompt_en').eq('id', b.questionId).maybeSingle()
   if (!q) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   if (b.action === 'move' && b.topicId) {
     const { data: t } = await db.from('topics').select('id, grade, subject_id').eq('id', b.topicId).maybeSingle()
-    const { data: from } = await db.from('topics').select('subject_id').eq('id', q.topic_id).maybeSingle()
     if (!t) return NextResponse.json({ error: 'Lesson not found' }, { status: 404 })
-    if (from && from.subject_id !== t.subject_id) return NextResponse.json({ error: 'Same subject only' }, { status: 400 })
     if (t.id === q.topic_id) return NextResponse.json({ ok: true, unchanged: true })
     const { error } = await db.from('questions').update({ topic_id: t.id, grade: t.grade }).eq('id', q.id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     await db.from('question_moves').insert({ question_id: q.id, from_topic: q.topic_id, to_topic: t.id, from_grade: q.grade, to_grade: t.grade, moved_by: a.familyId })
+    if (q.topic_id) waitUntil(refillTopic(db, q.topic_id, 1, q).catch(() => {}))
     return NextResponse.json({ ok: true })
   }
 
