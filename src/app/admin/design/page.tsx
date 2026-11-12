@@ -40,6 +40,23 @@ export default function DesignReview() {
     setItems((await fetch(`/api/admin/design-pass?topicId=${id}`).then(r => r.json())).items)
   }
   useEffect(() => { loadList() }, [])
+  // keep the job going while this page is open: refresh every minute, and
+  // restart the chains when nothing new arrived for 4 minutes
+  useEffect(() => {
+    let last = -1, since = Date.now()
+    const t = setInterval(async () => {
+      const st = await fetch('/api/admin/design-pass').then(r => r.json()).catch(() => null)
+      if (!st) return
+      setStatus(st)
+      if (st.job?.status !== 'running') return
+      if (st.drafts !== last) { last = st.drafts; since = Date.now(); loadList(); return }
+      if (Date.now() - since > 240_000) {
+        since = Date.now()
+        await fetch('/api/admin/design-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start', chains: 4, revive: true }) }).catch(() => {})
+      }
+    }, 60_000)
+    return () => clearInterval(t)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   async function act(body: any, key: string) {
     setBusy(key)
     await fetch('/api/admin/design-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
