@@ -15,7 +15,7 @@ import { curriculumNote } from '@/lib/curriculum'
 export const DESIGN_BATCH = 'design-2026-11'
 
 const SUBJ_HE: Record<string, string> = { math: 'חשבון', hebrew: 'עברית', english: 'אנגלית' }
-const gradeHe = (g: number) => `כיתה ${'אבגדהו'[g - 1] || g}׳`
+const gradeHe = (g: number) => (g === 0 ? 'גן' : `כיתה ${'אבגדהו'[g - 1] || g}׳`)
 
 export type DesignDraft = {
   id: string
@@ -51,7 +51,7 @@ export async function draftDesign(topic: any, questions: any[]) {
   const subj = topic.subject?.slug || 'math'
   const english = subj === 'english'
   const system = `You prepare practice questions for a new kids' question screen (Hebrew-first app, grades א׳–ו׳). Subject: ${SUBJ_HE[subj] || subj}, ${gradeHe(topic.grade)}, topic "${topic.title_he || topic.title_en}".
-${curriculumNote(subj, Number(topic.grade) || 3)}
+${curriculumNote(subj, Number.isFinite(Number(topic.grade)) ? Number(topic.grade) : 3)}
 For EACH question return one object:
 ${english
   ? `{"id":"<same id>","he":{"question":"<the Hebrew question line exactly as given, no [[ ]]>","helper":null,"right":"<Hebrew, English words kept in English>","wrong":"<Hebrew, English words kept in English>"},"en":{"question":"<the English question exactly as given, with ONE [[key concept]]>","helper":null,"right":"<simple English>","wrong":"<simple English>"},"data_marking":null,"flags":[]}`

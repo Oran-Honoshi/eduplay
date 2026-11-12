@@ -23,7 +23,7 @@ export type LevelDraft = {
 }
 
 const NIQQUD_RULE: Record<string, string> = {
-  full: 'Add FULL niqqud to every Hebrew word (school-book style, as in a first-grade reader).',
+  full: 'Add FULL and CORRECT niqqud to every Hebrew word, school-book style as in a first-grade reader: every letter that needs a vowel gets one, dagesh where it belongs (e.g. לַמַּלְבֵּן, not לַמַלבֵּן), shva included. Partial niqqud is wrong here.',
   partial: 'Add niqqud ONLY to words a third-grader may misread (rare words, homographs, names); leave common words plain.',
   ambiguous: 'Add niqqud ONLY where a word is genuinely ambiguous without it; most questions need none.',
   none: '',
@@ -31,7 +31,7 @@ const NIQQUD_RULE: Record<string, string> = {
 
 export async function draftLevel(topic: any, questions: any[]) {
   const subj = topic.subject?.slug || 'math'
-  const grade = Number(topic.grade) || 3
+  const grade = Number.isFinite(Number(topic.grade)) ? Number(topic.grade) : 3 // kindergarten is grade 0
   const lvl = readingLevel(grade)
   const withText = lvl.niqqud !== 'none'
   const system = `You check practice questions of an Israeli kids' learning app against the Ministry of Education program. Subject: ${SUBJ_HE[subj] || subj}, grade ${grade}, lesson "${topic.title_he || topic.title_en}".
@@ -50,7 +50,8 @@ Output JSON only: an array with exactly one object per question, same ids.`
     correct: Array.isArray(q.options) ? q.options.find((o: any) => o.isCorrect)?.value_he ?? q.options.find((o: any) => o.isCorrect)?.value_en ?? null : q.correct_answer,
     ...(withText ? { hint_he: q.hint_he || null, explanation_he: q.explanation_he || null, question: q.design?.he?.question || null, helper: q.design?.he?.helper || null, right: q.design?.he?.right || null, wrong: q.design?.he?.wrong || null } : {}),
   }))
-  return askClaudeJSON<LevelDraft[]>({ system, content: JSON.stringify(items), maxTokens: (withText ? 1400 : 250) * questions.length + 400 })
+  // niqqud must be right, not only present: let the model think it through
+  return askClaudeJSON<LevelDraft[]>({ system, content: JSON.stringify(items), maxTokens: (withText ? 1400 : 250) * questions.length + 400, think: withText ? 6000 : 0 })
 }
 
 // ── checks ─────────────────────────────────────────────────

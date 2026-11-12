@@ -123,6 +123,9 @@ export default function DesignReview() {
             <span style={tag('#E3F4EF', '#0B6B58')}>{level.niqqud || 0} קיבלו ניקוד</span>
           </>}
           <span style={{ flex: 1 }} />
+          <button onClick={async () => { setBusy('fill'); await fetch('/api/admin/curriculum-fill', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start' }) }); setBusy(null) }} style={pillBtn()}>
+            {busy === 'fill' ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} לכתוב את השיעורים החסרים
+          </button>
           {level?.job?.status === 'running'
             ? <button onClick={() => levelAct({ action: 'stop' }, 'ljob')} style={pillBtn()}><Square size={14} /> לעצור</button>
             : <button onClick={() => levelAct({ action: 'start', chains: 4 }, 'ljob')} style={pillBtn()}><Play size={14} /> להריץ בדיקת התאמה וניקוד</button>}
