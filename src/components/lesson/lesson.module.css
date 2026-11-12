@@ -143,3 +143,34 @@
   .explainTitle { font-size: 19px } .explainText { font-size: 17px }
   .cta { position: fixed; left: 16px; right: 16px; bottom: 16px; width: auto; height: 68px; font-size: 22px; z-index: 10 }
 }
+
+/* place-value board (tens and ones): table + blocks */
+.pvTable { display: flex; justify-content: center; gap: 0; margin: 0 auto 18px; width: max-content; border: 2px solid #D6DDF0; border-radius: 16px; overflow: hidden; background: #fff }
+.pvCol { display: flex; flex-direction: column; align-items: center; min-width: 96px; border-inline-start: 2px solid #D6DDF0; transition: background .2s }
+.pvCol:first-child { border-inline-start: 0 }
+.pvColOn { background: var(--math-soft) }
+.pvHead { width: 100%; text-align: center; padding: 6px 10px; font-weight: 900; font-size: 16px; border-bottom: 2px solid #D6DDF0 }
+.pv_hundreds { background: #FDECE7; color: var(--hebrew-ink) } .pv_tens { background: var(--math-soft); color: var(--math-ink) } .pv_ones { background: #FFF4D1; color: #7A5600 }
+.pvDigit { font-weight: 900; font-size: 64px; line-height: 1.1; padding: 6px 18px; color: var(--ink) }
+.pvBlocks { display: flex; justify-content: center; align-items: flex-end; gap: 28px; flex-wrap: wrap }
+.pvGroup { display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: .12; transition: opacity .3s, transform .3s; padding: 8px; border-radius: 14px }
+.pvShow { opacity: 1 }
+.pvGroupOn { background: rgba(255, 201, 64, .18) }
+.pvRowWrap { display: flex; gap: 8px }
+.pvHundred { display: grid; grid-template-columns: repeat(10, 9px); gap: 1px; padding: 2px; background: #fff; border-radius: 4px }
+.pvHundred i { width: 9px; height: 9px; background: #E85D3F; border-radius: 1px; display: block }
+.pvTens { display: flex; flex-direction: column; gap: 6px }
+.pvTenRow { display: flex; align-items: center; gap: 8px }
+.pvPlus { width: 18px; text-align: center; color: var(--math); font-size: 20px; font-weight: 900; margin-inline-start: -26px }
+.pvTen { display: flex; gap: 2px }
+.pvTen i, .pvOnes i { width: 16px; height: 16px; background: var(--math); border-radius: 3px; display: block }
+.pvTenLabel { min-width: 26px; text-align: center; font-weight: 900; font-size: 15px; background: var(--marker); border-radius: 8px; padding: 0 6px }
+.pvOnes { display: flex; gap: 3px; flex-wrap: wrap; max-width: 90px; justify-content: center }
+.pvOnes i { background: #FFC940 }
+.pvCaption { font-weight: 800; font-size: 16px; color: var(--ink-2) }
+@media (max-width: 600px) {
+  .pvCol { min-width: 70px } .pvDigit { font-size: 46px }
+  .pvTen i, .pvOnes i { width: 11px; height: 11px }
+  .pvHundred { grid-template-columns: repeat(10, 6px) } .pvHundred i { width: 6px; height: 6px }
+}
+@media (prefers-reduced-motion: reduce) { .pvGroup, .pvCol { transition: none } }
