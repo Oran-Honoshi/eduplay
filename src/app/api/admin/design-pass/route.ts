@@ -43,7 +43,13 @@ export async function GET(req: NextRequest) {
   }
   if (req.nextUrl.searchParams.get('list')) {
     const { data: topics } = await db.from('topics').select('id, slug, grade, title_he, title_en, sort_order, subject:subjects(slug)').lte('grade', 6).order('grade').order('sort_order')
-    const { data: drafts } = await db.from('question_design_drafts').select('status, flags, question:questions(topic_id), passage_question_id').eq('batch', JOB).limit(10000)
+    // the database returns at most 1,000 rows per request: read in pages
+    const drafts: any[] = []
+    for (let from = 0; ; from += 1000) {
+      const { data: page } = await db.from('question_design_drafts').select('status, flags, question:questions(topic_id), passage_question_id').eq('batch', JOB).order('id').range(from, from + 999)
+      drafts.push(...(page || []))
+      if (!page || page.length < 1000) break
+    }
     const by: Record<string, { draft: number; flagged: number; applied: number; rejected: number }> = {}
     for (const d of drafts || []) {
       const t = (d as any).question?.topic_id || ((d as any).passage_question_id ? 'passages' : null)
