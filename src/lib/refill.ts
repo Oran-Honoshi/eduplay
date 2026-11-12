@@ -30,9 +30,12 @@ Exactly one correct option; the wrong options are plausible mistakes a child wou
 Questions must not refer to a picture. Speak to the child in the plural (נסו, ספרו).
 ${MATH_STYLE}`
   const r = await askClaudeJSON<NewQ[]>({ system, content: (sample || []).length ? 'The lesson\'s questions:\n' + (sample || []).map((q: any) => `- ${q.prompt_he || q.prompt_en}`).join('\n') : 'This is a new lesson with no questions yet.', maxTokens: 900 * count + 400 })
-  if (!r.ok || !Array.isArray(r.data)) return { ok: false, error: r.ok ? 'bad' : r.error }
+  if (!r.ok) return { ok: false, error: r.error }
+  // one question sometimes comes back as a bare object instead of an array
+  const list: NewQ[] = Array.isArray(r.data) ? r.data : r.data && typeof r.data === 'object' ? [r.data as any] : []
+  if (!list.length) return { ok: false, error: 'bad' }
   const L = 'ABCD'
-  const rows = r.data.filter(q => q && Array.isArray(q.options) && q.options.length === 4 && q.options.filter(o => o.correct).length === 1).slice(0, count).map(q => ({
+  const rows = list.filter(q => q && Array.isArray(q.options) && q.options.length === 4 && q.options.filter(o => o.correct).length === 1).slice(0, count).map(q => ({
     topic_slug: t.slug, topic_id: t.id, grade: t.grade, difficulty: (['easy', 'medium', 'hard'].includes(q.difficulty) ? q.difficulty : 'medium') as any,
     q_type: 'multiple_choice', prompt_en: q.prompt_en || q.prompt_he, prompt_he: q.prompt_he,
     options: q.options.map((o, i) => ({ label: L[i], value_he: english ? (o.en || o.he) : (o.he || o.en), value_en: o.en || o.he, isCorrect: !!o.correct })),

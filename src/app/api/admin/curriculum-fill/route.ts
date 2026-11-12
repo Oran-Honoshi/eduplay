@@ -52,7 +52,8 @@ export async function POST(req: NextRequest) {
     if (!a.ok) return NextResponse.json({ error: 'Forbidden' }, { status: a.status })
   }
   const db = createServiceRoleClient()
-  const kick = () => fetch(`${req.nextUrl.origin}/api/admin/curriculum-fill`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-job-key': process.env.SUPABASE_SERVICE_ROLE_KEY! }, body: JSON.stringify({ action: 'step' }) }).catch(() => {})
+  const kickWith = (skip: string[] = []) => fetch(`${req.nextUrl.origin}/api/admin/curriculum-fill`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-job-key': process.env.SUPABASE_SERVICE_ROLE_KEY! }, body: JSON.stringify({ action: 'step', skip }) }).catch(() => {})
+  const kick = () => kickWith([])
 
   if (body.action === 'publish' && body.slug) {
     const { data: t } = await db.from('topics').select('id, grade').eq('slug', body.slug).maybeSingle()
@@ -64,9 +65,12 @@ export async function POST(req: NextRequest) {
   if (body.action !== 'step' || !isInternal) return NextResponse.json({ error: 'Bad action' }, { status: 400 })
 
   const list = await counts(db)
-  const t = list.find(x => x.questions < TARGET)
+  // lessons that just failed are tried again later, so one stuck lesson never blocks the rest
+  const skip: string[] = Array.isArray(body.skip) ? body.skip : []
+  const t = list.find(x => x.questions < TARGET && !skip.includes(x.slug)) || list.find(x => x.questions < TARGET)
   if (!t) return NextResponse.json({ ok: true, done: true })
-  const r = await refillTopic(db, t.id, Math.min(PER_CALL, TARGET - t.questions))
+  // ask for at least 4 (a request for 1 is less reliable); extra ones are fine
+  const r = await refillTopic(db, t.id, Math.max(4, Math.min(PER_CALL, TARGET - t.questions)))
   // a learn card once the lesson has questions
   if (!t.card && t.questions + ((r as any).added || 0) >= TARGET) {
     const { data: qs } = await db.from('questions').select('prompt_he, prompt_en').eq('topic_id', t.id).is('rejected_at', null).limit(8)
@@ -81,6 +85,9 @@ export async function POST(req: NextRequest) {
       })
     }
   }
-  if (r.ok) waitUntil(kick())
+  const after = (await counts(db)).find(x => x.slug === t.slug)?.questions ?? t.questions
+  const stuck = !r.ok || after <= t.questions
+  const nextSkip = stuck ? Array.from(new Set([...skip, t.slug])) : skip.filter(x => x !== t.slug)
+  if (nextSkip.length < list.filter(x => x.questions < TARGET).length) waitUntil(kickWith(nextSkip))
   return NextResponse.json({ ok: r.ok, lesson: t.slug, added: (r as any).added || 0, error: (r as any).error })
 }
