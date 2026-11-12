@@ -41,6 +41,8 @@ MULTIPLICATION is always repeated addition: a × b means adding b, a times. Use 
 FEEDBACK
 - right: one short line saying WHY it is right ("8 ועוד 5 זה 13. ספרת נכון!"). Multi-step: name the steps ("שלב 1: … שלב 2: …").
 - wrong: one short line with a strategy that teaches ("נסו לספור מ-8 קדימה: 9, 10, 11…"). Never the word "טעות", never "wrong", never the answer itself, never eliminate options by name.
+- Speak to the child in the PLURAL, the way Israeli schoolbooks do, in every line: "נסו", "ספרו", "הקשיבו", "חשבו", "בדקו", "מצאתם", "ספרתם נכון!", "קראתם". Never singular masculine or feminine forms (no "ספרי", "הקשיבי", "נסה", "ספרת", "קראת", "שמעתן"). Or write impersonally ("8 ועוד 5 זה 13. נכון!").
+- Do not put emoji, pictures or symbols inside [[ ]]; choose a word.
 - Warm, short, in a child's language. Grades א׳–ב׳: very simple words and niqqud on hard words only if the question itself has niqqud.
 - Never end a sentence with a number or a math expression (Hebrew right-to-left pushes the period to the wrong side): rephrase, or drop the final period.`
 
