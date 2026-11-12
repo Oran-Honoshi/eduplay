@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
     const { error } = await db.from('questions').update({ topic_id: t.id, grade: t.grade }).eq('id', q.id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     await db.from('question_moves').insert({ question_id: q.id, from_topic: q.topic_id, to_topic: t.id, from_grade: q.grade, to_grade: t.grade, moved_by: a.familyId })
+    await db.from('question_level_checks').update({ status: 'moved' }).eq('question_id', q.id)
     if (q.topic_id) waitUntil(refillTopic(db, q.topic_id, 1, q).catch(() => {}))
     return NextResponse.json({ ok: true })
   }

@@ -2,6 +2,7 @@ import 'server-only'
 import { askClaudeJSON } from '@/lib/claude'
 import { MATH_STYLE } from '@/lib/bankUpgrade'
 import { insertQuestions } from '@/lib/insertQuestions'
+import { curriculumNote, readingLevel } from '@/lib/curriculum'
 
 // When a question is moved out of a lesson in review, the lesson gets a new
 // question in its place: written like the lesson's other questions, saved as
@@ -18,6 +19,8 @@ export async function refillTopic(db: any, topicId: string, count: number, remov
   const subj = t.subject?.slug || 'math'
   const english = subj === 'english'
   const system = `You write new multiple-choice practice questions for an Israeli kids' learning app: ${SUBJ_HE[subj] || subj}, grade ${t.grade} (כיתה ${'אבגדהו'[t.grade - 1] || t.grade}׳), lesson "${t.title_he || t.title_en}".
+${curriculumNote(subj, t.grade)}
+Niqqud for this grade: ${({ full: 'full niqqud on all Hebrew text', partial: 'niqqud only on words a child may misread', ambiguous: 'niqqud only on ambiguous words', none: 'no niqqud' } as any)[readingLevel(t.grade).niqqud]}.
 Write ${count} new question(s) that fit THIS lesson and grade exactly, in the style of the lesson's questions below, but none identical to them.
 ${removed ? `A question was just moved OUT of this lesson because it did not belong here: "${removed.prompt_he || removed.prompt_en}". Do not write anything like it.` : ''}
 Return JSON only: an array of {"difficulty":"easy"|"medium"|"hard","prompt_he":"...","prompt_en":"...","options":[{"he":"...","en":"...","correct":true|false} ×4],"hint_he":"one short hint, never the answer","explanation_he":"2–4 short steps, one per line, the last ends with the answer"}.

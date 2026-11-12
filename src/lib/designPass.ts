@@ -1,5 +1,6 @@
 import 'server-only'
 import { askClaudeJSON } from '@/lib/claude'
+import { curriculumNote } from '@/lib/curriculum'
 
 // Content pass for the question-screen design (designer handover
 // EduPlay_QuestionScreens, 2026-11). For every question in the bank it adds:
@@ -50,6 +51,7 @@ export async function draftDesign(topic: any, questions: any[]) {
   const subj = topic.subject?.slug || 'math'
   const english = subj === 'english'
   const system = `You prepare practice questions for a new kids' question screen (Hebrew-first app, grades א׳–ו׳). Subject: ${SUBJ_HE[subj] || subj}, ${gradeHe(topic.grade)}, topic "${topic.title_he || topic.title_en}".
+${curriculumNote(subj, Number(topic.grade) || 3)}
 For EACH question return one object:
 ${english
   ? `{"id":"<same id>","he":{"question":"<the Hebrew question line exactly as given, no [[ ]]>","helper":null,"right":"<Hebrew, English words kept in English>","wrong":"<Hebrew, English words kept in English>"},"en":{"question":"<the English question exactly as given, with ONE [[key concept]]>","helper":null,"right":"<simple English>","wrong":"<simple English>"},"data_marking":null,"flags":[]}`

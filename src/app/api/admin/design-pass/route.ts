@@ -37,7 +37,9 @@ export async function GET(req: NextRequest) {
     const ids = (qs || []).map((q: any) => q.id)
     const { data: drafts } = ids.length ? await db.from('question_design_drafts').select('*').in(isP ? 'passage_question_id' : 'question_id', ids) : { data: [] }
     const byQ = new Map((drafts || []).map((d: any) => [d.question_id || d.passage_question_id, d]))
-    return NextResponse.json({ items: (qs || []).map((q: any) => ({ q, draft: byQ.get(q.id) || null })) })
+    const { data: checks } = !isP && ids.length ? await db.from('question_level_checks').select('*').in('question_id', ids) : { data: [] }
+    const lv = new Map((checks || []).map((c: any) => [c.question_id, c]))
+    return NextResponse.json({ items: (qs || []).map((q: any) => ({ q, draft: byQ.get(q.id) || null, level: lv.get(q.id) || null })) })
   }
   if (req.nextUrl.searchParams.get('list')) {
     const { data: topics } = await db.from('topics').select('id, slug, grade, title_he, title_en, sort_order, subject:subjects(slug)').lte('grade', 6).order('grade').order('sort_order')
