@@ -4,6 +4,7 @@ import { Check, X, EyeOff, AlertTriangle, Loader2 } from 'lucide-react'
 import ParentPage, { card, chip, pillBtn, GRADE_HE } from '@/components/parent/ParentPage'
 import { PARENT_COLORS as C, PARENT_FONTS as F, SUBJECT_COLORS } from '@/lib/parentTheme'
 import InlineMath from '@/components/InlineMath'
+import MoveQuestion from '@/components/admin/MoveQuestion'
 
 // Admin: review the lesson-bank upgrade. Per lesson, each question shows what
 // is live today next to the proposal (hint, steps, parent tip, a corrected
@@ -119,11 +120,12 @@ export default function BankReview() {
                     <button disabled={busy === q.id} onClick={() => act({ action: 'approve_new', questionId: q.id }, q.id)} style={{ ...pillBtn(true), minHeight: 38, fontSize: 14 }}><Check size={14} /> להוסיף לשיעור</button>
                     <button disabled={busy === q.id} onClick={() => act({ action: 'hide', questionId: q.id }, q.id)} style={{ ...pillBtn(), minHeight: 38, fontSize: 14, color: C.danger }}><X size={14} /> לא להוסיף</button>
                   </div>
+                  <div style={{ marginTop: 8 }}><MoveQuestion questionId={q.id} subject={subject} grade={grade} topicId={detail.topic.id} onMoved={loadList} /></div>
                 </div>
               ))}
             </>}
             {flagged.length > 0 && <h3 style={{ fontFamily: F.heading, fontSize: 18, display: 'flex', alignItems: 'center', gap: 6 }}><AlertTriangle size={18} color={C.amberText} /> לבדיקה שלך ({flagged.length})</h3>}
-            {[...flagged, ...clean, ...qs.filter(q => q.draft?.status !== 'draft')].map(q => <QCard key={q.id} q={q} topicId={detail.topic.id} busy={busy} act={act} />)}
+            {[...flagged, ...clean, ...qs.filter(q => q.draft?.status !== 'draft')].map(q => <QCard key={q.id} q={q} topicId={detail.topic.id} busy={busy} act={act} subject={subject} grade={grade} onMoved={loadList} />)}
           </>}
         </div>
       </div>
@@ -131,7 +133,7 @@ export default function BankReview() {
   )
 }
 
-function QCard({ q, topicId, busy, act }: { q: any; topicId: string; busy: string | null; act: (b: any, k: string) => void }) {
+function QCard({ q, topicId, busy, act, subject, grade, onMoved }: { q: any; topicId: string; busy: string | null; act: (b: any, k: string) => void; subject: string; grade: number; onMoved: () => void }) {
   const d = q.draft
   const flags: string[] = d?.flags || []
   const opts = Array.isArray(q.options) ? q.options : []
@@ -164,6 +166,7 @@ function QCard({ q, topicId, busy, act }: { q: any; topicId: string; busy: strin
           </div>
         </div>
       )}
+      <div style={{ marginTop: 10 }}><MoveQuestion questionId={q.id} subject={subject} grade={grade} topicId={topicId} onMoved={onMoved} /></div>
       {status === 'draft' && (
         <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
           <button disabled={busy === q.id} onClick={() => act({ action: 'apply', topicId, questionIds: [q.id] }, q.id)} style={{ ...pillBtn(true), minHeight: 38, fontSize: 14 }}><Check size={14} /> לאשר</button>
