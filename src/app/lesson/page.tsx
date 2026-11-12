@@ -42,13 +42,13 @@ export default async function LessonPage({ searchParams }: Props) {
   }
   if (!topic) topic = (await kidTopicsForGrade(supabase, child.grade))[0] || null
 
-  const isReadingTopic = topic?.slug?.includes('reading') ||
+  const isReadingTopic = topic?.subject?.slug !== 'math' && (topic?.slug?.includes('reading') ||
     topic?.slug?.includes('comprehension') ||
     topic?.slug?.includes('kriya') ||
     topic?.slug?.includes('advanced_reading') ||
     topic?.slug?.includes('literature') ||
     topic?.slug?.includes('sfrut') ||
-    topic?.slug?.includes('poetry')
+    topic?.slug?.includes('poetry'))
 
   let questions: any[] = []
   let passage: any = null
@@ -115,9 +115,9 @@ export default async function LessonPage({ searchParams }: Props) {
   const { data: progress } = await supabase
     .from('child_topic_progress').select('*').eq('child_id', child.id)
 
-  // Reading topics with a passage keep the passage reader; everything else
-  // uses the lesson built like the assignment screen.
-  if (isReadingTopic && passage) {
+  // Reading topics with a story: the same question screen, with the story
+  // beside each question (?legacy=1 still opens the old passage reader).
+  if (isReadingTopic && passage && ((searchParams as any).legacy === '1' || passageQuestions.length === 0)) {
     return <LegacyLesson child={child} topic={topic} questions={questions} passage={passage} passageQuestions={passageQuestions}
       isReadingTopic={isReadingTopic} allTopics={allTopics || []} subjects={subjects || []} progress={progress || []} difficulty={difficulty} />
   }
@@ -133,8 +133,8 @@ export default async function LessonPage({ searchParams }: Props) {
       child={child}
       topic={topic}
       questions={questions}
-      passage={passage}
-      passageQuestions={passageQuestions}
+      passage={isReadingTopic ? passage : null}
+      passageQuestions={isReadingTopic ? passageQuestions : []}
       isReadingTopic={isReadingTopic}
       allTopics={allTopics || []}
       subjects={subjects || []}

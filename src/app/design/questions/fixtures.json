@@ -1,0 +1,1046 @@
+[
+ {
+  "id": "fx-G1Math",
+  "ref": "G1Math",
+  "grade": 1,
+  "subject_slug": "math",
+  "topic_slug": "",
+  "prompt_he": "בסל יש <<0:8 תפוחים>>, ואמא הוסיפה עוד <<1:5 תפוחים>>. כמה תפוחים יש עכשיו בסל?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "12",
+    "isCorrect": false
+   },
+   {
+    "label": "B",
+    "value_he": "13",
+    "isCorrect": true
+   },
+   {
+    "label": "C",
+    "value_he": "14",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "3",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "B",
+  "design": {
+   "he": {
+    "right": "8 ועוד 5 זה 13. ספרת נכון!",
+    "wrong": "נסו לספור מ-8 קדימה: 9, 10, 11, 12, 13.",
+    "question": "בסל יש <<0:8 תפוחים>>, ואמא [[הוסיפה]] עוד <<1:5 תפוחים>>. כמה תפוחים יש עכשיו בסל?",
+    "helper": "אפשר לספור את התפוחים בתמונה"
+   },
+   "data_marking": [
+    {
+     "step_he": null,
+     "data": [
+      0,
+      1
+     ]
+    }
+   ]
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G1Eng",
+  "ref": "G1Eng",
+  "grade": 1,
+  "subject_slug": "english",
+  "topic_slug": "",
+  "prompt_he": "איזו מילה מתחילה בצליל b?",
+  "prompt_en": "Which word starts with the sound /b/?",
+  "options": [
+   {
+    "label": "A",
+    "value_en": "ball",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_en": "cat",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_en": "sun",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_en": "fish",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "ball מתחילה ב-b, כמו בָּ.",
+    "wrong": "הקשיבו לצליל הראשון: b... ball.",
+    "question": "איזו מילה מתחילה בצליל b?"
+   },
+   "en": {
+    "question": "Which word starts with the sound [[/b/]]?"
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G1Read",
+  "ref": "G1Read",
+  "grade": 1,
+  "subject_slug": "hebrew",
+  "topic_slug": "reading_fixture",
+  "prompt_he": "אֵיזוֹ מִלָּה מַתְאִימָה לַתְּמוּנָה?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "בַּת",
+    "isCorrect": false
+   },
+   {
+    "label": "B",
+    "value_he": "בַּיִת",
+    "isCorrect": true
+   },
+   {
+    "label": "C",
+    "value_he": "דָּג",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "יָד",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "B",
+  "design": {
+   "he": {
+    "right": "בַּיִת! קָרָאתָ אֶת כָּל הַצְּלִילִים.",
+    "wrong": "בַּיִת מַתְחִילָה בְּ-בַּ וְנִגְמֶרֶת בְּ-יִת.",
+    "question": "אֵיזוֹ מִלָּה מַתְאִימָה [[לַתְּמוּנָה]]?",
+    "helper": "קִרְאוּ כָּל מִלָּה בְּקוֹל"
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G1Heb",
+  "ref": "G1Heb",
+  "grade": 1,
+  "subject_slug": "hebrew",
+  "topic_slug": "",
+  "prompt_he": "בְּאֵיזוֹ אוֹת מַתְחִילָה הַמִּלָּה שֶׁמֶשׁ?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "ש",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_he": "ס",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_he": "מ",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "צ",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "שֶׁמֶשׁ מַתְחִילָה בָּאוֹת ש.",
+    "wrong": "הַצְּלִיל הָרִאשׁוֹן הוּא שׁ, כְּמוֹ שֻׁלְחָן.",
+    "question": "בְּאֵיזוֹ אוֹת [[מַתְחִילָה]] הַמִּלָּה שֶׁמֶשׁ?",
+    "helper": "הַקְשִׁיבוּ לַצְּלִיל הָרִאשׁוֹן: שֶׁ..."
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G2Math",
+  "ref": "G2Math",
+  "grade": 2,
+  "subject_slug": "math",
+  "topic_slug": "",
+  "prompt_he": "בכל קופסה יש <<0:4 עפרונות>>. כמה עפרונות יש <<1:ב-3 קופסאות>> ביחד?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "7",
+    "isCorrect": false
+   },
+   {
+    "label": "B",
+    "value_he": "12",
+    "isCorrect": true
+   },
+   {
+    "label": "C",
+    "value_he": "10",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "16",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "B",
+  "design": {
+   "he": {
+    "right": "3 × 4 = 4 + 4 + 4 = 12.",
+    "wrong": "מחברים את 4 שלוש פעמים: 4, ועוד 4, ועוד 4.",
+    "question": "בכל קופסה יש <<0:4 עפרונות>>. כמה עפרונות יש <<1:ב-3 קופסאות>> [[ביחד]]?",
+    "helper": "3 × 4 זה לחבר את 4 שלוש פעמים"
+   },
+   "data_marking": [
+    {
+     "step_he": null,
+     "data": [
+      0,
+      1
+     ]
+    }
+   ]
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G2Eng",
+  "ref": "G2Eng",
+  "grade": 2,
+  "subject_slug": "english",
+  "topic_slug": "",
+  "prompt_he": "השלימו את המילה לפי התמונה",
+  "prompt_en": "Complete the word: fr _ _",
+  "options": [
+   {
+    "label": "A",
+    "value_en": "og",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_en": "ag",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_en": "ig",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_en": "ug",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "frog! צפרדע באנגלית.",
+    "wrong": "זו צפרדע: fr-o-g.",
+    "question": "השלימו את המילה לפי התמונה"
+   },
+   "en": {
+    "question": "Complete the word: fr [[_ _]]"
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G2Read",
+  "ref": "G2Read",
+  "grade": 2,
+  "subject_slug": "hebrew",
+  "topic_slug": "reading_fixture",
+  "prompt_he": "בַּמֶּה שִׂחֲקוּ נוֹעָה וְהַכֶּלֶב?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "בְּכַדּוּר",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_he": "בְּחֶבֶל",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_he": "בְּמַקֵּל",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "בִּבֻבָּה",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "נָכוֹן! כָּתוּב: שִׂחֲקוּ בְּכַדּוּר אָדֹם.",
+    "wrong": "חַפְּשׂוּ בַּסִּפּוּר אֶת הַמִּלָּה שִׂחֲקוּ.",
+    "question": "בַּמֶּה [[שִׂחֲקוּ]] נוֹעָה וְהַכֶּלֶב?",
+    "helper": ""
+   }
+  },
+  "passage": {
+   "title_he": "נוֹעָה בַּגַּן",
+   "content_he": "נוֹעָה הָלְכָה לַגַּן עִם הַכֶּלֶב שֶׁלָּהּ, בּוֹבִּי.\nבַּגַּן הֵם שִׂחֲקוּ בְּכַדּוּר אָדֹם, וּבוֹבִּי רָץ מַהֵר מְאוֹד.\nבַּסּוֹף הֵם יָשְׁבוּ לָנוּחַ מִתַּחַת לָעֵץ."
+  }
+ },
+ {
+  "id": "fx-G2Heb",
+  "ref": "G2Heb",
+  "grade": 2,
+  "subject_slug": "hebrew",
+  "topic_slug": "",
+  "prompt_he": "אֵיזוֹ מִלָּה הִיא פֹּעַל?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "כֶּלֶב",
+    "isCorrect": false
+   },
+   {
+    "label": "B",
+    "value_he": "רָץ",
+    "isCorrect": true
+   },
+   {
+    "label": "C",
+    "value_he": "שֻׁלְחָן",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "יָפֶה",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "B",
+  "design": {
+   "he": {
+    "right": "רָץ הוּא פֹּעַל: זֶה מַשֶּׁהוּ שֶׁעוֹשִׂים.",
+    "wrong": "שַׁאֲלוּ: אֶפְשָׁר לַעֲשׂוֹת אֶת זֶה? כֶּלֶב אִי אֶפְשָׁר לַעֲשׂוֹת.",
+    "question": "אֵיזוֹ מִלָּה הִיא [[פֹּעַל]]?",
+    "helper": "פֹּעַל אוֹמֵר מָה עוֹשִׂים"
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G3Math",
+  "ref": "G3Math",
+  "grade": 3,
+  "subject_slug": "math",
+  "topic_slug": "",
+  "prompt_he": "כמה זה 6 × 7?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "42",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_he": "36",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_he": "48",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "13",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "6 × 7 = 7 + 7 + 7 + 7 + 7 + 7 = 42.",
+    "wrong": "מחברים את 7 שש פעמים. טיפ: 5 פעמים 7 זה 35, ועוד 7.",
+    "question": "כמה זה 6 × 7?",
+    "helper": "6 × 7 זה לחבר את 7 [[שש פעמים]]"
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G3Eng",
+  "ref": "G3Eng",
+  "grade": 3,
+  "subject_slug": "english",
+  "topic_slug": "",
+  "prompt_he": "בחרו את המילה הנכונה",
+  "prompt_en": "She ___ a new book.",
+  "options": [
+   {
+    "label": "A",
+    "value_en": "has",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_en": "have",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_en": "am",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_en": "are",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "She has. עם she, he, it משתמשים ב-has.",
+    "wrong": "עם She משתמשים ב-has, לא ב-have.",
+    "question": "בחרו את המילה הנכונה"
+   },
+   "en": {
+    "question": "[[She]] ___ a new book."
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G3Read",
+  "ref": "G3Read",
+  "grade": 3,
+  "subject_slug": "hebrew",
+  "topic_slug": "reading_fixture",
+  "prompt_he": "לפי הטקסט, בכמה פרחים מבקרת דבורה אחת ביום?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "10",
+    "isCorrect": false
+   },
+   {
+    "label": "B",
+    "value_he": "100",
+    "isCorrect": true
+   },
+   {
+    "label": "C",
+    "value_he": "1,000",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "50",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "B",
+  "design": {
+   "he": {
+    "right": "נכון! הטקסט אומר: בערך 100 פרחים.",
+    "wrong": "חפשו בטקסט את המילה \"ביום\".",
+    "question": "לפי הטקסט, בכמה פרחים מבקרת דבורה אחת [[ביום]]?",
+    "helper": ""
+   }
+  },
+  "passage": {
+   "title_he": "הדבורה החרוצה",
+   "content_he": "דבורת הדבש היא חרק קטן וחרוץ. דבורה אחת מבקרת בערך ב-100 פרחים ביום.\nהיא אוספת צוף ואבקה, וחוזרת לכוורת. בכוורת אחת יכולות לגור 20,000 דבורים!"
+  }
+ },
+ {
+  "id": "fx-G3Heb",
+  "ref": "G3Heb",
+  "grade": 3,
+  "subject_slug": "hebrew",
+  "topic_slug": "",
+  "prompt_he": "מָה הַשֹּׁרֶשׁ שֶׁל הַמִּלָּה כָּתַבְתִּי?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "כ-ת-ב",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_he": "ת-ב-ת",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_he": "כ-ת-י",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "ב-ת-י",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "כ-ת-ב, כְּמוֹ מִכְתָּב וְכַתָּב.",
+    "wrong": "חַפְּשׂוּ מִלִּים מֵאוֹתָהּ מִשְׁפָּחָה: מִכְתָּב, כְּתִיבָה.",
+    "question": "מָה [[הַשֹּׁרֶשׁ]] שֶׁל הַמִּלָּה כָּתַבְתִּי?",
+    "helper": "הַשֹּׁרֶשׁ הוּא שָׁלוֹשׁ אוֹתִיּוֹת שֶׁחוֹזְרוֹת בְּמִשְׁפַּחַת הַמִּלִּים"
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G4Math",
+  "ref": "G4Math",
+  "grade": 4,
+  "subject_slug": "math",
+  "topic_slug": "",
+  "prompt_he": "איזה שבר שווה ל-1/2?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "2/3",
+    "isCorrect": false
+   },
+   {
+    "label": "B",
+    "value_he": "3/6",
+    "isCorrect": true
+   },
+   {
+    "label": "C",
+    "value_he": "1/4",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "2/5",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "B",
+  "design": {
+   "he": {
+    "right": "3/6 = 1/2. חצי מהפס צבוע.",
+    "wrong": "כמה חלקים צריך לצבוע כדי להגיע לחצי מ-6?",
+    "question": "איזה שבר [[שווה]] ל-1/2?",
+    "helper": "בפס התחתון יש 6 חלקים"
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G4Eng",
+  "ref": "G4Eng",
+  "grade": 4,
+  "subject_slug": "english",
+  "topic_slug": "",
+  "prompt_he": "",
+  "prompt_en": "What color is the bus?",
+  "options": [
+   {
+    "label": "A",
+    "value_en": "yellow",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_en": "red",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_en": "blue",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_en": "green",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "Yellow! האוטובוס צהוב.",
+    "wrong": "Yellow זה צהוב.",
+    "question": ""
+   },
+   "en": {
+    "question": "What [[color]] is the bus?"
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G4Read",
+  "ref": "G4Read",
+  "grade": 4,
+  "subject_slug": "hebrew",
+  "topic_slug": "reading_fixture",
+  "prompt_he": "לָמָּה רוֹנִי הִרְגִּישׁ גֵּאֶה בְּסוֹף הַיּוֹם?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "כִּי נִצַּח בַּמִּשְׂחָק",
+    "isCorrect": false
+   },
+   {
+    "label": "B",
+    "value_he": "כִּי עָזַר לְסַבָּא לְתַקֵּן",
+    "isCorrect": true
+   },
+   {
+    "label": "C",
+    "value_he": "כִּי קִבֵּל מַתָּנָה",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "כִּי סִיֵּם שִׁעוּרִים",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "B",
+  "design": {
+   "he": {
+    "right": "נָכוֹן! רוֹנִי עָזַר וְהַפַּעֲמוֹן צִלְצֵל שׁוּב.",
+    "wrong": "חַפְּשׂוּ מָה רוֹנִי עָשָׂה לִפְנֵי שֶׁחִיֵּךְ.",
+    "question": "לָמָּה רוֹנִי הִרְגִּישׁ [[גֵּאֶה]] בְּסוֹף הַיּוֹם?",
+    "helper": ""
+   }
+  },
+  "passage": {
+   "title_he": "הַפַּעֲמוֹן שֶׁל סַבָּא",
+   "content_he": "הָאוֹפַנַּיִם שֶׁל סַבָּא עָמְדוּ בַּמַּחְסָן 3 שָׁנִים. הַפַּעֲמוֹן הֶחָלִיד וְלֹא צִלְצֵל.\nרוֹנִי וְסַבָּא נִקּוּ אוֹתוֹ, שִׁמְּנוּ אוֹתוֹ, וְהִבְרִיגוּ אוֹתוֹ מֵחָדָשׁ.\nכְּשֶׁהַפַּעֲמוֹן צִלְצֵל, רוֹנִי חִיֵּךְ חִיּוּךְ גָּדוֹל."
+  }
+ },
+ {
+  "id": "fx-G4Heb",
+  "ref": "G4Heb",
+  "grade": 4,
+  "subject_slug": "hebrew",
+  "topic_slug": "",
+  "prompt_he": "בְּאֵיזוֹ מִלָּה יֵשׁ קָמָץ מִתַּחַת לָאוֹת הָרִאשׁוֹנָה?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "דָּג",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_he": "דֶּלֶת",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_he": "סִיר",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "כּוֹס",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "דָּג: מִתַּחַת לַ-ד יֵשׁ קָמָץ.",
+    "wrong": "חַפְּשׂוּ קַו קָטָן עִם נְקֻדָּה מִתַּחְתָּיו.",
+    "question": "בְּאֵיזוֹ מִלָּה יֵשׁ [[קָמָץ]] מִתַּחַת לָאוֹת הָרִאשׁוֹנָה?",
+    "helper": ""
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G5Math",
+  "ref": "G5Math",
+  "grade": 5,
+  "subject_slug": "math",
+  "topic_slug": "",
+  "prompt_he": "כמה זה 0.7 + 0.25?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "0.95",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_he": "0.32",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_he": "9.5",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "0.725",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "0.70 + 0.25 = 0.95.",
+    "wrong": "הוסיפו 0 ל-0.7 כדי לקבל 0.70, ואז חברו.",
+    "question": "כמה זה 0.7 + 0.25?",
+    "helper": "מסדרים את [[הנקודות]] אחת מתחת לשנייה"
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G5Eng",
+  "ref": "G5Eng",
+  "grade": 5,
+  "subject_slug": "english",
+  "topic_slug": "",
+  "prompt_he": "Present Simple · דברים שקורים כל שבוע",
+  "prompt_en": "Tom ___ football every Monday.",
+  "options": [
+   {
+    "label": "A",
+    "value_en": "plays",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_en": "play",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_en": "playing",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_en": "played",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "Tom plays. עם he/she/it מוסיפים s.",
+    "wrong": "Every Monday = הרגל. עם Tom (he) מוסיפים s.",
+    "question": "Present Simple · דברים שקורים כל שבוע"
+   },
+   "en": {
+    "question": "Tom ___ football [[every Monday]]."
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G5Read",
+  "ref": "G5Read",
+  "grade": 5,
+  "subject_slug": "hebrew",
+  "topic_slug": "reading_fixture",
+  "prompt_he": "איזו הרגשה עולה מהבית האחרון בשיר?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "תקווה",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_he": "כעס",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_he": "פחד",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "שעמום",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "נכון! הזרע מחכה לאביב: זו תקווה.",
+    "wrong": "שימו לב למילים \"מחכה\" ו\"יפרח\".",
+    "question": "איזו [[הרגשה]] עולה מהבית האחרון בשיר?",
+    "helper": ""
+   }
+  },
+  "passage": {
+   "title_he": "זרע קטן",
+   "content_he": "זרע קטן באדמה קרה, / שוכב בשקט, בלי מילה.\nהגשם שר לו שיר רטוב, / והשמש לוחשת: עוד מעט, עוד.\nהוא מחכה, הוא לא ממהר, / באביב הוא יפרח ויגדל."
+  }
+ },
+ {
+  "id": "fx-G5Heb",
+  "ref": "G5Heb",
+  "grade": 5,
+  "subject_slug": "hebrew",
+  "topic_slug": "",
+  "prompt_he": "מהו הנושא במשפט?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "הַיְלָדִים הַקְּטַנִּים",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_he": "שִׂחֲקוּ",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_he": "בֶּחָצֵר",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "הַקְּטַנִּים שִׂחֲקוּ",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "נכון! מי שיחקו? הילדים הקטנים.",
+    "wrong": "שאלו: מי עשה את הפעולה?",
+    "question": "מהו [[הנושא]] במשפט?",
+    "helper": "הנושא הוא מי שעושה את הפעולה"
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G6Math",
+  "ref": "G6Math",
+  "grade": 6,
+  "subject_slug": "math",
+  "topic_slug": "",
+  "prompt_he": "<<0:חולצה עולה 80 ₪>>, ויש עליה <<1:25% הנחה>>. <<2:מכנסיים עולים 120 ₪>>. כמה תשלמו על החולצה אחרי ההנחה?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "60 ₪",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_he": "20 ₪",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_he": "100 ₪",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "55 ₪",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "שלב 1: 25% מ-80 זה 20. שלב 2: 80 − 20 = 60.",
+    "wrong": "שלב 1: כמה זה 25% מ-80? שלב 2: מחסירים את ההנחה מהמחיר.",
+    "question": "<<0:חולצה עולה 80 ₪>>, ויש עליה <<1:25% הנחה>>. <<2:מכנסיים עולים 120 ₪>>. כמה תשלמו [[על החולצה]] אחרי ההנחה?",
+    "helper": "פותרים בשני שלבים"
+   },
+   "data_marking": [
+    {
+     "step_he": "כמה שקלים ההנחה?",
+     "data": [
+      0,
+      1
+     ]
+    },
+    {
+     "step_he": "כמה משלמים בסוף?",
+     "data": [
+      0
+     ]
+    }
+   ]
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G6Eng",
+  "ref": "G6Eng",
+  "grade": 6,
+  "subject_slug": "english",
+  "topic_slug": "",
+  "prompt_he": "Present Progressive · מה קורה עכשיו",
+  "prompt_en": "Look! The children ___ in the park now.",
+  "options": [
+   {
+    "label": "A",
+    "value_en": "are playing",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_en": "play",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_en": "is playing",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_en": "played",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "are playing. children = רבים, לכן are.",
+    "wrong": "now = עכשיו, ו-children ברבים: are + ing.",
+    "question": "Present Progressive · מה קורה עכשיו"
+   },
+   "en": {
+    "question": "Look! The children ___ in the park [[now]]."
+   }
+  },
+  "passage": null
+ },
+ {
+  "id": "fx-G6Read",
+  "ref": "G6Read",
+  "grade": 6,
+  "subject_slug": "hebrew",
+  "topic_slug": "reading_fixture",
+  "prompt_he": "לפי הטקסט והגרף, באיזה חודש ירד הכי הרבה גשם?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "נובמבר",
+    "isCorrect": false
+   },
+   {
+    "label": "B",
+    "value_he": "דצמבר",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_he": "ינואר",
+    "isCorrect": true
+   },
+   {
+    "label": "D",
+    "value_he": "פברואר",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "C",
+  "design": {
+   "he": {
+    "right": "ינואר: 150 מ״מ, הכי הרבה בגרף.",
+    "wrong": "השוו את המספרים מעל העמודות.",
+    "question": "לפי הטקסט והגרף, באיזה חודש ירד [[הכי הרבה]] גשם?",
+    "helper": ""
+   }
+  },
+  "passage": {
+   "title_he": "גשם בחורף",
+   "content_he": "בישראל רוב הגשם יורד בחורף. בשנה שעברה נמדדו בתחנה בעמק 410 מ״מ גשם.\nהגרף מראה כמה גשם ירד בכל חודש."
+  }
+ },
+ {
+  "id": "fx-G6Heb",
+  "ref": "G6Heb",
+  "grade": 6,
+  "subject_slug": "hebrew",
+  "topic_slug": "",
+  "prompt_he": "בְּאֵיזֶה בִּנְיָן הַפֹּעַל הִתְלַבֵּשׁ?",
+  "prompt_en": null,
+  "options": [
+   {
+    "label": "A",
+    "value_he": "הִתְפַּעֵל",
+    "isCorrect": true
+   },
+   {
+    "label": "B",
+    "value_he": "פִּעֵל",
+    "isCorrect": false
+   },
+   {
+    "label": "C",
+    "value_he": "הִפְעִיל",
+    "isCorrect": false
+   },
+   {
+    "label": "D",
+    "value_he": "נִפְעַל",
+    "isCorrect": false
+   }
+  ],
+  "correct_answer": "A",
+  "design": {
+   "he": {
+    "right": "הִתְלַבֵּשׁ: הִתְ + דָּגֵשׁ בָּעַיִן = הִתְפַּעֵל.",
+    "wrong": "שִׂימוּ לֵב לַתְּחִלִּית הִתְ־.",
+    "question": "בְּאֵיזֶה [[בִּנְיָן]] הַפֹּעַל הִתְלַבֵּשׁ?",
+    "helper": ""
+   }
+  },
+  "passage": null
+ }
+]

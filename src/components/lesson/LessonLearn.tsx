@@ -4,6 +4,7 @@ import StickyNote, { keyPointParts, type KeyPoint } from './StickyNote'
 import WorkedExampleCard from './WorkedExampleCard'
 import PracticeCTA from './PracticeCTA'
 import s from './lesson.module.css'
+import { Oli, OliLogo } from '@/components/oli/Oli'
 import './kidFonts.css'
 
 const SUBJECT: Record<string, { he: string; en: string; cls: string }> = {
@@ -48,15 +49,12 @@ export default function LessonLearn({ title, subject, explanation, topicDescript
             <span className={s.ltr}>{stars}</span>
           </span>
         )}
-        <span className={s.logo} aria-label="EduPlay">
-          <span className={s.logoPeek}><svg width="40" height="40" viewBox="0 0 60 60" aria-hidden="true"><path d="M12 14 L18 4 L24 13 Z M48 14 L42 4 L36 13 Z" fill="#2347C9" /><rect x="8" y="10" width="44" height="44" rx="20" fill="#2F5BE3" /><circle cx="22" cy="28" r="10" fill="#FFFFFF" /><circle cx="38" cy="28" r="10" fill="#FFFFFF" /><circle cx="23" cy="29" r="4.5" fill="#16213E" /><circle cx="37" cy="29" r="4.5" fill="#16213E" /><path d="M27 37 L33 37 L30 43 Z" fill="#FFC940" /></svg></span>
-          <span className={s.logoWord}>Edu<span className={s.logoPlay}>Play</span></span>
-        </span>
+        <span className={s.logoSlot}><OliLogo /></span>
       </header>
 
       <main className={s.main}>
         <section className={s.hero}>
-          <img src="/oli/owl-reading.svg" alt={he ? 'אוֹלִי קורא ספר' : 'Oli reading a book'} className={s.heroOwl} />
+          <Oli state="calm" size={130} className={s.heroOwl} />
           <div className={s.heroText}>
             <h1 className={s.title}>{head && <>{head} </>}<span className={s.marker}>{lastWord}</span></h1>
             {summary && <p className={s.bubble}><InlineMath text={summary} /></p>}
