@@ -53,7 +53,7 @@ export default function DesignReview() {
   // keep the job going while this page is open: refresh every minute, and
   // restart the chains when nothing new arrived for 4 minutes
   useEffect(() => {
-    let last = -1, since = Date.now(), lastL = -1, sinceL = Date.now()
+    let last = -1, since = Date.now(), lastL = -1, sinceL = Date.now(), lastF = -1, sinceF = Date.now()
     const t = setInterval(async () => {
       const st = await fetch('/api/admin/design-pass').then(r => r.json()).catch(() => null)
       if (!st) return
@@ -63,6 +63,17 @@ export default function DesignReview() {
         else if (Date.now() - since > 240_000) {
           since = Date.now()
           await fetch('/api/admin/design-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start', chains: 4, revive: true }) }).catch(() => {})
+        }
+      }
+      // the missing-lessons writer: restart when no lesson grew for 4 minutes
+      const fill = await fetch('/api/admin/curriculum-fill').then(r => r.json()).catch(() => null)
+      const open = (fill?.lessons || []).filter((x: any) => x.questions < 16)
+      const sum = (fill?.lessons || []).reduce((a: number, x: any) => a + x.questions, 0)
+      if (open.length) {
+        if (sum !== lastF) { lastF = sum; sinceF = Date.now() }
+        else if (Date.now() - sinceF > 240_000) {
+          sinceF = Date.now()
+          await fetch('/api/admin/curriculum-fill', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start' }) }).catch(() => {})
         }
       }
       // the reading-level job, the same way
