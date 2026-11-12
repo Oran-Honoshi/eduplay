@@ -29,12 +29,21 @@ export default function DesignReview() {
   const [open, setOpen] = useState<string | null>(null)
   const [items, setItems] = useState<any[] | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
+  const [level, setLevel] = useState<any>(null)
 
   async function loadList() {
     const r = await fetch('/api/admin/design-pass?list=1')
     if (r.status === 403 || r.status === 401) { setDenied(true); return }
     setTopics((await r.json()).topics)
     setStatus(await fetch('/api/admin/design-pass').then(x => x.json()))
+    setLevel(await fetch('/api/admin/level-pass').then(x => x.json()).catch(() => null))
+  }
+  async function levelAct(body: any, key: string) {
+    setBusy(key)
+    await fetch('/api/admin/level-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    setBusy(null)
+    if (open) await loadTopic(open)
+    loadList()
   }
   async function loadTopic(id: string) {
     setOpen(id); setItems(null)
@@ -44,16 +53,27 @@ export default function DesignReview() {
   // keep the job going while this page is open: refresh every minute, and
   // restart the chains when nothing new arrived for 4 minutes
   useEffect(() => {
-    let last = -1, since = Date.now()
+    let last = -1, since = Date.now(), lastL = -1, sinceL = Date.now()
     const t = setInterval(async () => {
       const st = await fetch('/api/admin/design-pass').then(r => r.json()).catch(() => null)
       if (!st) return
       setStatus(st)
-      if (st.job?.status !== 'running') return
-      if (st.drafts !== last) { last = st.drafts; since = Date.now(); loadList(); return }
-      if (Date.now() - since > 240_000) {
-        since = Date.now()
-        await fetch('/api/admin/design-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start', chains: 4, revive: true }) }).catch(() => {})
+      if (st.job?.status === 'running') {
+        if (st.drafts !== last) { last = st.drafts; since = Date.now(); loadList() }
+        else if (Date.now() - since > 240_000) {
+          since = Date.now()
+          await fetch('/api/admin/design-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start', chains: 4, revive: true }) }).catch(() => {})
+        }
+      }
+      // the reading-level job, the same way
+      const lv = await fetch('/api/admin/level-pass').then(r => r.json()).catch(() => null)
+      if (lv) setLevel(lv)
+      if (lv?.job?.status === 'running') {
+        if (lv.checked !== lastL) { lastL = lv.checked; sinceL = Date.now() }
+        else if (Date.now() - sinceL > 240_000) {
+          sinceL = Date.now()
+          await fetch('/api/admin/level-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'start', chains: 4 }) }).catch(() => {})
+        }
       }
     }, 60_000)
     return () => clearInterval(t)
@@ -95,6 +115,18 @@ export default function DesignReview() {
             {busy === 'allclean' ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} לאשר את כל {totals.draft} התקינות
           </button>
         </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', fontSize: 15 }}>
+          <b>התאמה לתוכנית משרד החינוך וניקוד לפי גיל.</b>
+          {level && <>
+            <span style={tag('#EAF0FF', '#1E3FA8')}>{level.checked || 0} נבדקו</span>
+            <span style={tag('#FDECE7', '#B7432A')}>{level.off || 0} לא מתאימות לכיתה</span>
+            <span style={tag('#E3F4EF', '#0B6B58')}>{level.niqqud || 0} קיבלו ניקוד</span>
+          </>}
+          <span style={{ flex: 1 }} />
+          {level?.job?.status === 'running'
+            ? <button onClick={() => levelAct({ action: 'stop' }, 'ljob')} style={pillBtn()}><Square size={14} /> לעצור</button>
+            : <button onClick={() => levelAct({ action: 'start', chains: 4 }, 'ljob')} style={pillBtn()}><Play size={14} /> להריץ בדיקת התאמה וניקוד</button>}
+        </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {['math', 'hebrew', 'english'].map(s => <button key={s} onClick={() => setSubject(s)} style={{ ...pillBtn(subject === s), minHeight: 36 }}>{SUBJ_HE[s]}</button>)}
           <span style={{ width: 10 }} />
@@ -124,7 +156,7 @@ export default function DesignReview() {
                 {busy === 'topic' ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />} לאשר {clean.length} תקינות בשיעור
               </button>
             </div>
-            {items.map(({ q, draft }) => {
+            {items.map(({ q, draft, level: lv }) => {
               const d = draft?.design || {}
               const eng = openTopic?.subject?.slug === 'english'
               const sk = subjectKey(openTopic?.subject?.slug, openTopic?.slug)
@@ -149,7 +181,12 @@ export default function DesignReview() {
                     </div>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
                       {(draft.flags || []).map((f: string) => <span key={f} style={tag('#FFF4D6', '#7A5600')}>{FLAG_HE[f] || f}</span>)}
-                      {open !== 'passages' && <MoveQuestion questionId={q.id} subject={openTopic?.subject?.slug || 'math'} grade={openTopic?.grade || 1} topicId={open!} onMoved={loadList} />}
+                      {lv && lv.fit !== 'fits' && lv.status === 'open' && <span style={tag('#FDECE7', '#B7432A')}>
+                        {lv.fit === 'other_subject' ? 'שייכת למקצוע אחר' : lv.suggest_grade ? `מתאימה יותר לכיתה ${GRADE[lv.suggest_grade] || lv.suggest_grade}` : lv.fit === 'too_easy' ? 'קלה מדי לכיתה' : 'קשה מדי לכיתה'}{lv.reason_he ? ` · ${lv.reason_he}` : ''}
+                      </span>}
+                      {lv && lv.fit !== 'fits' && lv.status === 'open' && <button onClick={() => levelAct({ action: 'keep', questionId: q.id }, 'k' + q.id)} style={{ ...pillBtn(), minHeight: 36, fontSize: 14 }}><Check size={14} /> להשאיר כאן</button>}
+                      {open !== 'passages' && <MoveQuestion questionId={q.id} subject={openTopic?.subject?.slug || 'math'} grade={openTopic?.grade || 1} topicId={open!} onMoved={loadList}
+                        suggestGrade={lv && lv.fit !== 'fits' && lv.status === 'open' ? lv.suggest_grade : null} label={lv && lv.fit !== 'fits' && lv.status === 'open' && lv.suggest_grade ? `להעביר לכיתה ${GRADE[lv.suggest_grade] || lv.suggest_grade}…` : undefined} />}
                       <span style={{ flex: 1 }} />
                       {draft.status === 'draft' && <>
                         <button disabled={busy === draft.id} onClick={() => act({ action: 'apply', ids: [draft.id] }, draft.id)} style={{ ...pillBtn(true), minHeight: 36, fontSize: 14 }}><Check size={14} /> לאשר</button>

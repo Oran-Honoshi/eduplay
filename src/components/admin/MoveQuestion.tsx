@@ -14,13 +14,13 @@ function lessons(subject: string) {
   return (cache[subject] ||= fetch(`/api/admin/question-move?subject=${subject}`).then(r => r.json()).then(d => d.topics || []).catch(() => []))
 }
 
-export default function MoveQuestion({ questionId, subject, grade, topicId, onMoved }: {
-  questionId: string; subject: string; grade: number; topicId: string; onMoved: () => void
+export default function MoveQuestion({ questionId, subject, grade, topicId, onMoved, suggestGrade, label }: {
+  questionId: string; subject: string; grade: number; topicId: string; onMoved: () => void; suggestGrade?: number | null; label?: string
 }) {
   const [open, setOpen] = useState(false)
   const [all, setAll] = useState<any[]>([])
   const [sub, setSub] = useState(subject)
-  const [g, setG] = useState(grade || 1)
+  const [g, setG] = useState(suggestGrade || grade || 1)
   const [t, setT] = useState('')
   const [busy, setBusy] = useState(false)
   const [moved, setMoved] = useState<string | null>(null)
@@ -44,7 +44,7 @@ export default function MoveQuestion({ questionId, subject, grade, topicId, onMo
     )
   }
   if (!open) {
-    return <button onClick={() => setOpen(true)} style={{ ...pillBtn(), minHeight: 36, fontSize: 14 }}><ArrowLeftRight size={14} /> שייכת למקצוע, כיתה או שיעור אחר</button>
+    return <button onClick={() => setOpen(true)} style={{ ...pillBtn(), minHeight: 36, fontSize: 14 }}><ArrowLeftRight size={14} /> {label || 'שייכת למקצוע, כיתה או שיעור אחר'}</button>
   }
   const sel: React.CSSProperties = { minHeight: 36, borderRadius: 10, border: `1.5px solid ${C.border}`, padding: '0 8px', fontFamily: F.body, fontSize: 14, background: '#fff', maxWidth: 260 }
   return (

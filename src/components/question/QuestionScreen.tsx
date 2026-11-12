@@ -197,6 +197,7 @@ export default function QuestionScreen({
   const questionCard = (
     <section className={`${s.qCard} ${s.enter}`} key={q?.id}>
       <div className={s.qBody}>
+        {isHE && (grade ?? 3) <= 1 && <p className={s.readTogether}>{L('מקריאים יחד עם הורה', 'Read it together with a parent')}</p>}
         {engBoth && <p className={s.qTextHe} dir="rtl"><MarkedText text={he.question || q.prompt_he} /></p>}
         <p className={s.qText} dir={mainDir} style={{ textAlign: mainDir === 'rtl' ? 'right' : 'left' }}>
           <MarkedText text={mainText} marking={marking} />
