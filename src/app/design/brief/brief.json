@@ -1,0 +1,716 @@
+[
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "counting_objects_kg",
+  "id": "fb8b5bb5",
+  "wanted": "`objects` dog ×2 (remove the emoji from the text)"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "counting_objects_kg",
+  "id": "deab9138",
+  "wanted": "`compare_groups` star 3 vs 5"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "counting_objects_kg",
+  "id": "0b30252a",
+  "wanted": "`objects` child ×8, 5 girls coloured, the rest plain (not labelled \"boy\")"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "counting_objects_kg",
+  "id": "b6d95ad6",
+  "wanted": "`number_track` 1–10 with 10 blank"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "addition_subtraction_concrete",
+  "id": "9e789075",
+  "wanted": "5 birds on a branch, 2 flying away / crossed"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "addition_subtraction_concrete",
+  "id": "2e51f871",
+  "wanted": "same scene, 6 and 2"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "addition_subtraction_concrete",
+  "id": "c7431910",
+  "wanted": "`objects` child ×7, crossed 3 (walking toward a house)"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "addition_subtraction_concrete",
+  "id": "7c72f223",
+  "wanted": "2 apples + 1 apple arriving (`bar_model` or two groups with a \"+\")"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "addition_subtraction_concrete",
+  "id": "657dc321",
+  "wanted": "`ten_frame` filled 8, color2 3, flower icons"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "addition_subtraction_concrete",
+  "id": "057fafae",
+  "wanted": "`ten_frame` with two colours"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "addition_subtraction_concrete",
+  "id": "82fd2fa5",
+  "wanted": "`ten_frame` with two colours"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "making_10_kg",
+  "id": "6b6c7398",
+  "wanted": "`ten_frame` filled 5"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "making_10_kg",
+  "id": "a270d367",
+  "wanted": "`ten_frame` filled 8"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "making_10_kg",
+  "id": "beccf13f",
+  "wanted": "10 capsules (or cups), 9 full"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "making_10_kg",
+  "id": "e0a3f3a7",
+  "wanted": "10 grapes, 4 normal, 6 faded (eaten) — don't show the number"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "teen_numbers_kg",
+  "id": "3b42414a",
+  "wanted": "`ten_frame` frames:2, full 10 + 4"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "teen_numbers_kg",
+  "id": "f16dd401",
+  "wanted": "same, 10 + 9"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "teen_numbers_kg",
+  "id": "8d87c8c8",
+  "wanted": "(wording problem — see section 4)"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "teen_numbers_kg",
+  "id": "39b6313e",
+  "wanted": "`number_track` 10–20, blank"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "number_recognition_0_10",
+  "id": "8c7afe08",
+  "wanted": "a hand (open palm)"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "number_recognition_0_10",
+  "id": "e550c024",
+  "wanted": "`number_track` 0–10 with 5 and 8 circled"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "number_recognition_0_10",
+  "id": "8db364b7",
+  "wanted": "number cards to drag (a future interaction; static `number_track` for now)"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "number_recognition_0_10",
+  "id": "bc669717",
+  "wanted": "`number_track` 1–30"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "number_recognition_0_10",
+  "id": "b4c3d6f0",
+  "wanted": "`base_ten` tens:2 — the same look as the place-value board"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "basic_shapes_kg",
+  "id": "42f3b258",
+  "wanted": "a wheel picture (no shape label)"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "basic_shapes_kg",
+  "id": "4c095da1",
+  "wanted": "3 shape cards: circle, square, triangle"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "basic_shapes_kg",
+  "id": "3bd05aef",
+  "wanted": "`shape_cards` square, with sides (or corners) highlighted one by one"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "basic_shapes_kg",
+  "id": "c7f80f83",
+  "wanted": "`shape_cards` square, with sides (or corners) highlighted one by one"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "basic_shapes_kg",
+  "id": "50be7191",
+  "wanted": "triangle"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "basic_shapes_kg",
+  "id": "05b06c33",
+  "wanted": "two squares on a grid, labelled א and ב (no numbers on the bigger one)"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "spatial_position",
+  "id": "a689648e",
+  "wanted": "`position_scene` row: ruler, pencil, eraser, with ימין/שמאל arrows"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "spatial_position",
+  "id": "eb16048b",
+  "wanted": "`position_scene` grid 4×4 with star and moon"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "spatial_position",
+  "id": "6a16043f",
+  "wanted": "3 children with name tags"
+ },
+ {
+  "group": "Priority 1: Kindergarten math (gan)",
+  "lesson": "spatial_position",
+  "id": "d00f8d5d",
+  "wanted": "a line of 3 children, the middle one with \"?\""
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "addition_subtraction_20",
+  "id": "437382ac",
+  "wanted": "`ten_frame` frames:2, filled 15, the last 6 crossed"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "addition_subtraction_20",
+  "id": "e0822fa1",
+  "wanted": "same"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "addition_subtraction_20",
+  "id": "d10b16a0",
+  "wanted": "two `ten_frame`s, 9+6 and 6+9 in two colours"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "addition_subtraction_20",
+  "id": "1cc4199e",
+  "wanted": "20 stickers, 11 crossed"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "addition_subtraction_20",
+  "id": "396d9d25",
+  "wanted": "`bar_model` comparison: Ron's bar 6, Lia's bar 6 + 9"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "addition_subtraction_20",
+  "id": "f0479f13",
+  "wanted": "`bar_model` parts [8, ?], total 14"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "tens_and_ones",
+  "id": "b20f64b5",
+  "wanted": "`base_ten` tens 2, ones 7"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "tens_and_ones",
+  "id": "8545bb5f",
+  "wanted": "`base_ten` 5/5 (no digits)"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "tens_and_ones",
+  "id": "0f22796d",
+  "wanted": "`hundred_chart` with 36 highlighted, a down arrow"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "tens_and_ones",
+  "id": "ab74193f",
+  "wanted": "`hundred_chart`, 70 highlighted, an up arrow"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "tens_and_ones",
+  "id": "d4da776f",
+  "wanted": "`hundred_chart` with the column 10, 20, 30 highlighted"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "tens_and_ones",
+  "id": "84ebdf99",
+  "wanted": "`hundred_chart` with that column"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "tens_and_ones",
+  "id": "0837d4a6",
+  "wanted": "`base_ten` 3/4 + one ten \"arriving\""
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "tens_and_ones",
+  "id": "b5d402e6",
+  "wanted": "two `base_ten`s side by side"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "tens_and_ones",
+  "id": "040a4f85",
+  "wanted": "option cards each with a mini `base_ten`"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "measuring_length",
+  "id": "6cc46959",
+  "wanted": "a metre stick (100 cm) next to a ribbon, no numbers on the ribbon"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "measuring_length",
+  "id": "347bf24f",
+  "wanted": "`ruler` m + cm, ribbon along it"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "measuring_length",
+  "id": "3fe2f4fb",
+  "wanted": "a classroom picture plus small cm and m icons"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "bar_graphs_g1",
+  "id": "33c27b66",
+  "wanted": "`pictograph` key 2, cats 4"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "bar_graphs_g1",
+  "id": "f4db594a",
+  "wanted": "kid `bar_chart`"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "bar_graphs_g1",
+  "id": "b6121e36",
+  "wanted": "kid `bar_chart`"
+ },
+ {
+  "group": "Priority 2: Grade 1 math",
+  "lesson": "bar_graphs_g1",
+  "id": "11d0b090",
+  "wanted": "`bar_chart` with bars in those colours"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "counting_money_g2",
+  "id": "d1fb2b29",
+  "wanted": "`money` coins 5 + 2"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "counting_money_g2",
+  "id": "d88e9f6c",
+  "wanted": "`money` + price tag 12"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "counting_money_g2",
+  "id": "acffa504",
+  "wanted": "`money` + price tag 25"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "counting_money_g2",
+  "id": "9191c29a",
+  "wanted": "`money` notes and coins"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "time_g2",
+  "id": "7fb543c7",
+  "wanted": "`clock` 7:00 (no digital)"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "time_g2",
+  "id": "d9b05c10",
+  "wanted": "answer options as 4 small clocks (a future \"picture options\" layout)"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "time_g2",
+  "id": "cbf24af0",
+  "wanted": "`clock_span` from 5:00, end hidden"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "time_g2",
+  "id": "64c9144c",
+  "wanted": "2 full clock circles + a 20-minute slice"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "multiplication_intro",
+  "id": "361f33f1",
+  "wanted": "`groups` 3 × 5 or `array` 3×5"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "multiplication_intro",
+  "id": "1801d58e",
+  "wanted": "`groups` 8 pages × 5 stickers"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "multiplication_intro",
+  "id": "f0ec53c7",
+  "wanted": "7 empty plates (a nice way to show zero groups)"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "multiplication_intro",
+  "id": "f0b518eb",
+  "wanted": "`share` total 20, groups 4 (children), not yet shared"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "multiplication_intro",
+  "id": "7933950c",
+  "wanted": "`share` 24 / 6"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "multiplication_intro",
+  "id": "41e3ded4",
+  "wanted": "`array` 7 columns, rows not drawn (chairs)"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "multiplication_intro",
+  "id": "0a4ed7c9",
+  "wanted": "`array` 3×9"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "even_odd_g2",
+  "id": "e3d8d3b7",
+  "wanted": "`pairs` 7"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "even_odd_g2",
+  "id": "c2971976",
+  "wanted": "`pairs` 6"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "even_odd_g2",
+  "id": "f5f7f910",
+  "wanted": "`pairs` 15 and 9 side by side"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "sequences_patterns_g2",
+  "id": "ede01200",
+  "wanted": "`pattern_strip` with shapes"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "sequences_patterns_g2",
+  "id": "53173af2",
+  "wanted": "`number_line` 0–20 with jumps of 3 drawn as arcs"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "sequences_patterns_g2",
+  "id": "5e1b87db",
+  "wanted": "`pattern_strip` numbers"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "place_value_g2",
+  "id": "7fc7750b",
+  "wanted": "the place-value board (table + blocks) without digits in the table"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "place_value_g2",
+  "id": "369e4fdd",
+  "wanted": "the place-value table with 382 and the tens column highlighted"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "place_value_g2",
+  "id": "da58528d",
+  "wanted": "`base_ten` 2/4/7"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "place_value_g2",
+  "id": "187d0088",
+  "wanted": "two place-value tables"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "place_value_g2",
+  "id": "5a7833ca",
+  "wanted": "`base_ten` hundreds 3"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "shapes_partitions_g2",
+  "id": "26bd7073",
+  "wanted": "`cube` + a dice/box photo-like icon"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "shapes_partitions_g2",
+  "id": "332522ac",
+  "wanted": "`shape_cards` hexagon / pentagon"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "shapes_partitions_g2",
+  "id": "0518551e",
+  "wanted": "`shape_cards` hexagon / pentagon"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "shapes_partitions_g2",
+  "id": "965854fa",
+  "wanted": "`symmetry` rectangle, no lines"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "shapes_partitions_g2",
+  "id": "7feab97b",
+  "wanted": "`symmetry` equilateral triangle, no lines"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "measurement_g2",
+  "id": "af983b39",
+  "wanted": "pencil on a `ruler` (cm)"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "measurement_g2",
+  "id": "6b37b7af",
+  "wanted": "ribbon with a cut mark, `bar_model` 200 = 75 + ?"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "measurement_g2",
+  "id": "bcbfd475",
+  "wanted": "two strips above a metre ruler"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "data_basics",
+  "id": "e1db3682",
+  "wanted": "`tally` (draw real tally marks: four lines and one across = 5)"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "data_basics",
+  "id": "39128506",
+  "wanted": "`pictograph`"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "data_basics",
+  "id": "49a8c943",
+  "wanted": "kid `bar_chart`"
+ },
+ {
+  "group": "Priority 3: Grade 2 math",
+  "lesson": "data_basics",
+  "id": "8bee9d5a",
+  "wanted": "`compare_groups`"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "comparing_fractions_g3",
+  "id": "53b1b335",
+  "wanted": "`fraction_compare` (two equal bars, partitions only)"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "comparing_fractions_g3",
+  "id": "2e334f3f",
+  "wanted": "two pizzas cut in 5 and 8 (`fraction_pie`, nothing shaded)"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "comparing_fractions_g3",
+  "id": "aada5bef",
+  "wanted": "three stacked bars cut in 3, 6, 4"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "fractions_number_line_g3",
+  "id": "3ba60432",
+  "wanted": "`number_line` 0–1 in sixths"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "fractions_number_line_g3",
+  "id": "d775f86a",
+  "wanted": "`number_line` 0–1, 8 ticks"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "fractions_number_line_g3",
+  "id": "9809c29b",
+  "wanted": "two stacked number lines"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "data_graphs_g3",
+  "id": "ea16db68",
+  "wanted": "`pictograph` key 5 / key 10"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "data_graphs_g3",
+  "id": "eb87b7d0",
+  "wanted": "`pictograph` key 5 / key 10"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "data_graphs_g3",
+  "id": "2302832f",
+  "wanted": "`bar_chart` with a scale of 2"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "time_mass_volume_g3",
+  "id": "84c6d1b3",
+  "wanted": "`scale` with two bags"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "time_mass_volume_g3",
+  "id": "e3d41052",
+  "wanted": "`measuring_cup`"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "time_mass_volume_g3",
+  "id": "11a640af",
+  "wanted": "`clock_span`, end 5:15 shown, start hidden"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "word_problems_g3",
+  "id": "84be62ec",
+  "wanted": "`bar_model` in steps (a \"step board\" like the worked examples)"
+ },
+ {
+  "group": "Priority 4: Grade 3 math (the hard parts)",
+  "lesson": "word_problems_g3",
+  "id": "9e6e73b7",
+  "wanted": "a \"function machine\": box → ×4 → −12 → 20"
+ },
+ {
+  "group": "Priority 5: Hebrew K–1 (pictures for reading together)",
+  "lesson": "sound_awareness_kg",
+  "id": "3b0d7fd9",
+  "wanted": "`syllable_beats` car, beats hidden"
+ },
+ {
+  "group": "Priority 5: Hebrew K–1 (pictures for reading together)",
+  "lesson": "letter_names_kg",
+  "id": "1e575ca1",
+  "wanted": "`letter_card` ש + sun, ג + camel"
+ },
+ {
+  "group": "Priority 5: Hebrew K–1 (pictures for reading together)",
+  "lesson": "letter_names_kg",
+  "id": "93633b18",
+  "wanted": "`letter_card` ש + sun, ג + camel"
+ },
+ {
+  "group": "Priority 5: Hebrew K–1 (pictures for reading together)",
+  "lesson": "vocabulary_kg",
+  "id": "784eaa7a",
+  "wanted": "two picture cards: a strong child lifting / a tired child"
+ },
+ {
+  "group": "Priority 5: Hebrew K–1 (pictures for reading together)",
+  "lesson": "vocabulary_kg",
+  "id": "43075664",
+  "wanted": "`picture_card` row: apple, banana, grape (+ options as pictures)"
+ },
+ {
+  "group": "Priority 5: Hebrew K–1 (pictures for reading together)",
+  "lesson": "vocabulary_kg",
+  "id": "9b2ddafb",
+  "wanted": "a giant next to a small child"
+ },
+ {
+  "group": "Priority 5: Hebrew K–1 (pictures for reading together)",
+  "lesson": "story_characters",
+  "id": "e3aaabd4",
+  "wanted": "small scene cards: sharing toys, helping a friend"
+ },
+ {
+  "group": "Priority 5: Hebrew K–1 (pictures for reading together)",
+  "lesson": "story_characters",
+  "id": "93c10614",
+  "wanted": "small scene cards: sharing toys, helping a friend"
+ },
+ {
+  "group": "Priority 6: Spoken English, grades 1–2",
+  "lesson": "en_oral",
+  "id": "85f8bafd",
+  "wanted": "picture_card sheep"
+ },
+ {
+  "group": "Priority 6: Spoken English, grades 1–2",
+  "lesson": "en_oral",
+  "id": "568c3e53",
+  "wanted": "picture_card hat"
+ },
+ {
+  "group": "Priority 6: Spoken English, grades 1–2",
+  "lesson": "en_oral",
+  "id": "1ef668d2",
+  "wanted": "two action cards: stand up / sit down"
+ }
+]
