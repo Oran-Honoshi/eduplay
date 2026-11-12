@@ -57,7 +57,11 @@ Output JSON only: an array with exactly one object per question, same ids.`
 // ── checks ─────────────────────────────────────────────────
 const NIQQUD = /[֑-ׇ]/g
 export const bare = (t: string | null | undefined) => String(t ?? '').replace(NIQQUD, '').replace(/\s+/g, ' ').trim()
-const same = (a: any, b: any) => bare(a) === bare(b)
+// Writing with niqqud uses the "ktiv haser" spelling: the helper letters ו and י
+// that plain spelling adds may drop (שֻׁלְחָן / שולחן, כִּתָּה / כיתה). Those and quote
+// marks may differ; any other letter, digit or word may not.
+const skeleton = (t: any) => bare(t).replace(/[וי״׳"']/g, '').replace(/\s+/g, ' ')
+const same = (a: any, b: any) => skeleton(a) === skeleton(b)
 
 /** the changes to save: only fields whose letters are unchanged */
 export function checkLevel(q: any, d: LevelDraft): { update: any; design: any | null; fit: any; dropped: string[] } {
@@ -85,6 +89,9 @@ export function checkLevel(q: any, d: LevelDraft): { update: any; design: any | 
       const n = (t as any)[f]
       if (n && he[f]) { if (same(n, he[f])) { if (n !== he[f]) { he[f] = n; changed = true } } else dropped.push(`design.${f}`) }
     }
+    // the question got niqqud but its marked copy didn't: show the niqqud version
+    // (without the highlighter) rather than the plain one
+    if (update.prompt_he && dropped.includes('design.question') && he.question) { delete he.question; changed = true }
     if (changed) design = { ...q.design, he }
   }
   const fit = { fit: d.fit || 'fits', suggest_grade: d.suggest_grade ?? null, reason_he: d.reason_he || null }
