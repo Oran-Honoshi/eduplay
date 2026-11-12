@@ -1,0 +1,148 @@
+/* Child lesson ("learn" stage) — notebook design, pilot (designer handoff
+   EduPlay_Lesson_Decimals). Design tokens live as CSS variables on .page so
+   no component hard-codes colors; values from 02_DESIGN_TOKENS.md. */
+
+.page {
+  --ink: #16213E; --ink-2: #4A5470; --paper-kid: #FFF9EC; --grid-line: #F1E7D3; --card: #FFFFFF; --border: #E2DACB;
+  --action: #2F5BE3; --action-shadow: #1E3FA8; --marker: #FFC940; --error: #C2361B;
+  --success: #12937A; --success-ink: #0B6B59; --success-soft: #DDF4EA;
+  --sticky-yellow: #FFE89A; --sticky-pink: #FDD9CE; --sticky-mint: #CDEFE3; --sticky-neutral: #F4F1EA;
+  --math: #2F5BE3; --math-soft: #EAF0FF; --math-ink: #1E43B8;
+  --hebrew: #E85D3F; --hebrew-soft: #FDECE7; --hebrew-ink: #B7432A;
+  --english: #12937A; --english-soft: #E3F5EF; --english-ink: #0B6B59;
+  --reading-soft: #FFF4D1; --reading-ink: #8A6400;
+  --r-sm: 14px; --r-md: 20px; --r-lg: 26px; --r-xl: 36px;
+  --shadow-card: 0 1px 0 var(--border), 0 24px 40px -30px rgba(22, 33, 62, .30);
+  --shadow-sticky: 0 16px 26px -18px rgba(22, 33, 62, .50);
+  --font-display: 'Rubik', sans-serif; --font-body: 'Assistant', sans-serif;
+  --w-op: 70px; --w-d: 100px; --w-pt: 44px; /* column board widths */
+
+  min-height: 100vh; color: var(--ink); font-family: var(--font-display);
+  background-color: var(--paper-kid);
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.page *, .page *::before, .page *::after { box-sizing: border-box }
+.page button { font-family: inherit }
+.page :focus-visible { outline: 3px solid var(--action); outline-offset: 3px; border-radius: 10px }
+.marker { background: linear-gradient(transparent 58%, var(--marker) 58%, var(--marker) 90%, transparent 90%) }
+.ltr { direction: ltr; unicode-bidi: isolate; white-space: nowrap }
+
+/* header */
+.header { max-width: 1240px; margin: 0 auto; padding: 22px 40px; display: flex; align-items: center; gap: 18px }
+.iconBtn { width: 60px; height: 60px; border-radius: 20px; background: var(--card); border: 0; box-shadow: 0 1px 0 var(--border); display: inline-flex; align-items: center; justify-content: center; color: var(--ink); cursor: pointer; flex: none }
+.chip { height: 40px; padding: 0 14px; border-radius: var(--r-sm); color: #fff; display: inline-flex; align-items: center; font-weight: 900; font-size: 17px }
+.chipMath { background: var(--math) } .chipHebrew { background: var(--hebrew-ink) } .chipEnglish { background: var(--english-ink) }
+.stars { height: 44px; padding: 0 14px; border-radius: var(--r-sm); background: var(--card); box-shadow: 0 1px 0 var(--border); display: inline-flex; align-items: center; gap: 6px; font-weight: 900; font-size: 18px }
+.logo { display: inline-flex; flex-direction: column; align-items: flex-start; text-decoration: none; color: var(--ink); direction: ltr; margin-inline-start: 8px }
+.logoPeek { height: 22px; overflow: hidden; margin-left: 6px; display: block }
+.logoWord { font-weight: 900; font-size: 30px; letter-spacing: -1px; line-height: 1; margin-top: -2px }
+.logoPlay { background: linear-gradient(transparent 55%, var(--marker) 55%, var(--marker) 92%, transparent 92%); padding: 0 2px }
+
+.main { max-width: 1240px; margin: 0 auto; padding: 0 40px 40px; display: flex; flex-direction: column; gap: 26px }
+
+/* hero */
+.hero { display: flex; align-items: flex-end; gap: 18px; flex-wrap: wrap }
+.heroOwl { width: 130px; height: 143px; flex: none }
+.heroText { flex: 1 1 520px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 10px }
+.title { margin: 0; font-weight: 900; font-size: 64px; letter-spacing: -2px; line-height: 1 }
+.bubble { margin: 0; align-self: flex-start; background: var(--card); border-radius: 24px 24px 24px 6px; padding: 16px 22px; font-family: var(--font-body); font-size: 20px; font-weight: 600; line-height: 1.5; box-shadow: 0 1px 0 var(--border); max-width: 760px }
+
+.layout { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start }
+
+/* key points / sticky notes */
+.keyPoints { flex: 1 1 340px; display: flex; flex-direction: column; gap: 26px; padding-top: 12px }
+.sectionTitle { margin: 0; font-weight: 900; font-size: 26px }
+.sticky { position: relative; border-radius: 4px 4px 24px 4px; padding: 26px 24px 22px; box-shadow: var(--shadow-sticky) }
+.sticky::before { content: ""; position: absolute; top: -11px; right: 42%; width: 70px; height: 22px; background: rgba(255, 255, 255, .65); transform: rotate(-3deg) }
+.yellow { background: var(--sticky-yellow) } .pink { background: var(--sticky-pink) } .mint { background: var(--sticky-mint) }
+.stickyRow { display: flex; align-items: flex-start; gap: 12px }
+.num { width: 38px; height: 38px; border-radius: 50%; background: var(--ink); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; flex: none }
+.stickyTitle { margin: 0; font-weight: 900; font-size: 21px }
+.stickyBody { margin: 4px 0 0; font-family: var(--font-body); font-size: 17px; font-weight: 600; line-height: 1.45 }
+.stickyBodyOnly { margin: 6px 0 0 }
+.pvVisual { display: flex; align-items: center; gap: 14px; margin-top: 14px; background: rgba(255, 255, 255, .7); border-radius: 16px; padding: 12px }
+.grid100 { width: 110px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 1px; background: #B9C3D9; border: 1px solid #B9C3D9; flex: none }
+.grid100 span { aspect-ratio: 1; background: #fff } .grid100 .on { background: var(--math) }
+.pvEq { margin: 0; font-family: var(--font-display); font-weight: 900; font-size: 30px; line-height: 1.2; direction: ltr }
+.pvEq b { background: var(--marker); border-radius: 6px; padding: 0 4px }
+
+/* worked example card */
+.example { flex: 2 1 640px; min-width: 0; background: var(--card); border-radius: var(--r-xl); padding: 30px 32px; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 20px }
+.exampleHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap }
+.eyebrow { margin: 0; font-weight: 800; font-size: 17px; color: var(--ink-2) }
+.question { margin: 2px 0 0; font-weight: 900; font-size: 34px }
+.dots { display: flex; gap: 8px; direction: rtl }
+.dots span { width: 14px; height: 14px; border-radius: 7px; background: #E6DFD1; transition: all .2s }
+.dots .done { background: var(--success) } .dots .now { width: 40px; background: var(--action) }
+
+/* column board */
+.board { position: relative; background-color: #FBFAF6; background-image: linear-gradient(var(--math-soft) 1px, transparent 1px), linear-gradient(90deg, var(--math-soft) 1px, transparent 1px); background-size: 32px 32px; border-radius: var(--r-lg); padding: 22px 30px 26px; border: 2px solid #E6EBF7 }
+.cols { direction: ltr; margin: 0 auto; display: grid; justify-content: center }
+.pvChip { justify-self: center; height: 32px; padding: 0 10px; border-radius: 10px; display: inline-flex; align-items: center; font-weight: 900; font-size: 15px }
+.pv_ones { background: var(--math-soft); color: var(--math-ink) }
+.pv_tenths { background: var(--hebrew-soft); color: var(--hebrew-ink) }
+.pv_hundredths { background: var(--english-soft); color: var(--english-ink) }
+.pv_tens { background: var(--reading-soft); color: var(--reading-ink) }
+.pv_hundreds { background: var(--sticky-neutral); color: var(--ink-2) }
+.c { position: relative; height: 96px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 74px; line-height: 1; transition: background .2s }
+.top { border-radius: 18px 18px 0 0 } .bottom { border-radius: 0 0 18px 18px }
+.op { color: var(--ink-2) }
+.rule { height: 6px; border-radius: 3px; background: var(--ink); margin: 4px 0 }
+.res { color: var(--success-ink); visibility: hidden } .res.show { visibility: visible }
+.pop { animation: pop .3s ease-out }
+.slot { width: 62px; height: 74px; border: 3px dashed #CFC5B1; border-radius: 12px }
+.zero { background: linear-gradient(transparent 55%, var(--marker) 55%, var(--marker) 92%, transparent 92%); padding: 0 6px }
+.plusBadge { position: absolute; top: -16px; right: -14px; width: 42px; height: 42px; border-radius: 50%; background: var(--hebrew); color: #fff; border: 4px solid #fff; box-shadow: 0 6px 12px -6px rgba(22, 33, 62, .5); display: flex; align-items: center; justify-content: center; font-size: 28px; z-index: 2 }
+.arrow { position: absolute; left: 66px; top: 44px; z-index: 1 }
+.note { position: absolute; right: 4px; top: 210px; background: var(--sticky-yellow); border-radius: 4px 4px 18px 4px; padding: 12px 16px; transform: rotate(-4deg); box-shadow: 0 12px 20px -14px rgba(22, 33, 62, .5); max-width: 128px; animation: popNote .3s ease-out; z-index: 2 }
+.note b { display: block; font-weight: 900; font-size: 18px } .note span { font-family: var(--font-body); font-size: 15px; font-weight: 700 }
+.hi_ones { background: var(--math-soft) } .hi_tenths { background: var(--hebrew-soft) } .hi_hundredths { background: var(--english-soft) }
+.hi_tens { background: var(--reading-soft) } .hi_hundreds { background: var(--sticky-neutral) }
+.hiZero { background: var(--reading-soft) }
+.pointHi { color: var(--hebrew); background: var(--hebrew-soft) }
+
+/* step explanation + nav */
+.explain { display: flex; align-items: center; gap: 16px; background: var(--sticky-neutral); border-radius: var(--r-lg); padding: 14px 20px 14px 16px; min-height: 110px }
+.explain.done { background: var(--success-soft) }
+.explainOwl { width: 86px; height: 95px; flex: none }
+.explainOwlParty { width: 96px; height: 106px; flex: none }
+.explainTitle { margin: 0; font-weight: 900; font-size: 22px }
+.explainText { margin: 4px 0 0; font-family: var(--font-body); font-size: 19px; font-weight: 600; line-height: 1.5 }
+.visualBox { display: flex; justify-content: center }
+.nav { display: flex; justify-content: space-between; gap: 12px }
+.btn { height: 60px; padding: 0 26px; border-radius: var(--r-md); font-weight: 900; font-size: 20px; cursor: pointer }
+.btnSecondary { border: 2px solid var(--border); background: #fff; color: var(--ink); font-weight: 800; font-size: 18px }
+.btnSecondary:disabled { opacity: .4; cursor: default }
+.btnDark { border: 0; background: var(--ink); color: #fff }
+
+/* practice CTA */
+.cta { width: 100%; height: 86px; border: 0; border-radius: 28px; background: var(--action); color: #fff; font-weight: 900; font-size: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 7px 0 var(--action-shadow); cursor: pointer }
+.ctaEmpty { background: var(--card); border-radius: var(--r-lg); padding: 20px; text-align: center; font-family: var(--font-body); font-size: 19px; font-weight: 600; box-shadow: 0 1px 0 var(--border) }
+
+@keyframes pop { from { transform: scale(.6); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+@keyframes popNote { from { opacity: 0; transform: rotate(-4deg) scale(.6) } to { opacity: 1; transform: rotate(-4deg) scale(1) } }
+@media (prefers-reduced-motion: reduce) { .page * { animation: none !important; transition: none !important } }
+
+/* tablet */
+@media (max-width: 1023px) {
+  .keyPoints { flex-basis: 100%; flex-direction: row; flex-wrap: wrap; gap: 22px }
+  .keyPoints .sectionTitle { flex-basis: 100% }
+  .sticky { flex: 1 1 240px }
+}
+/* mobile */
+@media (max-width: 767px) {
+  .header { padding: 14px 16px; gap: 10px } .logo { display: none }
+  .main { padding: 0 16px 120px; gap: 20px }
+  .title { font-size: 40px } .heroOwl { width: 90px; height: 99px } .bubble { font-size: 17px }
+  .keyPoints { flex-direction: column } .sticky { flex: none }
+  .example { padding: 20px 16px; border-radius: var(--r-lg) } .question { font-size: 26px }
+  .board { padding: 16px 8px 18px }
+  .page { --w-op: 44px; --w-d: 68px; --w-pt: 30px }
+  .c { height: 72px; font-size: 52px }
+  .slot { width: 44px; height: 54px } .arrow { display: none }
+  .note { position: static; margin: 14px auto 0; transform: rotate(-2deg); max-width: none; width: fit-content; animation-name: pop }
+  .explainOwl { width: 60px; height: 66px } .explainOwlParty { width: 60px; height: 66px }
+  .explainTitle { font-size: 19px } .explainText { font-size: 17px }
+  .cta { position: fixed; left: 16px; right: 16px; bottom: 16px; width: auto; height: 68px; font-size: 22px; z-index: 10 }
+}
