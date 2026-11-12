@@ -81,7 +81,8 @@ export async function POST(req: NextRequest) {
   }
   if (body.action === 'start') {
     await db.from('admin_jobs').upsert({ id: JOB, status: 'running', updated_at: new Date().toISOString() })
-    await db.from('bank_upgrade_claims').delete().eq('batch', JOB).is('done_at', null).lt('claimed_at', new Date(Date.now() - 600_000).toISOString())
+    // forget unfinished claims whose chain died (older than 6 minutes: a step never runs longer than 5)
+    await db.from('bank_upgrade_claims').delete().eq('batch', JOB).is('done_at', null).lt('claimed_at', new Date(Date.now() - 360_000).toISOString())
     const n = Math.max(1, Math.min(6, Number(body.chains) || 3))
     for (let i = 0; i < n; i++) waitUntil(kick())
     return NextResponse.json({ ok: true, chains: n })
