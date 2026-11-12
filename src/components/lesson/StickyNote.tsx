@@ -24,7 +24,7 @@ export default function StickyNote({ index, title, body, visual }: { index: numb
         <span className={s.num}>{index + 1}</span>
         <div>
           {title && <h3 className={s.stickyTitle}><InlineMath text={title} /></h3>}
-          <p className={`${s.stickyBody} ${title ? '' : s.stickyBodyOnly}`}><InlineMath text={body} /></p>
+          <p className={`${s.stickyBody} ${title ? '' : s.stickyBodyOnly}`}><Bold text={body} /></p>
         </div>
       </div>
       {visual?.type === 'grid100' && <Grid100 v={visual} />}
@@ -45,4 +45,9 @@ function Grid100({ v }: { v: KeyPointVisual }) {
       <p className={s.pvEq}>{v.eq_left}<br />= {right.slice(0, -1)}<b>{right.slice(-1)}</b></p>
     </div>
   )
+}
+
+// **word** in a key point is shown bold (math stays isolated left-to-right)
+function Bold({ text }: { text: string }) {
+  return <>{text.split(/\*\*(.+?)\*\*/g).map((t, i) => (i % 2 ? <b key={i}><InlineMath text={t} /></b> : <InlineMath key={i} text={t} />))}</>
 }

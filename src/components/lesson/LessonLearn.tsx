@@ -21,7 +21,11 @@ export default function LessonLearn({ title, subject, explanation, topicDescript
 }) {
   const ex = explanation
   const summary: string = ex ? (he ? ex.summary_he || ex.summary_en : ex.summary_en || ex.summary_he) || '' : topicDescription || ''
-  const points: KeyPoint[] = ex ? ((he ? ex.key_points_he : ex.key_points_en) || ex.key_points_he || []) : []
+  // sticky-note key points (title + text + optional visual) when the lesson has them,
+  // else the plain key-point sentences
+  const rich: KeyPoint[] = Array.isArray(ex?.key_points_rich) ? ex.key_points_rich : []
+  const useRich = rich.length > 0 && (he || rich.some((r: any) => r?.text_en))
+  const points: KeyPoint[] = useRich ? rich : ex ? ((he ? ex.key_points_he : ex.key_points_en) || ex.key_points_he || []) : []
   const example = ex?.examples?.[0]
   const subj = SUBJECT[subject] || SUBJECT.math
 
