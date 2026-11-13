@@ -4,7 +4,7 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import { requireParentOnlySession } from '@/lib/session'
 import { insertQuestions, QuestionInput } from '@/lib/insertQuestions'
 import { loadUploadBlocks } from '@/lib/uploadBlocks'
-import { generateVisual, savableVisual } from '@/lib/eduVisuals/generate'
+import { generateVisual, savableVisual, loadRejectionLessons } from '@/lib/eduVisuals/generate'
 import { checkQuestion, normQ, signature } from '@/lib/questionChecks'
 import { ON_REQUEST_FROM_GRADE, findOrCreateOnRequestTopic, addGrade } from '@/lib/onRequestTopics'
 import { cleanSections, cleanWords, sectionSpec } from '@/lib/workbook'
@@ -762,12 +762,13 @@ ${spec.text}` : ''}`
   if (subject_slug === 'math' && (grade <= 3 || (grade <= 6 && /fraction|שבר/i.test(String(topic_slug)))) && process.env.ANTHROPIC_API_KEY) {
     const LET = ['גן', 'א', 'ב', 'ג', 'ד', 'ה', 'ו']
     const todo = insertedRows.filter(r => picMeta.get(r.id) && !picMeta.get(r.id)!.hasVisual)
+    const lessons = todo.length ? await loadRejectionLessons(serviceClient) : ''
     const t0 = Date.now()
     for (let i = 0; i < todo.length && Date.now() - t0 < 90_000; i += 4) {
       await Promise.all(todo.slice(i, i + 4).map(async r => {
         try {
           const m = picMeta.get(r.id)!
-          const g = await generateVisual({ id: r.id, text: m.text, answer: m.answer, subject: 'math', grade: LET[grade] ?? String(grade), lesson: topic_slug, options: m.options })
+          const g = await generateVisual({ id: r.id, text: m.text, answer: m.answer, subject: 'math', grade: LET[grade] ?? String(grade), lesson: topic_slug, options: m.options }, lessons)
           const vd = savableVisual(g)   // a library picture, or a drawing of its own when no library type fits
           if (!vd) return
           await serviceClient.from('questions').update({ visual_data: vd }).eq('id', r.id).is('visual_data', null)

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin'
 import { createServiceRoleClient } from '@/lib/supabase'
-import { generateVisual, savableVisual } from '@/lib/eduVisuals/generate'
+import { generateVisual, savableVisual, loadRejectionLessons } from '@/lib/eduVisuals/generate'
 
 // Admin: the designer's visual generator, run inside the app (ANTHROPIC_API_KEY comes from the environment).
 //   GET                      → pending proposals (with the question), counts per status
@@ -41,7 +41,10 @@ export async function POST(req: NextRequest) {
   const now = new Date().toISOString()
 
   if (body.action === 'reject' && body.id) {
-    await sb.from('visual_proposals').update({ status: 'rejected', decided_at: now }).eq('id', body.id)
+    const tags: string[] = Array.isArray(body.tags) ? body.tags.map((t: any) => String(t).slice(0, 60)).slice(0, 8) : []
+    const reason = String(body.reason || '').trim().slice(0, 500)
+    if (!tags.length && !reason) return NextResponse.json({ error: 'צריך לכתוב או לבחור סיבה' }, { status: 400 })
+    await sb.from('visual_proposals').update({ status: 'rejected', decided_at: now, reject_reason: reason || null, reject_tags: tags }).eq('id', body.id)
     return NextResponse.json({ ok: true })
   }
 
@@ -77,12 +80,13 @@ export async function POST(req: NextRequest) {
       if (!data || data.length < 1000) break
     }
     const batch = cands.slice(0, limit)
+    const lessons = await loadRejectionLessons(sb)
     const started = Date.now()
     let done = 0
     for (let i = 0; i < batch.length && Date.now() - started < 230_000; i += 3) {
       await Promise.all(batch.slice(i, i + 3).map(async q => {
         const t: any = tMap.get(q.topic_id)
-        const r = await generateVisual({ id: q.id, text: q.prompt_he || q.prompt_en, answer: bareAnswer(q), subject, grade: LET[t.grade] ?? String(t.grade), lesson: t.slug, options: (Array.isArray(q.options) ? q.options : []).map((o: any) => o.value_he || o.value_en) })
+        const r = await generateVisual({ id: q.id, text: q.prompt_he || q.prompt_en, answer: bareAnswer(q), subject, grade: LET[t.grade] ?? String(t.grade), lesson: t.slug, options: (Array.isArray(q.options) ? q.options : []).map((o: any) => o.value_he || o.value_en) }, lessons)
         const vd = savableVisual({ ...r, warnings: [] })   // warnings are shown to the admin instead of blocking
         const status = r.failed || r.errors?.length ? 'failed' : r.mode === 'none' ? 'none_needed' : vd ? 'pending' : 'failed'
         await sb.from('visual_proposals').insert({ question_id: q.id, status, mode: r.mode ?? null, visual_data: vd ? (vd.type === 'custom_svg' ? vd : r.visual_data) : null, why: r.why ?? null, hidden: r.hidden ?? null, warnings: [...(r.warnings || []), ...(r.question_fixes?.length ? [] : [])], errors: r.errors || [], question_fixes: r.question_fixes ?? null, attempts: r.attempts ?? null })

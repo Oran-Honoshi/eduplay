@@ -11,6 +11,10 @@ export default function AdminVisualsPage() {
   const [msg, setMsg] = useState('')
   const [gmax, setGmax] = useState(3)
   const [subject, setSubject] = useState('math')
+  const [rej, setRej] = useState<any | null>(null)   // the proposal being rejected
+  const [tags, setTags] = useState<string[]>([])
+  const [why, setWhy] = useState('')
+  const REASONS = ['חושף את התשובה', 'המספרים לא תואמים לשאלה', 'התמונה לא עוזרת להבין', 'עמוס או מסובך מדי', 'הסגנון לא תואם', 'לא צריך תמונה בשאלה הזו', 'שגיאה בציור']
   const load = () => fetch('/api/admin/visuals').then(async r => { if (!r.ok) throw new Error(r.status === 403 ? 'רק למנהלים' : 'צריך להתחבר'); return r.json() }).then(setData).catch(e => setErr(e.message))
   useEffect(() => { load() }, [])
   async function post(b: any) {
@@ -19,6 +23,7 @@ export default function AdminVisualsPage() {
       const r = await fetch('/api/admin/visuals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) })
       const j = await r.json()
       if (!r.ok) setMsg(j.error || 'שגיאה')
+      else if (b.action === 'reject') setMsg('נדחה. הסיבה נשמרה והמחולל ילמד ממנה בהרצות הבאות.')
       else if (b.action === 'run') setMsg(`נוצרו ${j.done} הצעות. נשארו ${j.remaining} שאלות בלי תמונה.`)
       else if (b.action === 'approve_clean') setMsg(`אושרו ונשמרו ${j.saved} תמונות.`)
     } catch { setMsg('שגיאת רשת') }
@@ -59,13 +64,34 @@ export default function AdminVisualsPage() {
               {(p.question_fixes || []).map((w: string, i: number) => <div key={i} className="text-xs text-[#2F5BE3]">תיקון מוצע לשאלה: {w}</div>)}
               <div className="flex gap-2 mt-1">
                 {p.visual_data && <button disabled={busy} className="min-h-[40px] px-4 rounded-xl bg-[#12937A] text-white font-bold text-sm" onClick={() => post({ action: 'approve', id: p.id })}>לאשר</button>}
-                <button disabled={busy} className="min-h-[40px] px-4 rounded-xl border text-[#DC2626] font-bold text-sm" onClick={() => post({ action: 'reject', id: p.id })}>לדחות</button>
+                <button disabled={busy} className="min-h-[40px] px-4 rounded-xl border text-[#DC2626] font-bold text-sm" onClick={() => { setRej(p); setTags([]); setWhy('') }}>לדחות</button>
               </div>
             </div>
           ))}
         </div>
         {data && data.items.length === 0 && <p className="text-[#4A5672] mt-4">אין הצעות ממתינות. לחצו על "ליצור הצעות".</p>}
       </div>
+      {rej && (
+        <div role="dialog" aria-modal="true" aria-label="למה לדחות" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setRej(null)}>
+          <div className="bg-white rounded-2xl p-5 w-full max-w-[460px] flex flex-col gap-3" dir="rtl" onClick={e => e.stopPropagation()}>
+            <div className="font-black text-lg">למה לדחות את התמונה?</div>
+            <div className="text-sm text-[#4A5672]">הסיבה נשמרת והמחולל מקבל את הדחיות האחרונות כדי לא לחזור על הטעות.</div>
+            <div className="flex flex-wrap gap-2">
+              {REASONS.map(r => (
+                <button key={r} aria-pressed={tags.includes(r)} onClick={() => setTags(t => t.includes(r) ? t.filter(x => x !== r) : [...t, r])}
+                  className={`min-h-[40px] px-3 rounded-full border-2 text-sm font-bold ${tags.includes(r) ? 'border-[#2F5BE3] bg-[#EAF0FF] text-[#2F5BE3]' : 'border-[#E8E2D6] bg-white'}`}>{r}</button>
+              ))}
+            </div>
+            <textarea value={why} onChange={e => setWhy(e.target.value)} rows={3} placeholder="אפשר להוסיף במילים שלכם: מה לא בסדר ומה היה צריך להיות"
+              className="w-full rounded-xl border border-[#D9D2C4] p-3 text-sm" />
+            <div className="flex gap-2 justify-end">
+              <button className="min-h-[44px] px-4 rounded-xl border font-bold text-sm" onClick={() => setRej(null)}>ביטול</button>
+              <button disabled={busy || (!tags.length && !why.trim())} className="min-h-[44px] px-5 rounded-xl bg-[#DC2626] text-white font-bold text-sm disabled:opacity-50"
+                onClick={async () => { await post({ action: 'reject', id: rej.id, tags, reason: why }); setRej(null) }}>לדחות ולשמור סיבה</button>
+            </div>
+          </div>
+        </div>
+      )}
     </ParentPage>
   )
 }
