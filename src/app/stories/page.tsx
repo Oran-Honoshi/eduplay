@@ -14,6 +14,10 @@ export default function StoriesPage() {
   const [open, setOpen] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  // one niqqud level at a time (remembered in the link: /stories?level=3)
+  const [level, setLevel] = useState(1)
+  useEffect(() => { const l = Number(new URLSearchParams(window.location.search).get('level')); if (l >= 1 && l <= 6) setLevel(l) }, [])
+  const pick = (l: number) => { setLevel(l); try { window.history.replaceState(null, '', `?level=${l}`) } catch {} }
 
   async function load() {
     const r = await fetch('/api/stories?all=1')
@@ -21,6 +25,10 @@ export default function StoriesPage() {
     const d = await r.json(); setList(d.booklets); setAdmin(!!d.admin)
   }
   useEffect(() => { load() }, [])
+
+  const LEVELS: [number, string][] = [[1, 'קמץ ופתח'], [2, 'שווא'], [3, 'חטף פתח וחיריק'], [4, 'צירה וסגול'], [5, 'חולם'], [6, 'שורוק וקובוץ']]
+  const countOf = (l: number) => (list || []).filter(b => b.level_number === l).length
+  const shown = (list || []).filter(b => b.level_number === level)
 
   const replace = (b: StoryBooklet) => setList(l => (l || []).map(x => (x.id === b.id ? b : x)))
   async function patch(id: string, body: any) {
@@ -57,9 +65,17 @@ export default function StoriesPage() {
     <ParentPage section="create" title="ספרוני קריאה ראשונה" back={{ href: '/dashboard?tab=create', label: 'יצירה' }}
       subtitle="סיפורים קצרים לפי רמות ניקוד (רמה 1: קמץ ופתח, רמה 2: גם שווא, רמה 3: גם חטף פתח וחיריק, רמה 4: גם צירה וסגול, רמה 5: גם חולם, רמה 6: גם שורוק וקובוץ), עם תמונות קטנות במקום מילים שעוד לא למדו. אפשר להדפיס (A5) או לקרוא יחד באפליקציה — הילדים מוצאים אותם גם במסך הבית שלהם.">
         {msg && <div style={{ background: '#FDECEC', color: '#B42318', padding: '10px 14px', borderRadius: 12, fontWeight: 700 }}>{msg}</div>}
-        {!list ? <div style={{ color: C.textMuted }}>טוען…</div> : list.length === 0 ? <div style={{ color: C.textMuted }}>עוד אין ספרונים פעילים.</div> : (
+        <div role="tablist" aria-label="רמות ניקוד" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {LEVELS.map(([l, name]) => (
+            <button key={l} role="tab" aria-selected={level === l} onClick={() => pick(l)}
+              style={{ minHeight: 48, padding: '0 16px', borderRadius: 50, border: `2px solid ${level === l ? C.primary : C.border}`, background: level === l ? C.primaryLight : '#fff', color: level === l ? C.primary : C.text, fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>
+              רמה {l}: {name}{list ? ` (${countOf(l)})` : ''}
+            </button>
+          ))}
+        </div>
+        {!list ? <div style={{ color: C.textMuted }}>טוען…</div> : shown.length === 0 ? <div style={{ color: C.textMuted }}>עוד אין ספרונים פעילים ברמה הזו.</div> : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
-            {list.map(b => {
+            {shown.map(b => {
               const [sl, sbg, sfg] = STATUS[b.status] || STATUS.draft
               const drawn = [b.cover?.image_url, ...b.pages.map(p => p.image_url)].filter(Boolean).length
               return (
