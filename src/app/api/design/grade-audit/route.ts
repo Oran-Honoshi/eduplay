@@ -21,6 +21,13 @@ const disp = (sp: Record<string, string>, name: string): Record<string, string> 
 export async function GET(req: NextRequest) {
   const sp = Object.fromEntries(req.nextUrl.searchParams)
   if (!designAllowed(sp)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  try { return await build(req, sp) } catch (e: any) {
+    // the key was valid, so it is safe to say what broke
+    return NextResponse.json({ error: String(e?.message || e), stack: String(e?.stack || '').split('\n').slice(0, 6) }, { status: 500 })
+  }
+}
+
+async function build(req: NextRequest, sp: Record<string, string>): Promise<NextResponse> {
   const sb = createServiceRoleClient()
 
   const { data: topicsRaw } = await sb.from('topics').select('id, slug, grade, sort_order, title_he, title_en, description_en, unit_he, unit_en, subject:subjects(slug)').order('grade').order('sort_order')
