@@ -1,0 +1,42 @@
+[
+  {
+    "question": { "text": "5 ציפורים יושבות על ענף. 2 עפות. כמה נשארות?", "answer": "3", "subject": "math", "grade": "גן" },
+    "result": { "mode": "library", "visual_data": { "type": "objects", "icon": "bird", "count": 5, "flying": 2, "branch": true },
+      "alt": "חמש ציפורים על ענף, שתיים מהן עפות", "why": "הילד רואה את כל הציפורים ואת אלה שעפות, וסופר את מי שנשארו", "hidden": "מספר הציפורים שנשארו (3) לא כתוב בשום מקום",
+      "numbers_used": ["5 = ציפורים על הענף (מהשאלה)", "2 = ציפורים שעפות (מהשאלה)"] }
+  },
+  {
+    "question": { "text": "בכל קופסה יש 4 עפרונות. כמה עפרונות יש ב-3 קופסאות?", "answer": "12", "subject": "math", "grade": "ב" },
+    "result": { "mode": "library", "visual_data": { "type": "groups", "groups": 3, "each": 4, "icon": "pencil" },
+      "alt": "שלוש קבוצות של ארבעה עפרונות עם פלוס ביניהן", "why": "כפל כחיבור חוזר: 4 ועוד 4 ועוד 4", "hidden": "הסכום 12 לא מופיע, רק גודל כל קבוצה",
+      "numbers_used": ["3 = קופסאות (מספר הקבוצות)", "4 = עפרונות בכל קופסה (גודל קבוצה)"] }
+  },
+  {
+    "question": { "text": "מה גדול ב-10 מ-57?", "answer": "67", "subject": "math", "grade": "א" },
+    "result": { "mode": "library", "visual_data": { "type": "hundred_chart", "from": 1, "to": 100, "highlight": [57], "blank": [67], "arrow": { "from": 57, "dir": "down" } },
+      "alt": "לוח המאה, 57 מודגש וחץ אל התא שמתחתיו", "why": "יורדים שורה אחת בלוח = מוסיפים 10", "hidden": "התא של 67 מוצג כריבוע ?",
+      "numbers_used": ["57 = מהשאלה", "שאר המספרים = מספרי הלוח (פיגום); 67 הוסתר"] }
+  },
+  {
+    "question": { "text": "חשבו: 348 × 26", "answer": "9048", "subject": "math", "grade": "ה" },
+    "result": { "mode": "none", "why": "תרגיל חישוב ישיר בכיתה ה׳; ציור לא יעזור ויוסיף עומס", "hidden": "—", "numbers_used": [] }
+  },
+  {
+    "question": { "text": "חצי מהעוגה נאכל. איזה שבר נשאר?", "answer": "1/2", "subject": "math", "grade": "ב" },
+    "result": { "mode": "library", "visual_data": { "type": "fraction_pie", "pies": [{ "n": 1, "d": 2 }] },
+      "alt": "עוגה עגולה מחולקת לשני חלקים, חלק אחד צבוע (נאכל)", "why": "רואים את החצי שנאכל ואת החצי שנשאר", "hidden": "השבר לא כתוב במספרים",
+      "numbers_used": ["2 חלקים = 'חצי' מהשאלה"] }
+  },
+  {
+    "question": { "text": "How do you say כלב in English?", "answer": "dog", "subject": "english", "grade": "א" },
+    "result": { "mode": "library", "visual_data": { "type": "picture_card", "icon": "dog" },
+      "alt": "כרטיס עם ציור של כלב", "why": "הילד מזהה את החיה מהתמונה בלי לקרוא", "hidden": "המילה dog לא כתובה בכרטיס", "numbers_used": [] }
+  },
+  {
+    "question": { "text": "כמה פינות ישרות יש לצורה?", "answer": "5", "subject": "math", "grade": "ג" },
+    "result": { "mode": "custom",
+      "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 360 300\" role=\"img\" aria-label=\"צורה בצורת האות L\"><polygon points=\"60,30 160,30 160,170 300,170 300,270 60,270\" fill=\"#EAF0FF\" stroke=\"#2F5BE3\" stroke-width=\"7\" stroke-linejoin=\"round\"/></svg>",
+      "alt": "צורה בצורת האות L עם שש פינות", "why": "צורה שאין לה סוג בספרייה; הילד סופר את הפינות הישרות בעצמו", "hidden": "הפינות לא מסומנות ולא ממוספרות",
+      "numbers_used": [], "new_type_suggestion": "polygon { points[] } לצורות חופשיות" }
+  }
+]
