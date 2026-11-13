@@ -8,7 +8,7 @@ import s from './question.module.css'
 //   numbers and whole expressions ("8", "6 × 7", "25%", "1/2", "80 ₪") become
 //   yellow number chips automatically, isolated left-to-right.
 
-const NUM = String.raw`\(?(?:(?<![א-ת\u0591-\u05C7A-Za-z])[−\-+])?\d+(?:[.,/:]\d+)*\)?%?`
+const NUM = String.raw`\(?(?:(?<![א-ת\u0591-\u05C7A-Za-z])[−\-+])?\d+(?:[.,/:]\d+)*\)?%?(?:\s?°[CFcf]?)?`
 const OPERAND = String.raw`(?:${NUM}|_{2,}|\?)`
 const MATH = new RegExp(`(${NUM}(?:\\s*[+\\-−–×x·÷=<>]\\s*${OPERAND})*)`, 'g')
 const TOKENS = /(\[\[[\s\S]+?\]\]|<<\d+:[\s\S]+?>>)/g
