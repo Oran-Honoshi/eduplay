@@ -15,6 +15,9 @@ const one = (s: unknown, n = 140) => String(s ?? '').replace(/[֑-ׇ]/g, '').rep
 const subjOf = (t: any): string => (Array.isArray(t.subject) ? t.subject[0]?.slug : subjOf(t)) || ''
 const csv = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
 
+// shown in the browser by default (select all and copy, or Ctrl+S); &download=1 saves it as a file instead
+const disp = (sp: Record<string, string>, name: string) => (sp.download === '1' ? { 'content-disposition': `attachment; filename="${name}"` } : {})
+
 export async function GET(req: NextRequest) {
   const sp = Object.fromEntries(req.nextUrl.searchParams)
   if (!designAllowed(sp)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -43,7 +46,7 @@ export async function GET(req: NextRequest) {
       const t = byTopic.get(q.topic_id); if (!t) continue
       out.push([q.id, t.grade, subjOf(t), t.unit_he || t.unit_en, t.slug, t.title_he || t.title_en, kind(q), q.difficulty, one(q.prompt_he || q.prompt_en, 400), one(q.correct_answer, 80)].map(csv).join(','))
     }
-    return new NextResponse('﻿' + out.join('\n'), { headers: { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': 'attachment; filename="eduplay-questions-by-grade.csv"' } })
+    return new NextResponse('﻿' + out.join('\n'), { headers: { 'content-type': sp.download === '1' ? 'text/csv; charset=utf-8' : 'text/plain; charset=utf-8', ...disp(sp, 'eduplay-questions-by-grade.csv') } })
   }
 
   // questions for the visual generator (scripts/visual-generator): ?format=json&grade_max=3&subject=math&no_visual=1
@@ -64,7 +67,7 @@ export async function GET(req: NextRequest) {
       const right = opts.find(o => o.isCorrect)
       return { id: q.id, text: q.prompt_he || q.prompt_en, answer: right ? (right.value_he || right.value_en) : q.correct_answer, subject: subjOf(t), grade: LET[t.grade] ?? String(t.grade), lesson: t.slug, options: opts.map(o => o.value_he || o.value_en) }
     })
-    return NextResponse.json(out, { headers: { 'content-disposition': 'attachment; filename="visual-generator-input.json"' } })
+    return NextResponse.json(out, { headers: { ...disp(sp, 'visual-generator-input.json') } })
   }
 
   const perTopic = new Map<string, any[]>()
@@ -99,5 +102,5 @@ export async function GET(req: NextRequest) {
     }
   }
   L.splice(5, 0, `סה״כ ${total.topics} נושאים · ${total.qs} שאלות מאושרות.`, '')
-  return new NextResponse(L.join('\n'), { headers: { 'content-type': 'text/markdown; charset=utf-8', 'content-disposition': 'attachment; filename="eduplay-topics-by-grade.md"' } })
+  return new NextResponse(L.join('\n'), { headers: { 'content-type': sp.download === '1' ? 'text/markdown; charset=utf-8' : 'text/plain; charset=utf-8', ...disp(sp, 'eduplay-topics-by-grade.md') } })
 }
