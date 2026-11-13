@@ -50,7 +50,19 @@ function fewShot(): any[] {
   return msgs
 }
 
-export async function generateVisual(q: GenQuestion): Promise<any> {
+/** what the reviewers rejected lately and why, so the model can learn from it (kept short: the 15 most recent) */
+export async function loadRejectionLessons(sb: any): Promise<string> {
+  try {
+    const { data } = await sb.from('visual_proposals').select('question_id, visual_data, reject_reason, reject_tags').eq('status', 'rejected').not('reject_reason', 'is', null).order('decided_at', { ascending: false }).limit(15)
+    if (!data?.length) return ''
+    const { data: qs } = await sb.from('questions').select('id, prompt_he, prompt_en').in('id', data.map((r: any) => r.question_id))
+    const text = new Map((qs || []).map((q: any) => [q.id, String(q.prompt_he || q.prompt_en || '').replace(/\s+/g, ' ').slice(0, 110)]))
+    const lines = data.map((r: any) => `- שאלה: "${text.get(r.question_id) || ''}" · סוג התמונה שנדחתה: ${r.visual_data?.type || '?'} · סיבה: ${[...(r.reject_tags || []), r.reject_reason].filter(Boolean).join('; ')}`)
+    return `\n\n# Lessons from human review (pictures a person rejected recently; do not repeat these mistakes)\n${lines.join('\n')}\n`
+  } catch { return '' }
+}
+
+export async function generateVisual(q: GenQuestion, lessons = ''): Promise<any> {
   const messages = fewShot()
   messages[messages.length - 1].content.push({ type: 'text', text: userMessage(q) })
   let last: any = { errors: ['no answer'] }
@@ -58,7 +70,7 @@ export async function generateVisual(q: GenQuestion): Promise<any> {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY!, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: process.env.EDUPLAY_VISUAL_MODEL || CLAUDE_MODEL, max_tokens: 6000, system: SYSTEM, thinking: { type: 'disabled' }, tools: [TOOL], tool_choice: { type: 'tool', name: TOOL.name }, messages }),
+      body: JSON.stringify({ model: process.env.EDUPLAY_VISUAL_MODEL || CLAUDE_MODEL, max_tokens: 6000, system: SYSTEM + lessons, thinking: { type: 'disabled' }, tools: [TOOL], tool_choice: { type: 'tool', name: TOOL.name }, messages }),
     })
     if (!res.ok) return { failed: true, errors: [`AI request failed (${res.status}): ${(await res.text()).slice(0, 200)}`], attempts: attempt }
     const body = await res.json()
