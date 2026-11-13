@@ -1,3 +1,4 @@
+import { renderVisual as renderEduVisual, VISUAL_TYPES as EDU_TYPES } from '@/lib/eduVisuals/visuals'
 import { renderKidVisual } from './kidVisuals'
 // ─────────────────────────────────────────────────────────────
 //  mathVisual — converts visual_data JSON into an inline SVG string
@@ -28,8 +29,18 @@ function escapeText(value: any): string {
     .replace(/"/g, '&quot;')
 }
 
+// The designer's "Notebook + Oli" library (src/lib/eduVisuals) draws the types this renderer has no case for
+// (objects, ten_frame, groups, array, share, base_ten, money, clock, ruler, pictograph…: the K–3 pictures).
+// For types both libraries know (fraction, number_line, graph, the geometry shapes…) this renderer stays in charge,
+// because it carries the labels and options the higher grades use; a question opts into the new look with lib:'eduplay'.
+// coordinate and angle exist only here.
+const OWN_TYPES = new Set(['angle', 'circle', 'cone', 'coordinate', 'cube', 'cuboid', 'cylinder', 'fraction', 'fraction_compare', 'fraction_pie', 'graph', 'grid', 'net_cube', 'number_line', 'parallelogram', 'pyramid', 'rectangle', 'rectangular_prism', 'sphere', 'square', 'trapezoid', 'triangle'])
+
 export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): string {
   if (!data?.type) return ''
+  if (EDU_TYPES.includes(data.type) && (!OWN_TYPES.has(data.type) || data.lib === 'eduplay')) {
+    try { return renderEduVisual(data, { subject: 'math' }) } catch { return '' }
+  }
 
   const W = opts.width ?? 220
   const H = opts.height ?? 220
