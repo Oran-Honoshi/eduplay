@@ -4,6 +4,7 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import { requireParentOnlySession } from '@/lib/session'
 import { insertQuestions, QuestionInput } from '@/lib/insertQuestions'
 import { loadUploadBlocks } from '@/lib/uploadBlocks'
+import { generateVisual } from '@/lib/eduVisuals/generate'
 import { checkQuestion, normQ, signature } from '@/lib/questionChecks'
 import { ON_REQUEST_FROM_GRADE, findOrCreateOnRequestTopic, addGrade } from '@/lib/onRequestTopics'
 import { cleanSections, cleanWords, sectionSpec } from '@/lib/workbook'
@@ -622,6 +623,8 @@ ${spec.text}` : ''}`
   // ─── insert one question at a time so a single malformed question
   // doesn't drop the rest of the batch (see insertQuestions.ts) ───
   const insertedRows: { id: string; topic_id: string; difficulty: string; prompt_en: string }[] = []
+  // what the picture pass below needs for each saved question
+  const picMeta = new Map<string, { text: string; answer: string; options: string[]; hasVisual: boolean }>()
   const failures: string[] = []
 
   // For 'he'/'bilingual' mode, the system prompt requires every *_he field to
@@ -740,10 +743,35 @@ ${spec.text}` : ''}`
     const result = await insertQuestions([input])
     if (result.ok && result.inserted.length > 0) {
       insertedRows.push(result.inserted[0])
+      picMeta.set(result.inserted[0].id, {
+        text: input.prompt_he || input.prompt_en || '',
+        answer: String(((options as any[] | null) || []).find((o: any) => o.isCorrect)?.value_he || ((options as any[] | null) || []).find((o: any) => o.isCorrect)?.value_en || q.correct_answer || ''),
+        options: ((options as any[] | null) || []).map((o: any) => o.value_he || o.value_en),
+        hasVisual: !!input.visual_data,
+      })
     } else if (result.ok) {
       failures.push(`question ${i + 1}: duplicate of an existing question (skipped)`)
     } else {
       failures.push(`question ${i + 1}: ${result.error}`)
+    }
+  }
+
+  // Pictures for the early grades: the designer's library (objects, ten frames, groups, arrays, sharing, money, clocks…).
+  // Only a clean library result (it passes her validator: the answer is never written or pointed at) is saved; anything else
+  // leaves the question without a picture rather than with a wrong one. Time-boxed so generation never waits long.
+  if (subject_slug === 'math' && grade <= 3 && process.env.ANTHROPIC_API_KEY) {
+    const LET = ['גן', 'א', 'ב', 'ג']
+    const todo = insertedRows.filter(r => picMeta.get(r.id) && !picMeta.get(r.id)!.hasVisual)
+    const t0 = Date.now()
+    for (let i = 0; i < todo.length && Date.now() - t0 < 90_000; i += 4) {
+      await Promise.all(todo.slice(i, i + 4).map(async r => {
+        try {
+          const m = picMeta.get(r.id)!
+          const g = await generateVisual({ id: r.id, text: m.text, answer: m.answer, subject: 'math', grade: LET[grade] ?? String(grade), lesson: topic_slug, options: m.options })
+          if (g.failed || g.mode !== 'library' || g.errors?.length || g.warnings?.length || !g.visual_data) return
+          await serviceClient.from('questions').update({ visual_data: { ...g.visual_data, lib: 'eduplay' } }).eq('id', r.id).is('visual_data', null)
+        } catch { /* no picture is better than a failed generation */ }
+      }))
     }
   }
 
