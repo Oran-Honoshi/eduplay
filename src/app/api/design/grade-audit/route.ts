@@ -16,7 +16,7 @@ const subjOf = (t: any): string => (Array.isArray(t.subject) ? t.subject[0]?.slu
 const csv = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
 
 // shown in the browser by default (select all and copy, or Ctrl+S); &download=1 saves it as a file instead
-const disp = (sp: Record<string, string>, name: string) => (sp.download === '1' ? { 'content-disposition': `attachment; filename="${name}"` } : {})
+const disp = (sp: Record<string, string>, name: string): Record<string, string> => (sp.download === '1' ? { 'content-disposition': `attachment; filename="${name}"` } : {})
 
 export async function GET(req: NextRequest) {
   const sp = Object.fromEntries(req.nextUrl.searchParams)
