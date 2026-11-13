@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin'
 import { createServiceRoleClient } from '@/lib/supabase'
-import { generateVisual } from '@/lib/eduVisuals/generate'
+import { generateVisual, savableVisual } from '@/lib/eduVisuals/generate'
 
 // Admin: the designer's visual generator, run inside the app (ANTHROPIC_API_KEY comes from the environment).
 //   GET                      → pending proposals (with the question), counts per status
@@ -46,14 +46,14 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.action === 'approve' || body.action === 'approve_clean') {
-    let q = sb.from('visual_proposals').select('id, question_id, visual_data, warnings').eq('status', 'pending').eq('mode', 'library')
-    q = body.action === 'approve' ? q.eq('id', String(body.id)) : q.limit(200)
+    let q = sb.from('visual_proposals').select('id, question_id, visual_data, warnings, mode').eq('status', 'pending')
+    q = body.action === 'approve' ? q.eq('id', String(body.id)) : q.eq('mode', 'library').limit(200)   // "approve all clean" never takes free drawings: a person looks at those
     const { data: props } = await q
     let saved = 0
     for (const p of props || []) {
       if (body.action === 'approve_clean' && Array.isArray(p.warnings) && p.warnings.length) continue
       // lib:'eduplay' makes the renderer use the designer's library even for types the older renderer also knows
-      const { data: upd } = await sb.from('questions').update({ visual_data: { ...p.visual_data, lib: 'eduplay' } }).eq('id', p.question_id).is('visual_data', null).select('id')
+      const { data: upd } = await sb.from('questions').update({ visual_data: p.visual_data?.type === 'custom_svg' ? p.visual_data : { ...p.visual_data, lib: 'eduplay' } }).eq('id', p.question_id).is('visual_data', null).select('id')
       await sb.from('visual_proposals').update({ status: 'approved', decided_at: now }).eq('id', p.id)
       if (upd?.length) saved++
     }
@@ -83,8 +83,9 @@ export async function POST(req: NextRequest) {
       await Promise.all(batch.slice(i, i + 3).map(async q => {
         const t: any = tMap.get(q.topic_id)
         const r = await generateVisual({ id: q.id, text: q.prompt_he || q.prompt_en, answer: bareAnswer(q), subject, grade: LET[t.grade] ?? String(t.grade), lesson: t.slug, options: (Array.isArray(q.options) ? q.options : []).map((o: any) => o.value_he || o.value_en) })
-        const status = r.failed || r.errors?.length ? 'failed' : r.mode === 'none' ? 'none_needed' : r.mode === 'custom' ? 'custom' : 'pending'
-        await sb.from('visual_proposals').insert({ question_id: q.id, status, mode: r.mode ?? null, visual_data: r.mode === 'library' ? r.visual_data : null, why: r.why ?? null, hidden: r.hidden ?? null, warnings: [...(r.warnings || []), ...(r.question_fixes?.length ? [] : [])], errors: r.errors || [], question_fixes: r.question_fixes ?? null, attempts: r.attempts ?? null })
+        const vd = savableVisual({ ...r, warnings: [] })   // warnings are shown to the admin instead of blocking
+        const status = r.failed || r.errors?.length ? 'failed' : r.mode === 'none' ? 'none_needed' : vd ? 'pending' : 'failed'
+        await sb.from('visual_proposals').insert({ question_id: q.id, status, mode: r.mode ?? null, visual_data: vd ? (vd.type === 'custom_svg' ? vd : r.visual_data) : null, why: r.why ?? null, hidden: r.hidden ?? null, warnings: [...(r.warnings || []), ...(r.question_fixes?.length ? [] : [])], errors: r.errors || [], question_fixes: r.question_fixes ?? null, attempts: r.attempts ?? null })
         done++
       }))
     }

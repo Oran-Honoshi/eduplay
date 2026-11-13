@@ -58,7 +58,7 @@ export async function generateVisual(q: GenQuestion): Promise<any> {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY!, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: process.env.EDUPLAY_VISUAL_MODEL || CLAUDE_MODEL, max_tokens: 4000, system: SYSTEM, thinking: { type: 'disabled' }, tools: [TOOL], tool_choice: { type: 'tool', name: TOOL.name }, messages }),
+      body: JSON.stringify({ model: process.env.EDUPLAY_VISUAL_MODEL || CLAUDE_MODEL, max_tokens: 6000, system: SYSTEM, thinking: { type: 'disabled' }, tools: [TOOL], tool_choice: { type: 'tool', name: TOOL.name }, messages }),
     })
     if (!res.ok) return { failed: true, errors: [`AI request failed (${res.status}): ${(await res.text()).slice(0, 200)}`], attempts: attempt }
     const body = await res.json()
@@ -71,4 +71,12 @@ export async function generateVisual(q: GenQuestion): Promise<any> {
     messages.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: call.id, is_error: true, content: `הציור נדחה בבדיקה האוטומטית. תקן וקרא שוב ל-submit_visual:\n- ${check.errors.join('\n- ')}` }] })
   }
   return { ...last, failed: true }
+}
+
+/** a clean result (passes the validator with no warnings) as the visual_data to save, or null when there is nothing safe to save */
+export function savableVisual(g: any): any | null {
+  if (!g || g.failed || g.errors?.length || g.warnings?.length) return null
+  if (g.mode === 'library' && g.visual_data) return { ...g.visual_data, lib: 'eduplay' }
+  if (g.mode === 'custom' && g.svg) return { type: 'custom_svg', svg: g.svg, alt: g.alt || '' }
+  return null
 }
