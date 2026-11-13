@@ -50,14 +50,15 @@ export default function AdminVisualsPage() {
               <div className="font-bold" dir="auto">{p.question}</div>
               <div className="text-xs text-[#4A5672]">תשובה: <span dir="auto">{p.answer}</span></div>
               {p.visual_data
-                ? <div className="rounded-xl border bg-[#FFF9EC] p-2 flex justify-center overflow-auto"><MathVisual data={{ ...p.visual_data, lib: 'eduplay' }} size={300} /></div>
-                : <div className="text-sm text-[#B7862F]">ציור חופשי: צריך עין אנושית, לא נשמר אוטומטית.</div>}
+                ? <div className="rounded-xl border bg-[#FFF9EC] p-2 flex justify-center overflow-auto"><MathVisual data={p.visual_data.type === 'custom_svg' ? p.visual_data : { ...p.visual_data, lib: 'eduplay' }} size={300} /></div>
+                : <div className="text-sm text-[#B7862F]">אין תמונה להצגה.</div>}
+              {p.visual_data?.type === 'custom_svg' && <div className="text-xs text-[#B7862F]">ציור חופשי (לא מהספרייה): כדאי להסתכל טוב לפני האישור.</div>}
               <div className="text-sm">{p.why}</div>
               <div className="text-xs text-[#4A5672]">הוסתר: {p.hidden}</div>
               {(p.warnings || []).map((w: string, i: number) => <div key={i} className="text-xs text-[#B7862F]">⚠ {w}</div>)}
               {(p.question_fixes || []).map((w: string, i: number) => <div key={i} className="text-xs text-[#2F5BE3]">תיקון מוצע לשאלה: {w}</div>)}
               <div className="flex gap-2 mt-1">
-                {p.mode === 'library' && <button disabled={busy} className="min-h-[40px] px-4 rounded-xl bg-[#12937A] text-white font-bold text-sm" onClick={() => post({ action: 'approve', id: p.id })}>לאשר</button>}
+                {p.visual_data && <button disabled={busy} className="min-h-[40px] px-4 rounded-xl bg-[#12937A] text-white font-bold text-sm" onClick={() => post({ action: 'approve', id: p.id })}>לאשר</button>}
                 <button disabled={busy} className="min-h-[40px] px-4 rounded-xl border text-[#DC2626] font-bold text-sm" onClick={() => post({ action: 'reject', id: p.id })}>לדחות</button>
               </div>
             </div>

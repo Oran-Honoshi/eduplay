@@ -4,7 +4,7 @@ import { createServerClient, createServiceRoleClient } from '@/lib/supabase'
 import { requireParentOnlySession } from '@/lib/session'
 import { insertQuestions, QuestionInput } from '@/lib/insertQuestions'
 import { loadUploadBlocks } from '@/lib/uploadBlocks'
-import { generateVisual } from '@/lib/eduVisuals/generate'
+import { generateVisual, savableVisual } from '@/lib/eduVisuals/generate'
 import { checkQuestion, normQ, signature } from '@/lib/questionChecks'
 import { ON_REQUEST_FROM_GRADE, findOrCreateOnRequestTopic, addGrade } from '@/lib/onRequestTopics'
 import { cleanSections, cleanWords, sectionSpec } from '@/lib/workbook'
@@ -759,8 +759,8 @@ ${spec.text}` : ''}`
   // Pictures for the early grades: the designer's library (objects, ten frames, groups, arrays, sharing, money, clocks…).
   // Only a clean library result (it passes her validator: the answer is never written or pointed at) is saved; anything else
   // leaves the question without a picture rather than with a wrong one. Time-boxed so generation never waits long.
-  if (subject_slug === 'math' && grade <= 3 && process.env.ANTHROPIC_API_KEY) {
-    const LET = ['גן', 'א', 'ב', 'ג']
+  if (subject_slug === 'math' && (grade <= 3 || (grade <= 6 && /fraction|שבר/i.test(String(topic_slug)))) && process.env.ANTHROPIC_API_KEY) {
+    const LET = ['גן', 'א', 'ב', 'ג', 'ד', 'ה', 'ו']
     const todo = insertedRows.filter(r => picMeta.get(r.id) && !picMeta.get(r.id)!.hasVisual)
     const t0 = Date.now()
     for (let i = 0; i < todo.length && Date.now() - t0 < 90_000; i += 4) {
@@ -768,8 +768,9 @@ ${spec.text}` : ''}`
         try {
           const m = picMeta.get(r.id)!
           const g = await generateVisual({ id: r.id, text: m.text, answer: m.answer, subject: 'math', grade: LET[grade] ?? String(grade), lesson: topic_slug, options: m.options })
-          if (g.failed || g.mode !== 'library' || g.errors?.length || g.warnings?.length || !g.visual_data) return
-          await serviceClient.from('questions').update({ visual_data: { ...g.visual_data, lib: 'eduplay' } }).eq('id', r.id).is('visual_data', null)
+          const vd = savableVisual(g)   // a library picture, or a drawing of its own when no library type fits
+          if (!vd) return
+          await serviceClient.from('questions').update({ visual_data: vd }).eq('id', r.id).is('visual_data', null)
         } catch { /* no picture is better than a failed generation */ }
       }))
     }

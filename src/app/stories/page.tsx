@@ -46,7 +46,7 @@ export default function StoriesPage() {
   const pill = (bg: string, fg: string): React.CSSProperties => ({ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 50, border: 'none', background: bg, color: fg, fontWeight: 800, fontSize: 13, cursor: 'pointer', textDecoration: 'none', fontFamily: 'inherit' })
   const STATUS: Record<string, [string, string, string]> = { draft: ['טיוטה', C.amberLight, C.amberText], approved: ['פעיל', C.accentLight, C.accent], hidden: ['מוסתר', '#EEE', '#666'] }
 
-  const slotBox = (b: StoryBooklet, slot: string, url: string | null | undefined, label: string, lines: string[], scene?: string) => (
+  const slotBox = (b: StoryBooklet, slot: string, url: string | null | undefined, label: string, lines: string[], _scene?: string) => (
     <div key={slot} style={{ border: `1px solid ${C.border}`, borderRadius: 12, padding: 10, display: 'flex', gap: 10, alignItems: 'flex-start', background: '#fff' }}>
       <label style={{ width: 96, height: 96, flexShrink: 0, borderRadius: 10, border: `1.5px dashed ${C.border}`, background: url ? `center/cover url(${url})` : '#FAF8F3', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: C.textMuted }}>
         {busy === `${b.id}:${slot}` ? '…' : !url && <Upload size={20} />}
@@ -55,7 +55,6 @@ export default function StoriesPage() {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 800, fontSize: 13, color: C.textSecondary }}>{label}</div>
         {lines.map((l, i) => <div key={i} style={{ fontSize: 17, fontWeight: 600 }} dangerouslySetInnerHTML={{ __html: lineHtml(l) }} />)}
-        {scene && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4, lineHeight: 1.5 }}>{scene}</div>}
         {url && <button onClick={() => patch(b.id, { clear_image: slot === 'cover' ? 'cover' : Number(slot) })} style={{ ...pill('transparent', '#B42318'), padding: '4px 0', fontSize: 12 }}><Trash2 size={12} /> הסרת האיור</button>}
       </div>
     </div>

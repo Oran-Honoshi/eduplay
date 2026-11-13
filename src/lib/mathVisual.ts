@@ -1,5 +1,7 @@
 import { renderVisual as renderEduVisual, VISUAL_TYPES as EDU_TYPES } from '@/lib/eduVisuals/visuals'
 import { renderKidVisual } from './kidVisuals'
+// @ts-ignore: plain JS module shipped by the designer
+import { sanitizeCustomSvg } from '@/lib/eduVisuals/validate.js'
 // ─────────────────────────────────────────────────────────────
 //  mathVisual — converts visual_data JSON into an inline SVG string
 //  Shared by MathVisual.tsx (client, wraps the string in JSX) and
@@ -38,6 +40,12 @@ const OWN_TYPES = new Set(['angle', 'circle', 'cone', 'coordinate', 'cube', 'cub
 
 export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): string {
   if (!data?.type) return ''
+  // a picture the generator drew itself because no library type fit: drawn only if it still passes the brand/safety check
+  if (data.type === 'custom_svg') {
+    const svg = String(data.svg || '')
+    if (!svg || sanitizeCustomSvg(svg).length) return ''
+    return svg.replace(/^\s*<svg/, '<svg style="max-width:100%;height:auto;display:block;margin:0 auto" direction="ltr"')
+  }
   if (EDU_TYPES.includes(data.type) && (!OWN_TYPES.has(data.type) || data.lib === 'eduplay')) {
     try { return renderEduVisual(data, { subject: 'math' }) } catch { return '' }
   }
