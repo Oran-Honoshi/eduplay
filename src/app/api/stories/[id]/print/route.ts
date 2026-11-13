@@ -41,6 +41,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   ${brief && p.scene ? `<div class="brief"><b>איור עמוד ${i + 1}:</b> ${esc(p.scene)}</div>` : ''}
   <div class="num">${i + 1}</div>
 </section>`).join('')
+  const par = b.cover?.parents
+  const parents = par?.text?.length ? `
+<section class="page parents">
+  <h2>פִּינַּת הוֹרִים</h2>
+  ${b.cover?.theme ? `<div class="theme">${esc(b.cover.theme)}</div>` : ''}
+  ${par.title ? `<h3>${esc(par.title)}</h3>` : ''}
+  ${par.text.map(t => `<p>${esc(t)}</p>`).join('')}
+</section>` : ''
   const end = `
 <section class="page end">
   <div class="star">★</div>
@@ -70,6 +78,11 @@ body { margin: 0; font-family: 'Noto Sans Hebrew', sans-serif; color: #16213E; b
 .cover .art { height: 110mm; }
 .reader { font-size: 14pt; font-weight: 600; margin-top: auto; }
 .reader span { display: inline-block; width: 52mm; border-bottom: 1.5px solid #16213E; }
+.parents { background: #F4F7FF; font-family: 'Noto Sans Hebrew', sans-serif; }
+.parents h2 { margin: 0; font-size: 22pt; color: #2F5BE3; }
+.parents h3 { margin: 0; font-size: 14pt; }
+.parents .theme { font-size: 11pt; color: #6B7280; font-weight: 700; }
+.parents p { margin: 0; font-size: 13pt; line-height: 1.7; }
 .end { align-items: center; justify-content: center; text-align: center; background: #F2FBF7; }
 .end .star { font-size: 70pt; color: #FFC940; line-height: 1; }
 .end h2 { font-size: 30pt; margin: 0; }
@@ -80,7 +93,7 @@ body { margin: 0; font-family: 'Noto Sans Hebrew', sans-serif; color: #16213E; b
 @media print { body { background: #fff; } .page { margin: 0; box-shadow: none; } .no-print { display: none; } }
 </style></head><body>
 <div class="no-print"><button style="background:#2F5BE3;color:#fff" onclick="window.print()">הדפסה / שמירה כ-PDF</button><button style="background:#fff" onclick="window.close()">סגירה</button></div>
-${cover}${pages}${end}
+${cover}${pages}${parents}${end}
 ${noPrint ? '' : '<script>setTimeout(() => window.print(), 900)</script>'}
 </body></html>`
   return new NextResponse(html, { headers: { 'content-type': 'text/html; charset=utf-8' } })

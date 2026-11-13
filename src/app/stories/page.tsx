@@ -55,7 +55,7 @@ export default function StoriesPage() {
 
   return (
     <ParentPage section="create" title="ספרוני קריאה ראשונה" back={{ href: '/dashboard?tab=create', label: 'יצירה' }}
-      subtitle="סיפורים קצרים לפי רמות ניקוד (רמה 1: קמץ ופתח, רמה 2: גם שווא וחטף פתח), עם תמונות קטנות במקום מילים שעוד לא למדו. אפשר להדפיס (A5) או לקרוא יחד באפליקציה — הילדים מוצאים אותם גם במסך הבית שלהם.">
+      subtitle="סיפורים קצרים לפי רמות ניקוד (רמה 1: קמץ ופתח, רמה 2: גם שווא, רמה 3: גם חטף פתח וחיריק, רמה 4: גם צירה וסגול, רמה 5: גם חולם, רמה 6: גם שורוק וקובוץ), עם תמונות קטנות במקום מילים שעוד לא למדו. אפשר להדפיס (A5) או לקרוא יחד באפליקציה — הילדים מוצאים אותם גם במסך הבית שלהם.">
         {msg && <div style={{ background: '#FDECEC', color: '#B42318', padding: '10px 14px', borderRadius: 12, fontWeight: 700 }}>{msg}</div>}
         {!list ? <div style={{ color: C.textMuted }}>טוען…</div> : list.length === 0 ? <div style={{ color: C.textMuted }}>עוד אין ספרונים פעילים.</div> : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 12 }}>
@@ -72,6 +72,7 @@ export default function StoriesPage() {
                       {admin && <div style={{ display: 'flex', gap: 6, marginTop: 4, fontSize: 12 }}><span style={{ background: sbg, color: sfg, borderRadius: 50, padding: '2px 8px', fontWeight: 800 }}>{sl}</span><span style={{ color: C.textMuted }}>איורים: {drawn}/{b.pages.length + 1}</span></div>}
                     </div>
                   </div>
+                  {b.cover?.theme && <div style={{ fontSize: 12, color: C.textMuted, fontWeight: 700 }}>{b.cover.theme}</div>}
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <a href={`/api/stories/${b.id}/print`} target="_blank" rel="noreferrer" style={pill(C.primary, '#fff')}><Printer size={14} /> הדפסה</a>
                     <a href={`/read/${b.id}`} style={pill(C.primaryLight, C.primary)}><BookOpen size={14} /> לקרוא יחד</a>
@@ -86,6 +87,12 @@ export default function StoriesPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 8 }}>
                       {slotBox(b, 'cover', b.cover?.image_url, 'כריכה', [b.title_he], b.cover?.scene)}
                       {b.pages.map((p, i) => slotBox(b, String(i), p.image_url, `עמוד ${i + 1}`, p.lines, p.scene))}
+                      {b.cover?.parents?.text?.length ? (
+                        <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, padding: 12, background: '#F4F7FF', fontSize: 13, lineHeight: 1.7 }}>
+                          <div style={{ fontWeight: 800 }}>פינת הורים{b.cover.parents.title ? ` · ${b.cover.parents.title}` : ''}</div>
+                          {b.cover.parents.text.map((t, i) => <div key={i}>{t}</div>)}
+                        </div>
+                      ) : null}
                     </div>
                   )}
                 </div>
