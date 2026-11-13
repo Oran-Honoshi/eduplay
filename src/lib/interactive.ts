@@ -6,6 +6,8 @@ import { parsePoint, givenPoints, isGridQuestion } from '@/components/kid/GridAn
 export type InteractiveKind = 'grid' | 'numberline' | 'shade' | null
 
 const MARK_VERBS = /(סמנו|סמן|סמני|שרטטו|שרטט|ציירו|צייר|mark|plot|draw)/i
+// "סומנו שלושה קודקודים…", "נתונים הנקודות…": the points are already there — draw them, don't ask the child to place them
+const GIVEN_VERBS = /(סומנו|סומנה|סומן|מסומנ|נתונ|הנקודות הבאות נתונות|are marked|is marked|are given|is given)/i
 const SHAPE_WORDS = /(מלבן|ריבוע|משולש|מרובע|מצולע|מקבילית|טרפז|rectangle|square|triangle|quadrilateral|polygon|parallelogram|trapezoid)/i
 const FRACTION_RE = /^\s*(\d+)\s*\/\s*(\d+)\s*$/
 
@@ -13,8 +15,10 @@ const isOpen = (q: any) => !(Array.isArray(q?.options) && q.options.length)
 const promptOf = (q: any) => String(q?.prompt_he || q?.prompt_en || '')
 
 /** "mark the points A(2,3), B(9,3)…" → the points to place first, and how to join them */
-export function plotTask(q: any): { points: [number, number, string][]; join: 'segment' | 'polygon' | null } | null {
-  if (q?.visual_data?.type !== 'coordinate' || !MARK_VERBS.test(promptOf(q))) return null
+export function plotTask(q: any): { points: [number, number, string][]; join: 'segment' | 'polygon' | 'path' | null; given?: boolean } | null {
+  if (q?.visual_data?.type !== 'coordinate') return null
+  const given = !MARK_VERBS.test(promptOf(q)) && GIVEN_VERBS.test(promptOf(q))
+  if (!given && !MARK_VERBS.test(promptOf(q))) return null
   const steps = q.visual_data.steps || q.visual_data.range || 5
   const q1 = q.visual_data.quadrant === 1 || q.visual_data.quadrant === '1'
   const ans = parsePoint(q.correct_answer)
@@ -22,8 +26,11 @@ export function plotTask(q: any): { points: [number, number, string][]; join: 's
     (q1 ? x >= 0 && y >= 0 : true) && Math.abs(x) <= steps && Math.abs(y) <= steps
     && !(ans && ans[0] === x && ans[1] === y))
   if (!pts.length || pts.length > 6) return null
-  const join = pts.length === 2 ? 'segment' : pts.length >= 3 && SHAPE_WORDS.test(promptOf(q)) ? 'polygon' : null
-  return { points: pts, join }
+  // given points of a shape the child must complete: join them as an open path, never as a closed (wrong) shape
+  const join = given
+    ? (pts.length >= 2 ? 'path' : null)
+    : pts.length === 2 ? 'segment' : pts.length >= 3 && SHAPE_WORDS.test(promptOf(q)) ? 'polygon' : null
+  return { points: pts, join, ...(given ? { given: true } : {}) }
 }
 
 /** the number line is the answer: an integer inside its range */

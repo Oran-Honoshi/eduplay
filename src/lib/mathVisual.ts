@@ -44,8 +44,8 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
   const faceR    = dark ? '#2a2a2a' : '#E8F0FF'  // right/side 3D face
   const faceT    = dark ? '#353535' : '#F0F4FF'  // top 3D face
   const emptyBox = dark ? '#333' : '#F0F4FF'      // unfilled fraction/grid cell
-  const gridLn   = dark ? '#444' : '#E5E7EB'
-  const axisTick = dark ? '#aaa' : '#6B7280'
+  const gridLn   = dark ? '#666' : '#B8C0CC'
+  const axisTick = dark ? '#ddd' : '#1E2D4E'
 
   function svg(inner: string): string {
     return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" direction="ltr" style="direction:ltr">${inner}</svg>`
@@ -286,13 +286,13 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
       let g = ''
       for (let v = 0; v <= ymax + 1e-9; v += ystep) {
         g += `<line x1="${padL}" y1="${Y(v)}" x2="${W - padR}" y2="${Y(v)}" stroke="${gridLn}" stroke-width="1"/>`
-        g += `<text x="${padL - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="10" font-family="Georgia,serif" fill="${axisTick}">${+v.toFixed(2)}</text>`
+        g += `<text x="${padL - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="12" font-weight="bold" font-family="Georgia,serif" fill="${axisTick}">${+v.toFixed(2)}</text>`
       }
       for (let i = 1; i <= xmax; i++) {
         g += `<line x1="${X(i)}" y1="${padT}" x2="${X(i)}" y2="${padT + gh}" stroke="${gridLn}" stroke-width="1"/>`
-        g += `<text x="${X(i)}" y="${padT + gh + 14}" text-anchor="middle" font-size="10" font-family="Arial,sans-serif" fill="${axisTick}">${escapeText(xlabels[i - 1] ?? String(i))}</text>`
+        g += `<text x="${X(i)}" y="${padT + gh + 14}" text-anchor="middle" font-size="12" font-weight="bold" font-family="Arial,sans-serif" fill="${axisTick}">${escapeText(xlabels[i - 1] ?? String(i))}</text>`
       }
-      g += `<line x1="${padL}" y1="${padT + gh}" x2="${W - padR + 2}" y2="${padT + gh}" stroke="${stroke}" stroke-width="2"/><line x1="${padL}" y1="${padT - 4}" x2="${padL}" y2="${padT + gh}" stroke="${stroke}" stroke-width="2"/>`
+      g += `<line x1="${padL}" y1="${padT + gh}" x2="${W - padR + 2}" y2="${padT + gh}" stroke="${stroke}" stroke-width="3.5"/><line x1="${padL}" y1="${padT - 4}" x2="${padL}" y2="${padT + gh}" stroke="${stroke}" stroke-width="3.5"/>`
       if (data.xlabel) g += `<text x="${W - padR}" y="${H - 2}" text-anchor="end" font-size="10" font-family="Arial,sans-serif" fill="${lbl}">${escapeText(data.xlabel)}</text>`
       if (data.ylabel) g += `<text x="${padL + 4}" y="${padT - 4}" font-size="10" font-family="Arial,sans-serif" fill="${lbl}">${escapeText(data.ylabel)}</text>`
       series.forEach((sr, k) => {
@@ -330,7 +330,7 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
       let gridLines = ''
       for (let i = 0; i < nLines; i++) {
         const pos = pad + i * step
-        gridLines += `<line x1="${pos}" y1="${pad}" x2="${pos}" y2="${H - pad}" stroke="${gridLn}" stroke-width="1"/><line x1="${pad}" y1="${pos}" x2="${W - pad}" y2="${pos}" stroke="${gridLn}" stroke-width="1"/>`
+        gridLines += `<line x1="${pos}" y1="${pad}" x2="${pos}" y2="${H - pad}" stroke="${gridLn}" stroke-width="1.5"/><line x1="${pad}" y1="${pos}" x2="${W - pad}" y2="${pos}" stroke="${gridLn}" stroke-width="1.5"/>`
       }
 
       let tickLabels = ''
@@ -338,9 +338,9 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
       for (let i = 0; i < nLines; i++) {
         const val = q1 ? i : i - steps
         if (val !== 0 && val % every !== 0) continue
-        if (val === 0) { if (q1) tickLabels += `<text x="${cx - 10}" y="${cy + 14}" text-anchor="middle" font-size="9" font-family="Georgia,serif" fill="${axisTick}">0</text>`; continue }
+        if (val === 0) { if (q1) tickLabels += `<text x="${cx - 10}" y="${cy + 14}" text-anchor="middle" font-size="13" font-weight="bold" font-family="Georgia,serif" fill="${axisTick}">0</text>`; continue }
         const x = cx + val * step
-        tickLabels += `<text x="${x}" y="${cy + 14}" text-anchor="middle" font-size="9" font-family="Georgia,serif" fill="${axisTick}">${val}</text><text x="${cx - 12}" y="${cy - val * step + 4}" text-anchor="middle" font-size="9" font-family="Georgia,serif" fill="${axisTick}">${val}</text>`
+        tickLabels += `<text x="${x}" y="${cy + 14}" text-anchor="middle" font-size="13" font-weight="bold" font-family="Georgia,serif" fill="${axisTick}">${val}</text><text x="${cx - 13}" y="${cy - val * step + 5}" text-anchor="middle" font-size="13" font-weight="bold" font-family="Georgia,serif" fill="${axisTick}">${val}</text>`
       }
 
       const plotted = (points as any[]).map(([px, py, ptLabel, style]) => {
@@ -354,7 +354,7 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
         ? `<line x1="${cx + points[0][0] * step}" y1="${cy - points[0][1] * step}" x2="${cx + points[1][0] * step}" y2="${cy - points[1][1] * step}" stroke="${hl}" stroke-width="2"${data.dashed ? ' stroke-dasharray="5,4"' : ''}/>`
         : ''
 
-      const axes = `<line x1="${cx}" y1="${pad - 4}" x2="${cx}" y2="${H - pad + 4}" stroke="${stroke}" stroke-width="2"/><line x1="${pad - 4}" y1="${cy}" x2="${W - pad + 4}" y2="${cy}" stroke="${stroke}" stroke-width="2"/><polygon points="${cx},${pad - 4} ${cx - 4},${pad + 6} ${cx + 4},${pad + 6}" fill="${stroke}"/><polygon points="${W - pad + 4},${cy} ${W - pad - 6},${cy - 4} ${W - pad - 6},${cy + 4}" fill="${stroke}"/><text x="${cx + 6}" y="${pad + 12}" font-size="11" font-family="Georgia,serif" fill="${lbl}">y</text><text x="${W - pad + 6}" y="${cy + 4}" font-size="11" font-family="Georgia,serif" fill="${lbl}">x</text>`
+      const axes = `<line x1="${cx}" y1="${pad - 4}" x2="${cx}" y2="${H - pad + 4}" stroke="${stroke}" stroke-width="3.5"/><line x1="${pad - 4}" y1="${cy}" x2="${W - pad + 4}" y2="${cy}" stroke="${stroke}" stroke-width="3.5"/><polygon points="${cx},${pad - 4} ${cx - 4},${pad + 6} ${cx + 4},${pad + 6}" fill="${stroke}"/><polygon points="${W - pad + 4},${cy} ${W - pad - 6},${cy - 4} ${W - pad - 6},${cy + 4}" fill="${stroke}"/><text x="${cx + 6}" y="${pad + 12}" font-size="14" font-weight="bold" font-family="Georgia,serif" fill="${lbl}">y</text><text x="${W - pad + 6}" y="${cy + 4}" font-size="14" font-weight="bold" font-family="Georgia,serif" fill="${lbl}">x</text>`
 
       // Optional extras (grade 7): vlines:[x] → the line x=a, hlines:[y] → y=b,
       // polygon:[[x,y],…] → a shape such as a rectangle, segments:[[[x1,y1],[x2,y2]],…].

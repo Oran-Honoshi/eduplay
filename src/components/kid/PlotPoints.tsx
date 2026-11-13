@@ -14,7 +14,7 @@ const F = '"Rubik","Assistant",sans-serif'
 export default function PlotPoints({ data, points, join, T, isHE, onDone, startDone = false, size = 300 }: {
   data: any
   points: [number, number, string][]
-  join: 'segment' | 'polygon' | null
+  join: 'segment' | 'polygon' | 'path' | null
   T: any
   isHE: boolean
   onDone: () => void
@@ -24,6 +24,8 @@ export default function PlotPoints({ data, points, join, T, isHE, onDone, startD
   const g = geometry(data, size)
   const [placed, setPlaced] = useState(startDone ? points.length : 0)
   const [miss, setMiss] = useState<{ p: [number, number]; n: number } | null>(null)
+  // the child's own pencil dots (not graded): tap a grid crossing to add or remove one, they join in tap order
+  const [pencil, setPencil] = useState<[number, number][]>([])
   const done = placed >= points.length
   const accent = T.accent1 === '#FFD700' ? '#2F5BE3' : T.accent1
   const bg = renderMathVisualSVG({ ...data, points: [], segments: [], polygon: undefined }, {
@@ -33,11 +35,14 @@ export default function PlotPoints({ data, points, join, T, isHE, onDone, startD
   const target = points[placed]
 
   function tap(e: React.PointerEvent<SVGSVGElement>) {
-    if (done) return
     const r = e.currentTarget.getBoundingClientRect()
     const px = ((e.clientX - r.left) / r.width) * size, py = ((e.clientY - r.top) / r.height) * size
     const x = Math.round((px - g.cx) / g.step), y = Math.round((g.cy - py) / g.step)
     if (x < g.min || x > g.max || y < g.min || y > g.max) return
+    if (done) {
+      setPencil(list => list.some(p => p[0] === x && p[1] === y) ? list.filter(p => !(p[0] === x && p[1] === y)) : list.length >= 8 ? list : [...list, [x, y]])
+      return
+    }
     if (x === target[0] && y === target[1]) {
       setMiss(null)
       const next = placed + 1
@@ -48,7 +53,8 @@ export default function PlotPoints({ data, points, join, T, isHE, onDone, startD
 
   const shown = points.slice(0, placed)
   const line = shown.length >= 2 && join
-    ? (join === 'polygon' && done
+    ? (join === 'path' ? <polyline points={shown.map(([x, y]) => toPx(x, y).join(',')).join(' ')} fill="none" stroke={accent} strokeWidth={4} strokeLinejoin="round" strokeLinecap="round" />
+      : join === 'polygon' && done
         ? <polygon points={shown.map(([x, y]) => toPx(x, y).join(',')).join(' ')} fill={accent} fillOpacity={0.12} stroke={accent} strokeWidth={3} />
         : <polyline points={shown.map(([x, y]) => toPx(x, y).join(',')).join(' ')} fill="none" stroke={accent} strokeWidth={3} />)
     : null
@@ -62,11 +68,20 @@ export default function PlotPoints({ data, points, join, T, isHE, onDone, startD
       </div>
       <div dir="ltr" style={{ position: 'relative', width: '100%', maxWidth: size, aspectRatio: '1', background: '#fff', borderRadius: 18, border: `2px solid ${T.border}`, overflow: 'hidden', touchAction: 'manipulation' }}>
         <div aria-hidden style={{ position: 'absolute', inset: 0 }} dangerouslySetInnerHTML={{ __html: (bg || '').replace(`width="${size}" height="${size}"`, 'width="100%" height="100%"') }} />
-        <svg viewBox={`0 0 ${size} ${size}`} width="100%" height="100%" style={{ position: 'absolute', inset: 0, cursor: done ? 'default' : 'pointer' }}
+        <svg viewBox={`0 0 ${size} ${size}`} width="100%" height="100%" style={{ position: 'absolute', inset: 0, cursor: 'pointer' }}
           role="application" aria-label={isHE ? 'מערכת צירים — הקישו לסימון נקודה' : 'Coordinate grid — tap to mark a point'} onPointerDown={tap}>
           {line}
           {miss && miss.n >= 2 && !done && (() => { const [x, y] = toPx(target[0], target[1]); return <circle cx={x} cy={y} r={14} fill="none" stroke="#12937A" strokeWidth={3} strokeDasharray="4 3"><animate attributeName="r" values="10;16;10" dur="1.2s" repeatCount="indefinite" /></circle> })()}
           {miss && !done && (() => { const [x, y] = toPx(miss.p[0], miss.p[1]); return <circle cx={x} cy={y} r={9} fill="#E85D3F" opacity={0.75} /> })()}
+          {pencil.length >= 2 && (pencil.length >= 3
+            ? <polygon points={pencil.map(([x, y]) => toPx(x, y).join(',')).join(' ')} fill="#FFC940" fillOpacity={0.18} stroke="#E0A800" strokeWidth={4} strokeLinejoin="round" strokeDasharray="8 5" />
+            : <polyline points={pencil.map(([x, y]) => toPx(x, y).join(',')).join(' ')} fill="none" stroke="#E0A800" strokeWidth={4} strokeLinecap="round" strokeDasharray="8 5" />)}
+          {pencil.map(([px, py]) => { const [x, y] = toPx(px, py); return (
+            <g key={`pc${px},${py}`}>
+              <circle cx={x} cy={y} r={10} fill="#FFC940" stroke="#16213E" strokeWidth={3} />
+              <text x={x + 13} y={y + 22} fontSize={14} fontWeight={800} fontFamily={F} fill="#16213E" stroke="#fff" strokeWidth={3} paintOrder="stroke">({px},{py})</text>
+            </g>
+          ) })}
           {shown.map(([px, py, l]) => { const [x, y] = toPx(px, py); return (
             <g key={l}>
               <circle cx={x} cy={y} r={9} fill="#12937A" stroke="#fff" strokeWidth={3} />
@@ -79,6 +94,19 @@ export default function PlotPoints({ data, points, join, T, isHE, onDone, startD
         <div style={{ fontSize: 17, fontWeight: 700, color: '#B4432A', textAlign: 'center' }}>
           {isHE ? <>זו הנקודה <bdi dir="ltr">({miss.p[0]},{miss.p[1]})</bdi>. קודם זזים ימינה לפי x, ואז למעלה לפי y.</>
                 : <>That's ({miss.p[0]},{miss.p[1]}). Go right by x first, then up by y.</>}
+        </div>
+      )}
+      {done && (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: T.text2 }}>
+            {isHE ? 'אפשר להקיש על הרשת כדי לסמן נקודות ולצייר את הצורה (זה רק לעזרה)' : 'Tap the grid to place your own dots and draw the shape (just a helper)'}
+          </span>
+          {pencil.length > 0 && (
+            <button type="button" onClick={() => setPencil([])}
+              style={{ minHeight: 44, padding: '0 16px', borderRadius: 14, border: `2px solid ${T.border}`, background: '#fff', fontFamily: F, fontSize: 16, fontWeight: 800, color: T.text, cursor: 'pointer' }}>
+              {isHE ? 'מוחקים הכול' : 'Clear'}
+            </button>
+          )}
         </div>
       )}
       <div style={{ display: 'flex', gap: 6 }} aria-hidden>

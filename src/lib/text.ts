@@ -88,7 +88,7 @@ export interface HeMathSegment { type: 'text' | 'math'; content: string }
 //
 // Returns [] when the text is pure narrative with no isolatable expression
 // anywhere (render as a single plain block, no special handling).
-const MATH_RUN = /[\d\s+\-×x÷/.,()=<>?_]+/g
+const MATH_RUN = /[\d\s+\-−×x÷/.,()=<>?_\u25A0-\u25FF\u2B1A-\u2B1C\u2610]+/g
 const UNAMBIGUOUS_OPERATOR = /[=<>]/
 const OTHER_OPERATOR = /[+\-×x÷]/
 

@@ -11,8 +11,9 @@ import { interactiveKind, plotTask } from '@/lib/interactive'
  */
 export default function PlotGate({ q, T, isHE, fresh, children }: { q: any; T: any; isHE: boolean; fresh: boolean; children: React.ReactNode }) {
   const task = plotTask(q)
-  const [done, setDone] = useState(!fresh)
-  useEffect(() => { setDone(!fresh) }, [q?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  const already = !fresh || !!task?.given   // given points are drawn for the child; only "mark…" questions ask for tapping
+  const [done, setDone] = useState(already)
+  useEffect(() => { setDone(already) }, [q?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   if (!task) return <>{children}</>
   // when the answer itself is a point, the answer grid shows the marked points
   const keepDrawing = interactiveKind(q) !== 'grid'
