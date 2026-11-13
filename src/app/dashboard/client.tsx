@@ -458,6 +458,7 @@ function LibraryHub({ isAdmin }: { isAdmin?: boolean }) {
         <HubGrid items={[
           { icon:ClipboardList, title:'בדיקת מאגר השיעורים', desc:'רמזים, פתרונות צעד אחר צעד ודפי לימוד חדשים לשיעורים — לאשר לפני שהם עולים.', href:'/admin/bank', tone:'amber' },
           { icon:Map, title:'אישורים לספרייה החינמית', desc:'דפים שהורים הציעו לשתף.', href:'/admin/library' },
+          { icon:Map, title:'תמונות לשאלות', desc:'המחולל של דורין: הצעות לאישור.', href:'/admin/visuals' },
           { icon:BookOpen, title:'ספרוני קריאה ראשונה', desc:'איורים, אישור והסתרה.', href:'/stories', tone:'accent' },
         ]}/>
       </>}
