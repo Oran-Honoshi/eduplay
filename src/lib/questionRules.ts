@@ -83,6 +83,19 @@ export function deterministicIssues(q: CheckQ): Issue[] {
     }
   }
 
+  // 1e. two options that are the same expression with different results, or a doubled minus
+  const exprs = opts.map(o => String(o?.value_he ?? o?.value_en ?? '').replace(/\s/g, ''))
+  for (let i = 0; i < exprs.length; i++) {
+    for (let j = i + 1; j < exprs.length; j++) {
+      if (exprs[i].includes('=') && exprs[i].split('=')[0] === exprs[j].split('=')[0] && exprs[i] !== exprs[j]) {
+        issues.push({ code: 'SAME_EXPRESSION_DIFFERENT_RESULT', detail: `options "${exprs[i]}" and "${exprs[j]}" have the same expression with different results; each option needs its own expression`, block: true })
+      }
+    }
+  }
+  if (exprs.some(e => /[-−]\s*[-−]/.test(e.replace(/\)-\(/g, '')) )) {
+    issues.push({ code: 'DOUBLE_MINUS', detail: 'an option has two minus signs in a row (e.g. "=--150")', block: true })
+  }
+
   // 2. arithmetic that can simply be computed
   const m = text.match(/([\d\s+\-−×x÷:*/.,()^]{3,70}?)\s*=\s*(?:\?|☐|_{2,}|□|$)/)
   if (m && answerText) {

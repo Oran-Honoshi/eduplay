@@ -9,7 +9,7 @@ import { ListOrdered } from 'lucide-react'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
 import InlineMath from '@/components/InlineMath'
-import HebrewMathText from '@/components/HebrewMathText'
+import HebrewMathText, { MixedOptionText } from '@/components/HebrewMathText'
 import { AnimatedBtn, Sparkles, THEME_CONFIG } from '@/components/theme'
 import { getFontSize } from '@/lib/fontSize'
 import { announceTokensChanged } from '@/lib/kidPrefs'
@@ -339,7 +339,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
                       {isHE ? translateOptionLabel(opt.label) : opt.label}
                     </span>
                   )}
-                  <span style={{ unicodeBidi:'plaintext' }}><FractionText text={optText(opt)} /></span>
+                  <MixedOptionText text={optText(opt)} />
                 </AnimatedBtn>
               )
             })}

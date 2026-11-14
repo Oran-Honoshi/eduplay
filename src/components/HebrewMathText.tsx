@@ -48,7 +48,7 @@ export default function HebrewMathText({ text, style, className, as: Tag = 'p' }
   if (segments.length === 0) {
     // inline definitions like "M=(3,2)" and bare coordinate pairs "(3,9)" stay in the sentence,
     // each isolated left to right so the brackets and the equals sign keep their order
-    const parts = text.split(/([A-Za-z]{1,3}\s*=\s*\(?-?[\d.,\s-]+\)?|\(\s*-?\d[\d.]*\s*,\s*-?\d[\d.]*\s*\))/g)
+    const parts = text.split(/([A-Za-z]{1,3}\s*=\s*\(?-?[\d.,\s-]+\)?|\(\s*[-−+]?\d[\d.,/]*\s*\)|(?<![\dא-ת\w])[-−]\d[\d.,/]*|\(\s*-?\d[\d.]*\s*,\s*-?\d[\d.]*\s*\))/g)
     return (
       <Tag className={className} style={style}>
         {parts.map((p, i) => i % 2
@@ -74,5 +74,23 @@ export default function HebrewMathText({ text, style, className, as: Tag = 'p' }
         </Tag>
       ))}
     </>
+  )
+}
+
+
+/** An answer option that mixes Hebrew with Latin names ("∢KLM, ∢MLK ו-∢L", "∢KLM בלבד").
+ *  Runs right to left, each angle/point name isolated left to right, so the Hebrew words
+ *  keep their place in the sentence ("בלבד" stays at the end). Pure math/Latin stays LTR. */
+export function MixedOptionText({ text }: { text: string }) {
+  if (!/[\u0590-\u05FF]/.test(text)) {
+    return <span dir="ltr" style={{ unicodeBidi: 'isolate' }}><FractionText text={text} /></span>
+  }
+  const parts = text.split(/(∢\s*[A-Za-z]{1,3}|[A-Za-z]{1,3}(?:\s*=\s*[\d.,()+-]+)?)/g)
+  return (
+    <span dir="rtl" style={{ unicodeBidi: 'isolate' }}>
+      {parts.map((p, i) => i % 2
+        ? <bdi key={i} dir="ltr">{p}</bdi>
+        : <FractionText key={i} text={p} />)}
+    </span>
   )
 }

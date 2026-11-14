@@ -27,4 +27,6 @@ expect('dash minus is fine', { prompt_he: 'חשבו 20 - 5 = ☐', options: [{ l
 expect('figure missing', { ...klm, visual_data: null, prompt_he: 'במשולש KLM מסומנת בקשת זווית אחת, ליד הקודקוד L. אילו סימונים מתאימים?' }, ['FIGURE_MISSING'])
 expect('sign after number', { prompt_he: 'חשבו (-55)+(+20)', options: [{ label: 'A', value_he: '(-55)-(+20)=75-', value_en: '-55+20=-35 correct', isCorrect: true }, { label: 'B', value_he: '35', value_en: '35' }], correct_answer: '(-55)-(+20)=75-' }, ['SIGN_AFTER_NUMBER', 'ANSWER_LEAK'])
 expect('sign in prompt', { prompt_he: 'חשבו: (4-) - (7-) = ?', options: [{ label: 'A', value_he: '3', isCorrect: true }, { label: 'B', value_he: '11' }], correct_answer: '3' }, ['SIGN_AFTER_NUMBER'])
+expect('same expression different result', { prompt_he: 'איזה תרגיל מתאר?', options: [{ label: 'A', value_he: '(+4)-(+9)=-5', isCorrect: true }, { label: 'B', value_he: '(+4)-(+9)=5' }], correct_answer: '(+4)-(+9)=-5' }, ['SAME_EXPRESSION_DIFFERENT_RESULT'])
+expect('double minus', { prompt_he: 'איזה תרגיל מתאר?', options: [{ label: 'A', value_he: '(-60)-(+90)=--150', isCorrect: true }, { label: 'B', value_he: '(+60)+(+90)=150' }], correct_answer: '(-60)-(+90)=--150' }, ['DOUBLE_MINUS'])
 process.exit(bad ? 1 : 0)
