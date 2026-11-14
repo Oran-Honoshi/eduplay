@@ -1,1 +1,12 @@
-{}
+{
+  "bird": "/stories/inline/bird.webp",
+  "boot": "/stories/inline/boot.webp",
+  "cape": "/stories/inline/cape.webp",
+  "cat": "/stories/inline/cat.webp",
+  "doll": "/stories/inline/doll.webp",
+  "door": "/stories/inline/door.webp",
+  "goslings": "/stories/inline/goslings.webp",
+  "grandma": "/stories/inline/grandma.webp",
+  "kitty": "/stories/inline/kitty.webp",
+  "window": "/stories/inline/window.webp"
+}
