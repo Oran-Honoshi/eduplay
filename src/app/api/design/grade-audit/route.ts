@@ -12,7 +12,7 @@ export const maxDuration = 60
 const GRADE = (g: number | null) => (g === 0 ? 'גן' : g == null ? 'ללא כיתה' : `כיתה ${['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'יא', 'יב'][g] || g}`)
 const SUBJ: Record<string, string> = { math: 'חשבון', hebrew: 'עברית', english: 'אנגלית' }
 const one = (s: unknown, n = 140) => String(s ?? '').replace(/[֑-ׇ]/g, '').replace(/\s+/g, ' ').trim().slice(0, n)
-const subjOf = (t: any): string => (Array.isArray(t.subject) ? t.subject[0]?.slug : subjOf(t)) || ''
+const subjOf = (t: any): string => (Array.isArray(t.subject) ? t.subject[0]?.slug : t.subject?.slug) || ''
 const csv = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
 
 // shown in the browser by default (select all and copy, or Ctrl+S); &download=1 saves it as a file instead
@@ -48,10 +48,10 @@ async function build(req: NextRequest, sp: Record<string, string>): Promise<Next
   const text = (q: any) => one(q.prompt_he || q.prompt_en)
 
   if (sp.format === 'csv') {
-    const out = ['id,grade,subject,unit,topic_slug,topic,type,difficulty,question,answer']
+    const out = ['id,grade,subject,unit,topic_slug,topic,type,difficulty,question,options,answer']
     for (const q of rows) {
       const t = byTopic.get(q.topic_id); if (!t) continue
-      out.push([q.id, t.grade, subjOf(t), t.unit_he || t.unit_en, t.slug, t.title_he || t.title_en, kind(q), q.difficulty, one(q.prompt_he || q.prompt_en, 400), one(q.correct_answer, 80)].map(csv).join(','))
+      out.push([q.id, t.grade, subjOf(t), t.unit_he || t.unit_en, t.slug, t.title_he || t.title_en, kind(q), q.difficulty, one(q.prompt_he || q.prompt_en, 400), Array.isArray(q.options) ? q.options.map((o: any) => one(o.value_he || o.value_en, 60)).join(' | ') : '', one(q.correct_answer, 80)].map(csv).join(','))
     }
     return new NextResponse('﻿' + out.join('\n'), { headers: { 'content-type': sp.download === '1' ? 'text/csv; charset=utf-8' : 'text/plain; charset=utf-8', ...disp(sp, 'eduplay-questions-by-grade.csv') } })
   }
