@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { X, Lightbulb, ChevronRight } from 'lucide-react'
+import { X, Lightbulb, ChevronRight, ChevronLeft } from 'lucide-react'
 import AnswerPad, { isNumericAnswer } from '@/components/kid/AnswerPad'
 import KidOpenAnswer from '@/components/kid/KidOpenAnswer'
 import PlotGate from '@/components/kid/PlotGate'
@@ -214,6 +214,20 @@ export default function AssignmentClient({ child, assignment, items: initialItem
           <div style={{ height:'100%', width:`${Math.max(4, (currentIndex / totalItems) * 100)}%`, background:T.accent2 === '#FFD700' ? T.accent1 : T.accent2, borderRadius:99, transition:'width .3s ease' }}/>
         </div>
         <span style={{ fontFamily:F, fontWeight:800, fontSize:18 }} dir="ltr">{currentIndex + 1}/{totalItems}</span>
+        {/* back / forward between questions — answers already given are kept */}
+        <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+          {[{ d:-1, label:L('שאלה קודמת', 'Previous question'), Icon: isHE ? ChevronRight : ChevronLeft },
+            { d: 1, label:L('שאלה הבאה', 'Next question'),     Icon: isHE ? ChevronLeft : ChevronRight }].map(({ d, label, Icon }) => {
+            const target = currentIndex + d
+            const off = target < 0 || target >= totalItems
+            return (
+              <button key={d} onClick={() => !off && setCurrentIndex(target)} disabled={off} aria-label={label}
+                style={{ width:44, height:44, borderRadius:14, background:T.panel, border:`1.5px solid ${T.border}`, display:'flex', alignItems:'center', justifyContent:'center', color:T.text, cursor: off ? 'default' : 'pointer', opacity: off ? 0.35 : 1 }}>
+                <Icon size={22}/>
+              </button>
+            )
+          })}
+        </div>
       </header>
 
       <div style={{ maxWidth:640, margin:'0 auto', padding:'4px 16px 32px', display:'flex', flexDirection:'column', gap:14 }}>
