@@ -76,3 +76,21 @@ export default function HebrewMathText({ text, style, className, as: Tag = 'p' }
     </>
   )
 }
+
+
+/** An answer option that mixes Hebrew with Latin names ("∢KLM, ∢MLK ו-∢L", "∢KLM בלבד").
+ *  Runs right to left, each angle/point name isolated left to right, so the Hebrew words
+ *  keep their place in the sentence ("בלבד" stays at the end). Pure math/Latin stays LTR. */
+export function MixedOptionText({ text }: { text: string }) {
+  if (!/[\u0590-\u05FF]/.test(text)) {
+    return <span dir="ltr" style={{ unicodeBidi: 'isolate' }}><FractionText text={text} /></span>
+  }
+  const parts = text.split(/(∢\s*[A-Za-z]{1,3}|[A-Za-z]{1,3}(?:\s*=\s*[\d.,()+-]+)?)/g)
+  return (
+    <span dir="rtl" style={{ unicodeBidi: 'isolate' }}>
+      {parts.map((p, i) => i % 2
+        ? <bdi key={i} dir="ltr">{p}</bdi>
+        : <FractionText key={i} text={p} />)}
+    </span>
+  )
+}
