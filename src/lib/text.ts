@@ -120,7 +120,11 @@ export function segmentHebrewMath(text: string | null | undefined): HeMathSegmen
     // operator itself has real token-separating spacing. Only whitespace
     // that survives trimming (i.e. sits BETWEEN math tokens) counts.
     const trimmed = run.trim()
-    const qualifies = UNAMBIGUOUS_OPERATOR.test(trimmed) || (OTHER_OPERATOR.test(trimmed) && /\s/.test(trimmed))
+    // A dash used as a separator in prose ("יום א׳ - 15 תלמידים") leaves a run that
+    // starts with the dash: "- 15". That is not an expression. A real +,-,×,÷ needs
+    // an operand (digit or closing paren) on its left inside the run.
+    const hasLeftOperand = /[\d)]\s*[+\-×x÷]/.test(trimmed)
+    const qualifies = UNAMBIGUOUS_OPERATOR.test(trimmed) || (OTHER_OPERATOR.test(trimmed) && /\s/.test(trimmed) && hasLeftOperand)
     if (!qualifies) continue // a lone number/fraction, or a Hebrew-glued hyphen — not an expression
     const start = match.index as number
     if (start > lastIndex) {

@@ -6,6 +6,7 @@ import { insertQuestions, QuestionInput } from '@/lib/insertQuestions'
 import { loadUploadBlocks } from '@/lib/uploadBlocks'
 import { generateVisual, savableVisual, loadRejectionLessons } from '@/lib/eduVisuals/generate'
 import { checkQuestion, normQ, signature } from '@/lib/questionChecks'
+import { verifyBatch, logVerdicts, loadCheckLessons } from '@/lib/questionVerify'
 import { ON_REQUEST_FROM_GRADE, findOrCreateOnRequestTopic, addGrade } from '@/lib/onRequestTopics'
 import { cleanSections, cleanWords, sectionSpec } from '@/lib/workbook'
 
@@ -481,6 +482,8 @@ export async function POST(req: NextRequest) {
     en_only: `Write every field in English only. Leave prompt_he, hint_he, and each option's "value_he" as null — do not translate anything into Hebrew.`,
     he_only: `This question is Hebrew-only for the user — do not write real English content anywhere:
 - prompt_he: the full, natural, primary content. This is what the user reads.
+- Never use a dash (-) as a separator between a label and a number in the question text (wrong: "יום א׳ - 15 תלמידים"). Use a colon or a comma instead ("יום א׳: 15 תלמידים"). A dash in the text is only ever a minus sign or the Hebrew prefix ב-/ל-/מ-.
+- Math is ALWAYS written left to right in logical order, even inside Hebrew questions and options: the minus sign comes BEFORE the number ("-35", "(-55)+(+20)=-35"), never after it ("35-"). Equations in options read left to right exactly as in a math book. value_en must never contain words like "correct".
 - prompt_en: required to be a non-empty string (technical constraint only, never shown to the user) — write a short internal gloss, a few words, NOT a full sentence or a real translation. This still has to distinguish the question from the other ${count} in this batch (it's used as a dedup key internally) — don't reuse the same generic gloss like "Which is bigger?" across multiple questions; keep each gloss specific to that question's actual content.
 - Each option's value_he: full, natural Hebrew content.
 - Each option's value_en: required non-empty per option, same rule as prompt_en — a short internal gloss only, never a real translation. Exception: if the option value is purely symbolic or numeric (e.g. "3/4" or "12"), value_en and value_he are identical anyway, so just repeat the same value in both rather than inventing a fake gloss.
@@ -504,6 +507,7 @@ export async function POST(req: NextRequest) {
 - For reducing a fraction to its lowest terms, use "צמצמו" (צמצום שברים is the standard curriculum term for this) — never "פשטו" for this. Reserve "פשטו" for algebraic simplification (simplifying an expression), which is a different operation.`
     : ''
 
+  const checkLessons = await loadCheckLessons(serviceClient, subject_slug)
   const systemPrompt = `You are an expert educational content writer for Israeli school students (kindergarten through 12th grade), writing at exactly the level of the grade given, generating practice questions for the topic "${topicRow.title_en}" (grade ${grade}, subject ${subject_slug}).
 Generate exactly ${count} questions.
 ${TYPED_OPEN_ENABLED || section
@@ -541,7 +545,7 @@ visual_data (optional): add a picture only when it genuinely helps understanding
 - {"type":"number_line","min":-10,"max":10,"marked":[...]} (integers, at most 24 apart)
 - {"type":"angle","degrees":50,"letters":["A","B","C"],"label":"α"} (letters = ray end, vertex, ray end; label replaces the degrees, use "?" or a Greek letter to hide the size)
 - {"type":"angle","vertex":"O","rays":[{"deg":0,"letter":"D"},{"deg":60,"letter":"E"},{"deg":115,"letter":"F"}]} (use this when the text says several rays come out of one point: every ray named in the text must be drawn; deg = direction, 0 = right, counter-clockwise; add "arcs":[[0,1,"α"]] only when an angle should be marked)
-- {"type":"rectangle","w":6,"h":4}, {"type":"triangle","sides":[3,4,5]}, {"type":"circle","r":3}
+- {"type":"rectangle","w":6,"h":4}, {"type":"triangle","sides":[3,4,5],"vertices":["K","L","M"],"mark_angle":"K","mark_label":"?"} (vertices = letters bottom-left, bottom-right, top; whenever the text names the triangle or an angle by letters, vertices is REQUIRED; mark_angle draws the arc at that vertex whenever the text says an angle is marked), {"type":"circle","r":3}
 - {"type":"fraction","n":3,"d":4} (a bar; "fraction_pie" for a circle; n:0 = nothing shaded), {"type":"bar_model","parts":[5,3],"total":"?"}, {"type":"objects","icon":"apple","count":5,"crossed":2}
 - {"type":"clock","h":3,"m":30}, {"type":"highlight_text","text":"...","highlight":["..."]}
 Use null when no picture helps.${spec ? `
@@ -596,7 +600,7 @@ ${spec.text}` : ''}`
           model: 'claude-sonnet-5',
           max_tokens: Math.min(16000, 750 * count + 1000),
           thinking: { type: 'disabled' },
-          system: systemPrompt,
+          system: systemPrompt + checkLessons,
           messages: [{ role: 'user', content: messageContent }],
         }),
       })
@@ -638,7 +642,17 @@ ${spec.text}` : ''}`
   const dedupeHe = (he: unknown, en: unknown): string | undefined =>
     typeof he === 'string' && he !== '' && he !== en ? he : undefined
 
+  // The airtight part: every candidate is verified (deterministic rules + an independent solver + an independent reviewer)
+  // BEFORE it can be saved. A question that fails is discarded with its reason; if the checkers cannot run it is not saved.
+  const verifyCtx = { subject: subject_slug, grade, topic: String(topicRow?.title_en || topic_slug) }
+  const verdicts = await verifyBatch(parsedQuestions, verifyCtx)
+  await logVerdicts(serviceClient, parsedQuestions, verdicts, verifyCtx, String(topic_slug))
+
   for (let i = 0; i < parsedQuestions.length; i++) {
+    if (!verdicts[i].pass) {
+      failures.push(`question ${i + 1}: failed the automatic check (${verdicts[i].issues.filter(x => x.block).map(x => `${x.code}: ${x.detail}`).join('; ')}) — discarded`)
+      continue
+    }
     const checked = checkQuestion(parsedQuestions[i], avoidNorm, avoidSig, { drawMode })
     if (!checked.ok) { failures.push(`question ${i + 1}: ${checked.reason} — discarded`); continue }
     const q = checked.q

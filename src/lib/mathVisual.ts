@@ -175,7 +175,24 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
         ? `<line x1="${W / 2}" y1="${C[1]}" x2="${W / 2}" y2="${A[1]}" stroke="${hl}" stroke-width="1.5" stroke-dasharray="5,4"/><text x="${W / 2 + 8}" y="${(C[1] + A[1]) / 2}" font-size="12" font-family="Georgia,serif" fill="${hl}">${escapeText(data.height)}</text>`
         : ''
 
-      return svg(`${rightMark}<polygon points="${poly}" fill="${triFill}" stroke="${stroke}" stroke-width="2.5"/>${baseHl}${heightHl}${hypHl}${sideLbls}${angleLbls}${heightLine}`)
+      // vertex letters (bottom-left, bottom-right, top) and one marked angle: { vertices:['K','L','M'], mark_angle:'K', mark_label:'?' }
+      const verts: string[] = Array.isArray(data.vertices) ? data.vertices.map(String).slice(0, 3) : []
+      const vertLbls = verts.map((t, i) => {
+        const [px, py] = pts[i]; const dx = i === 0 ? -14 : i === 1 ? 14 : 0, dy = i === 2 ? -10 : 18
+        return `<text x="${px + dx}" y="${py + dy}" text-anchor="middle" font-size="16" font-weight="bold" font-family="Georgia,serif" fill="${lbl}">${escapeText(t)}</text>`
+      }).join('')
+      let markEl = ''
+      if (data.mark_angle != null && data.mark_angle !== '') {
+        const mi = Number.isInteger(data.mark_angle) ? Number(data.mark_angle) : verts.indexOf(String(data.mark_angle))
+        if (mi >= 0 && mi < 3) {
+          const P = pts[mi], Q = pts[(mi + 1) % 3], R = pts[(mi + 2) % 3], r = 26
+          const a1 = Math.atan2(Q[1] - P[1], Q[0] - P[0]), a2 = Math.atan2(R[1] - P[1], R[0] - P[0])
+          let d = a2 - a1; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI
+          const sweep = d > 0 ? 1 : 0, am = a1 + d / 2
+          markEl = `<path d="M${P[0] + r * Math.cos(a1)},${P[1] + r * Math.sin(a1)} A${r},${r} 0 0 ${sweep} ${P[0] + r * Math.cos(a2)},${P[1] + r * Math.sin(a2)}" fill="none" stroke="${hl}" stroke-width="2.5"/>${data.mark_label ? `<text x="${P[0] + (r + 12) * Math.cos(am)}" y="${P[1] + (r + 12) * Math.sin(am) + 5}" text-anchor="middle" font-size="14" font-weight="bold" font-family="Georgia,serif" fill="${hl}">${escapeText(String(data.mark_label))}</text>` : ''}`
+        }
+      }
+      return svg(`${rightMark}<polygon points="${poly}" fill="${triFill}" stroke="${stroke}" stroke-width="2.5"/>${baseHl}${heightHl}${hypHl}${markEl}${sideLbls}${angleLbls}${vertLbls}${heightLine}`)
     }
 
     // ── RECTANGLE / SQUARE ───────────────────────────────────
