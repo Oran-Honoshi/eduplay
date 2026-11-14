@@ -1,7 +1,7 @@
 // Story booklets (fixed, hand-written series such as Oran's level-1 readers).
 // A line is what the child reads; [[key]] is a small picture inside the line,
 // the prefix before it stays as text ("הַ[[cat]] בָּא").
-import { inlinePicture, pictureSVG, PICTURE_KEYS } from '@/lib/readingPictures'
+import { inlinePicture, pictureSVG, pictureWord, PICTURE_KEYS } from '@/lib/readingPictures'
 import { INLINE_NEW } from '@/data/storyInlinePictures'
 import inlineAssets from '@/data/inlineAssets.json'
 
@@ -16,12 +16,13 @@ const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;
 
 /** a line as HTML: text escaped, picture tokens drawn inline */
 export function lineHtml(line: string): string {
-  return esc(line).replace(TOKEN, (_m, k) => (PICTURE_KEYS.includes(k) ? inlinePicture(k) : extraPicture(k)))
+  // a finished picture file (public/stories/inline/<key>.webp, listed in inlineAssets.json) wins over the code-drawn one
+  return esc(line).replace(TOKEN, (_m, k) => ((inlineAssets as Record<string, string>)[k] || !PICTURE_KEYS.includes(k) ? extraPicture(k) : inlinePicture(k)))
 }
 
 /** a booklet picture that is not drawn in code: its file, or a dashed box with the word until the file arrives */
 function extraPicture(k: string): string {
-  const he = INLINE_NEW[k]?.he
+  const he = INLINE_NEW[k]?.he || pictureWord(k)
   if (!he) return ''
   const file = (inlineAssets as Record<string, string>)[k]
   if (file) return `<img src="${esc(file)}" alt="${esc(he)}" style="display:inline-block;width:1.45em;height:1.45em;object-fit:contain;vertical-align:-0.38em;margin:0 .08em">`
