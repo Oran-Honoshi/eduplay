@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase'
+import { normalizeAnswerFormat } from '@/lib/answerFormat'
 import { requireParentOnlySession, requireFamilyMatch, authorizeChildAccess } from '@/lib/session'
 
 // ─── POST /api/assignments ─────────────────────────────────────
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest) {
       topic_id: topicId,
       allow_hints: allowHints,
       allow_steps: allowSteps,
+      answer_format: normalizeAnswerFormat(body.answerFormat),
     })
     .select()
     .single()

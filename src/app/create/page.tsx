@@ -819,9 +819,9 @@ function PlanEditor({ mat, setMat, request, setRequest, replanning, onReplan, on
             <Chips options={[['child', 'הילד/ה מסמנים ומשרטטים'], ['ready', 'מוכנים מראש (למתחילים)']]} value={plan.draw_mode || 'child'} onChange={v => set({ draw_mode: v })} />
           </Section>
         )}
-        {!hasSections(plan) && <Section title="סוגי שאלות">
-          <Chips multi options={[['multiple_choice', 'אמריקאיות'], ['word_problem', 'פתוחות']]} value={plan.q_types} onChange={v => set({ q_types: v })} />
-        </Section>}
+        <Section title="סוג התשובה" hint="פתוחות: בדף מודפס יש מקום לכתוב; באפליקציה רואים רק את השאלה, ובלחיצה על ״אני רוצה לענות״ נפתחות 4 אפשרויות.">
+          <Chips options={[['multiple_choice', 'אמריקאיות'], ['open', 'פתוחות'], ['both', 'גם וגם']]} value={plan.answer_format || 'multiple_choice'} onChange={v => set({ answer_format: v })} />
+        </Section>
         <Section title={mat.kind === 'exam' ? 'כמות וזמן' : 'כמות'}>
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <span>סה״כ <b>{total}</b> שאלות</span>
@@ -844,7 +844,7 @@ function PlanSummary({ mat, editing, onEdit }: { mat: any; editing: boolean; onE
   const plan = mat.plan
   const total = plannedCount(plan, mat.kind)
   const secMode = hasSections(plan)
-  const types = (plan.q_types || []).map((t: string) => (t === 'multiple_choice' ? 'אמריקאיות' : 'פתוחות')).join(' + ')
+  const types = ({ open: 'פתוחות', both: 'אמריקאיות + פתוחות' } as Record<string, string>)[plan.answer_format] || 'אמריקאיות'
   return (
     <div className={`${card} p-5`} dir="rtl">
       <div className="flex items-start gap-3">
@@ -1016,7 +1016,7 @@ function DonePanel({ mat, setMat, child, questions }: any) {
   async function sendToApp() {
     setSending(true); setErr(null)
     try {
-      const r = await fetch('/api/assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ childId: mat.child_id || child?.id, questionIds: appIds, title: mat.title, allowHints: help.hints, allowSteps: help.steps }) })
+      const r = await fetch('/api/assignments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ childId: mat.child_id || child?.id, questionIds: appIds, title: mat.title, allowHints: help.hints, allowSteps: help.steps, answerFormat: mat.plan?.answer_format }) })
       const d = await r.json()
       if (!r.ok) throw new Error(d.error || 'שגיאה')
       const id = d.assignment?.id

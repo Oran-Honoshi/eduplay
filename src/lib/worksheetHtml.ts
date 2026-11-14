@@ -1,3 +1,4 @@
+import { isOpenAt, normalizeAnswerFormat } from './answerFormat'
 // Worksheet / exam HTML (moved from the builder route so the public free
 // library can render the same branded printable).
 import { renderMathVisualSVG } from '@/lib/mathVisual'
@@ -259,7 +260,7 @@ function renderHeTextLines(promptHe: string): string {
   ).join('')
 }
 
-export function generateHTML({ child, topics, questions: questionsIn, difficulty, langMode, includeKey, wsType, includeHints, solutionSteps, date, subject, brand, customTitle, timeMinutes, sections, words }: any) {
+export function generateHTML({ child, topics, questions: questionsIn, difficulty, langMode, includeKey, wsType, includeHints, solutionSteps, date, subject, brand, customTitle, timeMinutes, sections, words, answerFormat }: any) {
   const b: Brand = brand
   // workbook: questions in section order (a question belongs to its section)
   const secs: any[] = Array.isArray(sections) && sections.length ? sections : []
@@ -287,7 +288,11 @@ export function generateHTML({ child, topics, questions: questionsIn, difficulty
     const visualHTML = renderVisual(q, subjectColor, i)
 
     let answerHTML = ''
-    if (q.options) {
+    const openQ = !sec && isOpenAt(normalizeAnswerFormat(answerFormat), i)
+    if (q.options && openQ) {
+      // open question on paper: no options, space to write the answer
+      answerHTML = `<div class="answer-line"><span class="ans-label">${isHebrew || heUI ? 'תשובה:' : 'Answer:'}</span><span class="line"></span></div>`
+    } else if (q.options) {
       answerHTML = `<div class="options-grid">${q.options.map((opt: any) => {
         const displayVal = visibleOption(opt, q.options, langMode)
         const displayLabel = heUI ? translateOptionLabel(opt.label) : opt.label

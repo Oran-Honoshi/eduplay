@@ -40,6 +40,6 @@ export async function renderPublicHTML(p: NonNullable<Awaited<ReturnType<typeof 
     child: { display_name: '', grade: m.grade }, topics: topics || [], questions: withTitles,
     difficulty: 'mixed', langMode: m.language, includeKey: withKey,
     wsType: m.kind === 'exam' ? 'exam' : 'practice', includeHints: m.kind !== 'exam', solutionSteps: withKey,
-    date: '', subject, brand, customTitle: m.title, timeMinutes: m.time_minutes,
+    date: '', subject, brand, customTitle: m.title, timeMinutes: m.time_minutes, answerFormat: m.plan?.answer_format,
   })
 }
