@@ -540,6 +540,7 @@ visual_data (optional): add a picture only when it genuinely helps understanding
 - {"type":"coordinate","steps":6,"quadrant":1,"points":[[x,y,"A"],...],"vlines":[a],"hlines":[b],"polygon":[[x,y],...],"segments":[[[x1,y1],[x2,y2]]]} (steps = axis range; "quadrant":1 draws the first quadrant only — use it whenever all points are non-negative or the material is first-quadrant; all keys except type optional)
 - {"type":"number_line","min":-10,"max":10,"marked":[...]} (integers, at most 24 apart)
 - {"type":"angle","degrees":50,"letters":["A","B","C"],"label":"α"} (letters = ray end, vertex, ray end; label replaces the degrees, use "?" or a Greek letter to hide the size)
+- {"type":"angle","vertex":"O","rays":[{"deg":0,"letter":"D"},{"deg":60,"letter":"E"},{"deg":115,"letter":"F"}]} (use this when the text says several rays come out of one point: every ray named in the text must be drawn; deg = direction, 0 = right, counter-clockwise; add "arcs":[[0,1,"α"]] only when an angle should be marked)
 - {"type":"rectangle","w":6,"h":4}, {"type":"triangle","sides":[3,4,5]}, {"type":"circle","r":3}
 - {"type":"fraction","n":3,"d":4} (a bar; "fraction_pie" for a circle; n:0 = nothing shaded), {"type":"bar_model","parts":[5,3],"total":"?"}, {"type":"objects","icon":"apple","count":5,"crossed":2}
 - {"type":"clock","h":3,"m":30}, {"type":"highlight_text","text":"...","highlight":["..."]}

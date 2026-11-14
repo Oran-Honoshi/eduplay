@@ -51,6 +51,8 @@ const card = 'bg-white rounded-3xl border border-[#E8E2D6]'
 const btnPrimary = 'inline-flex items-center justify-center gap-2 min-h-[52px] px-6 rounded-[14px] bg-[#2F5BE3] text-white font-bold text-[16px] hover:bg-[#2148C0] disabled:opacity-50'
 const btnGhost = 'inline-flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-xl border-[1.5px] border-[#D9D2C4] bg-white text-[#16213E] font-bold text-[15px] hover:bg-[#F7F4EE] disabled:opacity-50'
 
+const SAMPLE_TOPICS_MAX = 6 // most example questions shown in the plan step
+
 export default function CreatePage() {
   return <Suspense fallback={null}><CreateInner /></Suspense>
 }
@@ -214,8 +216,9 @@ function CreateInner() {
     await reload()
   }
 
-  // 3 sample questions (easy → hard) from the first topic, so the parent can
-  // judge the result before everything is made. They stay part of the material.
+  // Samples so the parent can judge the result before everything is made: with one
+  // topic, 3 questions (easy → hard); with several topics, one from each topic.
+  // They stay part of the material.
   async function makeSamples(m: any) {
     const t = m.plan?.topics?.[0]
     if (!t) return
@@ -227,6 +230,14 @@ function CreateInner() {
         const secs = questionSections(m.plan).filter(x => x.kind !== 'translate_words')
           .sort((a, b) => pref.indexOf(a.kind) - pref.indexOf(b.kind)).slice(0, 3)
         const rs = await Promise.all(secs.map(sc => fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ section_key: sc.key, generate: 1, part: 0, parts: 1 }) }).catch(() => null)))
+        if (rs.some(r => !r || !r.ok)) setError('חלק מהדוגמאות לא נוצרו הפעם. לחצו "דוגמה אחרת" כדי לנסות שוב.')
+        await reload(m.id)
+        return
+      }
+      const topicsNow: any[] = (m.plan?.topics || []).slice(0, SAMPLE_TOPICS_MAX)
+      if (topicsNow.length > 1) {
+        // several topics: one example from each, so the parent sees every part of the test
+        const rs = await Promise.all(topicsNow.map(tp => fetch(`/api/materials/${m.id}/build`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic_key: tp.key, generate: 1, reuse: 0, part: 0, parts: 1 }) }).catch(() => null)))
         if (rs.some(r => !r || !r.ok)) setError('חלק מהדוגמאות לא נוצרו הפעם. לחצו "דוגמה אחרת" כדי לנסות שוב.')
         await reload(m.id)
         return
@@ -526,7 +537,7 @@ function CreateInner() {
                   {sampling
                     ? <div className="py-4"><FunLoader kind="build" pose="read" size={84} /></div>
                     : questions.length
-                      ? <div className="flex flex-col gap-2">{questions.slice(0, 3).map((q, i) => <QuestionCard key={q.id} q={q} n={i + 1} lang={mat.language} materialId={mat.id} onApprove={() => act(q, 'approve')} onRemove={() => act(q, 'reject')} onSaved={() => reload()} />)}</div>
+                      ? <div className="flex flex-col gap-2">{questions.slice(0, SAMPLE_TOPICS_MAX).map((q, i) => <QuestionCard key={q.id} q={q} n={i + 1} lang={mat.language} materialId={mat.id} onApprove={() => act(q, 'approve')} onRemove={() => act(q, 'reject')} onSaved={() => reload()} />)}</div>
                       : <p className="text-sm text-[#4A5672] m-0">עוד אין דוגמה. לחצו "ליצור דוגמה".</p>}
                   {editing && questions.length > 0 && <p className="text-xs text-[#5E6B85] mt-2 mb-0">שיניתם את התוכנית? לחצו "דוגמה אחרת" כדי לראות שאלות לפי השינויים.</p>}
                 </div>

@@ -221,6 +221,30 @@ export function renderMathVisualSVG(data: any, opts: MathVisualOptions = {}): st
 
     // ── ANGLE ────────────────────────────────────────────────
     case 'angle': {
+      // Several rays from one vertex (e.g. "three rays OD, OE, OF"):
+      // { type:'angle', vertex:'O', rays:[{deg:0,letter:'D'},{deg:60,letter:'E'},{deg:115,letter:'F'}], arcs:[[0,1,'?']] }
+      // deg = direction of the ray, 0 = to the right, counter-clockwise. No arcs unless asked (they would give the answer away).
+      if (Array.isArray(data.rays) && data.rays.length >= 2) {
+        const rays = (data.rays as any[]).slice(0, 5).map(r => ({ deg: Math.max(0, Math.min(180, Number(r?.deg) || 0)), letter: String(r?.letter ?? '') }))
+        const maxD = Math.max(...rays.map(r => r.deg))
+        const cx = maxD > 100 ? W * 0.38 : W * 0.22, cy = H * 0.78
+        // keep every ray and its letter inside the picture
+        const len = Math.max(40, Math.min(Math.min(W, H) * (maxD > 100 ? 0.45 : 0.6), W - cx - 30, cy - 24))
+        const pt = (d: number, r: number): [number, number] => [cx + r * Math.cos((d * Math.PI) / 180), cy - r * Math.sin((d * Math.PI) / 180)]
+        const rayEls = rays.map(r => {
+          const [x, y] = pt(r.deg, len), [tx, ty] = pt(r.deg, len + 14)
+          return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${stroke}" stroke-width="2.5"/>${r.letter ? `<text x="${tx}" y="${ty + 5}" text-anchor="middle" font-size="15" font-weight="bold" font-family="Georgia,serif" fill="${lbl}">${escapeText(r.letter)}</text>` : ''}`
+        }).join('')
+        const arcEls = (Array.isArray(data.arcs) ? data.arcs : []).slice(0, 4).map((a: any, k: number) => {
+          const ra = rays[Number(a?.[0])], rb = rays[Number(a?.[1])]
+          if (!ra || !rb) return ''
+          const lo = Math.min(ra.deg, rb.deg), hi = Math.max(ra.deg, rb.deg), r = len * (0.22 + 0.08 * k)
+          const [x1, y1] = pt(lo, r), [x2, y2] = pt(hi, r), [lx, ly] = pt((lo + hi) / 2, r + 16)
+          return `<path d="M${x1},${y1} A${r},${r} 0 0 0 ${x2},${y2}" fill="none" stroke="${hl}" stroke-width="2"/>${a?.[2] ? `<text x="${lx}" y="${ly + 5}" text-anchor="middle" font-size="14" font-weight="bold" font-family="Georgia,serif" fill="${hl}">${escapeText(String(a[2]))}</text>` : ''}`
+        }).join('')
+        const vert = data.vertex ? `<text x="${cx - 12}" y="${cy + 17}" text-anchor="middle" font-size="15" font-weight="bold" font-family="Georgia,serif" fill="${lbl}">${escapeText(String(data.vertex))}</text>` : ''
+        return svg(`${rayEls}${arcEls}<circle cx="${cx}" cy="${cy}" r="3" fill="${stroke}"/>${vert}`)
+      }
       const deg = Math.max(1, Math.min(180, Number(data.degrees) || 90))
       const rad = (deg * Math.PI) / 180
       // vertex placement keeps both rays inside the box for any angle up to 180°
