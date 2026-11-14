@@ -64,11 +64,11 @@ export default function StoriesPage() {
     <ParentPage section="create" title="ספרוני קריאה ראשונה" back={{ href: '/dashboard?tab=create', label: 'יצירה' }}
       subtitle="סיפורים קצרים לפי רמות ניקוד (רמה 1: קמץ ופתח, רמה 2: גם שווא, רמה 3: גם חטף פתח וחיריק, רמה 4: גם צירה וסגול, רמה 5: גם חולם, רמה 6: גם שורוק וקובוץ), עם תמונות קטנות במקום מילים שעוד לא למדו. אפשר להדפיס (A5) או לקרוא יחד באפליקציה — הילדים מוצאים אותם גם במסך הבית שלהם.">
         {msg && <div style={{ background: '#FDECEC', color: '#B42318', padding: '10px 14px', borderRadius: 12, fontWeight: 700 }}>{msg}</div>}
-        <div role="tablist" aria-label="רמות ניקוד" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div role="tablist" aria-label="רמות ניקוד" style={{ display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: 4 }}>
           {LEVELS.map(([l, name]) => (
             <button key={l} role="tab" aria-selected={level === l} onClick={() => pick(l)}
-              style={{ minHeight: 48, padding: '0 16px', borderRadius: 50, border: `2px solid ${level === l ? C.primary : C.border}`, background: level === l ? C.primaryLight : '#fff', color: level === l ? C.primary : C.text, fontWeight: 800, fontSize: 15, cursor: 'pointer' }}>
-              רמה {l}: {name}{list ? ` (${countOf(l)})` : ''}
+              style={{ minHeight: 48, padding: '0 16px', borderRadius: 50, border: `2px solid ${level === l ? C.primary : C.border}`, background: level === l ? C.primaryLight : '#fff', color: level === l ? C.primary : C.text, fontWeight: 800, fontSize: 15, cursor: 'pointer', flex: '0 0 auto', whiteSpace: 'nowrap' }}>
+              רמה {l}: {name}
             </button>
           ))}
         </div>
