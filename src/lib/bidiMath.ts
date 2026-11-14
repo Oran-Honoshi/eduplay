@@ -41,12 +41,17 @@ export function splitMathRuns(input: string): BidiPart[] {
   const out: BidiPart[] = []
   let last = 0
   for (const m of text.matchAll(RUN)) {
-    const run = m[0]
-    const start = m.index ?? 0
+    let run = m[0]
+    let start = m.index ?? 0
+    // brackets must pair inside the run: an unmatched ")" at the end or "(" at the start belongs
+    // to the Hebrew sentence ("(מספר מכוון: -60)"), otherwise it flips and no longer pairs
+    const cnt = (str: string, ch: string) => str.split(ch).length - 1
+    while (run.endsWith(')') && cnt(run, ')') > cnt(run, '(')) run = run.slice(0, -1)
+    while (run.startsWith('(') && cnt(run, '(') > cnt(run, ')')) { run = run.slice(1); start += 1 }
     // a lone word in Latin letters (a name like "Tom") can stay inline; isolate anything with a digit, sign or symbol
     if (!/[0-9+\-−=<>|°∢∠△()]/.test(run)) continue
     // a run must contain a digit or a math sign — a lone "?" or blank is not math
-    if (!/[0-9=<>+\-−×÷]/.test(run)) continue
+    if (!/[0-9=<>+\-−×÷∢∠△]/.test(run)) continue
     if (start > last) out.push({ ltr: false, text: text.slice(last, start) })
     out.push({ ltr: true, text: run })
     last = start + run.length
