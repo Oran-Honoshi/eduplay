@@ -16,7 +16,6 @@ export default function ReaderPage() {
   const sp = useSearchParams()
   const token = sp.get('token') || ''
   const theme = sp.get('theme') || 'plain'
-  const backHref = token ? `/play/${token}` : '/stories'
 
   const [b, setB] = useState<StoryBooklet | null>(null)
   const [err, setErr] = useState(false)
@@ -35,6 +34,8 @@ export default function ReaderPage() {
     })()
   }, [id, token])
 
+  // back to the list at the level this booklet belongs to (the list remembers it in ?level=)
+  const backHref = token ? `/play/${token}` : b?.level_number ? `/stories?level=${b.level_number}` : '/stories'
   const last = b ? b.pages.length : 0
   const go = (d: number) => { setLit(null); setPage(p => Math.max(-1, Math.min(last, p + d))) }
 
