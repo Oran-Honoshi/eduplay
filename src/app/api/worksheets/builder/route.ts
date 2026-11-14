@@ -105,11 +105,12 @@ export async function GET(req: NextRequest) {
     const subject = topics[0]?.subject
     // A Create material supplies its own title (same family only)
     let customTitle: string | null = null
-    let sections: any[] | undefined, words: any[] | undefined
+    let sections: any[] | undefined, words: any[] | undefined, answerFormat: string | undefined
     if (materialId) {
       const { data: mat } = await supabase.from('materials').select('title, family_id, plan, section_q').eq('id', materialId).maybeSingle()
       if (mat && mat.family_id === child.family_id) {
         customTitle = mat.title
+        answerFormat = mat.plan?.answer_format
         if (Array.isArray(mat.plan?.sections) && mat.plan.sections.length) {
           const shown = new Set(finalQuestions.map(q => q.id))
           words = mat.plan.words || []
@@ -123,7 +124,7 @@ export async function GET(req: NextRequest) {
       difficulty, langMode, includeKey,
       wsType, includeHints, solutionSteps,
       date: new Date().toLocaleDateString('en-GB'),
-      subject, brand, customTitle, timeMinutes, sections, words,
+      subject, brand, customTitle, timeMinutes, sections, words, answerFormat,
     })
 
     // ── Log this generation to worksheet_generations (history/regenerate) ──

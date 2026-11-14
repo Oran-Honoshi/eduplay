@@ -9,6 +9,7 @@ import { ListOrdered } from 'lucide-react'
 import MathVisual from '@/components/MathVisual'
 import FractionText from '@/components/FractionText'
 import InlineMath from '@/components/InlineMath'
+import { isOpenAt, normalizeAnswerFormat } from '@/lib/answerFormat'
 import HebrewMathText, { MixedOptionText } from '@/components/HebrewMathText'
 import { AnimatedBtn, Sparkles, THEME_CONFIG } from '@/components/theme'
 import { getFontSize } from '@/lib/fontSize'
@@ -80,6 +81,9 @@ export default function AssignmentClient({ child, assignment, items: initialItem
   const [helpOpen, setHelpOpen] = useState<{ hint: boolean; steps: number }>({ hint: false, steps: 0 })
   useEffect(() => { setTyped(''); setHelpOpen({ hint: false, steps: 0 }) }, [currentIndex])
   const allowHints = assignment.allow_hints !== false
+  // open questions: only the question first; the 4 options appear when the child asks to answer
+  const answerFormat = normalizeAnswerFormat(assignment.answer_format)
+  const [revealed, setRevealed] = useState<Set<number>>(new Set())
   const allowSteps = assignment.allow_steps !== false
 
   async function submitAnswer(label: string) {
@@ -190,6 +194,7 @@ export default function AssignmentClient({ child, assignment, items: initialItem
   const itemResolved        = isResolved(status)
   const canAnswer           = isOpen(status) && !submitting
   const optText = (o: any) => isHE ? (o.value_he || o.value_en || '') : (o.value_en || '')
+  const hideOptions = options.length > 0 && isOpenAt(answerFormat, currentIndex) && status === 'not_started' && !revealed.has(currentIndex)
   const twoCols = options.length === 4 && options.every(o => optText(o).length <= 14)
   const numeric = options.length === 0 && isNumericAnswer(currentQ?.correct_answer)
   const rightLabel = status === 'correct_after_hint' ? currentItem!.attempt_2_answer : status === 'correct_first_try' ? currentItem!.attempt_1_answer : null
@@ -315,7 +320,13 @@ export default function AssignmentClient({ child, assignment, items: initialItem
 
         <PlotGate q={currentQ} T={T} isHE={isHE} fresh={status === 'not_started'}>
         {/* Answers */}
-        {options.length > 0 && (
+        {hideOptions && (
+          <button onClick={() => setRevealed(prev => new Set(prev).add(currentIndex))}
+            style={{ width:'100%', minHeight:72, fontFamily:F, fontSize:24, background:T.accent1, border:'none', color:'#fff', borderRadius:R - 6, cursor:'pointer', fontWeight:800 }}>
+            {L('אני רוצה לענות', 'I want to answer')}
+          </button>
+        )}
+        {options.length > 0 && !hideOptions && (
           <div style={{ display:'grid', gridTemplateColumns: twoCols ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap:10 }}>
             {options.map(opt => {
               const isTriedWrong = wrongLabels.includes(opt.label) && !(itemResolved && opt.isCorrect)
