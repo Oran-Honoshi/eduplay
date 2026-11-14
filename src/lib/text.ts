@@ -112,6 +112,9 @@ export function segmentHebrewMath(text: string | null | undefined): HeMathSegmen
     // ("חתוך ל-3 חלקים") that this exact collision happens in practice,
     // not just in theory.
     if (!/\d/.test(run)) continue
+    // "M=(3,2)", "AB=5": a name defined inline in a sentence. The letter sits outside the run,
+    // so splitting here would strand "=(3,2)" on its own line. Leave it inside the sentence.
+    if (/[A-Za-z]$/.test(text.slice(0, match.index as number).trimEnd())) continue
     // Trim before the whitespace check: MATH_RUN's charset includes plain
     // spaces, so an ordinary sentence-boundary space right before/after the
     // run (e.g. the space between "ל-3" and the next Hebrew word) gets
