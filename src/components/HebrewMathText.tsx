@@ -48,7 +48,7 @@ export default function HebrewMathText({ text, style, className, as: Tag = 'p' }
   if (segments.length === 0) {
     // inline definitions like "M=(3,2)" and bare coordinate pairs "(3,9)" stay in the sentence,
     // each isolated left to right so the brackets and the equals sign keep their order
-    const parts = text.split(/([A-Za-z]{1,3}\s*=\s*\(?-?[\d.,\s-]+\)?|\(\s*-?\d[\d.]*\s*,\s*-?\d[\d.]*\s*\))/g)
+    const parts = text.split(/([A-Za-z]{1,3}\s*=\s*\(?-?[\d.,\s-]+\)?|\(\s*[-−+]?\d[\d.,/]*\s*\)|(?<![\dא-ת\w])[-−]\d[\d.,/]*|\(\s*-?\d[\d.]*\s*,\s*-?\d[\d.]*\s*\))/g)
     return (
       <Tag className={className} style={style}>
         {parts.map((p, i) => i % 2
