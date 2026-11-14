@@ -46,9 +46,14 @@ export default function HebrewMathText({ text, style, className, as: Tag = 'p' }
 
   const segments = segmentHebrewMath(text)
   if (segments.length === 0) {
+    // inline definitions like "M=(3,2)" and bare coordinate pairs "(3,9)" stay in the sentence,
+    // each isolated left to right so the brackets and the equals sign keep their order
+    const parts = text.split(/([A-Za-z]{1,3}\s*=\s*\(?-?[\d.,\s-]+\)?|\(\s*-?\d[\d.]*\s*,\s*-?\d[\d.]*\s*\))/g)
     return (
       <Tag className={className} style={style}>
-        <FractionText text={text} />
+        {parts.map((p, i) => i % 2
+          ? <bdi key={i} dir="ltr"><FractionText text={p.trim()} /></bdi>
+          : <FractionText key={i} text={p} />)}
       </Tag>
     )
   }
